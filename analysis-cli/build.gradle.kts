@@ -16,6 +16,12 @@ application {
     mainClass.set("com.semanticpainter.MainKt")
 }
 
+sourceSets {
+    main {
+        resources.srcDir("config")
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
