@@ -10,7 +10,9 @@ Business Logic, ...) instead of by syntax.
 | dir | what |
 |-----|------|
 | [`analysis-cli/`](analysis-cli) | Language-agnostic intent-tagging engine. Parses a repo, emits an editor-agnostic JSON tag artifact. Kotlin/JVM. |
-| `nvim-renderer/` | *(planned)* Neovim plugin that consumes the JSON artifact and paints spans (background tint + gutter icon). |
+| `nvim-renderer/` | Neovim plugin that consumes the JSON artifact and paints spans (background tint, gutter icon, conceal). |
+
+Session notes / design dump for resuming work: [`docs/notes.md`](docs/notes.md).
 
 ## Flow
 
