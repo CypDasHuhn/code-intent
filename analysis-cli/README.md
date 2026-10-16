@@ -67,6 +67,7 @@ Prints a JSON tag artifact:
   "files": [
     {
       "path": "Sample.kt",
+      "hash": "43656976f5…",
       "spans": [
         {"tag":"Logging","rule":"call-on-logger-symbol",
          "evidence":"log.info(\"starting work for {}\", id)",
@@ -77,8 +78,9 @@ Prints a JSON tag artifact:
 }
 ```
 
-Lines are **0-based**, columns **0-based** (LSP/Neovim friendly). The artifact
-is deliberately editor-agnostic; a Neovim renderer consumes it later.
+Lines are **0-based**, columns **0-based** (LSP/Neovim friendly). Each file
+carries a `hash` of its content so consumers can detect a stale artifact. The
+artifact is deliberately editor-agnostic; a Neovim renderer consumes it.
 
 ## Layout
 

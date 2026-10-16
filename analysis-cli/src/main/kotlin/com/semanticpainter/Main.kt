@@ -24,7 +24,7 @@ fun main(argv: Array<String>) {
         .sortedBy { it.path }
         .toList()
 
-    val entries = mutableListOf<Pair<String, List<Span>>>()
+    val entries = mutableListOf<FileEntry>()
     for (f in files) {
         val text = runCatching { f.readText() }.getOrNull() ?: continue
         val facts = runCatching { KotlinFrontend.facts(f.path, text) }
@@ -32,7 +32,8 @@ fun main(argv: Array<String>) {
             .getOrNull() ?: continue
         val spans = IntentQuery.run(facts, cfg)
         if (spans.isNotEmpty() || args.all) {
-            entries.add(rootFile.toURI().relativize(f.toURI()).path to spans)
+            val rel = rootFile.toURI().relativize(f.toURI()).path
+            entries.add(FileEntry(rel, contentHash(text), spans))
         }
     }
 
@@ -42,17 +43,18 @@ fun main(argv: Array<String>) {
     out.append("  \"tag\": \"${Json.escape(cfg.tag)}\",\n")
     out.append("  \"language\": \"${Json.escape(args.language)}\",\n")
     out.append("  \"files\": [\n")
-    entries.forEachIndexed { i, (path, spans) ->
+    entries.forEachIndexed { i, entry ->
         out.append("    {\n")
-        out.append("      \"path\": \"${Json.escape(path)}\",\n")
+        out.append("      \"path\": \"${Json.escape(entry.path)}\",\n")
+        out.append("      \"hash\": \"${Json.escape(entry.hash)}\",\n")
         out.append("      \"spans\": [\n")
-        spans.forEachIndexed { j, s ->
+        entry.spans.forEachIndexed { j, s ->
             out.append("        {\"tag\":\"${Json.escape(s.tag)}\",")
             out.append("\"rule\":\"${Json.escape(s.rule)}\",")
             out.append("\"evidence\":\"${Json.escape(s.evidence)}\",")
             out.append("\"startLine\":${s.startLine},\"startCol\":${s.startCol},")
             out.append("\"endLine\":${s.endLine},\"endCol\":${s.endCol}}")
-            if (j < spans.size - 1) out.append(",")
+            if (j < entry.spans.size - 1) out.append(",")
             out.append("\n")
         }
         out.append("      ]\n    }")

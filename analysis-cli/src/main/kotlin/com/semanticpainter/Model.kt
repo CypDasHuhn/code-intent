@@ -33,6 +33,12 @@ data class Span(
     val endCol: Int,
 )
 
+data class FileEntry(
+    val path: String,
+    val hash: String,
+    val spans: List<Span>,
+)
+
 class LineIndex(private val text: String) {
     private val lineStarts: IntArray = buildList {
         add(0)
