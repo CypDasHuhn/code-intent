@@ -39,9 +39,10 @@ Blocks:
   (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
   `assert`).
 - `derivative-use` — a local whose initializer is pure and whose reads flow into
-  classified statements, or whose reads all occur inside other derivative-use
-  declarations. Purity is literal/local or an explicit annotation; the
-  transitive rule also promotes declarations with impure initializers.
+  classified statements, or a declaration (local or function) whose references
+  all occur inside other derivative-use declarations. Purity is literal/local
+  or an explicit annotation; the transitive rule also promotes declarations with
+  impure initializers or bodies.
 - `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
   gets the union of its guard and body intents. A `try` is classified whole only
   when the body, catches, and finally are fully covered; otherwise all-logging

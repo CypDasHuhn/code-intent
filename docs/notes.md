@@ -278,7 +278,9 @@ detected.
 - Derivative use: pure initializer (literal, local read, or explicit purity
   annotation) and reads flow into classified statements. Transitive closure: a
   declaration whose reads all occur inside other derivative-use declarations is
-  derivative too, even with an impure initializer.
+  derivative too, even with an impure initializer. This applies to functions as
+  well as locals: a pure helper called only from derivative locals/functions is
+  tagged on its declaration.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Whole-try classification requires full coverage; try-header classification
   requires only covered catches. Functions whose body is fully classified are

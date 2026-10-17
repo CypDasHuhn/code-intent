@@ -198,6 +198,8 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
+        val identifiers = ctx.tree.root.descendants("simple_identifier").toList()
+
         for (declaration in ctx.tree.root.descendants("property_declaration")) {
             val name = KotlinSyntax.variableName(declaration) ?: continue
             val nameNode = declaration.child("variable_declaration")?.child("simple_identifier") ?: continue
@@ -211,12 +213,8 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
                 .toList()
             if (uses.isEmpty()) continue
 
-            val enclosingProperties = uses.mapNotNull { KotlinSyntax.enclosingProperty(it) }
-            val onlyDerivativePlaces = enclosingProperties.size == uses.size &&
-                enclosingProperties.all { property ->
-                    ctx.covering(property).any { it.role == Role.DERIVATIVE_USE }
-                }
-
+            val places = uses.mapNotNull { derivativePlaceIntents(ctx, it) }
+            val onlyDerivativePlaces = places.size == uses.size
             if (!isPure(ctx, initializer) && !onlyDerivativePlaces) continue
 
             val intents = mutableSetOf<String>()
@@ -224,17 +222,43 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
                 intents += ctx.coverage(KotlinSyntax.enclosingStatement(use)).intents
             }
             if (onlyDerivativePlaces) {
-                for (property in enclosingProperties) {
-                    ctx.covering(property)
-                        .filter { it.role == Role.DERIVATIVE_USE }
-                        .forEach { intents += it.intents }
-                }
+                places.forEach { intents += it }
             }
             if (intents.none { it != UNTAGGED_INTENT }) continue
 
             result += declaration.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
         }
+
+        for (declaration in ctx.tree.root.descendants("function_declaration")) {
+            val nameNode = declaration.children.firstOrNull { it.kind == "simple_identifier" } ?: continue
+            val name = nameNode.text
+            if (name.isEmpty()) continue
+
+            val references = identifiers.filter { reference ->
+                reference.text == name &&
+                    (reference.startByte != nameNode.startByte || reference.endByte != nameNode.endByte) &&
+                    reference.startByte !in declaration.startByte until declaration.endByte &&
+                    reference.parent?.kind != "function_declaration"
+            }
+            if (references.isEmpty()) continue
+
+            val places = references.mapNotNull { derivativePlaceIntents(ctx, it) }
+            if (places.size != references.size) continue
+
+            val intents = places.flatten().toSet()
+            if (intents.none { it != UNTAGGED_INTENT }) continue
+
+            result += declaration.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
+        }
+
         return result
+    }
+
+    private fun derivativePlaceIntents(ctx: AnalysisContext, reference: SyntaxNode): Set<String>? {
+        val place = KotlinSyntax.enclosingDeclaration(reference) ?: return null
+        val annotations = ctx.covering(place).filter { it.role == Role.DERIVATIVE_USE }
+        if (annotations.isEmpty()) return null
+        return annotations.flatMap { it.intents }.toSet()
     }
 
     private fun isPure(ctx: AnalysisContext, initializer: SyntaxNode): Boolean =

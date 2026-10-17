@@ -193,8 +193,47 @@ class BlockTest {
             }
         """.trimIndent()
 
-        val derivative = analyze(text).first { it.role == Role.DERIVATIVE_USE }
+        val derivative = analyze(text).first {
+            it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
+        }
         assertEquals(setOf("Logging"), derivative.intents)
+    }
+
+    @Test
+    fun pureFunctionReferencedOnlyByDerivativeIsDerivative() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            @Pure
+            fun text(): String = "x"
+            fun f() {
+                val message = text()
+                log.warn(message)
+            }
+        """.trimIndent()
+
+        val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
+        assertTrue(derivatives.any { it.evidence.contains("fun text") })
+        assertTrue(derivatives.filter { it.evidence.contains("fun text") }.all {
+            it.intents == setOf("Logging")
+        })
+    }
+
+    @Test
+    fun functionReferencedOutsideDerivativeIsNotPromoted() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            @Pure
+            fun text(): String = "x"
+            fun f() {
+                val message = text()
+                log.warn(message)
+                log.warn(text())
+            }
+        """.trimIndent()
+
+        val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
+        assertTrue(derivatives.any { it.evidence.contains("val message") })
+        assertTrue(derivatives.none { it.evidence.contains("fun text") })
     }
 
     @Test
@@ -228,7 +267,7 @@ class BlockTest {
         """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
-        assertEquals(2, derivatives.size)
+        assertEquals(3, derivatives.size)
         assertTrue(derivatives.all { it.intents == setOf("Logging") })
     }
 
