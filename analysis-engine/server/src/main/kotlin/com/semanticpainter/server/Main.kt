@@ -38,15 +38,26 @@ fun main(argv: Array<String>) {
     var host = "127.0.0.1"
     var port = 8765
     var useLsp = true
+    var socket: String? = null
+    var root = Path.of(".").toAbsolutePath().normalize()
+    var configPath: String? = null
     var i = 0
     while (i < argv.size) {
         when (argv[i]) {
             "--host" -> host = argv[++i]
             "--port" -> port = argv[++i].toInt()
             "--no-lsp" -> useLsp = false
+            "--socket" -> socket = argv[++i]
+            "--root" -> root = Path.of(argv[++i]).toAbsolutePath().normalize()
+            "--config" -> configPath = argv[++i]
             else -> error("unknown flag: ${argv[i]}")
         }
         i++
+    }
+
+    if (socket != null) {
+        LiveServer(root, Path.of(socket), configPath, useLsp).run()
+        return
     }
 
     val server = HttpServer.create(InetSocketAddress(host, port), 0)
@@ -60,7 +71,7 @@ fun main(argv: Array<String>) {
         }
         try {
             val request = exchange.requestBody.use { mapper.readValue<AnalyzeRequest>(it) }
-            respond(exchange, 200, analyze(request, useLsp))
+            respond(exchange, 200, analyze(request, useLsp, configPath))
         } catch (error: Exception) {
             respond(exchange, 400, """{"error":"${error.message?.replace("\"", "'")}"}""")
         }
@@ -69,9 +80,9 @@ fun main(argv: Array<String>) {
     System.err.println("semantic-code-painter listening on http://$host:$port")
 }
 
-private fun analyze(request: AnalyzeRequest, useLsp: Boolean): String {
+private fun analyze(request: AnalyzeRequest, useLsp: Boolean, defaultConfig: String?): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
-    val config = loadIntentConfig(request.config, request.language)
+    val config = loadIntentConfig(request.config ?: defaultConfig, request.language)
     require(config.language == "kotlin") { "only kotlin is supported by the tree-sitter frontend" }
 
     val source = SourceFile(request.path, request.text)

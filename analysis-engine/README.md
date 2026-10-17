@@ -98,6 +98,26 @@ LSP queries are read-only (`textDocument/hover` for the receiver type). The
 engine does not share document sync, diagnostics, or capabilities with the
 editor.
 
+## Live server
+
+The server can run as a per-project daemon over a Unix socket:
+
+```sh
+./gradlew :server:installDist
+semantic-code-painter-server --socket /path/to/project.sock --root /path/to/project
+```
+
+Transport is NDJSON JSON-RPC. The client sends `textDocument/didOpen`,
+`didChange`, and `didClose` with full text and a monotonic version. The server
+re-runs that file and emits `semanticPainter/publishTags` with the analyzed
+version, content hash, and annotations. `semanticPainter/analyze` requests an
+explicit re-run. Profiles and shards stay client-side; changing them never
+re-runs analysis.
+
+Flags: `--socket`, `--root`, `--no-lsp`, `--config`. The live server reuses the
+shared `kotlin-lsp` socket. The HTTP server remains available for batch and
+editor-agnostic requests.
+
 ## Usage
 
 ```sh
