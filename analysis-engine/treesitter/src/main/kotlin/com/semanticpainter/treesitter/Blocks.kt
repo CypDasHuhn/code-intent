@@ -97,25 +97,31 @@ class LoggerInteractionBlock(
             val receiver = KotlinSyntax.receiverNode(call) ?: return@mapNotNull null
             val receiverName = receiver.text.substringAfterLast('.')
 
-            val type = ctx.oracle.typeAt(ctx.file, KotlinSyntax.receiverOffset(receiver))
-            val match = if (type != null && typeMatches(type.fqName, types)) {
-                Match("typed-receiver", type.source, type.confidence)
-            } else {
-                when {
-                    receiverName in loggerSymbols ->
-                        Match("call-on-logger-symbol", "heuristic", 0.8)
+            val heuristic = when {
+                receiverName in loggerSymbols ->
+                    Match("call-on-logger-symbol", "heuristic", 0.8)
 
-                    receiverNames.any { it.equals(receiverName, ignoreCase = true) } ->
-                        Match("receiver-name", "heuristic", 0.6)
+                receiverNames.any { it.equals(receiverName, ignoreCase = true) } ->
+                    Match("receiver-name", "heuristic", 0.6)
 
-                    definition.has("qualifiers", receiver.text) ->
-                        Match("qualified-static", "heuristic", 0.8)
+                definition.has("qualifiers", receiver.text) ->
+                    Match("qualified-static", "heuristic", 0.8)
 
-                    importsMatch ->
-                        Match("name-import-gated", "heuristic", 0.5)
+                importsMatch ->
+                    Match("name-import-gated", "heuristic", 0.5)
 
-                    else -> null
+                else -> null
+            }
+
+            val match = if (heuristic == null || heuristic.rule == "receiver-name") {
+                val type = ctx.oracle.typeAt(ctx.file, KotlinSyntax.receiverOffset(receiver))
+                if (type != null && typeMatches(type.fqName, types)) {
+                    Match("typed-receiver", type.source, type.confidence)
+                } else {
+                    heuristic
                 }
+            } else {
+                heuristic
             } ?: return@mapNotNull null
 
             call.raw(Role.SOURCE_INTENT, setOf(intent), match.rule, match.source, match.confidence)

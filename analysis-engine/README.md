@@ -31,7 +31,9 @@ Blocks:
 
 - `print` — `println`/`print`, including `System.out`/`System.err`.
 - `logger-interaction` — a call on a receiver whose LSP type is a configured
-  logger type. Heuristics are used only when the type is unknown.
+  logger type. Strong syntax heuristics (factory property, qualifier, import)
+  answer without LSP; the type oracle is consulted for ambiguous receiver
+  names. Live mode caps hover time and falls back to heuristics.
 - `logging-state` — conditions using configured logging-state names.
 - `error-handling` — `throw` and configured Kotlin checks
   (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,

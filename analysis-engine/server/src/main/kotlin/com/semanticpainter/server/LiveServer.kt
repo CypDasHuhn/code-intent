@@ -36,6 +36,8 @@ private data class DocState(
     val language: String,
 )
 
+private const val LIVE_LSP_TIMEOUT_MS = 750L
+
 class LiveServer(
     private val root: Path,
     private val socketPath: Path,
@@ -162,7 +164,7 @@ class LiveServer(
         val tree = KotlinParser().parse(source)
         val analysis = synchronized(this) {
             val activeOracle = oracle ?: if (useLsp) {
-                runCatching { KotlinLspOracle.connect(root) }
+                runCatching { KotlinLspOracle.connect(root, LIVE_LSP_TIMEOUT_MS) }
                     .onFailure { error ->
                         System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
                         error.printStackTrace()

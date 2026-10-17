@@ -7,10 +7,24 @@ import com.semanticpainter.core.model.Role
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.model.UNTAGGED_INTENT
 import com.semanticpainter.core.oracle.NullOracle
+import com.semanticpainter.core.oracle.SymbolFact
+import com.semanticpainter.core.oracle.TypeFact
+import com.semanticpainter.core.oracle.TypeOracle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+
+private class CountingOracle : TypeOracle {
+    var calls = 0
+
+    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? {
+        calls++
+        return null
+    }
+
+    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+}
 
 class BlockTest {
     private val config = loadIntentConfig(null, "kotlin")
@@ -181,6 +195,24 @@ class BlockTest {
 
         val derivative = analyze(text).first { it.role == Role.DERIVATIVE_USE }
         assertEquals(setOf("Logging"), derivative.intents)
+    }
+
+    @Test
+    fun strongLoggerHeuristicSkipsLsp() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f() {
+                log.warn("x")
+            }
+        """.trimIndent()
+
+        val source = SourceFile("Sample.kt", text)
+        val tree = KotlinParser().parse(source)
+        val oracle = CountingOracle()
+        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, oracle, config)
+
+        assertTrue(annotations.any { it.rule == "call-on-logger-symbol" })
+        assertEquals(0, oracle.calls)
     }
 
     @Test

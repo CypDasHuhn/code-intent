@@ -31,6 +31,7 @@ class KotlinLspOracle private constructor(
     private val socket: Socket,
     private val executor: java.util.concurrent.ExecutorService,
     private val server: LanguageServer,
+    private val typeTimeoutMs: Long,
 ) : TypeOracle, AutoCloseable {
     private val opened = mutableMapOf<String, String>()
 
@@ -40,7 +41,7 @@ class KotlinLspOracle private constructor(
         val position = positionAt(file.text, byteOffset)
         val hover = server.textDocumentService
             .hover(HoverParams(TextDocumentIdentifier(uri), position))
-            .get(5, TimeUnit.SECONDS)
+            .get(typeTimeoutMs, TimeUnit.MILLISECONDS)
         val type = hoverText(hover)?.let(::extractType) ?: return null
         return TypeFact(type, "lsp", 0.95)
     }
@@ -81,7 +82,9 @@ class KotlinLspOracle private constructor(
     }
 
     companion object {
-        fun connect(root: Path): KotlinLspOracle {
+        private const val DEFAULT_TYPE_TIMEOUT_MS = 5_000L
+
+        fun connect(root: Path, typeTimeoutMs: Long = DEFAULT_TYPE_TIMEOUT_MS): KotlinLspOracle {
             java.util.logging.LogManager.getLogManager().reset()
             val absoluteRoot = root.toAbsolutePath().normalize()
             val port = portFor(absoluteRoot)
@@ -133,7 +136,7 @@ class KotlinLspOracle private constructor(
             server.initialize(params).get(30, TimeUnit.SECONDS)
             server.initialized(org.eclipse.lsp4j.InitializedParams())
 
-            return KotlinLspOracle(absoluteRoot, socket, executor, server)
+            return KotlinLspOracle(absoluteRoot, socket, executor, server, typeTimeoutMs)
         }
 
         private fun cacheRoot(): Path =
