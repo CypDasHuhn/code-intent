@@ -88,7 +88,7 @@ class IntentScaffoldBlock : RuleBlock {
 
     override fun apply(ctx: AnalysisContext): List<TaggedSpan> {
         val tag = ctx.config.tag
-        return ctx.tree.root.descendants("if_expression").mapNotNull { ifNode ->
+        val ifSpans = ctx.tree.root.descendants("if_expression").mapNotNull { ifNode ->
             val body = ifNode.child("control_structure_body") ?: return@mapNotNull null
             if (!hasTaggedEffect(ctx, body, tag)) return@mapNotNull null
 
@@ -101,6 +101,13 @@ class IntentScaffoldBlock : RuleBlock {
             val confidence = if (KotlinSyntax.isConstant(condition)) 0.95 else 0.85
             ifNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold", "treesitter", confidence)
         }.toList()
+
+        val catchSpans = ctx.tree.root.descendants("catch_block").mapNotNull { catchNode ->
+            if (!hasTaggedEffect(ctx, catchNode, tag)) return@mapNotNull null
+            catchNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold-catch", "treesitter", 0.9)
+        }.toList()
+
+        return ifSpans + catchSpans
     }
 
     private fun conditionOf(ifNode: SyntaxNode): SyntaxNode? =
@@ -118,12 +125,12 @@ class IntentScaffoldBlock : RuleBlock {
     private fun hasTaggedEffect(ctx: AnalysisContext, body: SyntaxNode, tag: String): Boolean {
         val statements = body.child("statements") ?: return false
         if (statements.children.isEmpty()) return false
-        return statements.children.all { statement -> ctx.hasTag(statement, tag) }
+        return statements.children.all { statement -> ctx.covers(statement, tag) }
     }
 
     private fun isNeutral(ctx: AnalysisContext, condition: SyntaxNode, tag: String): Boolean {
         if (KotlinSyntax.isConstant(condition)) return true
-        if (ctx.hasTag(condition, tag)) return true
+        if (ctx.covers(condition, tag)) return true
 
         val guardNames = ctx.config.list("guardNames")
         if (guardNames.any { condition.text.contains(it, ignoreCase = true) }) return true

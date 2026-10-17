@@ -33,6 +33,9 @@ class AnalysisContext(
 
     fun hasTag(node: SyntaxNode, tag: String): Boolean =
         collected.any { it.tag == tag && it.startByte >= node.startByte && it.endByte <= node.endByte }
+
+    fun covers(node: SyntaxNode, tag: String): Boolean =
+        collected.any { it.tag == tag && it.startByte <= node.startByte && it.endByte >= node.endByte }
 }
 
 class AnalysisEngine(private val blocks: List<RuleBlock>) {

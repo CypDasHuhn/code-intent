@@ -48,4 +48,46 @@ class BlockTest {
         assertTrue(controlFlow.any { it.span.startLine == 6 })
         assertFalse(controlFlow.any { it.span.startLine == 9 })
     }
+
+    @Test
+    fun tagsOnlyLoggingCatchBlocks() {
+        val text = """
+            private val logger = LoggerFactory.getLogger(Foo::class.java)
+            fun f() {
+                try {
+                    work()
+                } catch (failure: Exception) {
+                    logger.warn("failed", failure)
+                }
+                try {
+                    work()
+                } catch (e: Exception) {
+                    logger.warn("failed", e)
+                    throw e
+                }
+                try {
+                    work()
+                } catch (e: Exception) {
+                    if (1 == 1) {
+                        val s = ""
+                        logger.warn("failed", e)
+                    }
+                }
+            }
+        """.trimIndent()
+
+        val tree = KotlinParser().parse(SourceFile("Sample.kt", text))
+        val spans = AnalysisEngine(LoggingBlocks.all()).analyze(
+            SourceFile("Sample.kt", text),
+            tree,
+            NullOracle,
+            config,
+        )
+
+        val controlFlow = spans.filter { it.kind == TagKind.CONTROL_FLOW }
+        assertEquals(1, controlFlow.size)
+        assertEquals("intent-scaffold-catch", controlFlow.single().rule)
+        assertTrue(controlFlow.single().evidence.contains("catch"))
+        assertEquals(3, spans.count { it.kind == TagKind.INTERACTION })
+    }
 }
