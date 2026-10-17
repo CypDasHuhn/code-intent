@@ -310,3 +310,18 @@ detected.
   `<Plug>(SCPainterProfilePick)` and `<Plug>(SCPainterProfileEdit)`.
 - Switching profiles only re-renders from cached spans; no artifact
   regeneration and no engine run.
+
+## 19. Live freshness and shards (prototype)
+
+- Shards are a history, not an active set: applying appends; effective config is
+  profile + history folded in order; last applied wins. `undo` pops, `reset`
+  clears. Changing the profile discards shard history and applies the profile
+  directly.
+- Live server: per-project Unix-socket daemon, NDJSON JSON-RPC. Client sends
+  `textDocument/didOpen|didChange|didClose` with full text + monotonic version;
+  server re-runs tree-sitter + blocks and publishes versioned tags.
+- `BufWritePost`/`:SCPainterAnalyze` request an immediate re-run; normal edits
+  are debounced. Stale-version publishes are discarded.
+- Profiles/shards are client-side; changing them only re-renders cached
+  annotations. The artifact + node anchors remain the offline/batch path; live
+  mode uses exact-version byte ranges.

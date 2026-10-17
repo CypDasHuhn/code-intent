@@ -49,4 +49,12 @@ return {
       },
     },
   },
+  shards = {
+    conceal_logging = {
+      tags = { Logging = { meaning = "CONCEAL" } },
+    },
+    highlight_logging = {
+      tags = { Logging = { meaning = "HIGHLIGHT" } },
+    },
+  },
 }
