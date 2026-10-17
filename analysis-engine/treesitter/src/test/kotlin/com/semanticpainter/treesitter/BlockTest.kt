@@ -26,6 +26,17 @@ private class CountingOracle : TypeOracle {
     override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
 }
 
+private class FixedOracle(private val fact: TypeFact?) : TypeOracle {
+    var calls = 0
+
+    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? {
+        calls++
+        return fact
+    }
+
+    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+}
+
 class BlockTest {
     private val config = loadIntentConfig(null, "kotlin")
 
@@ -118,6 +129,7 @@ class BlockTest {
         val catch = scaffolds.first { it.rule == "intent-scaffold-catch" }
         assertEquals(setOf("Logging"), header.intents)
         assertEquals(setOf("Logging"), catch.intents)
+        assertTrue(catch.evidence.startsWith("}"), "catch should include the try body closing brace")
         assertTrue(scaffolds.none { it.rule == "intent-scaffold-try" })
     }
 
@@ -252,6 +264,30 @@ class BlockTest {
 
         assertTrue(annotations.any { it.rule == "call-on-logger-symbol" })
         assertEquals(0, oracle.calls)
+    }
+
+    @Test
+    fun resolvedNonLoggerTypeVetoesReceiverNameHeuristic() {
+        val text = """
+            class Service {
+                fun warn(message: String) {}
+            }
+            private val logger = Service()
+            fun f() {
+                logger.warn("looks like logging")
+            }
+        """.trimIndent()
+
+        val source = SourceFile("Sample.kt", text)
+        val tree = KotlinParser().parse(source)
+        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(
+            source,
+            tree,
+            FixedOracle(TypeFact("Service", "lsp", 0.95)),
+            config,
+        )
+
+        assertTrue(annotations.none { it.rule == "receiver-name" || it.rule == "typed-receiver" })
     }
 
     @Test

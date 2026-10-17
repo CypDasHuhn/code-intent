@@ -285,8 +285,9 @@ detected.
   tagged on its declaration.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Whole-try classification requires full coverage; try-header classification
-  requires only covered catches. Functions whose body is fully classified are
-  scaffolds as well.
+  requires only covered catches. Catch spans include the try-body closing brace
+  so the boundary conceals with the catch. Functions whose body is fully
+  classified are scaffolds as well.
 - The engine emits `role` + `intents` only. It has no meaning labels or
   resolution table; clients merge intent sets on render, so presentation changes
   do not require re-analysis.

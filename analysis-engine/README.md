@@ -32,8 +32,9 @@ Blocks:
 - `print` — `println`/`print`, including `System.out`/`System.err`.
 - `logger-interaction` — a call on a receiver whose LSP type is a configured
   logger type. Strong syntax heuristics (factory property, qualifier, import)
-  answer without LSP; the type oracle is consulted for ambiguous receiver
-  names. Live mode caps hover time and falls back to heuristics.
+  answer without LSP; ambiguous receiver names consult the type oracle. A
+  resolved non-logger type rejects the name heuristic; an unresolved type falls
+  back to it. Live mode caps hover time.
 - `logging-state` — conditions using configured logging-state names.
 - `error-handling` — `throw` and configured Kotlin checks
   (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
@@ -44,9 +45,10 @@ Blocks:
   or an explicit annotation; the transitive rule also promotes declarations with
   impure initializers or bodies.
 - `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
-  gets the union of its guard and body intents. A `try` is classified whole only
-  when the body, catches, and finally are fully covered; otherwise all-logging
-  catches can still classify the `try {` header.
+  gets the union of its guard and body intents. A catch span includes the
+  preceding try-body `}` so the try/catch boundary is concealed as one unit. A
+  `try` is classified whole only when the body, catches, and finally are fully
+  covered; otherwise all-logging catches can still classify the `try {` header.
 
 ## Client-side meanings
 

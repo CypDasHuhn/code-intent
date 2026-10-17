@@ -115,10 +115,11 @@ class LoggerInteractionBlock(
 
             val match = if (heuristic == null || heuristic.rule == "receiver-name") {
                 val type = ctx.oracle.typeAt(ctx.file, KotlinSyntax.receiverOffset(receiver))
-                if (type != null && typeMatches(type.fqName, types)) {
-                    Match("typed-receiver", type.source, type.confidence)
-                } else {
-                    heuristic
+                when {
+                    type == null -> heuristic
+                    typeMatches(type.fqName, types) ->
+                        Match("typed-receiver", type.source, type.confidence)
+                    else -> null
                 }
             } else {
                 heuristic
@@ -297,7 +298,17 @@ class IntentScaffoldBlock : RuleBlock {
         ctx.tree.root.descendants("catch_block").mapNotNull { catchNode ->
             val intents = bodyIntents(ctx, catchNode)
             if (intents.none { it != UNTAGGED_INTENT }) return@mapNotNull null
-            catchNode.raw(Role.SCAFFOLD, intents, "intent-scaffold-catch", "treesitter", 0.9)
+
+            val parent = catchNode.parent
+            val index = parent?.children?.indexOfFirst {
+                it.startByte == catchNode.startByte && it.endByte == catchNode.endByte
+            } ?: -1
+            val previous = if (index > 0) parent!!.children[index - 1] else null
+            if (previous != null && previous.kind == "}") {
+                tagRange(previous, catchNode, intents, "intent-scaffold-catch", "treesitter", 0.9)
+            } else {
+                catchNode.raw(Role.SCAFFOLD, intents, "intent-scaffold-catch", "treesitter", 0.9)
+            }
         }.toList()
 
     private fun tryScaffolds(ctx: AnalysisContext): List<RawAnnotation> {
