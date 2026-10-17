@@ -67,11 +67,13 @@ class LiveServer(
             Files.setPosixFilePermissions(socketPath, PosixFilePermissions.fromString("rw-------"))
         }
 
-        Runtime.getRuntime().addShutdownHook(Thread {
-            runCatching { server.close() }
-            runCatching { (oracle as? AutoCloseable)?.close() }
-            runCatching { Files.deleteIfExists(socketPath) }
-        })
+        Runtime.getRuntime().addShutdownHook(
+            Thread {
+                runCatching { server.close() }
+                runCatching { (oracle as? AutoCloseable)?.close() }
+                runCatching { Files.deleteIfExists(socketPath) }
+            },
+        )
 
         System.err.println("semantic-code-painter live server on $socketPath (root: $root)")
         while (server.isOpen) {
@@ -96,7 +98,10 @@ class LiveServer(
         }
     }
 
-    private fun handleMessage(line: String, writer: BufferedWriter) {
+    private fun handleMessage(
+        line: String,
+        writer: BufferedWriter,
+    ) {
         val message = mapper.readTree(line)
         val method = message["method"]?.asText() ?: return
         val params = message["params"]
@@ -142,7 +147,9 @@ class LiveServer(
                 respond(writer, id, true)
             }
 
-            else -> sendError(writer, id, "unknown method: $method")
+            else -> {
+                sendError(writer, id, "unknown method: $method")
+            }
         }
     }
 
@@ -154,7 +161,10 @@ class LiveServer(
         return DocState(uri, text, version, language)
     }
 
-    private fun publish(writer: BufferedWriter, doc: DocState) {
+    private fun publish(
+        writer: BufferedWriter,
+        doc: DocState,
+    ) {
         if (doc.language != "kotlin") {
             sendError(writer, null, "only kotlin is supported")
             return
@@ -162,35 +172,37 @@ class LiveServer(
 
         val source = SourceFile(doc.uri, doc.text)
         val tree = KotlinParser().parse(source)
-        val analysis = synchronized(this) {
-            val activeOracle = oracle ?: if (useLsp) {
-                runCatching { KotlinLspOracle.connect(root, LIVE_LSP_TIMEOUT_MS) }
-                    .onFailure { error ->
-                        System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
-                        error.printStackTrace()
+        val analysis =
+            synchronized(this) {
+                val activeOracle =
+                    oracle ?: if (useLsp) {
+                        runCatching { KotlinLspOracle.connect(root, LIVE_LSP_TIMEOUT_MS) }
+                            .onFailure { error ->
+                                System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
+                                error.printStackTrace()
+                            }.getOrNull()
+                            ?.also { oracle = it }
+                            ?: NullOracle
+                    } else {
+                        NullOracle
                     }
-                    .getOrNull()
-                    ?.also { oracle = it }
-                    ?: NullOracle
-            } else {
-                NullOracle
+
+                runCatching {
+                    AnalysisEngine(blocks).analyze(source, tree, activeOracle, config)
+                }.getOrElse { error ->
+                    System.err.println("semantic-code-painter: LSP analysis failed, using heuristics")
+                    error.printStackTrace()
+                    AnalysisEngine(blocks).analyze(source, tree, NullOracle, config)
+                }
             }
 
-            runCatching {
-                AnalysisEngine(blocks).analyze(source, tree, activeOracle, config)
-            }.getOrElse { error ->
-                System.err.println("semantic-code-painter: LSP analysis failed, using heuristics")
-                error.printStackTrace()
-                AnalysisEngine(blocks).analyze(source, tree, NullOracle, config)
-            }
-        }
-
-        val params = mapOf(
-            "uri" to doc.uri,
-            "version" to doc.version,
-            "hash" to contentHash(doc.text),
-            "annotations" to analysis.map(::annotationJson),
-        )
+        val params =
+            mapOf(
+                "uri" to doc.uri,
+                "version" to doc.version,
+                "hash" to contentHash(doc.text),
+                "annotations" to analysis.map(::annotationJson),
+            )
         write(
             writer,
             mapOf(
@@ -201,28 +213,34 @@ class LiveServer(
         )
     }
 
-    private fun annotationJson(annotation: Annotation): Map<String, Any?> = mapOf(
-        "role" to roleName(annotation.role),
-        "intents" to annotation.intents,
-        "rule" to annotation.rule,
-        "evidence" to annotation.evidence,
-        "source" to annotation.source,
-        "confidence" to annotation.confidence,
-        "startLine" to annotation.span.startLine,
-        "startCol" to annotation.span.startCol,
-        "endLine" to annotation.span.endLine,
-        "endCol" to annotation.span.endCol,
-        "startByte" to annotation.startByte,
-        "endByte" to annotation.endByte,
-    )
+    private fun annotationJson(annotation: Annotation): Map<String, Any?> =
+        mapOf(
+            "role" to roleName(annotation.role),
+            "intents" to annotation.intents,
+            "rule" to annotation.rule,
+            "evidence" to annotation.evidence,
+            "source" to annotation.source,
+            "confidence" to annotation.confidence,
+            "startLine" to annotation.span.startLine,
+            "startCol" to annotation.span.startCol,
+            "endLine" to annotation.span.endLine,
+            "endCol" to annotation.span.endCol,
+            "startByte" to annotation.startByte,
+            "endByte" to annotation.endByte,
+        )
 
-    private fun roleName(role: Role): String = when (role) {
-        Role.SOURCE_INTENT -> "source-intent"
-        Role.DERIVATIVE_USE -> "derivative-use"
-        Role.SCAFFOLD -> "scaffold"
-    }
+    private fun roleName(role: Role): String =
+        when (role) {
+            Role.SOURCE_INTENT -> "source-intent"
+            Role.DERIVATIVE_USE -> "derivative-use"
+            Role.SCAFFOLD -> "scaffold"
+        }
 
-    private fun respond(writer: BufferedWriter, id: JsonNode?, result: Any?) {
+    private fun respond(
+        writer: BufferedWriter,
+        id: JsonNode?,
+        result: Any?,
+    ) {
         write(
             writer,
             mapOf(
@@ -233,7 +251,11 @@ class LiveServer(
         )
     }
 
-    private fun sendError(writer: BufferedWriter, id: JsonNode?, message: String) {
+    private fun sendError(
+        writer: BufferedWriter,
+        id: JsonNode?,
+        message: String,
+    ) {
         write(
             writer,
             mapOf(
@@ -244,7 +266,10 @@ class LiveServer(
         )
     }
 
-    private fun write(writer: BufferedWriter, message: Any) {
+    private fun write(
+        writer: BufferedWriter,
+        message: Any,
+    ) {
         writer.write(mapper.writeValueAsString(message))
         writer.newLine()
         writer.flush()

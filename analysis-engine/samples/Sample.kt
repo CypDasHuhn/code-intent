@@ -1,7 +1,7 @@
 package sample
 
-import org.slf4j.LoggerFactory
 import mu.KotlinLogging
+import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger(Sample::class.java)
 private val logger = KotlinLogging.logger {}

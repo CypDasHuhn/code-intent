@@ -18,9 +18,10 @@ object KotlinSyntax {
         var parent = current.parent
         while (parent != null && parent.kind == "call_expression") {
             val suffix = parent.children.firstOrNull { it.kind == "call_suffix" }
-            val hasLambda = suffix?.children?.any {
-                it.kind == "annotated_lambda" || it.kind == "lambda_literal"
-            } == true
+            val hasLambda =
+                suffix?.children?.any {
+                    it.kind == "annotated_lambda" || it.kind == "lambda_literal"
+                } == true
             if (!hasLambda) break
             current = parent
             parent = current.parent
@@ -43,8 +44,11 @@ object KotlinSyntax {
     }
 
     fun receiverOffset(receiver: SyntaxNode): Int =
-        if (receiver.kind == "call_expression") (receiver.endByte - 1).coerceAtLeast(receiver.startByte)
-        else receiver.startByte
+        if (receiver.kind == "call_expression") {
+            (receiver.endByte - 1).coerceAtLeast(receiver.startByte)
+        } else {
+            receiver.startByte
+        }
 
     fun callPath(call: SyntaxNode): String? {
         val callee = calleeName(call) ?: return null
@@ -53,7 +57,8 @@ object KotlinSyntax {
     }
 
     fun imports(tree: SyntaxTree): List<String> =
-        tree.root.descendants("import_header")
+        tree.root
+            .descendants("import_header")
             .map { it.text.removePrefix("import").trim() }
             .toList()
 
@@ -64,8 +69,7 @@ object KotlinSyntax {
             KotlinProperty(name, initializer?.let(::callPath))
         }
 
-    fun variableName(declaration: SyntaxNode): String? =
-        declaration.child("variable_declaration")?.child("simple_identifier")?.text
+    fun variableName(declaration: SyntaxNode): String? = declaration.child("variable_declaration")?.child("simple_identifier")?.text
 
     fun initializerOf(declaration: SyntaxNode): SyntaxNode? {
         val equals = declaration.children.firstOrNull { it.kind == "=" } ?: return null
@@ -97,7 +101,8 @@ object KotlinSyntax {
         var parent = current.parent
         while (parent != null) {
             if (parent.kind == "statements") return current
-            if (parent.kind in setOf(
+            if (parent.kind in
+                setOf(
                     "function_body",
                     "control_structure_body",
                     "catch_block",
@@ -114,7 +119,11 @@ object KotlinSyntax {
     }
 
     fun statementsOf(container: SyntaxNode): List<SyntaxNode> =
-        container.child("statements")?.children?.filterNot { it.kind in COMMENT_KINDS }.orEmpty()
+        container
+            .child("statements")
+            ?.children
+            ?.filterNot { it.kind in COMMENT_KINDS }
+            .orEmpty()
 
     fun ifCondition(ifNode: SyntaxNode): SyntaxNode? =
         ifNode.children.firstOrNull {
@@ -124,12 +133,12 @@ object KotlinSyntax {
     fun elseBodyOf(ifNode: SyntaxNode): SyntaxNode? {
         val elseIndex = ifNode.children.indexOfFirst { it.kind == "else" }
         if (elseIndex < 0) return null
-        return ifNode.children.drop(elseIndex + 1)
+        return ifNode.children
+            .drop(elseIndex + 1)
             .firstOrNull { it.kind in setOf("control_structure_body", "if_expression") }
     }
 
-    fun isThrow(node: SyntaxNode): Boolean =
-        node.kind == "jump_expression" && node.text.trimStart().startsWith("throw")
+    fun isThrow(node: SyntaxNode): Boolean = node.kind == "jump_expression" && node.text.trimStart().startsWith("throw")
 
     fun isConstant(node: SyntaxNode): Boolean =
         node.descendants().none {
@@ -150,23 +159,24 @@ object KotlinSyntax {
                 )
         }
 
-    private val VALIDATION_CALLS = setOf(
-        "none",
-        "any",
-        "all",
-        "isEmpty",
-        "isNotEmpty",
-        "isBlank",
-        "isNotBlank",
-        "isNullOrBlank",
-        "isNullOrEmpty",
-        "contains",
-        "containsKey",
-        "containsValue",
-        "startsWith",
-        "endsWith",
-        "matches",
-    )
+    private val VALIDATION_CALLS =
+        setOf(
+            "none",
+            "any",
+            "all",
+            "isEmpty",
+            "isNotEmpty",
+            "isBlank",
+            "isNotBlank",
+            "isNullOrBlank",
+            "isNullOrEmpty",
+            "contains",
+            "containsKey",
+            "containsValue",
+            "startsWith",
+            "endsWith",
+            "matches",
+        )
 
     fun isValidationPredicate(node: SyntaxNode): Boolean =
         node.descendants("call_expression").any { call ->
@@ -174,6 +184,8 @@ object KotlinSyntax {
             name in VALIDATION_CALLS || name.startsWith("is") || name.startsWith("has")
         }
 
-    fun containsAny(node: SyntaxNode, kinds: Set<String>): Boolean =
-        node.descendants().any { it.kind in kinds }
+    fun containsAny(
+        node: SyntaxNode,
+        kinds: Set<String>,
+    ): Boolean = node.descendants().any { it.kind in kinds }
 }

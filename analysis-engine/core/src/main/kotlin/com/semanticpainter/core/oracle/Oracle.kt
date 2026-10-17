@@ -16,22 +16,40 @@ data class SymbolFact(
 )
 
 interface TypeOracle {
-    fun typeAt(file: SourceFile, byteOffset: Int): TypeFact?
+    fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact?
 
-    fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact?
+    fun definitionAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): SymbolFact?
 }
 
 object NullOracle : TypeOracle {
-    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? = null
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? = null
 
-    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+    override fun definitionAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): SymbolFact? = null
 }
 
 class MapOracle(
     private val types: Map<Int, TypeFact> = emptyMap(),
     private val symbols: Map<Int, SymbolFact> = emptyMap(),
 ) : TypeOracle {
-    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? = types[byteOffset]
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? = types[byteOffset]
 
-    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = symbols[byteOffset]
+    override fun definitionAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): SymbolFact? = symbols[byteOffset]
 }

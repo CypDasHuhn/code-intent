@@ -7,7 +7,8 @@ import kotlin.test.assertTrue
 class KotlinParserTest {
     @Test
     fun dumpsAst() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 log.info("x")
@@ -20,7 +21,7 @@ class KotlinParserTest {
                     log.warn("failed", failure)
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val tree = KotlinParser().parse(SourceFile("Sample.kt", text))
         assertTrue(tree.root.descendants("call_expression").any())

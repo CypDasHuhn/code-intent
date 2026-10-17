@@ -32,28 +32,39 @@ class KotlinLspOracle private constructor(
     private val executor: java.util.concurrent.ExecutorService,
     private val server: LanguageServer,
     private val typeTimeoutMs: Long,
-) : TypeOracle, AutoCloseable {
+) : TypeOracle,
+    AutoCloseable {
     private val opened = mutableMapOf<String, String>()
 
-    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? {
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? {
         val uri = uriFor(file)
         open(uri, file.text)
         val position = positionAt(file.text, byteOffset)
-        val hover = server.textDocumentService
-            .hover(HoverParams(TextDocumentIdentifier(uri), position))
-            .get(typeTimeoutMs, TimeUnit.MILLISECONDS)
+        val hover =
+            server.textDocumentService
+                .hover(HoverParams(TextDocumentIdentifier(uri), position))
+                .get(typeTimeoutMs, TimeUnit.MILLISECONDS)
         val type = hoverText(hover)?.let(::extractType) ?: return null
         return TypeFact(type, "lsp", 0.95)
     }
 
-    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+    override fun definitionAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): SymbolFact? = null
 
     private fun uriFor(file: SourceFile): String {
         val path = Path.of(file.path)
         return (if (path.isAbsolute) path else root.resolve(path)).toUri().toString()
     }
 
-    private fun open(uri: String, text: String) {
+    private fun open(
+        uri: String,
+        text: String,
+    ) {
         if (opened[uri] == text) return
         if (opened.containsKey(uri)) {
             server.textDocumentService.didClose(
@@ -84,8 +95,13 @@ class KotlinLspOracle private constructor(
     companion object {
         private const val DEFAULT_TYPE_TIMEOUT_MS = 5_000L
 
-        fun connect(root: Path, typeTimeoutMs: Long = DEFAULT_TYPE_TIMEOUT_MS): KotlinLspOracle {
-            java.util.logging.LogManager.getLogManager().reset()
+        fun connect(
+            root: Path,
+            typeTimeoutMs: Long = DEFAULT_TYPE_TIMEOUT_MS,
+        ): KotlinLspOracle {
+            java.util.logging.LogManager
+                .getLogManager()
+                .reset()
             val absoluteRoot = root.toAbsolutePath().normalize()
             val port = portFor(absoluteRoot)
             if (!portOpen(port)) {
@@ -98,12 +114,10 @@ class KotlinLspOracle private constructor(
                     "none",
                     "--log-level",
                     "ERROR",
-                )
-                    .redirectErrorStream(true)
+                ).redirectErrorStream(true)
                     .also {
                         it.environment()["XDG_CACHE_HOME"] = cacheRoot().toString()
-                    }
-                    .start()
+                    }.start()
                 waitForPort(port)
             }
 
@@ -112,27 +126,32 @@ class KotlinLspOracle private constructor(
             socket.soTimeout = 30_000
 
             val client = Client()
-            val executor = java.util.concurrent.Executors.newCachedThreadPool { runnable ->
-                Thread(runnable, "lsp4j").apply { isDaemon = true }
-            }
-            val launcher: Launcher<LanguageServer> = Launcher.Builder<LanguageServer>()
-                .setLocalService(client)
-                .setRemoteInterface(LanguageServer::class.java)
-                .setInput(socket.getInputStream())
-                .setOutput(socket.getOutputStream())
-                .setExecutorService(executor)
-                .create()
+            val executor =
+                java.util.concurrent.Executors.newCachedThreadPool { runnable ->
+                    Thread(runnable, "lsp4j").apply { isDaemon = true }
+                }
+            val launcher: Launcher<LanguageServer> =
+                Launcher
+                    .Builder<LanguageServer>()
+                    .setLocalService(client)
+                    .setRemoteInterface(LanguageServer::class.java)
+                    .setInput(socket.getInputStream())
+                    .setOutput(socket.getOutputStream())
+                    .setExecutorService(executor)
+                    .create()
             val server = launcher.remoteProxy
             launcher.startListening()
 
-            val params = InitializeParams().apply {
-                processId = ProcessHandle.current().pid().toInt()
-                rootUri = absoluteRoot.toUri().toString()
-                capabilities = ClientCapabilities()
-                workspaceFolders = listOf(
-                    WorkspaceFolder(absoluteRoot.toUri().toString(), absoluteRoot.fileName.toString()),
-                )
-            }
+            val params =
+                InitializeParams().apply {
+                    processId = ProcessHandle.current().pid().toInt()
+                    rootUri = absoluteRoot.toUri().toString()
+                    capabilities = ClientCapabilities()
+                    workspaceFolders =
+                        listOf(
+                            WorkspaceFolder(absoluteRoot.toUri().toString(), absoluteRoot.fileName.toString()),
+                        )
+                }
             server.initialize(params).get(30, TimeUnit.SECONDS)
             server.initialized(org.eclipse.lsp4j.InitializedParams())
 
@@ -140,23 +159,26 @@ class KotlinLspOracle private constructor(
         }
 
         private fun cacheRoot(): Path =
-            Path.of(System.getProperty("user.cache.home") ?: "${System.getProperty("user.home")}/.cache")
+            Path
+                .of(System.getProperty("user.cache.home") ?: "${System.getProperty("user.home")}/.cache")
                 .resolve("semantic-code-painter")
                 .resolve("kotlin-lsp")
 
-        fun isRunning(root: Path): Boolean =
-            portOpen(portFor(root.toAbsolutePath().normalize()))
+        fun isRunning(root: Path): Boolean = portOpen(portFor(root.toAbsolutePath().normalize()))
 
         private fun portFor(root: Path): Int {
-            val digest = MessageDigest.getInstance("SHA-256")
-                .digest(root.toString().toByteArray(Charsets.UTF_8))
+            val digest =
+                MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(root.toString().toByteArray(Charsets.UTF_8))
             val hex = digest.joinToString("") { "%02x".format(it) }.substring(0, 8)
             return 13000 + (hex.toLong(16) % 20000).toInt()
         }
 
-        private fun portOpen(port: Int): Boolean = runCatching {
-            Socket().use { it.connect(InetSocketAddress("127.0.0.1", port), 200) }
-        }.isSuccess
+        private fun portOpen(port: Int): Boolean =
+            runCatching {
+                Socket().use { it.connect(InetSocketAddress("127.0.0.1", port), 200) }
+            }.isSuccess
 
         private fun waitForPort(port: Int) {
             val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
@@ -176,27 +198,32 @@ private class Client : LanguageClient {
 
     override fun showMessage(messageParams: MessageParams) = Unit
 
-    override fun showMessageRequest(
-        requestParams: ShowMessageRequestParams,
-    ): CompletableFuture<MessageActionItem> = CompletableFuture.completedFuture(null)
+    override fun showMessageRequest(requestParams: ShowMessageRequestParams): CompletableFuture<MessageActionItem> =
+        CompletableFuture.completedFuture(null)
 
     override fun logMessage(message: MessageParams) = Unit
 
-    override fun workspaceFolders(): CompletableFuture<List<WorkspaceFolder>> =
-        CompletableFuture.completedFuture(emptyList())
+    override fun workspaceFolders(): CompletableFuture<List<WorkspaceFolder>> = CompletableFuture.completedFuture(emptyList())
 
-    override fun configuration(params: ConfigurationParams): CompletableFuture<List<Any>> =
-        CompletableFuture.completedFuture(emptyList())
+    override fun configuration(params: ConfigurationParams): CompletableFuture<List<Any>> = CompletableFuture.completedFuture(emptyList())
 }
 
 private fun hoverText(hover: Hover?): String? {
     val contents = hover?.contents ?: return null
     return when {
-        contents.isLeft -> contents.left.joinToString("\n") { item ->
-            if (item.isLeft) item.left else item.right.value
+        contents.isLeft -> {
+            contents.left.joinToString("\n") { item ->
+                if (item.isLeft) item.left else item.right.value
+            }
         }
-        contents.isRight -> contents.right.value
-        else -> null
+
+        contents.isRight -> {
+            contents.right.value
+        }
+
+        else -> {
+            null
+        }
     }
 }
 
@@ -205,12 +232,16 @@ private val TYPE_AFTER_COLON = Regex(""":\s*([A-Za-z_][A-Za-z0-9_.$]*)""")
 private fun extractType(hover: String): String? {
     val text = hover.replace("```kotlin", "").replace("```", "").trim()
     TYPE_AFTER_COLON.find(text)?.let { return it.groupValues[1] }
-    val declaration = Regex("""(?:class|interface|object|typealias)\s+([A-Za-z_][A-Za-z0-9_.$]*)""")
-        .find(text)
+    val declaration =
+        Regex("""(?:class|interface|object|typealias)\s+([A-Za-z_][A-Za-z0-9_.$]*)""")
+            .find(text)
     return declaration?.groupValues?.get(1)
 }
 
-private fun positionAt(text: String, byteOffset: Int): org.eclipse.lsp4j.Position {
+private fun positionAt(
+    text: String,
+    byteOffset: Int,
+): org.eclipse.lsp4j.Position {
     val bytes = text.toByteArray(Charsets.UTF_8)
     val end = byteOffset.coerceIn(0, bytes.size)
     var line = 0

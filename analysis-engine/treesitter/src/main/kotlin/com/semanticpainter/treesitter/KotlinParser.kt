@@ -29,7 +29,10 @@ class TsSyntaxTree(
         TsSyntaxNode(this, rootNode)
     }
 
-    internal fun text(start: Int, end: Int): String = String(bytes, start, end - start, Charsets.UTF_8)
+    internal fun text(
+        start: Int,
+        end: Int,
+    ): String = String(bytes, start, end - start, Charsets.UTF_8)
 }
 
 class TsSyntaxNode(

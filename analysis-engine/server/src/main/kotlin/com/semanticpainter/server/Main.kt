@@ -31,8 +31,9 @@ data class AnalyzeRequest(
     val types: Map<String, String> = emptyMap(),
 )
 
-private val mapper = jacksonObjectMapper()
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+private val mapper =
+    jacksonObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
 fun main(argv: Array<String>) {
     var host = "127.0.0.1"
@@ -80,20 +81,33 @@ fun main(argv: Array<String>) {
     System.err.println("semantic-code-painter listening on http://$host:$port")
 }
 
-private fun analyze(request: AnalyzeRequest, useLsp: Boolean, defaultConfig: String?): String {
+private fun analyze(
+    request: AnalyzeRequest,
+    useLsp: Boolean,
+    defaultConfig: String?,
+): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
     val config = loadIntentConfig(request.config ?: defaultConfig, request.language)
     require(config.language == "kotlin") { "only kotlin is supported by the tree-sitter frontend" }
 
     val source = SourceFile(request.path, request.text)
     val tree = KotlinParser().parse(source)
-    val oracle: TypeOracle = when {
-        request.types.isNotEmpty() -> MapOracle(
-            types = request.types.mapKeys { it.key.toInt() }.mapValues { TypeFact(it.value) },
-        )
-        useLsp -> runCatching { KotlinLspOracle.connect(root) }.getOrElse { NullOracle }
-        else -> NullOracle
-    }
+    val oracle: TypeOracle =
+        when {
+            request.types.isNotEmpty() -> {
+                MapOracle(
+                    types = request.types.mapKeys { it.key.toInt() }.mapValues { TypeFact(it.value) },
+                )
+            }
+
+            useLsp -> {
+                runCatching { KotlinLspOracle.connect(root) }.getOrElse { NullOracle }
+            }
+
+            else -> {
+                NullOracle
+            }
+        }
     try {
         val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, oracle, config)
         return Artifact.render(
@@ -106,7 +120,11 @@ private fun analyze(request: AnalyzeRequest, useLsp: Boolean, defaultConfig: Str
     }
 }
 
-private fun respond(exchange: HttpExchange, status: Int, body: String) {
+private fun respond(
+    exchange: HttpExchange,
+    status: Int,
+    body: String,
+) {
     val bytes = body.toByteArray(Charsets.UTF_8)
     exchange.responseHeaders.add("Content-Type", "application/json; charset=utf-8")
     exchange.sendResponseHeaders(status, bytes.size.toLong())

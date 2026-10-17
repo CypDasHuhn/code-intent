@@ -11,7 +11,8 @@ class KotlinPurityTest {
 
     @Test
     fun detectsConfiguredPureAnnotations() {
-        val text = """
+        val text =
+            """
             @Pure
             fun literal(): String = "test"
 
@@ -19,7 +20,7 @@ class KotlinPurityTest {
             fun contracted(): String = "test"
 
             fun inferred(): String = "test"
-        """.trimIndent()
+            """.trimIndent()
 
         val tree = KotlinParser().parse(SourceFile("Purity.kt", text))
         val patterns = config.pureAnnotations
@@ -31,10 +32,11 @@ class KotlinPurityTest {
 
     @Test
     fun doesNotTreatOtherContractFlagsAsPure() {
-        val text = """
+        val text =
+            """
             @Contract(pure = false)
             fun effectful(): String = "test"
-        """.trimIndent()
+            """.trimIndent()
 
         val tree = KotlinParser().parse(SourceFile("Purity.kt", text))
         val patterns = config.pureAnnotations

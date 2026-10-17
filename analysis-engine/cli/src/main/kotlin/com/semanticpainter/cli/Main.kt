@@ -32,35 +32,38 @@ fun main(argv: Array<String>) {
     require(root.exists()) { "no such path: ${args.root}" }
 
     val extensions = extensionsFor(config.language)
-    val files = root.walkTopDown()
-        .filter { it.isFile && extensions.any { ext -> it.name.endsWith(ext) } }
-        .filterNot {
-            it.path.contains("/build/") ||
-                it.path.contains("/.git/") ||
-                it.path.contains("/.gradle/")
-        }
-        .sortedBy { it.path }
-        .toList()
+    val files =
+        root
+            .walkTopDown()
+            .filter { it.isFile && extensions.any { ext -> it.name.endsWith(ext) } }
+            .filterNot {
+                it.path.contains("/build/") ||
+                    it.path.contains("/.git/") ||
+                    it.path.contains("/.gradle/")
+            }.sortedBy { it.path }
+            .toList()
 
     val parser = KotlinParser()
     val blocks = IntentBlocks.build(config)
     val entries = mutableListOf<FileEntry>()
-    val oracle: TypeOracle = if (args.noLsp) {
-        NullOracle
-    } else {
-        runCatching { KotlinLspOracle.connect(root.toPath()) }
-            .onFailure { System.err.println("lsp unavailable, using heuristic facts: ${it.message}") }
-            .getOrElse { NullOracle }
-    }
+    val oracle: TypeOracle =
+        if (args.noLsp) {
+            NullOracle
+        } else {
+            runCatching { KotlinLspOracle.connect(root.toPath()) }
+                .onFailure { System.err.println("lsp unavailable, using heuristic facts: ${it.message}") }
+                .getOrElse { NullOracle }
+        }
 
     try {
         for (file in files) {
             val text = runCatching { file.readText() }.getOrNull() ?: continue
             val relative = root.toURI().relativize(file.toURI()).path
             val source = SourceFile(relative, text)
-            val tree = runCatching { parser.parse(source) }
-                .onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
-                .getOrNull() ?: continue
+            val tree =
+                runCatching { parser.parse(source) }
+                    .onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
+                    .getOrNull() ?: continue
             val annotations = AnalysisEngine(blocks).analyze(source, tree, oracle, config)
             if (annotations.isNotEmpty() || args.all) {
                 entries.add(FileEntry(relative, contentHash(text), annotations))
@@ -70,19 +73,21 @@ fun main(argv: Array<String>) {
         (oracle as? AutoCloseable)?.close()
     }
 
-    val result = Artifact.render(
-        config.language,
-        config.intents.keys.toList() + UNTAGGED_INTENT,
-        entries,
-    )
+    val result =
+        Artifact.render(
+            config.language,
+            config.intents.keys.toList() + UNTAGGED_INTENT,
+            entries,
+        )
     if (args.out != null) File(args.out).writeText(result) else print(result)
     System.err.println("scanned ${files.size} file(s), tagged ${entries.size} file(s)")
 }
 
-private fun extensionsFor(language: String): List<String> = when (language) {
-    "kotlin" -> listOf(".kt", ".kts")
-    else -> listOf(".$language")
-}
+private fun extensionsFor(language: String): List<String> =
+    when (language) {
+        "kotlin" -> listOf(".kt", ".kts")
+        else -> listOf(".$language")
+    }
 
 private fun parseArgs(argv: Array<String>): Args {
     var root: String? = null
@@ -104,10 +109,11 @@ private fun parseArgs(argv: Array<String>): Args {
         i++
     }
     return Args(
-        root = root ?: error(
-            "usage: semantic-code-painter <path> [--config file] [--lang kotlin] " +
-                "[--out file] [--all] [--no-lsp]",
-        ),
+        root =
+            root ?: error(
+                "usage: semantic-code-painter <path> [--config file] [--lang kotlin] " +
+                    "[--out file] [--all] [--no-lsp]",
+            ),
         config = config,
         language = language,
         out = out,

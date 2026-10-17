@@ -23,7 +23,9 @@ interface RuleBlock {
     fun apply(ctx: AnalysisContext): List<RawAnnotation>
 }
 
-data class Coverage(val intents: Set<String>) {
+data class Coverage(
+    val intents: Set<String>,
+) {
     val hasRealIntent: Boolean get() = intents.any { it != UNTAGGED_INTENT }
     val hasUntagged: Boolean get() = UNTAGGED_INTENT in intents
 }
@@ -46,11 +48,12 @@ class AnalysisContext(
     fun emit(annotation: RawAnnotation) {
         val key = AnnotationKey(annotation.role, annotation.startByte, annotation.endByte)
         val existing = raw[key]
-        val merged = when {
-            existing == null -> annotation
-            annotation.role == Role.SCAFFOLD -> annotation
-            else -> existing.merge(annotation)
-        }
+        val merged =
+            when {
+                existing == null -> annotation
+                annotation.role == Role.SCAFFOLD -> annotation
+                else -> existing.merge(annotation)
+            }
         if (merged != existing) {
             raw[key] = merged
             dirty = true
@@ -61,7 +64,11 @@ class AnalysisContext(
         annotations.forEach(::emit)
     }
 
-    fun remove(role: Role, startByte: Int, endByte: Int) {
+    fun remove(
+        role: Role,
+        startByte: Int,
+        endByte: Int,
+    ) {
         if (raw.remove(AnnotationKey(role, startByte, endByte)) != null) {
             dirty = true
         }
@@ -73,27 +80,28 @@ class AnalysisContext(
 
     fun isDirty(): Boolean = dirty
 
-    fun annotations(): List<Annotation> = raw.values.map { rawAnnotation ->
-        Annotation(
-            role = rawAnnotation.role,
-            intents = rawAnnotation.intents,
-            rule = rawAnnotation.rule,
-            evidence = rawAnnotation.evidence,
-            span = rawAnnotation.span,
-            source = rawAnnotation.source,
-            confidence = rawAnnotation.confidence,
-            startByte = rawAnnotation.startByte,
-            endByte = rawAnnotation.endByte,
-        )
-    }
+    fun annotations(): List<Annotation> =
+        raw.values.map { rawAnnotation ->
+            Annotation(
+                role = rawAnnotation.role,
+                intents = rawAnnotation.intents,
+                rule = rawAnnotation.rule,
+                evidence = rawAnnotation.evidence,
+                span = rawAnnotation.span,
+                source = rawAnnotation.source,
+                confidence = rawAnnotation.confidence,
+                startByte = rawAnnotation.startByte,
+                endByte = rawAnnotation.endByte,
+            )
+        }
 
-    fun covering(node: SyntaxNode): List<Annotation> =
-        annotations().filter { it.startByte == node.startByte && it.endByte == node.endByte }
+    fun covering(node: SyntaxNode): List<Annotation> = annotations().filter { it.startByte == node.startByte && it.endByte == node.endByte }
 
     fun intentsAt(node: SyntaxNode): Set<String> {
-        val containing = annotations().filter {
-            it.startByte <= node.startByte && it.endByte >= node.endByte
-        }
+        val containing =
+            annotations().filter {
+                it.startByte <= node.startByte && it.endByte >= node.endByte
+            }
         if (containing.isEmpty()) return setOf(UNTAGGED_INTENT)
         val smallest = containing.minOf { it.endByte - it.startByte }
         return containing
@@ -102,7 +110,10 @@ class AnalysisContext(
             .toSet()
     }
 
-    fun coverage(node: SyntaxNode, effect: Boolean = true): Coverage {
+    fun coverage(
+        node: SyntaxNode,
+        effect: Boolean = true,
+    ): Coverage {
         val covering = covering(node)
         if (covering.isNotEmpty()) {
             return Coverage(covering.flatMap { it.intents }.toSet())
@@ -111,7 +122,9 @@ class AnalysisContext(
     }
 }
 
-class AnalysisEngine(private val blocks: List<RuleBlock>) {
+class AnalysisEngine(
+    private val blocks: List<RuleBlock>,
+) {
     fun analyze(
         file: SourceFile,
         tree: SyntaxTree,
@@ -128,7 +141,10 @@ class AnalysisEngine(private val blocks: List<RuleBlock>) {
         )
     }
 
-    private fun runPhase(ctx: AnalysisContext, phase: Phase) {
+    private fun runPhase(
+        ctx: AnalysisContext,
+        phase: Phase,
+    ) {
         val phaseBlocks = blocks.filter { it.phase == phase }
         if (phaseBlocks.isEmpty()) return
         do {

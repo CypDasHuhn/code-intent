@@ -24,6 +24,4 @@ fun todo() {
     TODO()
 }
 
-fun rethrow(failure: Exception): Nothing {
-    throw failure
-}
+fun rethrow(failure: Exception): Nothing = throw failure

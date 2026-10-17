@@ -18,23 +18,37 @@ import kotlin.test.assertTrue
 private class CountingOracle : TypeOracle {
     var calls = 0
 
-    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? {
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? {
         calls++
         return null
     }
 
-    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+    override fun definitionAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): SymbolFact? = null
 }
 
-private class FixedOracle(private val fact: TypeFact?) : TypeOracle {
+private class FixedOracle(
+    private val fact: TypeFact?,
+) : TypeOracle {
     var calls = 0
 
-    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? {
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? {
         calls++
         return fact
     }
 
-    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+    override fun definitionAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): SymbolFact? = null
 }
 
 class BlockTest {
@@ -48,7 +62,8 @@ class BlockTest {
 
     @Test
     fun classifiesSourceIntents() {
-        val text = """
+        val text =
+            """
             private val logger = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 logger.info("x")
@@ -56,7 +71,7 @@ class BlockTest {
                 work()
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
         val sources = analyze(text).filter { it.role == Role.SOURCE_INTENT }
         assertEquals(2, sources.size)
@@ -66,14 +81,15 @@ class BlockTest {
 
     @Test
     fun concealsPureLoggingScaffold() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 if (1 == 1) {
                     log.warn("x")
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("LOGGING"), scaffold.intents)
@@ -81,7 +97,8 @@ class BlockTest {
 
     @Test
     fun mixedScaffoldUsesShowMeaning() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 if (1 == 1) {
@@ -89,7 +106,7 @@ class BlockTest {
                     throw IllegalStateException("y")
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("LOGGING", "ERROR_HANDLING"), scaffold.intents)
@@ -97,7 +114,8 @@ class BlockTest {
 
     @Test
     fun validationGuardWithBookkeeping() {
-        val text = """
+        val text =
+            """
             class C {
                 @Bookkeeping var skipped = 0
                 fun f(value: Int) {
@@ -107,7 +125,7 @@ class BlockTest {
                     }
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
         val guard = annotations.first { it.rule == "validation-guard" }
@@ -118,13 +136,14 @@ class BlockTest {
 
     @Test
     fun validationPredicateWithoutBookkeeping() {
-        val text = """
+        val text =
+            """
             fun f(values: List<String>) {
                 if (values.isEmpty()) {
                     return
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
         val guard = annotations.first { it.rule == "validation-guard" }
@@ -135,21 +154,23 @@ class BlockTest {
 
     @Test
     fun earlyExitWithoutValidationSignalIsNotValidation() {
-        val text = """
+        val text =
+            """
             fun enabled(): Boolean = true
             fun f() {
                 if (enabled()) {
                     return
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         assertTrue(analyze(text).none { it.rule == "validation-guard" })
     }
 
     @Test
     fun validationCommentForcesGuard() {
-        val text = """
+        val text =
+            """
             fun enabled(): Boolean = true
             fun f() {
                 // scp:validation
@@ -157,7 +178,7 @@ class BlockTest {
                     return
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val guard = analyze(text).first { it.rule == "validation-guard" }
         assertEquals(setOf("VALIDATION"), guard.intents)
@@ -166,7 +187,8 @@ class BlockTest {
 
     @Test
     fun bookkeepingAnnotationTagsWrites() {
-        val text = """
+        val text =
+            """
             class C {
                 @Bookkeeping
                 var skipped = 0
@@ -175,12 +197,14 @@ class BlockTest {
                     val read = skipped
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
-        assertTrue(annotations.any {
-            it.rule == "bookkeeping-declaration" && it.intents == setOf("BOOKKEEPING")
-        })
+        assertTrue(
+            annotations.any {
+                it.rule == "bookkeeping-declaration" && it.intents == setOf("BOOKKEEPING")
+            },
+        )
         val writes = annotations.filter { it.rule == "bookkeeping-write" }
         assertEquals(1, writes.size)
         assertEquals("skipped++", writes.single().evidence)
@@ -188,7 +212,8 @@ class BlockTest {
 
     @Test
     fun bookkeepingCommentTagsWrites() {
-        val text = """
+        val text =
+            """
             class C {
                 // scp:bookkeeping
                 var skipped = 0
@@ -196,12 +221,13 @@ class BlockTest {
                     skipped += 1
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
-        val declaration = annotations.first {
-            it.rule == "bookkeeping-declaration" && it.source == "comment"
-        }
+        val declaration =
+            annotations.first {
+                it.rule == "bookkeeping-declaration" && it.source == "comment"
+            }
         assertEquals(Role.SOURCE_INTENT, declaration.role)
         assertEquals(1, declaration.span.startLine)
         assertEquals(2, declaration.span.endLine)
@@ -212,13 +238,14 @@ class BlockTest {
 
     @Test
     fun callSpanIncludesTrailingLambda() {
-        val text = """
+        val text =
+            """
             fun f() {
                 require(true) {
                     "message"
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val source = analyze(text).first { it.rule == "error-handling-call" }
         assertTrue(source.evidence.contains("\"message\""))
@@ -227,14 +254,15 @@ class BlockTest {
 
     @Test
     fun sideEffectFreeGuardIsLogging() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f(x: Int) {
                 if (x > 0) {
                     log.warn("x")
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("LOGGING"), scaffold.intents)
@@ -242,7 +270,8 @@ class BlockTest {
 
     @Test
     fun effectfulGuardMakesScaffoldVisible() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun enabled(): Boolean = true
             fun f() {
@@ -250,7 +279,7 @@ class BlockTest {
                     log.warn("x")
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("LOGGING", UNTAGGED_INTENT), scaffold.intents)
@@ -258,7 +287,8 @@ class BlockTest {
 
     @Test
     fun mixedIfBranchesSplitByIntent() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 if (1 == 1) {
@@ -268,7 +298,7 @@ class BlockTest {
                 }
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         val thenBranch = scaffolds.first { it.rule == "intent-scaffold-if-then" }
@@ -279,7 +309,8 @@ class BlockTest {
 
     @Test
     fun tagsLoggingCatchAndTryHeader() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 try {
@@ -289,7 +320,7 @@ class BlockTest {
                 }
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         val header = scaffolds.first { it.rule == "intent-scaffold-try-header" }
@@ -302,7 +333,8 @@ class BlockTest {
 
     @Test
     fun mixedCatchWithRethrowUsesShowMeaning() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 try {
@@ -313,17 +345,19 @@ class BlockTest {
                 }
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
-        val catch = analyze(text).first {
-            it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
-        }
+        val catch =
+            analyze(text).first {
+                it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
+            }
         assertEquals(setOf("LOGGING", "ERROR_HANDLING"), catch.intents)
     }
 
     @Test
     fun literalAssistUnlocksCatch() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 try {
@@ -334,53 +368,59 @@ class BlockTest {
                 }
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
         val derivative = annotations.first { it.role == Role.DERIVATIVE_USE }
         assertEquals(setOf("LOGGING"), derivative.intents)
 
-        val catch = annotations.first {
-            it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
-        }
+        val catch =
+            annotations.first {
+                it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
+            }
         assertEquals(setOf("LOGGING"), catch.intents)
     }
 
     @Test
     fun impureLocalUsedOnlyByLoggingIsDerivative() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun text(): String = "x"
             fun f() {
                 val message = text()
                 log.warn(message)
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val derivative = analyze(text).first {
-            it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
-        }
+        val derivative =
+            analyze(text).first {
+                it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
+            }
         assertEquals(setOf("LOGGING"), derivative.intents)
     }
 
     @Test
     fun impureLocalUsedOnlyByErrorHandlingIsDerivative() {
-        val text = """
+        val text =
+            """
             fun f(values: Map<String, Int>) {
                 val unknown = values.keys - setOf("a")
                 require(unknown.isEmpty()) { "bad ${'$'}{unknown.first()}" }
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val derivative = analyze(text).first {
-            it.role == Role.DERIVATIVE_USE && it.evidence.contains("val unknown")
-        }
+        val derivative =
+            analyze(text).first {
+                it.role == Role.DERIVATIVE_USE && it.evidence.contains("val unknown")
+            }
         assertEquals(setOf("ERROR_HANDLING"), derivative.intents)
     }
 
     @Test
     fun annotatedPureCallIsDerivative() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             @Pure
             fun text(): String = "x"
@@ -388,17 +428,19 @@ class BlockTest {
                 val message = text()
                 log.warn(message)
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val derivative = analyze(text).first {
-            it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
-        }
+        val derivative =
+            analyze(text).first {
+                it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
+            }
         assertEquals(setOf("LOGGING"), derivative.intents)
     }
 
     @Test
     fun pureFunctionReferencedOnlyByDerivativeIsDerivative() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             @Pure
             fun text(): String = "x"
@@ -406,18 +448,21 @@ class BlockTest {
                 val message = text()
                 log.warn(message)
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("fun text") })
-        assertTrue(derivatives.filter { it.evidence.contains("fun text") }.all {
-            it.intents == setOf("LOGGING")
-        })
+        assertTrue(
+            derivatives.filter { it.evidence.contains("fun text") }.all {
+                it.intents == setOf("LOGGING")
+            },
+        )
     }
 
     @Test
     fun functionReferencedOutsideDerivativeIsNotPromoted() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             @Pure
             fun text(): String = "x"
@@ -426,7 +471,7 @@ class BlockTest {
                 log.warn(message)
                 log.warn(text())
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("val message") })
@@ -435,12 +480,13 @@ class BlockTest {
 
     @Test
     fun strongLoggerHeuristicSkipsLsp() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 log.warn("x")
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val source = SourceFile("Sample.kt", text)
         val tree = KotlinParser().parse(source)
@@ -453,7 +499,8 @@ class BlockTest {
 
     @Test
     fun resolvedNonLoggerTypeVetoesImportHeuristic() {
-        val text = """
+        val text =
+            """
             import org.slf4j.LoggerFactory
             class FakeLogger {
                 fun info(message: String) {}
@@ -462,16 +509,17 @@ class BlockTest {
                 val fake = FakeLogger()
                 fake.info("looks like logging")
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val source = SourceFile("Sample.kt", text)
         val tree = KotlinParser().parse(source)
-        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(
-            source,
-            tree,
-            FixedOracle(TypeFact("FakeLogger", "lsp", 0.95)),
-            config,
-        )
+        val annotations =
+            AnalysisEngine(IntentBlocks.build(config)).analyze(
+                source,
+                tree,
+                FixedOracle(TypeFact("FakeLogger", "lsp", 0.95)),
+                config,
+            )
 
         assertTrue(
             annotations.none {
@@ -482,7 +530,8 @@ class BlockTest {
 
     @Test
     fun resolvedNonLoggerTypeVetoesReceiverNameHeuristic() {
-        val text = """
+        val text =
+            """
             class Service {
                 fun warn(message: String) {}
             }
@@ -490,23 +539,25 @@ class BlockTest {
             fun f() {
                 logger.warn("looks like logging")
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val source = SourceFile("Sample.kt", text)
         val tree = KotlinParser().parse(source)
-        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(
-            source,
-            tree,
-            FixedOracle(TypeFact("Service", "lsp", 0.95)),
-            config,
-        )
+        val annotations =
+            AnalysisEngine(IntentBlocks.build(config)).analyze(
+                source,
+                tree,
+                FixedOracle(TypeFact("Service", "lsp", 0.95)),
+                config,
+            )
 
         assertTrue(annotations.none { it.rule == "receiver-name" || it.rule == "typed-receiver" })
     }
 
     @Test
     fun declarationReferencedOnlyByDerivativeIsDerivative() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun make(): String = "x"
             fun f() {
@@ -514,7 +565,7 @@ class BlockTest {
                 val message = source
                 log.warn(message)
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(3, derivatives.size)
@@ -523,7 +574,8 @@ class BlockTest {
 
     @Test
     fun allClassifiedReferencesPromoteImpureLocal() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun make(): String = "x"
             fun f() {
@@ -532,7 +584,7 @@ class BlockTest {
                 log.warn(message)
                 log.warn(source)
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("val source") })
@@ -541,7 +593,8 @@ class BlockTest {
 
     @Test
     fun deadLocalAddsUntagged() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 try {
@@ -554,19 +607,21 @@ class BlockTest {
                 }
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
         assertTrue(annotations.none { it.role == Role.DERIVATIVE_USE })
-        val catch = annotations.first {
-            it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
-        }
+        val catch =
+            annotations.first {
+                it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
+            }
         assertEquals(setOf("LOGGING", UNTAGGED_INTENT), catch.intents)
     }
 
     @Test
     fun wholeLoggingTryIsConcealed() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 try {
@@ -575,19 +630,21 @@ class BlockTest {
                     log.warn("b", e)
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
-        val whole = annotations.first {
-            it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-try"
-        }
+        val whole =
+            annotations.first {
+                it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-try"
+            }
         assertEquals(setOf("LOGGING"), whole.intents)
         assertFalse(annotations.any { it.rule == "intent-scaffold-try-header" })
     }
 
     @Test
     fun classifiesKotlinChecksAsErrorHandling() {
-        val text = """
+        val text =
+            """
             fun f(x: Int) {
                 require(x > 0)
                 requireNotNull(x)
@@ -597,17 +654,19 @@ class BlockTest {
                 TODO()
                 throw IllegalStateException("x")
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val sources = analyze(text).filter {
-            it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents
-        }
+        val sources =
+            analyze(text).filter {
+                it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents
+            }
         assertEquals(7, sources.size)
     }
 
     @Test
     fun nestedElseIfDoesNotStickUntagged() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 if (1 == 1) {
@@ -616,7 +675,7 @@ class BlockTest {
                     log.warn("y")
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         assertTrue(scaffolds.isNotEmpty())
@@ -625,14 +684,15 @@ class BlockTest {
 
     @Test
     fun derivativeChainResolvesUpward() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f() {
                 val first = "x"
                 val second = first
                 log.warn(second)
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(2, derivatives.size)
@@ -641,15 +701,17 @@ class BlockTest {
 
     @Test
     fun pureFunctionBodyBecomesScaffold() {
-        val text = """
+        val text =
+            """
             fun requireValue(value: String?) {
                 requireNotNull(value)
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val function = analyze(text).first {
-            it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-function"
-        }
+        val function =
+            analyze(text).first {
+                it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-function"
+            }
         assertEquals(setOf("ERROR_HANDLING"), function.intents)
         assertEquals(0, function.span.startLine)
         assertEquals(2, function.span.endLine)
@@ -657,26 +719,28 @@ class BlockTest {
 
     @Test
     fun mixedFunctionIsNotScaffold() {
-        val text = """
+        val text =
+            """
             fun f(value: String?) {
                 requireNotNull(value)
                 work()
             }
             fun work() {}
-        """.trimIndent()
+            """.trimIndent()
 
         assertTrue(analyze(text).none { it.rule == "intent-scaffold-function" })
     }
 
     @Test
     fun topLevelPropertyCanBeDerivative() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             private val top = "x"
             fun f() {
                 log.warn(top)
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val derivative = analyze(text).first { it.role == Role.DERIVATIVE_USE }
         assertEquals(setOf("LOGGING"), derivative.intents)
@@ -684,14 +748,15 @@ class BlockTest {
 
     @Test
     fun loggingStateGuardIsConcealed() {
-        val text = """
+        val text =
+            """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f(loggingEnabled: Boolean) {
                 if (loggingEnabled) {
                     log.warn("x")
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("LOGGING"), scaffold.intents)

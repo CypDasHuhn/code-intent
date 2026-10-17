@@ -31,13 +31,14 @@ data class RawAnnotation(
     val startByte: Int,
     val endByte: Int,
 ) {
-    fun merge(other: RawAnnotation): RawAnnotation = copy(
-        intents = intents + other.intents,
-        rule = if (rule == other.rule) rule else "$rule+${other.rule}",
-        evidence = if (evidence.length >= other.evidence.length) evidence else other.evidence,
-        source = if (source == other.source) source else "mixed",
-        confidence = maxOf(confidence, other.confidence),
-    )
+    fun merge(other: RawAnnotation): RawAnnotation =
+        copy(
+            intents = intents + other.intents,
+            rule = if (rule == other.rule) rule else "$rule+${other.rule}",
+            evidence = if (evidence.length >= other.evidence.length) evidence else other.evidence,
+            source = if (source == other.source) source else "mixed",
+            confidence = maxOf(confidence, other.confidence),
+        )
 }
 
 data class Annotation(
@@ -52,11 +53,14 @@ data class Annotation(
     val endByte: Int,
 )
 
-class LineIndex(private val text: String) {
-    private val lineStarts: IntArray = buildList {
-        add(0)
-        text.forEachIndexed { i, c -> if (c == '\n') add(i + 1) }
-    }.toIntArray()
+class LineIndex(
+    private val text: String,
+) {
+    private val lineStarts: IntArray =
+        buildList {
+            add(0)
+            text.forEachIndexed { i, c -> if (c == '\n') add(i + 1) }
+        }.toIntArray()
 
     fun lineOf(offset: Int): Int {
         var lo = 0

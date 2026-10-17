@@ -26,12 +26,13 @@ interface SyntaxNode {
 
     fun childrenOfKind(kind: String): List<SyntaxNode> = children.filter { it.kind == kind }
 
-    fun descendants(): Sequence<SyntaxNode> = sequence {
-        yield(this@SyntaxNode)
-        for (child in children) {
-            yieldAll(child.descendants())
+    fun descendants(): Sequence<SyntaxNode> =
+        sequence {
+            yield(this@SyntaxNode)
+            for (child in children) {
+                yieldAll(child.descendants())
+            }
         }
-    }
 
     fun descendants(kind: String): Sequence<SyntaxNode> = descendants().filter { it.kind == kind }
 }

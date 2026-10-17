@@ -17,5 +17,8 @@ application {
 }
 
 tasks.named<Sync>("installDist") {
-    destinationDir = rootProject.layout.projectDirectory.dir("build/install/semantic-code-painter").asFile
+    destinationDir =
+        rootProject.layout.projectDirectory
+            .dir("build/install/semantic-code-painter")
+            .asFile
 }
