@@ -282,15 +282,19 @@ detected.
   requires only covered catches. Functions whose body is fully classified are
   scaffolds as well.
 - The engine emits `role` + `intents` only. It has no meaning labels or
-  resolution table; clients map intents to meanings and merge sets on render, so
-  presentation changes do not require re-analysis.
+  resolution table; clients merge intent sets on render, so presentation changes
+  do not require re-analysis.
+- Client meanings live on the tag declaration: `tags[tag].meaning` (e.g.
+  `Logging = { meaning = "CONCEAL" }`). `rules[meaning]` decides how that meaning
+  renders. Legacy `intentMeanings` is still accepted for old configs.
 - Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT`/`SHOW` applies a background
   from the highest-priority intent tag, and `IGNORE` renders dark-gray text.
 
 ## 18. Client profiles (prototype)
 
-- Profiles are named, partial presentation configs on the client:
-  `intentMeanings`, `resolve`, `rules`, `tags`, `handlers`, `expand_on_cursor`.
+- Profiles are named, partial presentation configs on the client: `tags`
+  (including per-tag meanings), `resolve`, `rules`, `handlers`,
+  `expand_on_cursor`.
 - `extends` chains; deep merge; `false` disables; lists replace.
 - Project profiles live in `<root>/.scpainter/profiles.lua`; saving reloads and
   re-renders. Global profiles can come from `setup({ profiles = ... })`.
