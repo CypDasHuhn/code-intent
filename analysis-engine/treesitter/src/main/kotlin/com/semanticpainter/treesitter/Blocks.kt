@@ -48,8 +48,9 @@ private fun tagRange(
     rule: String,
     source: String,
     confidence: Double,
+    role: Role = Role.SCAFFOLD,
 ): RawAnnotation = RawAnnotation(
-    role = Role.SCAFFOLD,
+    role = role,
     intents = intents,
     rule = rule,
     evidence = "${start.text} ${end.text}".take(160),
@@ -177,17 +178,29 @@ class BookkeepingBlock : RuleBlock {
         val identifiersByName = ctx.tree.root.descendants("simple_identifier").groupBy { it.text }
 
         for (declaration in ctx.tree.root.descendants("property_declaration")) {
-            val source = bookkeepingSource(declaration) ?: continue
+            val (source, startNode) = bookkeepingSource(declaration) ?: continue
             val name = KotlinSyntax.variableName(declaration) ?: continue
             val nameNode = declaration.child("variable_declaration")?.child("simple_identifier") ?: continue
 
-            result += declaration.raw(
-                Role.SOURCE_INTENT,
-                setOf("Bookkeeping"),
-                "bookkeeping-declaration",
-                source,
-                1.0,
-            )
+            result += if (startNode == null) {
+                declaration.raw(
+                    Role.SOURCE_INTENT,
+                    setOf("BOOKKEEPING"),
+                    "bookkeeping-declaration",
+                    source,
+                    1.0,
+                )
+            } else {
+                tagRange(
+                    startNode,
+                    declaration,
+                    setOf("BOOKKEEPING"),
+                    "bookkeeping-declaration",
+                    source,
+                    1.0,
+                    Role.SOURCE_INTENT,
+                )
+            }
 
             val scope = declaration.parent ?: continue
             val seen = mutableSetOf<String>()
@@ -199,7 +212,7 @@ class BookkeepingBlock : RuleBlock {
                 if (!seen.add(key)) continue
                 result += write.raw(
                     Role.SOURCE_INTENT,
-                    setOf("Bookkeeping"),
+                    setOf("BOOKKEEPING"),
                     "bookkeeping-write",
                     source,
                     1.0,
@@ -209,11 +222,11 @@ class BookkeepingBlock : RuleBlock {
         return result
     }
 
-    private fun bookkeepingSource(declaration: SyntaxNode): String? {
+    private fun bookkeepingSource(declaration: SyntaxNode): Pair<String, SyntaxNode?>? {
         val annotation = KotlinPurity.annotationTexts(declaration).firstOrNull {
             it == "Bookkeeping" || it.endsWith(".Bookkeeping")
         }
-        if (annotation != null) return "annotation"
+        if (annotation != null) return "annotation" to null
 
         val parent = declaration.parent ?: return null
         val index = parent.children.indexOfFirst {
@@ -222,8 +235,11 @@ class BookkeepingBlock : RuleBlock {
         if (index <= 0) return null
         var current = index - 1
         while (current >= 0 && parent.children[current].kind.contains("comment")) {
-            val text = parent.children[current].text.lowercase()
-            if (Regex("""scp\s*:\s*bookkeeping""").containsMatchIn(text)) return "comment"
+            val comment = parent.children[current]
+            val text = comment.text.lowercase()
+            if (Regex("""scp\s*:\s*bookkeeping""").containsMatchIn(text)) {
+                return "comment" to comment
+            }
             current--
         }
         return null
@@ -243,6 +259,69 @@ class BookkeepingBlock : RuleBlock {
 
             else -> null
         }
+    }
+}
+
+class ValidationBlock : RuleBlock {
+    override val id: String = "validation"
+
+    override fun apply(ctx: AnalysisContext): List<RawAnnotation> =
+        ctx.tree.root.descendants("if_expression").mapNotNull { ifNode ->
+            val condition = KotlinSyntax.ifCondition(ifNode) ?: return@mapNotNull null
+            val body = ifNode.child("control_structure_body") ?: return@mapNotNull null
+            if (!hasDirectExit(body)) return@mapNotNull null
+
+            val explicit = hasValidationComment(ctx, ifNode)
+            val bookkeeping = hasBookkeeping(ctx, body)
+            val predicate = KotlinSyntax.isValidationPredicate(condition)
+            val pure = KotlinSyntax.isSideEffectFree(condition)
+            if (!explicit && !bookkeeping && !predicate && !pure) return@mapNotNull null
+            if (KotlinSyntax.isConstant(condition) && !explicit && !bookkeeping) return@mapNotNull null
+
+            val confidence = when {
+                explicit -> 1.0
+                bookkeeping -> 0.9
+                predicate -> 0.7
+                else -> 0.5
+            }
+            condition.raw(
+                Role.SOURCE_INTENT,
+                setOf("VALIDATION"),
+                "validation-guard",
+                if (explicit) "comment" else "treesitter",
+                confidence,
+            )
+        }.toList()
+
+    private fun hasDirectExit(body: SyntaxNode): Boolean {
+        val statements = body.child("statements")?.children?.filterNot {
+            it.kind in COMMENT_KINDS
+        } ?: listOf(body)
+        return statements.any { it.kind == "jump_expression" && isExit(it.text) }
+    }
+
+    private fun isExit(text: String): Boolean {
+        val trimmed = text.trimStart()
+        return trimmed.startsWith("return") ||
+            trimmed.startsWith("continue") ||
+            trimmed.startsWith("break")
+    }
+
+    private fun hasBookkeeping(ctx: AnalysisContext, body: SyntaxNode): Boolean =
+        ctx.annotations().any { annotation ->
+            "BOOKKEEPING" in annotation.intents &&
+                annotation.startByte >= body.startByte &&
+                annotation.endByte <= body.endByte
+        }
+
+    private fun hasValidationComment(ctx: AnalysisContext, ifNode: SyntaxNode): Boolean {
+        val scope = KotlinSyntax.enclosingFunction(ifNode)?.child("function_body") ?: ctx.tree.root
+        val comment = scope.descendants()
+            .filter { it.kind in COMMENT_KINDS && it.endByte <= ifNode.startByte }
+            .maxByOrNull { it.startByte }
+            ?: return false
+        if (ifNode.startLine - comment.endLine > 1) return false
+        return Regex("""scp\s*:\s*validation""").containsMatchIn(comment.text.lowercase())
     }
 }
 
@@ -302,7 +381,8 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
                 UNTAGGED_INTENT !in intents && intents.any { it != UNTAGGED_INTENT }
             }
             val local = KotlinSyntax.enclosingFunction(declaration) != null
-            if (!isPure(ctx, initializer) && !(local && allClassified)) continue
+            if (!allClassified) continue
+            if (!isPure(ctx, initializer) && !local) continue
 
             val intents = useIntents.flatten().toSet()
             if (intents.none { it != UNTAGGED_INTENT }) continue
@@ -505,9 +585,32 @@ class IntentScaffoldBlock : RuleBlock {
         val statements = body.child("statements")
         if (statements != null) {
             val effects = statements.children.filterNot { it.kind in COMMENT_KINDS }
-            return effects.flatMap { ctx.coverage(it).intents }.toSet()
+            return effects.flatMap { statement ->
+                exitIntents(ctx, statement) ?: ctx.coverage(statement).intents
+            }.toSet()
         }
+        val exit = exitIntents(ctx, body)
+        if (exit != null) return exit
         return ctx.coverage(body).intents
+    }
+
+    private fun exitIntents(ctx: AnalysisContext, node: SyntaxNode): Set<String>? {
+        if (node.kind != "jump_expression") return null
+        val trimmed = node.text.trimStart()
+        if (
+            !trimmed.startsWith("return") &&
+            !trimmed.startsWith("continue") &&
+            !trimmed.startsWith("break")
+        ) {
+            return null
+        }
+        val expression = node.children.lastOrNull {
+            it.kind !in setOf("return", "continue", "break") && it.kind !in COMMENT_KINDS
+        } ?: return emptySet()
+        if (KotlinSyntax.isConstant(expression) || KotlinSyntax.isSideEffectFree(expression)) {
+            return emptySet()
+        }
+        return ctx.coverage(expression).intents
     }
 }
 
@@ -524,6 +627,7 @@ object IntentBlocks {
                     "logging-state" -> LoggingStateBlock(definition.name, definition.list("guardNames"))
                     "bookkeeping" -> BookkeepingBlock()
                     "error-handling" -> ErrorHandlingBlock(definition.name, definition)
+                    "validation" -> ValidationBlock()
                     else -> error("unknown block '$blockId' for intent '${definition.name}'")
                 }
             }

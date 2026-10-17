@@ -22,7 +22,7 @@ and visuals.
 Every annotation has:
 
 - `role`: `SOURCE_INTENT`, `DERIVATIVE_USE`, or `SCAFFOLD`
-- `intents`: a set such as `{Logging}` or `{Logging, ErrorHandling}`
+- `intents`: a set such as `{LOGGING}` or `{LOGGING, ERROR_HANDLING}`
 
 `UNTAGGED` is a reserved intent label for unclassified effects. Clients decide
 how `UNTAGGED` should influence a scaffold or derivative.
@@ -39,20 +39,26 @@ Blocks:
 - `bookkeeping` — a property annotated with `@Bookkeeping` or preceded by
   `// scp:bookkeeping`. The declaration and all writes to it are tagged
   Bookkeeping; reads are not.
+- `validation` — an `if` branch with a direct early exit (`return`, `continue`,
+  or `break`). The guard condition is tagged Validation when the branch has a
+  Bookkeeping write, the condition is a validity predicate, the condition is
+  side-effect-free, or a `// scp:validation` comment precedes it. Bare exits
+  are neutral, so the enclosing scaffold composes `VALIDATION` with
+  `BOOKKEEPING`/other intents.
 - `error-handling` — `throw` and configured Kotlin checks
   (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
   `assert`). Call spans include trailing lambda arguments.
 - `derivative-use` — a local whose initializer is pure and whose reads flow into
   classified statements, or a declaration (local or function) whose references
   all occur inside other derivative-use declarations. An impure local is also
-  promoted when every read is contained in a classified span (Logging,
-  ErrorHandling, Bookkeeping, or a scaffold). Purity is literal/local or an
-  explicit annotation.
+  promoted when every read is contained in a classified span (`LOGGING`,
+  `ERROR_HANDLING`, `BOOKKEEPING`, or a scaffold). Purity is literal/local or
+  an explicit annotation.
 - `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
   gets the union of its guard and body intents. Side-effect-free guards
   (constants, comparisons, reads) are neutral; effectful guards add `UNTAGGED`.
   Mixed `if`/`else` emits separate then/else spans, so the `if` part can be
-  Logging while an untagged else stays visible. A catch span includes the
+  `LOGGING` while an untagged else stays visible. A catch span includes the
   preceding try-body `}` so the try/catch boundary is concealed as one unit. A
   `try` is classified whole only when the body, catches, and finally are fully
   covered; otherwise all-logging catches can still classify the `try {` header.
@@ -62,7 +68,7 @@ Blocks:
 The engine deliberately emits only `role` and `intents`; it has no meaning
 labels or resolution table. Clients (for example the nvim renderer) map intents
 to labels and merge sets, so presentation can change without re-running analysis.
-A client might map `Logging -> CONCEAL`, `ErrorHandling -> SHOW`, and let `SHOW`
+A client might map `LOGGING -> CONCEAL`, `ERROR_HANDLING -> SHOW`, and let `SHOW`
 win for mixed scaffolds.
 
 ## Config
@@ -73,7 +79,7 @@ win for mixed scaffolds.
 language: kotlin
 
 intents:
-  Logging:
+  LOGGING:
     blocks: [print, logger-interaction, logging-state]
     kotlin:
       methods: [info, debug, warn, error, trace, log, verbose, fatal]
@@ -84,8 +90,14 @@ intents:
       guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
       imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
 
-  ErrorHandling:
+  BOOKKEEPING:
+    blocks: [bookkeeping]
+
+  ERROR_HANDLING:
     blocks: [error-handling]
+
+  VALIDATION:
+    blocks: [validation]
     kotlin:
       calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
       throws: true
@@ -158,16 +170,16 @@ facts. `--no-lsp` disables the LSP oracle on the server.
 ```json
 {
   "language": "kotlin",
-  "intents": ["Logging", "ErrorHandling", "UNTAGGED"],
+  "intents": ["LOGGING", "BOOKKEEPING", "ERROR_HANDLING", "VALIDATION", "UNTAGGED"],
   "files": [
     {
       "path": "Sample.kt",
       "hash": "sha256-hex",
       "spans": [
-        {"role":"source-intent","intents":["Logging"],
+        {"role":"source-intent","intents":["LOGGING"],
          "rule":"typed-receiver","evidence":"log.info(...)","source":"lsp",
          "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22},
-        {"role":"scaffold","intents":["Logging","ErrorHandling"],
+        {"role":"scaffold","intents":["LOGGING","ERROR_HANDLING"],
          "rule":"intent-scaffold","evidence":"if (...) { ... }",
          "source":"treesitter","confidence":0.9,
          "startLine":12,"startCol":4,"endLine":18,"endCol":5}

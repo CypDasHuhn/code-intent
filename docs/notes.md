@@ -54,13 +54,13 @@ Shape:
 ```json
 {
   "feature": "logging",
-  "tag": "Logging",
+  "tag": "LOGGING",
   "language": "kotlin",
   "files": [
     { "path": "relative/from/scanned/root.kt",
       "hash": "sha256-hex",
       "spans": [
-        {"tag":"Logging","rule":"call-on-logger-symbol","evidence":"log.info(...)",
+        {"tag":"LOGGING","rule":"call-on-logger-symbol","evidence":"log.info(...)",
          "startLine":10,"startCol":12,"endLine":10,"endCol":44} ] }
   ]
 }
@@ -79,7 +79,7 @@ Shape:
 ```yaml
 features:
   logging:
-    tag: Logging
+    tag: LOGGING
     languages:
       kotlin:
         methods: [info, debug, warn, error, trace, log, verbose, fatal]
@@ -266,9 +266,9 @@ detected.
 - `testing-grounds/kotlin/` — fixtures for the tagger, intentionally not part
   of Gradle and not required to compile.
 - Covers logger interactions (typed + heuristics), print, Error Handling
-  sources, pure vs non-pure `if`/`catch`/`try` scaffolds, derivative uses,
-  purity annotations, and the heuristic false positive for a log-named method
-  on an unknown receiver.
+  sources, Bookkeeping annotations/comments, pure vs non-pure `if`/`catch`/`try`
+  scaffolds, derivative uses, purity annotations, and the heuristic false
+  positive for a log-named method on an unknown receiver.
 - Run: `semantic-code-painter testing-grounds --no-lsp --all`.
 
 ## 17. Classification model (2026-10-17)
@@ -276,8 +276,9 @@ detected.
 - Roles: `SOURCE_INTENT`, `DERIVATIVE_USE`, `SCAFFOLD`.
 - Intents are sets; `UNTAGGED` is a reserved label for unclassified effects.
 - Sources: Logging (typed/heuristic), Error Handling (`throw`, `require`,
-  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`), and
-  Bookkeeping (`@Bookkeeping` or `// scp:bookkeeping`; writes inherit).
+  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`),
+  Bookkeeping (`@Bookkeeping` or `// scp:bookkeeping`; writes inherit), and
+  Validation (early-exit guard conditions; `// scp:validation` override).
 - Derivative use: pure initializer (literal, local read, or explicit purity
   annotation) and reads flow into classified statements. Transitive closure: a
   declaration whose reads all occur inside other derivative-use declarations is
@@ -286,17 +287,19 @@ detected.
   functions as well as locals: a helper called only from derivative
   locals/functions is tagged on its declaration.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
-  Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Mixed
-  `if`/`else` splits into then/else spans so an untagged else does not force the
-  then branch to be shown. Whole-try classification requires full coverage;
-  try-header classification requires only covered catches. Catch spans include
-  the try-body closing brace so the boundary conceals with the catch. Functions
-  whose body is fully classified are scaffolds as well.
+  Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Bare
+  `return`/`continue`/`break` exits are neutral, so a validation guard composes
+  `VALIDATION` with its branch intents. Mixed `if`/`else` splits into then/else
+  spans so an untagged else does not force the then branch to be shown.
+  Whole-try classification requires full coverage; try-header classification
+  requires only covered catches. Catch spans include the try-body closing brace
+  so the boundary conceals with the catch. Functions whose body is fully
+  classified are scaffolds as well.
 - The engine emits `role` + `intents` only. It has no meaning labels or
   resolution table; clients merge intent sets on render, so presentation changes
   do not require re-analysis.
 - Client meanings live on the tag declaration: `tags[tag].meaning` (e.g.
-  `Logging = { meaning = "CONCEAL" }`). `rules[meaning]` decides how that meaning
+  `LOGGING = { meaning = "CONCEAL" }`). `rules[meaning]` decides how that meaning
   renders. Legacy `intentMeanings` is still accepted for old configs.
 - Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT`/`SHOW` applies a background
   from the highest-priority intent tag, and `IGNORE` renders dark-gray text.

@@ -150,6 +150,30 @@ object KotlinSyntax {
                 )
         }
 
+    private val VALIDATION_CALLS = setOf(
+        "none",
+        "any",
+        "all",
+        "isEmpty",
+        "isNotEmpty",
+        "isBlank",
+        "isNotBlank",
+        "isNullOrBlank",
+        "isNullOrEmpty",
+        "contains",
+        "containsKey",
+        "containsValue",
+        "startsWith",
+        "endsWith",
+        "matches",
+    )
+
+    fun isValidationPredicate(node: SyntaxNode): Boolean =
+        node.descendants("call_expression").any { call ->
+            val name = calleeName(call) ?: return@any false
+            name in VALIDATION_CALLS || name.startsWith("is") || name.startsWith("has")
+        }
+
     fun containsAny(node: SyntaxNode, kinds: Set<String>): Boolean =
         node.descendants().any { it.kind in kinds }
 }

@@ -1,7 +1,7 @@
 language: kotlin
 
 intents:
-  Logging:
+  LOGGING:
     blocks: [print, logger-interaction, logging-state]
     kotlin:
       methods: [info, debug, warn, error, trace, log, verbose, fatal]
@@ -22,14 +22,17 @@ intents:
         - mu.KotlinLogging
         - java.util.logging
 
-  Bookkeeping:
+  BOOKKEEPING:
     blocks: [bookkeeping]
 
-  ErrorHandling:
+  ERROR_HANDLING:
     blocks: [error-handling]
     kotlin:
       calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
       throws: true
+
+  VALIDATION:
+    blocks: [validation]
 
 purity:
   annotations:

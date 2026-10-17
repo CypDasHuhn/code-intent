@@ -60,8 +60,8 @@ class BlockTest {
 
         val sources = analyze(text).filter { it.role == Role.SOURCE_INTENT }
         assertEquals(2, sources.size)
-        assertTrue(sources.any { it.rule == "call-on-logger-symbol" && it.intents == setOf("Logging") })
-        assertTrue(sources.any { it.rule == "print" && it.intents == setOf("Logging") })
+        assertTrue(sources.any { it.rule == "call-on-logger-symbol" && it.intents == setOf("LOGGING") })
+        assertTrue(sources.any { it.rule == "print" && it.intents == setOf("LOGGING") })
     }
 
     @Test
@@ -76,7 +76,7 @@ class BlockTest {
         """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
-        assertEquals(setOf("Logging"), scaffold.intents)
+        assertEquals(setOf("LOGGING"), scaffold.intents)
     }
 
     @Test
@@ -92,7 +92,76 @@ class BlockTest {
         """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
-        assertEquals(setOf("Logging", "ErrorHandling"), scaffold.intents)
+        assertEquals(setOf("LOGGING", "ERROR_HANDLING"), scaffold.intents)
+    }
+
+    @Test
+    fun validationGuardWithBookkeeping() {
+        val text = """
+            class C {
+                @Bookkeeping var skipped = 0
+                fun f(value: Int) {
+                    if (value < 0) {
+                        skipped++
+                        return false
+                    }
+                }
+            }
+        """.trimIndent()
+
+        val annotations = analyze(text)
+        val guard = annotations.first { it.rule == "validation-guard" }
+        assertEquals(setOf("VALIDATION"), guard.intents)
+        val scaffold = annotations.first { it.rule == "intent-scaffold" }
+        assertEquals(setOf("VALIDATION", "BOOKKEEPING"), scaffold.intents)
+    }
+
+    @Test
+    fun validationPredicateWithoutBookkeeping() {
+        val text = """
+            fun f(values: List<String>) {
+                if (values.isEmpty()) {
+                    return
+                }
+            }
+        """.trimIndent()
+
+        val annotations = analyze(text)
+        val guard = annotations.first { it.rule == "validation-guard" }
+        assertEquals(setOf("VALIDATION"), guard.intents)
+        val scaffold = annotations.first { it.rule == "intent-scaffold" }
+        assertEquals(setOf("VALIDATION"), scaffold.intents)
+    }
+
+    @Test
+    fun earlyExitWithoutValidationSignalIsNotValidation() {
+        val text = """
+            fun enabled(): Boolean = true
+            fun f() {
+                if (enabled()) {
+                    return
+                }
+            }
+        """.trimIndent()
+
+        assertTrue(analyze(text).none { it.rule == "validation-guard" })
+    }
+
+    @Test
+    fun validationCommentForcesGuard() {
+        val text = """
+            fun enabled(): Boolean = true
+            fun f() {
+                // scp:validation
+                if (enabled()) {
+                    return
+                }
+            }
+        """.trimIndent()
+
+        val guard = analyze(text).first { it.rule == "validation-guard" }
+        assertEquals(setOf("VALIDATION"), guard.intents)
+        assertEquals("comment", guard.source)
     }
 
     @Test
@@ -110,7 +179,7 @@ class BlockTest {
 
         val annotations = analyze(text)
         assertTrue(annotations.any {
-            it.rule == "bookkeeping-declaration" && it.intents == setOf("Bookkeeping")
+            it.rule == "bookkeeping-declaration" && it.intents == setOf("BOOKKEEPING")
         })
         val writes = annotations.filter { it.rule == "bookkeeping-write" }
         assertEquals(1, writes.size)
@@ -130,9 +199,12 @@ class BlockTest {
         """.trimIndent()
 
         val annotations = analyze(text)
-        assertTrue(annotations.any {
+        val declaration = annotations.first {
             it.rule == "bookkeeping-declaration" && it.source == "comment"
-        })
+        }
+        assertEquals(Role.SOURCE_INTENT, declaration.role)
+        assertEquals(1, declaration.span.startLine)
+        assertEquals(2, declaration.span.endLine)
         val writes = annotations.filter { it.rule == "bookkeeping-write" }
         assertEquals(1, writes.size)
         assertEquals("skipped += 1", writes.single().evidence)
@@ -165,7 +237,7 @@ class BlockTest {
         """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
-        assertEquals(setOf("Logging"), scaffold.intents)
+        assertEquals(setOf("LOGGING"), scaffold.intents)
     }
 
     @Test
@@ -181,7 +253,7 @@ class BlockTest {
         """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
-        assertEquals(setOf("Logging", UNTAGGED_INTENT), scaffold.intents)
+        assertEquals(setOf("LOGGING", UNTAGGED_INTENT), scaffold.intents)
     }
 
     @Test
@@ -201,7 +273,7 @@ class BlockTest {
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         val thenBranch = scaffolds.first { it.rule == "intent-scaffold-if-then" }
         val elseBranch = scaffolds.first { it.rule == "intent-scaffold-if-else" }
-        assertEquals(setOf("Logging"), thenBranch.intents)
+        assertEquals(setOf("LOGGING"), thenBranch.intents)
         assertEquals(setOf(UNTAGGED_INTENT), elseBranch.intents)
     }
 
@@ -222,8 +294,8 @@ class BlockTest {
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         val header = scaffolds.first { it.rule == "intent-scaffold-try-header" }
         val catch = scaffolds.first { it.rule == "intent-scaffold-catch" }
-        assertEquals(setOf("Logging"), header.intents)
-        assertEquals(setOf("Logging"), catch.intents)
+        assertEquals(setOf("LOGGING"), header.intents)
+        assertEquals(setOf("LOGGING"), catch.intents)
         assertTrue(catch.evidence.startsWith("}"), "catch should include the try body closing brace")
         assertTrue(scaffolds.none { it.rule == "intent-scaffold-try" })
     }
@@ -246,7 +318,7 @@ class BlockTest {
         val catch = analyze(text).first {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
         }
-        assertEquals(setOf("Logging", "ErrorHandling"), catch.intents)
+        assertEquals(setOf("LOGGING", "ERROR_HANDLING"), catch.intents)
     }
 
     @Test
@@ -266,12 +338,12 @@ class BlockTest {
 
         val annotations = analyze(text)
         val derivative = annotations.first { it.role == Role.DERIVATIVE_USE }
-        assertEquals(setOf("Logging"), derivative.intents)
+        assertEquals(setOf("LOGGING"), derivative.intents)
 
         val catch = annotations.first {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
         }
-        assertEquals(setOf("Logging"), catch.intents)
+        assertEquals(setOf("LOGGING"), catch.intents)
     }
 
     @Test
@@ -288,7 +360,7 @@ class BlockTest {
         val derivative = analyze(text).first {
             it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
         }
-        assertEquals(setOf("Logging"), derivative.intents)
+        assertEquals(setOf("LOGGING"), derivative.intents)
     }
 
     @Test
@@ -303,7 +375,7 @@ class BlockTest {
         val derivative = analyze(text).first {
             it.role == Role.DERIVATIVE_USE && it.evidence.contains("val unknown")
         }
-        assertEquals(setOf("ErrorHandling"), derivative.intents)
+        assertEquals(setOf("ERROR_HANDLING"), derivative.intents)
     }
 
     @Test
@@ -321,7 +393,7 @@ class BlockTest {
         val derivative = analyze(text).first {
             it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
         }
-        assertEquals(setOf("Logging"), derivative.intents)
+        assertEquals(setOf("LOGGING"), derivative.intents)
     }
 
     @Test
@@ -339,7 +411,7 @@ class BlockTest {
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("fun text") })
         assertTrue(derivatives.filter { it.evidence.contains("fun text") }.all {
-            it.intents == setOf("Logging")
+            it.intents == setOf("LOGGING")
         })
     }
 
@@ -446,7 +518,7 @@ class BlockTest {
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(3, derivatives.size)
-        assertTrue(derivatives.all { it.intents == setOf("Logging") })
+        assertTrue(derivatives.all { it.intents == setOf("LOGGING") })
     }
 
     @Test
@@ -464,7 +536,7 @@ class BlockTest {
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("val source") })
-        assertTrue(derivatives.all { it.intents == setOf("Logging") })
+        assertTrue(derivatives.all { it.intents == setOf("LOGGING") })
     }
 
     @Test
@@ -489,7 +561,7 @@ class BlockTest {
         val catch = annotations.first {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
         }
-        assertEquals(setOf("Logging", UNTAGGED_INTENT), catch.intents)
+        assertEquals(setOf("LOGGING", UNTAGGED_INTENT), catch.intents)
     }
 
     @Test
@@ -509,7 +581,7 @@ class BlockTest {
         val whole = annotations.first {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-try"
         }
-        assertEquals(setOf("Logging"), whole.intents)
+        assertEquals(setOf("LOGGING"), whole.intents)
         assertFalse(annotations.any { it.rule == "intent-scaffold-try-header" })
     }
 
@@ -528,7 +600,7 @@ class BlockTest {
         """.trimIndent()
 
         val sources = analyze(text).filter {
-            it.role == Role.SOURCE_INTENT && "ErrorHandling" in it.intents
+            it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents
         }
         assertEquals(7, sources.size)
     }
@@ -548,7 +620,7 @@ class BlockTest {
 
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         assertTrue(scaffolds.isNotEmpty())
-        assertTrue(scaffolds.all { it.intents == setOf("Logging") }, "scaffolds=$scaffolds")
+        assertTrue(scaffolds.all { it.intents == setOf("LOGGING") }, "scaffolds=$scaffolds")
     }
 
     @Test
@@ -564,7 +636,7 @@ class BlockTest {
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(2, derivatives.size)
-        assertTrue(derivatives.all { it.intents == setOf("Logging") })
+        assertTrue(derivatives.all { it.intents == setOf("LOGGING") })
     }
 
     @Test
@@ -578,7 +650,7 @@ class BlockTest {
         val function = analyze(text).first {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-function"
         }
-        assertEquals(setOf("ErrorHandling"), function.intents)
+        assertEquals(setOf("ERROR_HANDLING"), function.intents)
         assertEquals(0, function.span.startLine)
         assertEquals(2, function.span.endLine)
     }
@@ -607,7 +679,7 @@ class BlockTest {
         """.trimIndent()
 
         val derivative = analyze(text).first { it.role == Role.DERIVATIVE_USE }
-        assertEquals(setOf("Logging"), derivative.intents)
+        assertEquals(setOf("LOGGING"), derivative.intents)
     }
 
     @Test
@@ -622,6 +694,6 @@ class BlockTest {
         """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
-        assertEquals(setOf("Logging"), scaffold.intents)
+        assertEquals(setOf("LOGGING"), scaffold.intents)
     }
 }
