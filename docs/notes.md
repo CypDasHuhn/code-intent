@@ -275,14 +275,16 @@ detected.
 
 - Roles: `SOURCE_INTENT`, `DERIVATIVE_USE`, `SCAFFOLD`.
 - Intents are sets; `UNTAGGED` is a reserved label for unclassified effects.
-- Sources: Logging (typed/heuristic) and Error Handling (`throw`, `require`,
-  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`).
+- Sources: Logging (typed/heuristic), Error Handling (`throw`, `require`,
+  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`), and
+  Bookkeeping (`@Bookkeeping` or `// scp:bookkeeping`; writes inherit).
 - Derivative use: pure initializer (literal, local read, or explicit purity
   annotation) and reads flow into classified statements. Transitive closure: a
   declaration whose reads all occur inside other derivative-use declarations is
-  derivative too, even with an impure initializer. This applies to functions as
-  well as locals: a pure helper called only from derivative locals/functions is
-  tagged on its declaration.
+  derivative too, even with an impure initializer. An impure local is also
+  promoted when every read sits inside a classified span. This applies to
+  functions as well as locals: a helper called only from derivative
+  locals/functions is tagged on its declaration.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Mixed
   `if`/`else` splits into then/else spans so an untagged else does not force the

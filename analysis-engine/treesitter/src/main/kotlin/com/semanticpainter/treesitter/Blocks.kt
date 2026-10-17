@@ -169,6 +169,83 @@ class LoggingStateBlock(
     }
 }
 
+class BookkeepingBlock : RuleBlock {
+    override val id: String = "bookkeeping"
+
+    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+        val result = mutableListOf<RawAnnotation>()
+        val identifiersByName = ctx.tree.root.descendants("simple_identifier").groupBy { it.text }
+
+        for (declaration in ctx.tree.root.descendants("property_declaration")) {
+            val source = bookkeepingSource(declaration) ?: continue
+            val name = KotlinSyntax.variableName(declaration) ?: continue
+            val nameNode = declaration.child("variable_declaration")?.child("simple_identifier") ?: continue
+
+            result += declaration.raw(
+                Role.SOURCE_INTENT,
+                setOf("Bookkeeping"),
+                "bookkeeping-declaration",
+                source,
+                1.0,
+            )
+
+            val scope = declaration.parent ?: continue
+            val seen = mutableSetOf<String>()
+            for (reference in identifiersByName[name].orEmpty()) {
+                if (reference.startByte < scope.startByte || reference.endByte > scope.endByte) continue
+                if (reference.startByte == nameNode.startByte && reference.endByte == nameNode.endByte) continue
+                val write = writeExpression(reference) ?: continue
+                val key = "${write.startByte}:${write.endByte}"
+                if (!seen.add(key)) continue
+                result += write.raw(
+                    Role.SOURCE_INTENT,
+                    setOf("Bookkeeping"),
+                    "bookkeeping-write",
+                    source,
+                    1.0,
+                )
+            }
+        }
+        return result
+    }
+
+    private fun bookkeepingSource(declaration: SyntaxNode): String? {
+        val annotation = KotlinPurity.annotationTexts(declaration).firstOrNull {
+            it == "Bookkeeping" || it.endsWith(".Bookkeeping")
+        }
+        if (annotation != null) return "annotation"
+
+        val parent = declaration.parent ?: return null
+        val index = parent.children.indexOfFirst {
+            it.startByte == declaration.startByte && it.endByte == declaration.endByte
+        }
+        if (index <= 0) return null
+        var current = index - 1
+        while (current >= 0 && parent.children[current].kind.contains("comment")) {
+            val text = parent.children[current].text.lowercase()
+            if (Regex("""scp\s*:\s*bookkeeping""").containsMatchIn(text)) return "comment"
+            current--
+        }
+        return null
+    }
+
+    private fun writeExpression(reference: SyntaxNode): SyntaxNode? {
+        val parent = reference.parent ?: return null
+        return when (parent.kind) {
+            "postfix_expression", "prefix_expression" -> {
+                if (parent.text.contains("++") || parent.text.contains("--")) parent else null
+            }
+
+            "directly_assignable_expression" -> {
+                val assignment = parent.parent ?: return null
+                if (assignment.kind == "assignment") assignment else null
+            }
+
+            else -> null
+        }
+    }
+}
+
 class ErrorHandlingBlock(
     private val intent: String,
     private val definition: IntentDefinition,
@@ -220,17 +297,14 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
                 .filterNot { it.startByte >= initializer.startByte && it.endByte <= initializer.endByte }
             if (uses.isEmpty()) continue
 
-            val places = uses.mapNotNull { derivativePlaceIntents(ctx, it) }
-            val onlyDerivativePlaces = places.size == uses.size
-            if (!isPure(ctx, initializer) && !onlyDerivativePlaces) continue
+            val useIntents = uses.map { ctx.intentsAt(it) }
+            val allClassified = useIntents.all { intents ->
+                UNTAGGED_INTENT !in intents && intents.any { it != UNTAGGED_INTENT }
+            }
+            val local = KotlinSyntax.enclosingFunction(declaration) != null
+            if (!isPure(ctx, initializer) && !(local && allClassified)) continue
 
-            val intents = mutableSetOf<String>()
-            for (use in uses) {
-                intents += ctx.coverage(KotlinSyntax.enclosingStatement(use)).intents
-            }
-            if (onlyDerivativePlaces) {
-                places.forEach { intents += it }
-            }
+            val intents = useIntents.flatten().toSet()
             if (intents.none { it != UNTAGGED_INTENT }) continue
 
             result += declaration.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
@@ -448,6 +522,7 @@ object IntentBlocks {
                     "print" -> PrintBlock(definition.name)
                     "logger-interaction" -> LoggerInteractionBlock(definition.name, definition)
                     "logging-state" -> LoggingStateBlock(definition.name, definition.list("guardNames"))
+                    "bookkeeping" -> BookkeepingBlock()
                     "error-handling" -> ErrorHandlingBlock(definition.name, definition)
                     else -> error("unknown block '$blockId' for intent '${definition.name}'")
                 }

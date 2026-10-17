@@ -22,6 +22,9 @@ intents:
         - mu.KotlinLogging
         - java.util.logging
 
+  Bookkeeping:
+    blocks: [bookkeeping]
+
   ErrorHandling:
     blocks: [error-handling]
     kotlin:

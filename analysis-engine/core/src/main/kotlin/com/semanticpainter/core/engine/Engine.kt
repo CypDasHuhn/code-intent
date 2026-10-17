@@ -90,6 +90,18 @@ class AnalysisContext(
     fun covering(node: SyntaxNode): List<Annotation> =
         annotations().filter { it.startByte == node.startByte && it.endByte == node.endByte }
 
+    fun intentsAt(node: SyntaxNode): Set<String> {
+        val containing = annotations().filter {
+            it.startByte <= node.startByte && it.endByte >= node.endByte
+        }
+        if (containing.isEmpty()) return setOf(UNTAGGED_INTENT)
+        val smallest = containing.minOf { it.endByte - it.startByte }
+        return containing
+            .filter { it.endByte - it.startByte == smallest }
+            .flatMap { it.intents }
+            .toSet()
+    }
+
     fun coverage(node: SyntaxNode, effect: Boolean = true): Coverage {
         val covering = covering(node)
         if (covering.isNotEmpty()) {

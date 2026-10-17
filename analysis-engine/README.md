@@ -36,14 +36,18 @@ Blocks:
   non-logger type rejects the heuristic; an unresolved type falls back to it.
   Live mode caps hover time.
 - `logging-state` — conditions using configured logging-state names.
+- `bookkeeping` — a property annotated with `@Bookkeeping` or preceded by
+  `// scp:bookkeeping`. The declaration and all writes to it are tagged
+  Bookkeeping; reads are not.
 - `error-handling` — `throw` and configured Kotlin checks
   (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
   `assert`). Call spans include trailing lambda arguments.
 - `derivative-use` — a local whose initializer is pure and whose reads flow into
   classified statements, or a declaration (local or function) whose references
-  all occur inside other derivative-use declarations. Purity is literal/local
-  or an explicit annotation; the transitive rule also promotes declarations with
-  impure initializers or bodies.
+  all occur inside other derivative-use declarations. An impure local is also
+  promoted when every read is contained in a classified span (Logging,
+  ErrorHandling, Bookkeeping, or a scaffold). Purity is literal/local or an
+  explicit annotation.
 - `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
   gets the union of its guard and body intents. Side-effect-free guards
   (constants, comparisons, reads) are neutral; effectful guards add `UNTAGGED`.
