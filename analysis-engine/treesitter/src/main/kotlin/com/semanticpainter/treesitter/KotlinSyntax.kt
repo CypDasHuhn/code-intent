@@ -121,6 +121,20 @@ object KotlinSyntax {
             it.kind in setOf("simple_identifier", "navigation_expression", "call_expression", "user_type")
         }
 
+    fun isSideEffectFree(node: SyntaxNode): Boolean =
+        node.descendants().none { child ->
+            child.kind in setOf("call_expression", "assignment", "jump_expression") ||
+                child.kind.contains("assignment") ||
+                child.kind.contains("lambda") ||
+                child.kind.contains("object") ||
+                child.kind.contains("increment") ||
+                child.kind.contains("decrement") ||
+                (
+                    (child.kind == "postfix_expression" || child.kind == "prefix_expression") &&
+                        (child.text.contains("++") || child.text.contains("--"))
+                )
+        }
+
     fun containsAny(node: SyntaxNode, kinds: Set<String>): Boolean =
         node.descendants().any { it.kind in kinds }
 }

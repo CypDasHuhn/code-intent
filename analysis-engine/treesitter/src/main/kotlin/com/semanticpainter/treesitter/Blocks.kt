@@ -287,15 +287,59 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun ifScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.tree.root.descendants("if_expression").mapNotNull { ifNode ->
-            val condition = KotlinSyntax.ifCondition(ifNode) ?: return@mapNotNull null
-            val intents = mutableSetOf<String>()
-            intents += conditionIntents(ctx, condition)
-            intents += bodyIntents(ctx, ifNode.child("control_structure_body"))
+        ctx.tree.root.descendants("if_expression").flatMap { ifNode ->
+            val condition = KotlinSyntax.ifCondition(ifNode) ?: return@flatMap emptyList()
+            val thenBody = ifNode.child("control_structure_body") ?: return@flatMap emptyList()
+            val thenIntents = mutableSetOf<String>()
+            thenIntents += conditionIntents(ctx, condition)
+            thenIntents += bodyIntents(ctx, thenBody)
+
             val elseBody = KotlinSyntax.elseBodyOf(ifNode)
-            if (elseBody != null) intents += bodyIntents(ctx, elseBody)
-            if (intents.none { it != UNTAGGED_INTENT }) return@mapNotNull null
-            ifNode.raw(Role.SCAFFOLD, intents, "intent-scaffold", "treesitter", 0.9)
+            if (elseBody == null) {
+                if (thenIntents.none { it != UNTAGGED_INTENT }) return@flatMap emptyList()
+                return@flatMap listOf(
+                    ifNode.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
+                )
+            }
+
+            val elseIntents = bodyIntents(ctx, elseBody)
+            val elseKeyword = ifNode.children.firstOrNull { it.kind == "else" }
+            val elseStart = (elseKeyword ?: elseBody).startByte
+            if (thenIntents == elseIntents) {
+                if (thenIntents.none { it != UNTAGGED_INTENT }) return@flatMap emptyList()
+                ctx.remove(Role.SCAFFOLD, ifNode.startByte, thenBody.endByte)
+                ctx.remove(Role.SCAFFOLD, elseStart, elseBody.endByte)
+                return@flatMap listOf(
+                    ifNode.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
+                )
+            }
+
+            if (
+                thenIntents.none { it != UNTAGGED_INTENT } &&
+                elseIntents.none { it != UNTAGGED_INTENT }
+            ) {
+                return@flatMap emptyList()
+            }
+
+            ctx.remove(Role.SCAFFOLD, ifNode.startByte, ifNode.endByte)
+            val result = mutableListOf<RawAnnotation>()
+            result += tagRange(
+                ifNode,
+                thenBody,
+                thenIntents,
+                "intent-scaffold-if-then",
+                "treesitter",
+                0.9,
+            )
+            result += tagRange(
+                elseKeyword ?: elseBody,
+                elseBody,
+                elseIntents,
+                "intent-scaffold-if-else",
+                "treesitter",
+                0.9,
+            )
+            result
         }.toList()
 
     private fun catchScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
@@ -370,8 +414,14 @@ class IntentScaffoldBlock : RuleBlock {
             function.raw(Role.SCAFFOLD, intents, "intent-scaffold-function", "treesitter", 0.9)
         }.toList()
 
-    private fun conditionIntents(ctx: AnalysisContext, condition: SyntaxNode): Set<String> =
-        if (KotlinSyntax.isConstant(condition)) emptySet() else ctx.coverage(condition).intents
+    private fun conditionIntents(ctx: AnalysisContext, condition: SyntaxNode): Set<String> {
+        val covered = ctx.coverage(condition).intents
+        if (covered.any { it != UNTAGGED_INTENT }) return covered
+        if (KotlinSyntax.isConstant(condition) || KotlinSyntax.isSideEffectFree(condition)) {
+            return emptySet()
+        }
+        return covered
+    }
 
     private fun bodyIntents(ctx: AnalysisContext, body: SyntaxNode?): Set<String> {
         if (body == null) return emptySet()

@@ -45,7 +45,10 @@ Blocks:
   or an explicit annotation; the transitive rule also promotes declarations with
   impure initializers or bodies.
 - `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
-  gets the union of its guard and body intents. A catch span includes the
+  gets the union of its guard and body intents. Side-effect-free guards
+  (constants, comparisons, reads) are neutral; effectful guards add `UNTAGGED`.
+  Mixed `if`/`else` emits separate then/else spans, so the `if` part can be
+  Logging while an untagged else stays visible. A catch span includes the
   preceding try-body `}` so the try/catch boundary is concealed as one unit. A
   `try` is classified whole only when the body, catches, and finally are fully
   covered; otherwise all-logging catches can still classify the `try {` header.

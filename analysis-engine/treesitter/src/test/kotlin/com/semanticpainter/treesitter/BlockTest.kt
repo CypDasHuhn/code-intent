@@ -96,7 +96,7 @@ class BlockTest {
     }
 
     @Test
-    fun untaggedGuardMakesScaffoldVisible() {
+    fun sideEffectFreeGuardIsLogging() {
         val text = """
             private val log = LoggerFactory.getLogger(Foo::class.java)
             fun f(x: Int) {
@@ -107,7 +107,44 @@ class BlockTest {
         """.trimIndent()
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
+        assertEquals(setOf("Logging"), scaffold.intents)
+    }
+
+    @Test
+    fun effectfulGuardMakesScaffoldVisible() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun enabled(): Boolean = true
+            fun f() {
+                if (enabled()) {
+                    log.warn("x")
+                }
+            }
+        """.trimIndent()
+
+        val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("Logging", UNTAGGED_INTENT), scaffold.intents)
+    }
+
+    @Test
+    fun mixedIfBranchesSplitByIntent() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f() {
+                if (1 == 1) {
+                    log.warn("x")
+                } else {
+                    work()
+                }
+            }
+            fun work() {}
+        """.trimIndent()
+
+        val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
+        val thenBranch = scaffolds.first { it.rule == "intent-scaffold-if-then" }
+        val elseBranch = scaffolds.first { it.rule == "intent-scaffold-if-else" }
+        assertEquals(setOf("Logging"), thenBranch.intents)
+        assertEquals(setOf(UNTAGGED_INTENT), elseBranch.intents)
     }
 
     @Test

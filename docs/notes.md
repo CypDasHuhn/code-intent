@@ -284,10 +284,12 @@ detected.
   well as locals: a pure helper called only from derivative locals/functions is
   tagged on its declaration.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
-  Whole-try classification requires full coverage; try-header classification
-  requires only covered catches. Catch spans include the try-body closing brace
-  so the boundary conceals with the catch. Functions whose body is fully
-  classified are scaffolds as well.
+  Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Mixed
+  `if`/`else` splits into then/else spans so an untagged else does not force the
+  then branch to be shown. Whole-try classification requires full coverage;
+  try-header classification requires only covered catches. Catch spans include
+  the try-body closing brace so the boundary conceals with the catch. Functions
+  whose body is fully classified are scaffolds as well.
 - The engine emits `role` + `intents` only. It has no meaning labels or
   resolution table; clients merge intent sets on render, so presentation changes
   do not require re-analysis.
