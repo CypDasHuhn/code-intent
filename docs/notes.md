@@ -47,7 +47,9 @@ Editor-agnostic: only the renderer is editor-specific; artifact is the contract.
 
 ## 3. The artifact contract
 
-`tags.json` at project root (default). Shape:
+`tags.json` at project root (default) is the offline/batch contract. Live mode
+streams the same annotation shape over JSON-RPC and never writes this file.
+Shape:
 
 ```json
 {
