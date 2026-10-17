@@ -286,3 +286,18 @@ detected.
   presentation changes do not require re-analysis.
 - Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT`/`SHOW` applies a background
   from the highest-priority intent tag, and `IGNORE` renders dark-gray text.
+
+## 18. Client profiles (prototype)
+
+- Profiles are named, partial presentation configs on the client:
+  `intentMeanings`, `resolve`, `rules`, `tags`, `handlers`, `expand_on_cursor`.
+- `extends` chains; deep merge; `false` disables; lists replace.
+- Project profiles live in `<root>/.scpainter/profiles.lua`; saving reloads and
+  re-renders. Global profiles can come from `setup({ profiles = ... })`.
+- Picker uses `vim.ui.select`. Commands: `:SCPainterProfile [name]`,
+  `:SCPainterProfile! name`, `:SCPainterProfileEdit [name]`,
+  `:SCPainterProfileReload`.
+- Default keymaps: `<leader>pp` pick, `<leader>pe` edit; `<Plug>` mappings
+  `<Plug>(SCPainterProfilePick)` and `<Plug>(SCPainterProfileEdit)`.
+- Switching profiles only re-renders from cached spans; no artifact
+  regeneration and no engine run.
