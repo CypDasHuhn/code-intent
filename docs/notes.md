@@ -301,6 +301,11 @@ detected.
 - Picker uses `vim.ui.select`. Commands: `:SCPainterProfile [name]`,
   `:SCPainterProfile! name`, `:SCPainterProfileEdit [name]`,
   `:SCPainterProfileReload`.
+- A profile switch applies buffer-locally when the current buffer was rendered;
+  otherwise (e.g. the profile editor) it applies globally. Global switches clear
+  buffer-local overrides.
+- Profiles must use `extends` for derived profiles; assigning one profile table
+  to another shares the table and mutating it changes both.
 - Default keymaps: `<leader>pp` pick, `<leader>pe` edit; `<Plug>` mappings
   `<Plug>(SCPainterProfilePick)` and `<Plug>(SCPainterProfileEdit)`.
 - Switching profiles only re-renders from cached spans; no artifact
