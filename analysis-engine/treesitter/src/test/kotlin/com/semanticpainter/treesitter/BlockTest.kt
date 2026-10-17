@@ -90,4 +90,40 @@ class BlockTest {
         assertTrue(controlFlow.single().evidence.contains("catch"))
         assertEquals(3, spans.count { it.kind == TagKind.INTERACTION })
     }
+
+    @Test
+    fun tagsTryOnlyWhenEveryEntryIsLogging() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun allLogging() {
+                try {
+                    log.warn("attempt")
+                } catch (e: Exception) {
+                    log.warn("failed", e)
+                }
+            }
+            fun mixed() {
+                try {
+                    work()
+                    log.warn("attempt")
+                } catch (e: Exception) {
+                    log.warn("failed", e)
+                }
+            }
+            fun work() {}
+        """.trimIndent()
+
+        val tree = KotlinParser().parse(SourceFile("Sample.kt", text))
+        val spans = AnalysisEngine(LoggingBlocks.all()).analyze(
+            SourceFile("Sample.kt", text),
+            tree,
+            NullOracle,
+            config,
+        )
+
+        val controlFlow = spans.filter { it.kind == TagKind.CONTROL_FLOW }
+        assertEquals(3, controlFlow.size)
+        assertTrue(controlFlow.any { it.rule == "intent-scaffold-try" })
+        assertEquals(2, controlFlow.count { it.rule == "intent-scaffold-catch" })
+    }
 }

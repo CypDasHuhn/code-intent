@@ -107,7 +107,19 @@ class IntentScaffoldBlock : RuleBlock {
             catchNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold-catch", "treesitter", 0.9)
         }.toList()
 
-        return ifSpans + catchSpans
+        val trySpans = ctx.tree.root.descendants("try_expression").mapNotNull { tryNode ->
+            val catches = tryNode.childrenOfKind("catch_block")
+            if (catches.isEmpty()) return@mapNotNull null
+            if (!hasTaggedEffect(ctx, tryNode, tag)) return@mapNotNull null
+            if (catches.any { !ctx.covers(it, tag) }) return@mapNotNull null
+
+            val finallyBlock = tryNode.children.firstOrNull { it.kind == "finally_block" }
+            if (finallyBlock != null && !hasTaggedEffect(ctx, finallyBlock, tag)) return@mapNotNull null
+
+            tryNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold-try", "treesitter", 0.9)
+        }.toList()
+
+        return ifSpans + catchSpans + trySpans
     }
 
     private fun conditionOf(ifNode: SyntaxNode): SyntaxNode? =

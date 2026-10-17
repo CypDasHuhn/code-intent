@@ -32,6 +32,14 @@ fun catchWithDeadLocal() {
     }
 }
 
+fun allLoggingTry() {
+    try {
+        log.warn("attempt")
+    } catch (failure: Exception) {
+        log.warn("failed", failure)
+    }
+}
+
 fun catchWithAssistCandidate() {
     try {
         work()
