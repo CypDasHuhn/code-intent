@@ -23,7 +23,11 @@ class TsSyntaxTree(
 ) : SyntaxTree {
     private val bytes = source.text.toByteArray(Charsets.UTF_8)
 
-    override val root: SyntaxNode by lazy { TsSyntaxNode(this, tree.rootNode) }
+    override val root: SyntaxNode by lazy {
+        val rootNode = tree.rootNode
+        check(!rootNode.isNull) { "empty syntax tree" }
+        TsSyntaxNode(this, rootNode)
+    }
 
     internal fun text(start: Int, end: Int): String = String(bytes, start, end - start, Charsets.UTF_8)
 }
@@ -40,8 +44,15 @@ class TsSyntaxNode(
     override val endLine: Int get() = node.endPoint.row
     override val endCol: Int get() = node.endPoint.column
     override val text: String get() = tree.text(startByte, endByte)
-    override val parent: SyntaxNode? get() = node.parent?.let { TsSyntaxNode(tree, it) }
+    override val parent: SyntaxNode? get() {
+        val parentNode = node.parent
+        return if (parentNode == null || parentNode.isNull) null else TsSyntaxNode(tree, parentNode)
+    }
+
     override val children: List<SyntaxNode> by lazy {
-        (0 until node.childCount).map { TsSyntaxNode(tree, node.getChild(it)) }
+        (0 until node.childCount).mapNotNull { index ->
+            val child = node.getChild(index)
+            if (child == null || child.isNull) null else TsSyntaxNode(tree, child)
+        }
     }
 }

@@ -296,6 +296,21 @@ class BlockTest {
     }
 
     @Test
+    fun topLevelPropertyCanBeDerivative() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            private val top = "x"
+            fun f() {
+                log.warn(top)
+            }
+        """.trimIndent()
+
+        val derivative = analyze(text).first { it.role == Role.DERIVATIVE_USE }
+        assertEquals(setOf("Logging"), derivative.intents)
+        assertEquals("CONCEAL", derivative.meaning)
+    }
+
+    @Test
     fun loggingStateGuardIsConcealed() {
         val text = """
             private val log = LoggerFactory.getLogger(Foo::class.java)
