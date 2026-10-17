@@ -5,3 +5,4 @@ out/
 *.class
 .idea/
 *.iml
+tags.json
