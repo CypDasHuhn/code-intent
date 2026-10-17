@@ -198,7 +198,7 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        val identifiers = ctx.tree.root.descendants("simple_identifier").toList()
+        val identifiersByName = ctx.tree.root.descendants("simple_identifier").groupBy { it.text }
 
         for (declaration in ctx.tree.root.descendants("property_declaration")) {
             val name = KotlinSyntax.variableName(declaration) ?: continue
@@ -206,11 +206,10 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
             val initializer = KotlinSyntax.initializerOf(declaration) ?: continue
 
             val scope = KotlinSyntax.enclosingFunction(declaration) ?: ctx.tree.root
-            val uses = scope.descendants("simple_identifier")
-                .filter { it.text == name }
+            val uses = identifiersByName[name].orEmpty()
+                .filter { it.startByte in scope.startByte until scope.endByte }
                 .filter { it.startByte != nameNode.startByte }
                 .filterNot { it.startByte >= initializer.startByte && it.endByte <= initializer.endByte }
-                .toList()
             if (uses.isEmpty()) continue
 
             val places = uses.mapNotNull { derivativePlaceIntents(ctx, it) }
@@ -234,9 +233,8 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
             val name = nameNode.text
             if (name.isEmpty()) continue
 
-            val references = identifiers.filter { reference ->
-                reference.text == name &&
-                    (reference.startByte != nameNode.startByte || reference.endByte != nameNode.endByte) &&
+            val references = identifiersByName[name].orEmpty().filter { reference ->
+                (reference.startByte != nameNode.startByte || reference.endByte != nameNode.endByte) &&
                     reference.startByte !in declaration.startByte until declaration.endByte &&
                     reference.parent?.kind != "function_declaration"
             }
