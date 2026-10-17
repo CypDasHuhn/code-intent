@@ -85,9 +85,11 @@ class BlockTest {
         )
 
         val controlFlow = spans.filter { it.kind == TagKind.CONTROL_FLOW }
-        assertEquals(1, controlFlow.size)
-        assertEquals("intent-scaffold-catch", controlFlow.single().rule)
-        assertTrue(controlFlow.single().evidence.contains("catch"))
+        val catches = controlFlow.filter { it.rule == "intent-scaffold-catch" }
+        val headers = controlFlow.filter { it.rule == "intent-scaffold-try-header" }
+        assertEquals(1, catches.size)
+        assertEquals(1, headers.size)
+        assertTrue(catches.single().evidence.contains("catch"))
         assertEquals(3, spans.count { it.kind == TagKind.INTERACTION })
     }
 
@@ -122,8 +124,9 @@ class BlockTest {
         )
 
         val controlFlow = spans.filter { it.kind == TagKind.CONTROL_FLOW }
-        assertEquals(3, controlFlow.size)
-        assertTrue(controlFlow.any { it.rule == "intent-scaffold-try" })
+        assertEquals(4, controlFlow.size)
+        assertEquals(1, controlFlow.count { it.rule == "intent-scaffold-try" })
+        assertEquals(1, controlFlow.count { it.rule == "intent-scaffold-try-header" })
         assertEquals(2, controlFlow.count { it.rule == "intent-scaffold-catch" })
     }
 }

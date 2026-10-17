@@ -2,6 +2,7 @@ package com.semanticpainter.treesitter
 
 import com.semanticpainter.core.engine.AnalysisContext
 import com.semanticpainter.core.engine.RuleBlock
+import com.semanticpainter.core.model.Span
 import com.semanticpainter.core.model.TagKind
 import com.semanticpainter.core.model.TaggedSpan
 import com.semanticpainter.core.syntax.SyntaxNode
@@ -107,19 +108,46 @@ class IntentScaffoldBlock : RuleBlock {
             catchNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold-catch", "treesitter", 0.9)
         }.toList()
 
-        val trySpans = ctx.tree.root.descendants("try_expression").mapNotNull { tryNode ->
+        val trySpans = mutableListOf<TaggedSpan>()
+        val headerSpans = mutableListOf<TaggedSpan>()
+
+        for (tryNode in ctx.tree.root.descendants("try_expression")) {
+            if (ctx.covers(tryNode, tag)) continue
+
             val catches = tryNode.childrenOfKind("catch_block")
-            if (catches.isEmpty()) return@mapNotNull null
-            if (!hasTaggedEffect(ctx, tryNode, tag)) return@mapNotNull null
-            if (catches.any { !ctx.covers(it, tag) }) return@mapNotNull null
+            if (catches.isEmpty()) continue
+
+            val catchesCovered = catches.all { catchNode ->
+                ctx.covers(catchNode, tag) ||
+                    catchSpans.any { it.startByte <= catchNode.startByte && it.endByte >= catchNode.endByte }
+            }
+            if (!catchesCovered) continue
 
             val finallyBlock = tryNode.children.firstOrNull { it.kind == "finally_block" }
-            if (finallyBlock != null && !hasTaggedEffect(ctx, finallyBlock, tag)) return@mapNotNull null
+            val finallyCovered = finallyBlock == null || hasTaggedEffect(ctx, finallyBlock, tag)
 
-            tryNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold-try", "treesitter", 0.9)
-        }.toList()
+            if (hasTaggedEffect(ctx, tryNode, tag) && finallyCovered) {
+                trySpans.add(tryNode.tag(tag, TagKind.CONTROL_FLOW, "intent-scaffold-try", "treesitter", 0.9))
+            } else {
+                val start = tryNode.children.firstOrNull { it.kind == "try" }
+                val end = tryNode.children.firstOrNull { it.kind == "{" }
+                if (start != null && end != null) {
+                    headerSpans.add(
+                        tagRange(
+                            start,
+                            end,
+                            tag,
+                            TagKind.CONTROL_FLOW,
+                            "intent-scaffold-try-header",
+                            "treesitter",
+                            0.8,
+                        ),
+                    )
+                }
+            }
+        }
 
-        return ifSpans + catchSpans + trySpans
+        return ifSpans + catchSpans + trySpans + headerSpans
     }
 
     private fun conditionOf(ifNode: SyntaxNode): SyntaxNode? =
@@ -176,6 +204,26 @@ private fun SyntaxNode.tag(
     confidence = confidence,
     startByte = startByte,
     endByte = endByte,
+)
+
+private fun tagRange(
+    start: SyntaxNode,
+    end: SyntaxNode,
+    tag: String,
+    kind: TagKind,
+    rule: String,
+    source: String,
+    confidence: Double,
+): TaggedSpan = TaggedSpan(
+    tag = tag,
+    kind = kind,
+    rule = rule,
+    evidence = "${start.text} ${end.text}".take(160),
+    span = Span(start.startLine, start.startCol, end.endLine, end.endCol),
+    source = source,
+    confidence = confidence,
+    startByte = start.startByte,
+    endByte = end.endByte,
 )
 
 object LoggingBlocks {
