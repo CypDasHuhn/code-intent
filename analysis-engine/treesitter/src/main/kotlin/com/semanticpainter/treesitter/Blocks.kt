@@ -113,7 +113,11 @@ class LoggerInteractionBlock(
                 else -> null
             }
 
-            val match = if (heuristic == null || heuristic.rule == "receiver-name") {
+            val match = if (
+                heuristic == null ||
+                heuristic.rule == "receiver-name" ||
+                heuristic.rule == "name-import-gated"
+            ) {
                 val type = ctx.oracle.typeAt(ctx.file, KotlinSyntax.receiverOffset(receiver))
                 when {
                     type == null -> heuristic

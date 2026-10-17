@@ -267,6 +267,35 @@ class BlockTest {
     }
 
     @Test
+    fun resolvedNonLoggerTypeVetoesImportHeuristic() {
+        val text = """
+            import org.slf4j.LoggerFactory
+            class FakeLogger {
+                fun info(message: String) {}
+            }
+            fun f() {
+                val fake = FakeLogger()
+                fake.info("looks like logging")
+            }
+        """.trimIndent()
+
+        val source = SourceFile("Sample.kt", text)
+        val tree = KotlinParser().parse(source)
+        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(
+            source,
+            tree,
+            FixedOracle(TypeFact("FakeLogger", "lsp", 0.95)),
+            config,
+        )
+
+        assertTrue(
+            annotations.none {
+                it.rule == "name-import-gated" || it.rule == "typed-receiver"
+            },
+        )
+    }
+
+    @Test
     fun resolvedNonLoggerTypeVetoesReceiverNameHeuristic() {
         val text = """
             class Service {
