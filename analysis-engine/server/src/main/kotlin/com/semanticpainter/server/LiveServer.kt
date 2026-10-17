@@ -87,7 +87,8 @@ class LiveServer(
                 if (line.isBlank()) continue
                 runCatching { handleMessage(line, writer) }
                     .onFailure { error ->
-                        sendError(writer, null, error.message ?: "unknown error")
+                        error.printStackTrace()
+                        sendError(writer, null, error.toString())
                     }
             }
         }
@@ -161,11 +162,25 @@ class LiveServer(
         val tree = KotlinParser().parse(source)
         val analysis = synchronized(this) {
             val activeOracle = oracle ?: if (useLsp) {
-                KotlinLspOracle.connect(root).also { oracle = it }
+                runCatching { KotlinLspOracle.connect(root) }
+                    .onFailure { error ->
+                        System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
+                        error.printStackTrace()
+                    }
+                    .getOrNull()
+                    ?.also { oracle = it }
+                    ?: NullOracle
             } else {
                 NullOracle
             }
-            AnalysisEngine(blocks).analyze(source, tree, activeOracle, config)
+
+            runCatching {
+                AnalysisEngine(blocks).analyze(source, tree, activeOracle, config)
+            }.getOrElse { error ->
+                System.err.println("semantic-code-painter: LSP analysis failed, using heuristics")
+                error.printStackTrace()
+                AnalysisEngine(blocks).analyze(source, tree, NullOracle, config)
+            }
         }
 
         val params = mapOf(
