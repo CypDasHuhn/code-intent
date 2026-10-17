@@ -8,6 +8,9 @@ Repo: `~/repos/semantic-code-painter` (monorepo).
 Tagline: **Code to Intent.**
 Date of session: 2026-10-16.
 
+> Update 2026-10-17: the engine is now `analysis-engine/` (core / treesitter /
+> lsp / cli / server). Sections 3–5 and 12 describe the old PSI PoC.
+
 ---
 
 ## 1. The idea (thesis)
@@ -241,3 +244,26 @@ model, no profile wizard (config is hand-edited), no incremental indexing, no
 watch/auto-regeneration loop. Tag taxonomy exists in palette defaults only
 (Logging, Error Handling, Validation, Business Logic) but only Logging is
 detected.
+
+## 15. Purity / logging-assist (PoC decision)
+
+- Explicit user-enforced purity only. Per-language `pureAnnotations` such as
+  `@Pure`, `@Contract(pure = true)`, and
+  `org.checkerframework.dataflow.qual.Pure`. Annotation present => pure;
+  annotation absent => impure.
+- Literals and local/parameter reads are pure by construction.
+- No body inference: `fun giveText() = "test"` without an annotation is impure.
+- Assist candidate: a local with at least one read, all reads inside
+  Logging-tagged statements, and a pure initializer. An unused `val s = ""` is
+  not an assist candidate.
+- Deferred: real purity analysis (effect system, interprocedural inference,
+  exception/aliasing analysis). Out of scope for the PoC.
+
+## 16. Testing grounds
+
+- `testing-grounds/kotlin/` — fixtures for the tagger, intentionally not part
+  of Gradle and not required to compile.
+- Covers logger interactions (typed + heuristics), print, pure vs non-pure
+  `if`/`catch` scaffolds, nested scaffolds, purity annotations, and the
+  heuristic false positive for a log-named method on an unknown receiver.
+- Run: `semantic-code-painter testing-grounds --no-lsp --all`.
