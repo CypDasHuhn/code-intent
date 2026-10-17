@@ -236,6 +236,7 @@ class IntentScaffoldBlock : RuleBlock {
         result += ifScaffolds(ctx)
         result += catchScaffolds(ctx)
         result += tryScaffolds(ctx)
+        result += functionScaffolds(ctx)
         return result
     }
 
@@ -302,6 +303,16 @@ class IntentScaffoldBlock : RuleBlock {
         }
         return result
     }
+
+    private fun functionScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
+        ctx.tree.root.descendants("function_declaration").mapNotNull { function ->
+            val body = function.child("function_body") ?: return@mapNotNull null
+            val intents = bodyIntents(ctx, body)
+            if (intents.isEmpty()) return@mapNotNull null
+            if (UNTAGGED_INTENT in intents) return@mapNotNull null
+            if (intents.none { it != UNTAGGED_INTENT }) return@mapNotNull null
+            function.raw(Role.SCAFFOLD, intents, "intent-scaffold-function", "treesitter", 0.9)
+        }.toList()
 
     private fun conditionIntents(ctx: AnalysisContext, condition: SyntaxNode): Set<String> =
         if (KotlinSyntax.isConstant(condition)) emptySet() else ctx.coverage(condition).intents

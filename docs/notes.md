@@ -279,7 +279,8 @@ detected.
   annotation) and all reads flow into classified statements.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Whole-try classification requires full coverage; try-header classification
-  requires only covered catches.
+  requires only covered catches. Functions whose body is fully classified are
+  scaffolds as well.
 - Meaning resolution is engine-side: each intent has a meaning, and
   `resolve.precedence` merges a set into one effective meaning. The engine treats
   meanings as opaque labels; the renderer maps meaning to visuals.

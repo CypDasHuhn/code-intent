@@ -296,6 +296,36 @@ class BlockTest {
     }
 
     @Test
+    fun pureFunctionBodyBecomesScaffold() {
+        val text = """
+            fun requireValue(value: String?) {
+                requireNotNull(value)
+            }
+        """.trimIndent()
+
+        val function = analyze(text).first {
+            it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-function"
+        }
+        assertEquals(setOf("ErrorHandling"), function.intents)
+        assertEquals("SHOW", function.meaning)
+        assertEquals(0, function.span.startLine)
+        assertEquals(2, function.span.endLine)
+    }
+
+    @Test
+    fun mixedFunctionIsNotScaffold() {
+        val text = """
+            fun f(value: String?) {
+                requireNotNull(value)
+                work()
+            }
+            fun work() {}
+        """.trimIndent()
+
+        assertTrue(analyze(text).none { it.rule == "intent-scaffold-function" })
+    }
+
+    @Test
     fun topLevelPropertyCanBeDerivative() {
         val text = """
             private val log = LoggerFactory.getLogger(Foo::class.java)
