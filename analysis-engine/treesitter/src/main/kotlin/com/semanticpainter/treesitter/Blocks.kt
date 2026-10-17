@@ -98,8 +98,7 @@ class LoggerInteractionBlock(
             val receiverName = receiver.text.substringAfterLast('.')
 
             val type = ctx.oracle.typeAt(ctx.file, KotlinSyntax.receiverOffset(receiver))
-            val match = if (type != null) {
-                if (!typeMatches(type.fqName, types)) return@mapNotNull null
+            val match = if (type != null && typeMatches(type.fqName, types)) {
                 Match("typed-receiver", type.source, type.confidence)
             } else {
                 when {
