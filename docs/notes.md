@@ -32,12 +32,12 @@ the initial inspiration (language-agnostic code graph).
 ## 2. Architecture / flow
 
 ```
-source repo -> analysis-cli (facts + config -> tags) -> tags.json (editor-agnostic)
+source repo -> analysis-engine (facts + config -> tags) -> tags.json (editor-agnostic)
             -> nvim-renderer (reads artifact) -> editor decorations
 ```
 
 Two components:
-- `analysis-cli/` — Kotlin/JVM Gradle app. Parses, tags, emits JSON.
+- `analysis-engine/` — Kotlin/JVM Gradle app. Parses, tags, emits JSON.
 - `nvim-renderer/` — Lua Neovim plugin. Consumes artifact, paints extmarks.
 
 Editor-agnostic: only the renderer is editor-specific; artifact is the contract.
@@ -69,7 +69,7 @@ Editor-agnostic: only the renderer is editor-specific; artifact is the contract.
 
 ## 4. The config contract
 
-`analysis-cli/config/logging.yaml`, keyed **feature -> language -> params**:
+`analysis-engine/core/src/main/resources/logging.yaml`, keyed **feature -> language -> params**:
 
 ```yaml
 features:
@@ -218,7 +218,7 @@ rejected as too crowded / hard to make meaningful). Installed launcher is
 - `fa4fe4d` content-hash staleness guard (CLI + renderer).
 - Verified: fixture + `mtquery` (78 files, ~1s full scan), e2e CLI->renderer.
 - dotfiles: added PATH entry in `shell/paths/10-unix.lua` ->
-  `analysis-cli/build/install/semantic-code-painter/bin`; regenerate via
+  `analysis-engine/build/install/semantic-code-painter/bin`; regenerate via
   `lua bootstrap.lua shell`. (Committed? check; may be uncommitted.)
 - Environment gotchas: system gradle broken (`GRADLE_HOME=/usr/share/java/gradle`
   missing module) -> use sdkman gradle or the project wrapper (9.7.0). JDK 26.

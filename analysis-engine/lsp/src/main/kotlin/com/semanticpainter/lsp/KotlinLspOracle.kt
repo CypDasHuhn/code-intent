@@ -1,0 +1,223 @@
+package com.semanticpainter.lsp
+
+import com.semanticpainter.core.model.SourceFile
+import com.semanticpainter.core.oracle.SymbolFact
+import com.semanticpainter.core.oracle.TypeFact
+import com.semanticpainter.core.oracle.TypeOracle
+import org.eclipse.lsp4j.ClientCapabilities
+import org.eclipse.lsp4j.ConfigurationParams
+import org.eclipse.lsp4j.Hover
+import org.eclipse.lsp4j.HoverParams
+import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.MessageActionItem
+import org.eclipse.lsp4j.MessageParams
+import org.eclipse.lsp4j.PublishDiagnosticsParams
+import org.eclipse.lsp4j.ShowMessageRequestParams
+import org.eclipse.lsp4j.TextDocumentIdentifier
+import org.eclipse.lsp4j.TextDocumentItem
+import org.eclipse.lsp4j.WorkspaceFolder
+import org.eclipse.lsp4j.jsonrpc.Launcher
+import org.eclipse.lsp4j.services.LanguageClient
+import org.eclipse.lsp4j.services.LanguageServer
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.nio.file.Path
+import java.security.MessageDigest
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+
+class KotlinLspOracle private constructor(
+    private val root: Path,
+    private val socket: Socket,
+    private val executor: java.util.concurrent.ExecutorService,
+    private val server: LanguageServer,
+) : TypeOracle, AutoCloseable {
+    private val opened = mutableMapOf<String, String>()
+
+    override fun typeAt(file: SourceFile, byteOffset: Int): TypeFact? {
+        val uri = uriFor(file)
+        open(uri, file.text)
+        val position = positionAt(file.text, byteOffset)
+        val hover = server.textDocumentService
+            .hover(HoverParams(TextDocumentIdentifier(uri), position))
+            .get(5, TimeUnit.SECONDS)
+        val type = hoverText(hover)?.let(::extractType) ?: return null
+        return TypeFact(type, "lsp", 0.95)
+    }
+
+    override fun definitionAt(file: SourceFile, byteOffset: Int): SymbolFact? = null
+
+    private fun uriFor(file: SourceFile): String {
+        val path = Path.of(file.path)
+        return (if (path.isAbsolute) path else root.resolve(path)).toUri().toString()
+    }
+
+    private fun open(uri: String, text: String) {
+        if (opened[uri] == text) return
+        if (opened.containsKey(uri)) {
+            server.textDocumentService.didClose(
+                org.eclipse.lsp4j.DidCloseTextDocumentParams(TextDocumentIdentifier(uri)),
+            )
+        }
+        server.textDocumentService.didOpen(
+            org.eclipse.lsp4j.DidOpenTextDocumentParams(
+                TextDocumentItem(uri, "kotlin", 1, text),
+            ),
+        )
+        opened[uri] = text
+    }
+
+    override fun close() {
+        for (uri in opened.keys) {
+            runCatching {
+                server.textDocumentService.didClose(
+                    org.eclipse.lsp4j.DidCloseTextDocumentParams(TextDocumentIdentifier(uri)),
+                )
+            }
+        }
+        opened.clear()
+        socket.close()
+        executor.shutdownNow()
+    }
+
+    companion object {
+        fun connect(root: Path): KotlinLspOracle {
+            java.util.logging.LogManager.getLogManager().reset()
+            val absoluteRoot = root.toAbsolutePath().normalize()
+            val port = portFor(absoluteRoot)
+            if (!portOpen(port)) {
+                ProcessBuilder(
+                    "kotlin-lsp",
+                    "--socket",
+                    "127.0.0.1:$port",
+                    "--multi-client",
+                    "--data-sharing",
+                    "none",
+                    "--log-level",
+                    "ERROR",
+                )
+                    .redirectErrorStream(true)
+                    .also {
+                        it.environment()["XDG_CACHE_HOME"] = cacheRoot().toString()
+                    }
+                    .start()
+                waitForPort(port)
+            }
+
+            val socket = Socket()
+            socket.connect(InetSocketAddress("127.0.0.1", port), 5_000)
+            socket.soTimeout = 30_000
+
+            val client = Client()
+            val executor = java.util.concurrent.Executors.newCachedThreadPool { runnable ->
+                Thread(runnable, "lsp4j").apply { isDaemon = true }
+            }
+            val launcher: Launcher<LanguageServer> = Launcher.Builder<LanguageServer>()
+                .setLocalService(client)
+                .setRemoteInterface(LanguageServer::class.java)
+                .setInput(socket.getInputStream())
+                .setOutput(socket.getOutputStream())
+                .setExecutorService(executor)
+                .create()
+            val server = launcher.remoteProxy
+            launcher.startListening()
+
+            val params = InitializeParams().apply {
+                processId = ProcessHandle.current().pid().toInt()
+                rootUri = absoluteRoot.toUri().toString()
+                capabilities = ClientCapabilities()
+                workspaceFolders = listOf(
+                    WorkspaceFolder(absoluteRoot.toUri().toString(), absoluteRoot.fileName.toString()),
+                )
+            }
+            server.initialize(params).get(30, TimeUnit.SECONDS)
+            server.initialized(org.eclipse.lsp4j.InitializedParams())
+
+            return KotlinLspOracle(absoluteRoot, socket, executor, server)
+        }
+
+        private fun cacheRoot(): Path =
+            Path.of(System.getProperty("user.cache.home") ?: "${System.getProperty("user.home")}/.cache")
+                .resolve("semantic-code-painter")
+                .resolve("kotlin-lsp")
+
+        fun isRunning(root: Path): Boolean =
+            portOpen(portFor(root.toAbsolutePath().normalize()))
+
+        private fun portFor(root: Path): Int {
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest(root.toString().toByteArray(Charsets.UTF_8))
+            val hex = digest.joinToString("") { "%02x".format(it) }.substring(0, 8)
+            return 13000 + (hex.toLong(16) % 20000).toInt()
+        }
+
+        private fun portOpen(port: Int): Boolean = runCatching {
+            Socket().use { it.connect(InetSocketAddress("127.0.0.1", port), 200) }
+        }.isSuccess
+
+        private fun waitForPort(port: Int) {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
+            while (System.nanoTime() < deadline) {
+                if (portOpen(port)) return
+                Thread.sleep(250)
+            }
+            error("kotlin-lsp did not start on port $port")
+        }
+    }
+}
+
+private class Client : LanguageClient {
+    override fun telemetryEvent(obj: Any?) = Unit
+
+    override fun publishDiagnostics(diagnostics: PublishDiagnosticsParams) = Unit
+
+    override fun showMessage(messageParams: MessageParams) = Unit
+
+    override fun showMessageRequest(
+        requestParams: ShowMessageRequestParams,
+    ): CompletableFuture<MessageActionItem> = CompletableFuture.completedFuture(null)
+
+    override fun logMessage(message: MessageParams) = Unit
+
+    override fun workspaceFolders(): CompletableFuture<List<WorkspaceFolder>> =
+        CompletableFuture.completedFuture(emptyList())
+
+    override fun configuration(params: ConfigurationParams): CompletableFuture<List<Any>> =
+        CompletableFuture.completedFuture(emptyList())
+}
+
+private fun hoverText(hover: Hover?): String? {
+    val contents = hover?.contents ?: return null
+    return when {
+        contents.isLeft -> contents.left.joinToString("\n") { item ->
+            if (item.isLeft) item.left else item.right.value
+        }
+        contents.isRight -> contents.right.value
+        else -> null
+    }
+}
+
+private val TYPE_AFTER_COLON = Regex(""":\s*([A-Za-z_][A-Za-z0-9_.$]*)""")
+
+private fun extractType(hover: String): String? {
+    val text = hover.replace("```kotlin", "").replace("```", "").trim()
+    TYPE_AFTER_COLON.find(text)?.let { return it.groupValues[1] }
+    val declaration = Regex("""(?:class|interface|object|typealias)\s+([A-Za-z_][A-Za-z0-9_.$]*)""")
+        .find(text)
+    return declaration?.groupValues?.get(1)
+}
+
+private fun positionAt(text: String, byteOffset: Int): org.eclipse.lsp4j.Position {
+    val bytes = text.toByteArray(Charsets.UTF_8)
+    val end = byteOffset.coerceIn(0, bytes.size)
+    var line = 0
+    var lineStart = 0
+    for (i in 0 until end) {
+        if (bytes[i] == '\n'.code.toByte()) {
+            line++
+            lineStart = i + 1
+        }
+    }
+    val character = String(bytes, lineStart, end - lineStart, Charsets.UTF_8).length
+    return org.eclipse.lsp4j.Position(line, character)
+}

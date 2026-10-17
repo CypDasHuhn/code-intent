@@ -9,17 +9,39 @@ Business Logic, ...) instead of by syntax.
 
 | dir | what |
 |-----|------|
-| [`analysis-cli/`](analysis-cli) | Language-agnostic intent-tagging engine. Parses a repo, emits an editor-agnostic JSON tag artifact. Kotlin/JVM. |
-| `nvim-renderer/` | Neovim plugin that consumes the JSON artifact and paints spans (background tint, gutter icon, conceal). |
-
-Session notes / design dump for resuming work: [`docs/notes.md`](docs/notes.md).
+| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, composable rule blocks, batch CLI, and HTTP host. |
+| `nvim-renderer/` | Neovim plugin that consumes tags and paints spans (background tint, gutter icon, conceal). |
 
 ## Flow
 
 ```
-source repo ──► analysis-cli ──► tags.json ──► nvim-renderer ──► editor
-                 (facts + config)
+source / buffer
+      │
+      ├─ tree-sitter ──► spans, nesting, control flow
+      └─ LSP ─────────► types, symbols, definitions
+                │
+                ▼
+        core rule blocks
+                │
+        ┌───────┴────────┐
+        ▼                ▼
+     tags.json       HTTP /analyze
+        │                │
+        └──────► nvim-renderer
 ```
 
-The tagging engine is language-agnostic; language specifics live in per-project
-config. See [`analysis-cli/README.md`](analysis-cli/README.md).
+Tree-sitter owns statement-level structure (tier 0). LSP only annotates those
+nodes with semantic facts (tier 1). The engine stays editor- and
+language-agnostic; language specifics live in config and block selection.
+
+## Quick start
+
+```sh
+cd analysis-engine
+./gradlew :cli:run --args="/path/to/project --out tags.json"
+./gradlew :cli:installDist
+./gradlew :server:run --args="--port 8765"
+```
+
+See [`analysis-engine/README.md`](analysis-engine/README.md) for the module layout,
+config, blocks, and LSP sharing.
