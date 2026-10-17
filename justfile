@@ -34,11 +34,11 @@ install:
 
 # Run the batch CLI. Extra arguments are forwarded.
 cli *args:
-    cd {{engine}} && ./gradlew :cli:run --args="{{args}}"
+    cd {{engine}} && ./gradlew :cli:run {{ if args == "" { "" } else { "--args=" + quote(args) } }}
 
 # Run the HTTP server. Extra arguments are forwarded.
 server *args:
-    cd {{engine}} && ./gradlew :server:run --args="{{args}}"
+    cd {{engine}} && ./gradlew :server:run {{ if args == "" { "" } else { "--args=" + quote(args) } }}
 
 # Run the live Unix-socket server. The nvim client normally spawns this.
 live socket root *args:
