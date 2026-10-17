@@ -69,7 +69,8 @@ class PrintBlock(private val intent: String) : RuleBlock {
             if (callee !in PRINT_CALLS) return@mapNotNull null
             val receiver = KotlinSyntax.receiverNode(call)
             if (receiver != null && receiver.text !in STD_STREAMS) return@mapNotNull null
-            call.raw(Role.SOURCE_INTENT, setOf(intent), "print", "treesitter", 1.0)
+            KotlinSyntax.callWithTrailingLambda(call)
+                .raw(Role.SOURCE_INTENT, setOf(intent), "print", "treesitter", 1.0)
         }.toList()
 }
 
@@ -129,7 +130,8 @@ class LoggerInteractionBlock(
                 heuristic
             } ?: return@mapNotNull null
 
-            call.raw(Role.SOURCE_INTENT, setOf(intent), match.rule, match.source, match.confidence)
+            KotlinSyntax.callWithTrailingLambda(call)
+                .raw(Role.SOURCE_INTENT, setOf(intent), match.rule, match.source, match.confidence)
         }.toList()
     }
 
@@ -181,7 +183,8 @@ class ErrorHandlingBlock(
             val callee = KotlinSyntax.calleeName(call) ?: return@mapNotNull null
             if (callee !in calls) return@mapNotNull null
             if (KotlinSyntax.receiverNode(call) != null) return@mapNotNull null
-            call.raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-call", "treesitter", 1.0)
+            KotlinSyntax.callWithTrailingLambda(call)
+                .raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-call", "treesitter", 1.0)
         }.toList()
 
         val throwAnnotations = if (detectThrows) {

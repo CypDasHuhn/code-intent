@@ -96,6 +96,21 @@ class BlockTest {
     }
 
     @Test
+    fun callSpanIncludesTrailingLambda() {
+        val text = """
+            fun f() {
+                require(true) {
+                    "message"
+                }
+            }
+        """.trimIndent()
+
+        val source = analyze(text).first { it.rule == "error-handling-call" }
+        assertTrue(source.evidence.contains("\"message\""))
+        assertEquals(2, source.span.endLine - source.span.startLine)
+    }
+
+    @Test
     fun sideEffectFreeGuardIsLogging() {
         val text = """
             private val log = LoggerFactory.getLogger(Foo::class.java)

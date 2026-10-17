@@ -38,7 +38,7 @@ Blocks:
 - `logging-state` — conditions using configured logging-state names.
 - `error-handling` — `throw` and configured Kotlin checks
   (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
-  `assert`).
+  `assert`). Call spans include trailing lambda arguments.
 - `derivative-use` — a local whose initializer is pure and whose reads flow into
   classified statements, or a declaration (local or function) whose references
   all occur inside other derivative-use declarations. Purity is literal/local

@@ -13,6 +13,21 @@ private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment"
 object KotlinSyntax {
     fun calls(tree: SyntaxTree): Sequence<SyntaxNode> = tree.root.descendants("call_expression")
 
+    fun callWithTrailingLambda(call: SyntaxNode): SyntaxNode {
+        var current = call
+        var parent = current.parent
+        while (parent != null && parent.kind == "call_expression") {
+            val suffix = parent.children.firstOrNull { it.kind == "call_suffix" }
+            val hasLambda = suffix?.children?.any {
+                it.kind == "annotated_lambda" || it.kind == "lambda_literal"
+            } == true
+            if (!hasLambda) break
+            current = parent
+            parent = current.parent
+        }
+        return current
+    }
+
     fun calleeName(call: SyntaxNode): String? {
         val navigation = call.children.firstOrNull { it.kind == "navigation_expression" }
         if (navigation != null) {
