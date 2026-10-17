@@ -263,7 +263,23 @@ detected.
 
 - `testing-grounds/kotlin/` — fixtures for the tagger, intentionally not part
   of Gradle and not required to compile.
-- Covers logger interactions (typed + heuristics), print, pure vs non-pure
-  `if`/`catch` scaffolds, nested scaffolds, purity annotations, and the
-  heuristic false positive for a log-named method on an unknown receiver.
+- Covers logger interactions (typed + heuristics), print, Error Handling
+  sources, pure vs non-pure `if`/`catch`/`try` scaffolds, derivative uses,
+  purity annotations, and the heuristic false positive for a log-named method
+  on an unknown receiver.
 - Run: `semantic-code-painter testing-grounds --no-lsp --all`.
+
+## 17. Classification model (2026-10-17)
+
+- Roles: `SOURCE_INTENT`, `DERIVATIVE_USE`, `SCAFFOLD`.
+- Intents are sets; `UNTAGGED` is a reserved label for unclassified effects.
+- Sources: Logging (typed/heuristic) and Error Handling (`throw`, `require`,
+  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`).
+- Derivative use: pure initializer (literal, local read, or explicit purity
+  annotation) and all reads flow into classified statements.
+- Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
+  Whole-try classification requires full coverage; try-header classification
+  requires only covered catches.
+- Meaning resolution is engine-side: each intent has a meaning, and
+  `resolve.precedence` merges a set into one effective meaning. The engine treats
+  meanings as opaque labels; the renderer maps meaning to visuals.

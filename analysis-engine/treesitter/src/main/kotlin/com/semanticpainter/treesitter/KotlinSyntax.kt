@@ -8,6 +8,8 @@ data class KotlinProperty(
     val initCallPath: String?,
 )
 
+private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment")
+
 object KotlinSyntax {
     fun calls(tree: SyntaxTree): Sequence<SyntaxNode> = tree.root.descendants("call_expression")
 
@@ -42,11 +44,66 @@ object KotlinSyntax {
 
     fun properties(tree: SyntaxTree): Sequence<KotlinProperty> =
         tree.root.descendants("property_declaration").mapNotNull { declaration ->
-            val variable = declaration.child("variable_declaration") ?: return@mapNotNull null
-            val name = variable.child("simple_identifier")?.text ?: return@mapNotNull null
-            val initializer = declaration.children.firstOrNull { it.kind == "call_expression" }
+            val name = variableName(declaration) ?: return@mapNotNull null
+            val initializer = initializerOf(declaration)
             KotlinProperty(name, initializer?.let(::callPath))
         }
+
+    fun variableName(declaration: SyntaxNode): String? =
+        declaration.child("variable_declaration")?.child("simple_identifier")?.text
+
+    fun initializerOf(declaration: SyntaxNode): SyntaxNode? {
+        val equals = declaration.children.firstOrNull { it.kind == "=" } ?: return null
+        return declaration.children.firstOrNull { it.startByte >= equals.endByte }
+    }
+
+    fun enclosingFunction(node: SyntaxNode): SyntaxNode? {
+        var current = node.parent
+        while (current != null) {
+            if (current.kind == "function_declaration") return current
+            current = current.parent
+        }
+        return null
+    }
+
+    fun enclosingStatement(node: SyntaxNode): SyntaxNode {
+        var current = node
+        var parent = current.parent
+        while (parent != null) {
+            if (parent.kind == "statements") return current
+            if (parent.kind in setOf(
+                    "function_body",
+                    "control_structure_body",
+                    "catch_block",
+                    "finally_block",
+                    "try_expression",
+                )
+            ) {
+                return current
+            }
+            current = parent
+            parent = parent.parent
+        }
+        return current
+    }
+
+    fun statementsOf(container: SyntaxNode): List<SyntaxNode> =
+        container.child("statements")?.children?.filterNot { it.kind in COMMENT_KINDS }.orEmpty()
+
+    fun ifCondition(ifNode: SyntaxNode): SyntaxNode? =
+        ifNode.children.firstOrNull {
+            it.kind !in setOf("if", "(", ")", "else", "control_structure_body")
+        }
+
+    fun elseBodyOf(ifNode: SyntaxNode): SyntaxNode? {
+        val elseIndex = ifNode.children.indexOfFirst { it.kind == "else" }
+        if (elseIndex < 0) return null
+        return ifNode.children.drop(elseIndex + 1)
+            .firstOrNull { it.kind in setOf("control_structure_body", "if_expression") }
+    }
+
+    fun isThrow(node: SyntaxNode): Boolean =
+        node.kind == "jump_expression" && node.text.trimStart().startsWith("throw")
 
     fun isConstant(node: SyntaxNode): Boolean =
         node.descendants().none {

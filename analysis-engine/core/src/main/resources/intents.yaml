@@ -1,0 +1,44 @@
+language: kotlin
+
+intents:
+  Logging:
+    meaning: CONCEAL
+    blocks: [print, logger-interaction, logging-state]
+    kotlin:
+      methods: [info, debug, warn, error, trace, log, verbose, fatal]
+      types:
+        - org.slf4j.Logger
+        - org.apache.logging.log4j.Logger
+        - java.util.logging.Logger
+      factories:
+        - LoggerFactory.getLogger
+        - KotlinLogging.logger
+        - LogManager.getLogger
+        - Logger.getLogger
+      receiverNames: [log, logger, LOG, LOGGER, Logger]
+      qualifiers: [System.out, System.err]
+      guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
+      imports:
+        - org.slf4j
+        - mu.KotlinLogging
+        - java.util.logging
+
+  ErrorHandling:
+    meaning: SHOW
+    blocks: [error-handling]
+    kotlin:
+      calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
+      throws: true
+
+untagged:
+  meaning: SHOW
+
+resolve:
+  precedence: [SHOW, CONCEAL]
+  default: SHOW
+
+purity:
+  annotations:
+    - Pure
+    - Contract(pure = true)
+    - org.checkerframework.dataflow.qual.Pure

@@ -1,20 +1,22 @@
 package com.semanticpainter.server
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.semanticpainter.core.artifact.Artifact
 import com.semanticpainter.core.artifact.FileEntry
-import com.semanticpainter.core.config.loadFeatureConfig
+import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.SourceFile
+import com.semanticpainter.core.model.UNTAGGED_INTENT
 import com.semanticpainter.core.oracle.MapOracle
 import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.TypeFact
 import com.semanticpainter.core.oracle.TypeOracle
 import com.semanticpainter.lsp.KotlinLspOracle
+import com.semanticpainter.treesitter.IntentBlocks
 import com.semanticpainter.treesitter.KotlinParser
-import com.semanticpainter.treesitter.LoggingBlocks
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -25,12 +27,12 @@ data class AnalyzeRequest(
     val root: String? = null,
     val text: String,
     val language: String = "kotlin",
-    val feature: String = "logging",
     val config: String? = null,
     val types: Map<String, String> = emptyMap(),
 )
 
 private val mapper = jacksonObjectMapper()
+    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
 fun main(argv: Array<String>) {
     var host = "127.0.0.1"
@@ -68,9 +70,10 @@ fun main(argv: Array<String>) {
 }
 
 private fun analyze(request: AnalyzeRequest, useLsp: Boolean): String {
-    require(request.language == "kotlin") { "only kotlin is supported by the tree-sitter frontend" }
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
-    val config = loadFeatureConfig(request.config, request.feature, request.language)
+    val config = loadIntentConfig(request.config, request.language)
+    require(config.language == "kotlin") { "only kotlin is supported by the tree-sitter frontend" }
+
     val source = SourceFile(request.path, request.text)
     val tree = KotlinParser().parse(source)
     val oracle: TypeOracle = when {
@@ -81,12 +84,11 @@ private fun analyze(request: AnalyzeRequest, useLsp: Boolean): String {
         else -> NullOracle
     }
     try {
-        val spans = AnalysisEngine(LoggingBlocks.select(config.blocks)).analyze(source, tree, oracle, config)
+        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, oracle, config)
         return Artifact.render(
-            config.feature,
-            config.tag,
             config.language,
-            listOf(FileEntry(request.path, contentHash(request.text), spans)),
+            config.intents.keys.toList() + UNTAGGED_INTENT,
+            listOf(FileEntry(request.path, contentHash(request.text), annotations)),
         )
     } finally {
         (oracle as? AutoCloseable)?.close()

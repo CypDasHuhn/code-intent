@@ -1,13 +1,16 @@
 package com.semanticpainter.core.model
 
+const val UNTAGGED_INTENT = "UNTAGGED"
+
 data class SourceFile(
     val path: String,
     val text: String,
 )
 
-enum class TagKind {
-    INTERACTION,
-    CONTROL_FLOW,
+enum class Role {
+    SOURCE_INTENT,
+    DERIVATIVE_USE,
+    SCAFFOLD,
 }
 
 data class Span(
@@ -17,9 +20,30 @@ data class Span(
     val endCol: Int,
 )
 
-data class TaggedSpan(
-    val tag: String,
-    val kind: TagKind,
+data class RawAnnotation(
+    val role: Role,
+    val intents: Set<String>,
+    val rule: String,
+    val evidence: String,
+    val span: Span,
+    val source: String,
+    val confidence: Double,
+    val startByte: Int,
+    val endByte: Int,
+) {
+    fun merge(other: RawAnnotation): RawAnnotation = copy(
+        intents = intents + other.intents,
+        rule = if (rule == other.rule) rule else "$rule+${other.rule}",
+        evidence = if (evidence.length >= other.evidence.length) evidence else other.evidence,
+        source = if (source == other.source) source else "mixed",
+        confidence = maxOf(confidence, other.confidence),
+    )
+}
+
+data class Annotation(
+    val role: Role,
+    val intents: Set<String>,
+    val meaning: String,
     val rule: String,
     val evidence: String,
     val span: Span,

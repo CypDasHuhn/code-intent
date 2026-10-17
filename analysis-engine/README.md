@@ -1,56 +1,116 @@
 # Semantic Code Painter Engine
 
-Kotlin engine for intent tagging. Tree-sitter provides structure, LSP provides
-types and symbols, and a playset of rule blocks turns those facts into tags.
+Kotlin engine for intent classification. Tree-sitter provides structure, LSP
+provides types, and rule blocks classify the result into roles and intent sets.
+The engine resolves an abstract **meaning** for each annotation; it never knows
+how that meaning is displayed.
 
 ## Modules
 
 | module | responsibility |
 |--------|----------------|
 | `core` | model, config, artifact writer, oracle interface, block engine |
-| `treesitter` | Kotlin parser and structural blocks (`print`, `logger-interaction`, `intent-scaffold`) |
+| `treesitter` | Kotlin parser and rule blocks |
 | `lsp` | shared `kotlin-lsp` oracle |
 | `cli` | batch host over a directory |
 | `server` | HTTP host for buffers and files |
 
 `core` has no tree-sitter, LSP, or editor dependency. Hosts wire the pieces.
 
-## Blocks
+## Classification
 
-Blocks are applied to a fixed point. Interactions are tagged first, then
-structural blocks can consume them.
+Every annotation has:
 
-- `print` (tree-sitter): `println`/`print`, including `System.out`/`System.err`.
-- `logger-interaction` (LSP): a call on a receiver whose resolved type is a
-  configured logger type. Falls back to configured factory symbols, receiver
-  names, qualifiers, and imports with lower confidence.
-- `intent-scaffold` (tree-sitter): an `if` whose body is entirely tagged for the
-  domain and whose guard is neutral (constant, domain-tagged, or a configured
-  guard name/type). This is domain-agnostic: it works for any feature tag.
+- `role`: `SOURCE_INTENT`, `DERIVATIVE_USE`, or `SCAFFOLD`
+- `intents`: a set such as `{Logging}` or `{Logging, ErrorHandling}`
+- `meaning`: the resolved label for that set
 
-Tags carry `kind` (`interaction` / `control-flow`), `source`
-(`treesitter` / `lsp` / `heuristic`), and `confidence`.
+`UNTAGGED` is a reserved intent label. Untagged effects contribute it, so the
+meaning table can decide whether unknown code blocks concealment.
+
+Blocks:
+
+- `print` — `println`/`print`, including `System.out`/`System.err`.
+- `logger-interaction` — a call on a receiver whose LSP type is a configured
+  logger type. Heuristics are used only when the type is unknown.
+- `logging-state` — conditions using configured logging-state names.
+- `error-handling` — `throw` and configured Kotlin checks
+  (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
+  `assert`).
+- `derivative-use` — a local whose initializer is pure and whose reads only flow
+  into classified statements. Purity is literal/local or an explicit annotation.
+- `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
+  gets the union of its guard and body intents. A `try` is classified whole only
+  when the body, catches, and finally are fully covered; otherwise all-logging
+  catches can still classify the `try {` header.
+
+## Meaning resolution
+
+Each intent has a configured meaning. `UNTAGGED` has its own. The engine merges
+meanings with a precedence table:
+
+```yaml
+intents:
+  Logging:
+    meaning: CONCEAL
+  ErrorHandling:
+    meaning: SHOW
+
+untagged:
+  meaning: SHOW
+
+resolve:
+  precedence: [SHOW, CONCEAL]
+  default: SHOW
+```
+
+`{Logging, ErrorHandling}` resolves to `SHOW`; `{Logging}` resolves to
+`CONCEAL`. The engine does not know what those labels do. The renderer maps them
+to visuals.
 
 ## Config
 
-`core/src/main/resources/logging.yaml` is bundled; `--config` overrides it.
+`core/src/main/resources/intents.yaml` is bundled; `--config` overrides it.
 
 ```yaml
-features:
-  logging:
-    tag: Logging
-    blocks: [print, logger-interaction, intent-scaffold]
-    languages:
-      kotlin:
-        methods: [info, debug, warn, error, trace, log, verbose, fatal]
-        types: [org.slf4j.Logger, org.apache.logging.log4j.Logger, java.util.logging.Logger]
-        factories: [LoggerFactory.getLogger, KotlinLogging.logger, LogManager.getLogger, Logger.getLogger]
-        receiverNames: [log, logger, LOG, LOGGER, Logger]
-        qualifiers: [System.out, System.err]
-        guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
-        guardTypes: []
-        imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
+language: kotlin
+
+intents:
+  Logging:
+    meaning: CONCEAL
+    blocks: [print, logger-interaction, logging-state]
+    kotlin:
+      methods: [info, debug, warn, error, trace, log, verbose, fatal]
+      types: [org.slf4j.Logger, org.apache.logging.log4j.Logger, java.util.logging.Logger]
+      factories: [LoggerFactory.getLogger, KotlinLogging.logger, LogManager.getLogger, Logger.getLogger]
+      receiverNames: [log, logger, LOG, LOGGER, Logger]
+      qualifiers: [System.out, System.err]
+      guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
+      imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
+
+  ErrorHandling:
+    meaning: SHOW
+    blocks: [error-handling]
+    kotlin:
+      calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
+      throws: true
+
+untagged:
+  meaning: SHOW
+
+resolve:
+  precedence: [SHOW, CONCEAL]
+  default: SHOW
+
+purity:
+  annotations:
+    - Pure
+    - Contract(pure = true)
+    - org.checkerframework.dataflow.qual.Pure
 ```
+
+Purity is explicit: an annotation means pure; its absence means impure. There is
+no body inference.
 
 ## LSP sharing
 
@@ -72,7 +132,7 @@ editor.
 
 # install the launcher
 ./gradlew :cli:installDist
-cli/build/install/semantic-code-painter/bin/semantic-code-painter /path/to/project
+build/install/semantic-code-painter/bin/semantic-code-painter /path/to/project
 
 # HTTP
 ./gradlew :server:run --args="--port 8765"
@@ -81,25 +141,28 @@ curl -X POST http://127.0.0.1:8765/analyze \
   -d '{"path":"Sample.kt","root":"/path/to/project","text":"..."}'
 ```
 
-POST `/analyze` accepts `path`, `root`, `text`, `language`, `feature`,
-`config`, and an optional `types` map (`{"<byteOffset>": "fq.Type"}`) to inject
-editor-provided facts. `--no-lsp` disables the LSP oracle on the server.
+POST `/analyze` accepts `path`, `root`, `text`, `language`, `config`, and an
+optional `types` map (`{"<byteOffset>": "fq.Type"}`) to inject editor-provided
+facts. `--no-lsp` disables the LSP oracle on the server.
 
 ## Artifact
 
 ```json
 {
-  "feature": "logging",
-  "tag": "Logging",
   "language": "kotlin",
+  "intents": ["Logging", "ErrorHandling", "UNTAGGED"],
   "files": [
     {
       "path": "Sample.kt",
       "hash": "sha256-hex",
       "spans": [
-        {"tag":"Logging","kind":"interaction","rule":"typed-receiver",
-         "evidence":"log.info(...)","source":"lsp","confidence":0.95,
-         "startLine":10,"startCol":8,"endLine":10,"endCol":22}
+        {"role":"source-intent","intents":["Logging"],"meaning":"CONCEAL",
+         "rule":"typed-receiver","evidence":"log.info(...)","source":"lsp",
+         "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22},
+        {"role":"scaffold","intents":["Logging","ErrorHandling"],"meaning":"SHOW",
+         "rule":"intent-scaffold","evidence":"if (...) { ... }",
+         "source":"treesitter","confidence":0.9,
+         "startLine":12,"startCol":4,"endLine":18,"endCol":5}
       ]
     }
   ]
@@ -108,3 +171,13 @@ editor-provided facts. `--no-lsp` disables the LSP oracle on the server.
 
 Lines and columns are 0-based. `hash` covers canonical content (CRLF -> LF, one
 trailing newline removed) so consumers can reject stale artifacts.
+
+## Testing grounds
+
+`../testing-grounds/kotlin/` contains fixtures for interactions, scaffolds,
+catches, derivative uses, purity annotations, Error Handling, and heuristic
+false positives. They are intentionally not part of Gradle and need not compile.
+
+```sh
+semantic-code-painter ../testing-grounds --no-lsp --all
+```

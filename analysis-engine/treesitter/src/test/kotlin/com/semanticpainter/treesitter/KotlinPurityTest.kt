@@ -1,13 +1,13 @@
 package com.semanticpainter.treesitter
 
-import com.semanticpainter.core.config.loadFeatureConfig
+import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.model.SourceFile
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class KotlinPurityTest {
-    private val config = loadFeatureConfig(null, "logging", "kotlin")
+    private val config = loadIntentConfig(null, "kotlin")
 
     @Test
     fun detectsConfiguredPureAnnotations() {
@@ -22,7 +22,7 @@ class KotlinPurityTest {
         """.trimIndent()
 
         val tree = KotlinParser().parse(SourceFile("Purity.kt", text))
-        val patterns = config.list("pureAnnotations")
+        val patterns = config.pureAnnotations
 
         assertTrue(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "literal")!!, patterns))
         assertTrue(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "contracted")!!, patterns))
@@ -37,7 +37,7 @@ class KotlinPurityTest {
         """.trimIndent()
 
         val tree = KotlinParser().parse(SourceFile("Purity.kt", text))
-        val patterns = config.list("pureAnnotations")
+        val patterns = config.pureAnnotations
 
         assertFalse(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "effectful")!!, patterns))
     }

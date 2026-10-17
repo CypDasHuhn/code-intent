@@ -21,6 +21,13 @@ object KotlinPurity {
             declaration.children.firstOrNull { it.kind == "simple_identifier" }?.text == name
         }
 
+    fun isAnnotatedPureCall(tree: SyntaxTree, call: SyntaxNode, patterns: List<String>): Boolean {
+        if (KotlinSyntax.receiverNode(call) != null) return false
+        val callee = KotlinSyntax.calleeName(call) ?: return false
+        val function = findFunction(tree, callee) ?: return false
+        return isAnnotatedPure(function, patterns)
+    }
+
     private fun normalize(text: String): String =
         text.removePrefix("@")
             .replace(Regex("""^(field|property|get|set|receiver|param|setparam|delegate)\s*:\s*"""), "")
