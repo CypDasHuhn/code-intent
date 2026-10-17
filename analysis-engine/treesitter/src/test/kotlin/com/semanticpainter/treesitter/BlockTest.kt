@@ -184,6 +184,41 @@ class BlockTest {
     }
 
     @Test
+    fun declarationReferencedOnlyByDerivativeIsDerivative() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun make(): String = "x"
+            fun f() {
+                val source = make()
+                val message = source
+                log.warn(message)
+            }
+        """.trimIndent()
+
+        val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
+        assertEquals(2, derivatives.size)
+        assertTrue(derivatives.all { it.intents == setOf("Logging") })
+    }
+
+    @Test
+    fun mixedReferencePreventsDerivativePromotion() {
+        val text = """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun make(): String = "x"
+            fun f() {
+                val source = make()
+                val message = source
+                log.warn(message)
+                log.warn(source)
+            }
+        """.trimIndent()
+
+        val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
+        assertEquals(1, derivatives.size)
+        assertTrue(derivatives.single().evidence.contains("val message"))
+    }
+
+    @Test
     fun deadLocalAddsUntagged() {
         val text = """
             private val log = LoggerFactory.getLogger(Foo::class.java)

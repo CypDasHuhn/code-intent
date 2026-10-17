@@ -66,6 +66,15 @@ object KotlinSyntax {
         return null
     }
 
+    fun enclosingProperty(node: SyntaxNode): SyntaxNode? {
+        var current = node.parent
+        while (current != null) {
+            if (current.kind == "property_declaration") return current
+            current = current.parent
+        }
+        return null
+    }
+
     fun enclosingStatement(node: SyntaxNode): SyntaxNode {
         var current = node
         var parent = current.parent

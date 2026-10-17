@@ -196,7 +196,6 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
             val name = KotlinSyntax.variableName(declaration) ?: continue
             val nameNode = declaration.child("variable_declaration")?.child("simple_identifier") ?: continue
             val initializer = KotlinSyntax.initializerOf(declaration) ?: continue
-            if (!isPure(ctx, initializer)) continue
 
             val scope = KotlinSyntax.enclosingFunction(declaration) ?: ctx.tree.root
             val uses = scope.descendants("simple_identifier")
@@ -206,9 +205,24 @@ class DerivativeUseBlock(private val pureAnnotations: List<String>) : RuleBlock 
                 .toList()
             if (uses.isEmpty()) continue
 
+            val enclosingProperties = uses.mapNotNull { KotlinSyntax.enclosingProperty(it) }
+            val onlyDerivativePlaces = enclosingProperties.size == uses.size &&
+                enclosingProperties.all { property ->
+                    ctx.covering(property).any { it.role == Role.DERIVATIVE_USE }
+                }
+
+            if (!isPure(ctx, initializer) && !onlyDerivativePlaces) continue
+
             val intents = mutableSetOf<String>()
             for (use in uses) {
                 intents += ctx.coverage(KotlinSyntax.enclosingStatement(use)).intents
+            }
+            if (onlyDerivativePlaces) {
+                for (property in enclosingProperties) {
+                    ctx.covering(property)
+                        .filter { it.role == Role.DERIVATIVE_USE }
+                        .forEach { intents += it.intents }
+                }
             }
             if (intents.none { it != UNTAGGED_INTENT }) continue
 

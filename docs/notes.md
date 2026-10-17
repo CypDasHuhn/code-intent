@@ -276,7 +276,9 @@ detected.
 - Sources: Logging (typed/heuristic) and Error Handling (`throw`, `require`,
   `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`).
 - Derivative use: pure initializer (literal, local read, or explicit purity
-  annotation) and all reads flow into classified statements.
+  annotation) and reads flow into classified statements. Transitive closure: a
+  declaration whose reads all occur inside other derivative-use declarations is
+  derivative too, even with an impure initializer.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Whole-try classification requires full coverage; try-header classification
   requires only covered catches. Functions whose body is fully classified are
