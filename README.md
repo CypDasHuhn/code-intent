@@ -45,3 +45,14 @@ cd analysis-engine
 
 See [`analysis-engine/README.md`](analysis-engine/README.md) for the module layout,
 config, blocks, and LSP sharing.
+
+## Tasks
+
+Common workflows are wrapped in the [`justfile`](justfile):
+
+```sh
+just --list
+just test
+just install
+just tags /path/to/project --no-lsp
+```
