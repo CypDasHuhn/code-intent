@@ -31,12 +31,20 @@ return {
           priority = 50,
         },
         Logging = {
-          meaning = "CONCEAL",
+          meaning = "IGNORE",
           bg = "#1f2d1f",
           priority = 10,
         },
         UNTAGGED = {
           meaning = "SHOW",
+        },
+      },
+    },
+    hide_logging = {
+      extends = "base",
+      tags = {
+        Logging = {
+          meaning = "CONCEAL",
         },
       },
     },
