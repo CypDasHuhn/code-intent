@@ -283,3 +283,5 @@ detected.
 - Meaning resolution is engine-side: each intent has a meaning, and
   `resolve.precedence` merges a set into one effective meaning. The engine treats
   meanings as opaque labels; the renderer maps meaning to visuals.
+- Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT`/`SHOW` applies a background
+  from the highest-priority intent tag, and `IGNORE` renders dark-gray text.
