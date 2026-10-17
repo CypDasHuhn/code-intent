@@ -2,8 +2,8 @@
 
 Kotlin engine for intent classification. Tree-sitter provides structure, LSP
 provides types, and rule blocks classify the result into roles and intent sets.
-The engine resolves an abstract **meaning** for each annotation; it never knows
-how that meaning is displayed.
+The engine emits only semantic facts; clients resolve intent sets into meanings
+and visuals.
 
 ## Modules
 
@@ -23,10 +23,9 @@ Every annotation has:
 
 - `role`: `SOURCE_INTENT`, `DERIVATIVE_USE`, or `SCAFFOLD`
 - `intents`: a set such as `{Logging}` or `{Logging, ErrorHandling}`
-- `meaning`: the resolved label for that set
 
-`UNTAGGED` is a reserved intent label. Untagged effects contribute it, so the
-meaning table can decide whether unknown code blocks concealment.
+`UNTAGGED` is a reserved intent label for unclassified effects. Clients decide
+how `UNTAGGED` should influence a scaffold or derivative.
 
 Blocks:
 
@@ -44,29 +43,13 @@ Blocks:
   when the body, catches, and finally are fully covered; otherwise all-logging
   catches can still classify the `try {` header.
 
-## Meaning resolution
+## Client-side meanings
 
-Each intent has a configured meaning. `UNTAGGED` has its own. The engine merges
-meanings with a precedence table:
-
-```yaml
-intents:
-  Logging:
-    meaning: CONCEAL
-  ErrorHandling:
-    meaning: SHOW
-
-untagged:
-  meaning: SHOW
-
-resolve:
-  precedence: [SHOW, CONCEAL]
-  default: SHOW
-```
-
-`{Logging, ErrorHandling}` resolves to `SHOW`; `{Logging}` resolves to
-`CONCEAL`. The engine does not know what those labels do. The renderer maps them
-to visuals.
+The engine deliberately emits only `role` and `intents`; it has no meaning
+labels or resolution table. Clients (for example the nvim renderer) map intents
+to labels and merge sets, so presentation can change without re-running analysis.
+A client might map `Logging -> CONCEAL`, `ErrorHandling -> SHOW`, and let `SHOW`
+win for mixed scaffolds.
 
 ## Config
 
@@ -77,7 +60,6 @@ language: kotlin
 
 intents:
   Logging:
-    meaning: CONCEAL
     blocks: [print, logger-interaction, logging-state]
     kotlin:
       methods: [info, debug, warn, error, trace, log, verbose, fatal]
@@ -89,18 +71,10 @@ intents:
       imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
 
   ErrorHandling:
-    meaning: SHOW
     blocks: [error-handling]
     kotlin:
       calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
       throws: true
-
-untagged:
-  meaning: SHOW
-
-resolve:
-  precedence: [SHOW, CONCEAL]
-  default: SHOW
 
 purity:
   annotations:
@@ -156,10 +130,10 @@ facts. `--no-lsp` disables the LSP oracle on the server.
       "path": "Sample.kt",
       "hash": "sha256-hex",
       "spans": [
-        {"role":"source-intent","intents":["Logging"],"meaning":"CONCEAL",
+        {"role":"source-intent","intents":["Logging"],
          "rule":"typed-receiver","evidence":"log.info(...)","source":"lsp",
          "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22},
-        {"role":"scaffold","intents":["Logging","ErrorHandling"],"meaning":"SHOW",
+        {"role":"scaffold","intents":["Logging","ErrorHandling"],
          "rule":"intent-scaffold","evidence":"if (...) { ... }",
          "source":"treesitter","confidence":0.9,
          "startLine":12,"startCol":4,"endLine":18,"endCol":5}

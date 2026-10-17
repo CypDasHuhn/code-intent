@@ -43,7 +43,6 @@ data class RawAnnotation(
 data class Annotation(
     val role: Role,
     val intents: Set<String>,
-    val meaning: String,
     val rule: String,
     val evidence: String,
     val span: Span,

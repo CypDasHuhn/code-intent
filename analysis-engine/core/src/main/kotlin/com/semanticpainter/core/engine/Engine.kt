@@ -77,7 +77,6 @@ class AnalysisContext(
         Annotation(
             role = rawAnnotation.role,
             intents = rawAnnotation.intents,
-            meaning = config.resolve(rawAnnotation.intents),
             rule = rawAnnotation.rule,
             evidence = rawAnnotation.evidence,
             span = rawAnnotation.span,

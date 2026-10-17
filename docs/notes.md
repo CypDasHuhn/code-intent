@@ -281,8 +281,8 @@ detected.
   Whole-try classification requires full coverage; try-header classification
   requires only covered catches. Functions whose body is fully classified are
   scaffolds as well.
-- Meaning resolution is engine-side: each intent has a meaning, and
-  `resolve.precedence` merges a set into one effective meaning. The engine treats
-  meanings as opaque labels; the renderer maps meaning to visuals.
+- The engine emits `role` + `intents` only. It has no meaning labels or
+  resolution table; clients map intents to meanings and merge sets on render, so
+  presentation changes do not require re-analysis.
 - Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT`/`SHOW` applies a background
   from the highest-priority intent tag, and `IGNORE` renders dark-gray text.

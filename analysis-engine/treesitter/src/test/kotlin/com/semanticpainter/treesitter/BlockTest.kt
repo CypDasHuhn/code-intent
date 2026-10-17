@@ -52,7 +52,6 @@ class BlockTest {
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("Logging"), scaffold.intents)
-        assertEquals("CONCEAL", scaffold.meaning)
     }
 
     @Test
@@ -69,7 +68,6 @@ class BlockTest {
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("Logging", "ErrorHandling"), scaffold.intents)
-        assertEquals("SHOW", scaffold.meaning)
     }
 
     @Test
@@ -85,7 +83,6 @@ class BlockTest {
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("Logging", UNTAGGED_INTENT), scaffold.intents)
-        assertEquals("SHOW", scaffold.meaning)
     }
 
     @Test
@@ -106,9 +103,7 @@ class BlockTest {
         val header = scaffolds.first { it.rule == "intent-scaffold-try-header" }
         val catch = scaffolds.first { it.rule == "intent-scaffold-catch" }
         assertEquals(setOf("Logging"), header.intents)
-        assertEquals("CONCEAL", header.meaning)
         assertEquals(setOf("Logging"), catch.intents)
-        assertEquals("CONCEAL", catch.meaning)
         assertTrue(scaffolds.none { it.rule == "intent-scaffold-try" })
     }
 
@@ -131,7 +126,6 @@ class BlockTest {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
         }
         assertEquals(setOf("Logging", "ErrorHandling"), catch.intents)
-        assertEquals("SHOW", catch.meaning)
     }
 
     @Test
@@ -152,13 +146,11 @@ class BlockTest {
         val annotations = analyze(text)
         val derivative = annotations.first { it.role == Role.DERIVATIVE_USE }
         assertEquals(setOf("Logging"), derivative.intents)
-        assertEquals("CONCEAL", derivative.meaning)
 
         val catch = annotations.first {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
         }
         assertEquals(setOf("Logging"), catch.intents)
-        assertEquals("CONCEAL", catch.meaning)
     }
 
     @Test
@@ -214,7 +206,6 @@ class BlockTest {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-catch"
         }
         assertEquals(setOf("Logging", UNTAGGED_INTENT), catch.intents)
-        assertEquals("SHOW", catch.meaning)
     }
 
     @Test
@@ -235,7 +226,6 @@ class BlockTest {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-try"
         }
         assertEquals(setOf("Logging"), whole.intents)
-        assertEquals("CONCEAL", whole.meaning)
         assertFalse(annotations.any { it.rule == "intent-scaffold-try-header" })
     }
 
@@ -275,7 +265,6 @@ class BlockTest {
         val scaffolds = analyze(text).filter { it.role == Role.SCAFFOLD }
         assertTrue(scaffolds.isNotEmpty())
         assertTrue(scaffolds.all { it.intents == setOf("Logging") }, "scaffolds=$scaffolds")
-        assertTrue(scaffolds.all { it.meaning == "CONCEAL" }, "scaffolds=$scaffolds")
     }
 
     @Test
@@ -292,7 +281,6 @@ class BlockTest {
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(2, derivatives.size)
         assertTrue(derivatives.all { it.intents == setOf("Logging") })
-        assertTrue(derivatives.all { it.meaning == "CONCEAL" })
     }
 
     @Test
@@ -307,7 +295,6 @@ class BlockTest {
             it.role == Role.SCAFFOLD && it.rule == "intent-scaffold-function"
         }
         assertEquals(setOf("ErrorHandling"), function.intents)
-        assertEquals("SHOW", function.meaning)
         assertEquals(0, function.span.startLine)
         assertEquals(2, function.span.endLine)
     }
@@ -337,7 +324,6 @@ class BlockTest {
 
         val derivative = analyze(text).first { it.role == Role.DERIVATIVE_USE }
         assertEquals(setOf("Logging"), derivative.intents)
-        assertEquals("CONCEAL", derivative.meaning)
     }
 
     @Test
@@ -353,6 +339,5 @@ class BlockTest {
 
         val scaffold = analyze(text).first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("Logging"), scaffold.intents)
-        assertEquals("CONCEAL", scaffold.meaning)
     }
 }
