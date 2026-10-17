@@ -18,6 +18,10 @@ features:
         qualifiers: [System.out, System.err]
         guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
         guardTypes: []
+        pureAnnotations:
+          - Pure
+          - Contract(pure = true)
+          - org.checkerframework.dataflow.qual.Pure
         imports:
           - org.slf4j
           - mu.KotlinLogging
