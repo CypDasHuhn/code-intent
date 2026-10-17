@@ -135,6 +135,27 @@ class BlockTest {
     }
 
     @Test
+    fun validationGuardClassifiesPlumbingLocals() {
+        val text = """
+            fun f(call: Call) {
+                val navigation = call.children.firstOrNull { it.kind == "navigation" }
+                if (navigation != null) {
+                    val suffix = navigation.children.lastOrNull()
+                    return suffix
+                }
+            }
+        """.trimIndent()
+
+        val annotations = analyze(text)
+        val navigation = annotations.first {
+            it.role == Role.DERIVATIVE_USE && it.evidence.contains("val navigation")
+        }
+        assertEquals(setOf("VALIDATION"), navigation.intents)
+        val scaffold = annotations.first { it.rule == "intent-scaffold" }
+        assertEquals(setOf("VALIDATION"), scaffold.intents)
+    }
+
+    @Test
     fun validationPredicateWithoutBookkeeping() {
         val text =
             """

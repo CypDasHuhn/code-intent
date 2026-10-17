@@ -318,17 +318,19 @@ class ValidationBlock : RuleBlock {
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> =
         ctx.tree.root
             .descendants("if_expression")
-            .mapNotNull { ifNode ->
-                val condition = KotlinSyntax.ifCondition(ifNode) ?: return@mapNotNull null
-                val body = ifNode.child("control_structure_body") ?: return@mapNotNull null
-                if (!hasDirectExit(body)) return@mapNotNull null
+            .flatMap { ifNode ->
+                val condition = KotlinSyntax.ifCondition(ifNode) ?: return@flatMap emptyList()
+                val body = ifNode.child("control_structure_body") ?: return@flatMap emptyList()
+                if (!hasDirectExit(body)) return@flatMap emptyList()
 
                 val explicit = hasValidationComment(ctx, ifNode)
                 val bookkeeping = hasBookkeeping(ctx, body)
                 val predicate = KotlinSyntax.isValidationPredicate(condition)
                 val pure = KotlinSyntax.isSideEffectFree(condition)
-                if (!explicit && !bookkeeping && !predicate && !pure) return@mapNotNull null
-                if (KotlinSyntax.isConstant(condition) && !explicit && !bookkeeping) return@mapNotNull null
+                if (!explicit && !bookkeeping && !predicate && !pure) return@flatMap emptyList()
+                if (KotlinSyntax.isConstant(condition) && !explicit && !bookkeeping) {
+                    return@flatMap emptyList()
+                }
 
                 val confidence =
                     when {
@@ -337,12 +339,22 @@ class ValidationBlock : RuleBlock {
                         predicate -> 0.7
                         else -> 0.5
                     }
-                condition.raw(
-                    Role.SOURCE_INTENT,
-                    setOf("VALIDATION"),
-                    "validation-guard",
-                    if (explicit) "comment" else "treesitter",
-                    confidence,
+                val source = if (explicit) "comment" else "treesitter"
+                listOf(
+                    condition.raw(
+                        Role.SOURCE_INTENT,
+                        setOf("VALIDATION"),
+                        "validation-guard",
+                        source,
+                        confidence,
+                    ),
+                    ifNode.raw(
+                        Role.SCAFFOLD,
+                        setOf("VALIDATION"),
+                        "validation-guard-block",
+                        source,
+                        confidence,
+                    ),
                 )
             }.toList()
 
@@ -716,7 +728,7 @@ class IntentScaffoldBlock : RuleBlock {
         if (KotlinSyntax.isConstant(expression) || KotlinSyntax.isSideEffectFree(expression)) {
             return emptySet()
         }
-        return ctx.coverage(expression).intents
+        return ctx.intentsAt(expression)
     }
 }
 
