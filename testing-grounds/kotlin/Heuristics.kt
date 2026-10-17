@@ -2,6 +2,7 @@ package testinggrounds
 
 class Service {
     fun warn(message: String) {}
+
     fun info(message: String) {}
 }
 
