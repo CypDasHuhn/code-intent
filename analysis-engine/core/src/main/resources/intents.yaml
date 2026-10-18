@@ -26,6 +26,7 @@ csharp-logging: &csharp-logging
 
 csharp-error: &csharp-error
   calls: [Assert]
+  qualifiers: [Debug, Trace, Contract]
   throws: true
 
 intents:

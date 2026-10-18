@@ -422,7 +422,8 @@ class ErrorHandlingBlock(
                 .mapNotNull { call ->
                     val callee = call.callee ?: return@mapNotNull null
                     if (callee !in calls) return@mapNotNull null
-                    if (call.receiver != null) return@mapNotNull null
+                    val receiver = call.receiver
+                    if (receiver != null && !definition.has("qualifiers", receiver.text)) return@mapNotNull null
                     call.site.raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-call", "treesitter", 1.0)
                 }.toList()
 

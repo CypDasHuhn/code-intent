@@ -48,6 +48,22 @@ class CsharpBlockTest {
     }
 
     @Test
+    fun debugAssertIsErrorHandling() {
+        val annotations = analyze("""class C { void F(string id) { Debug.Assert(!string.IsNullOrEmpty(id)); } }""")
+        assertTrue(
+            annotations.any {
+                it.rule == "error-handling-call" && it.intents == setOf("ERROR_HANDLING")
+            },
+        )
+    }
+
+    @Test
+    fun assertOnUnqualifiedReceiverIsNotErrorHandling() {
+        val annotations = analyze("""class C { void F(Checker c) { c.Assert(true); } }""")
+        assertTrue(annotations.none { it.rule == "error-handling-call" })
+    }
+
+    @Test
     fun validationGuardWithEarlyReturn() {
         val text =
             """
