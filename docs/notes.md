@@ -279,13 +279,12 @@ detected.
   `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`),
   Bookkeeping (`@Bookkeeping` or `// scp:bookkeeping`; writes inherit), and
   Validation (early-exit guard conditions; `// scp:validation` override).
-- Derivative use: pure initializer (literal, local read, or explicit purity
-  annotation) and reads flow into classified statements. Transitive closure: a
-  declaration whose reads all occur inside other derivative-use declarations is
-  derivative too, even with an impure initializer. An impure local is also
-  promoted when every read sits inside a classified span. This applies to
-  functions as well as locals: a helper called only from derivative
-  locals/functions is tagged on its declaration.
+- Derivative use: explicitly pure initializer (literal, local read, or
+  annotated pure call) and reads flow into classified statements. Transitive
+  closure: a declaration whose reads all occur inside other derivative-use
+  declarations is derivative too, but function promotion requires explicit
+  purity. An unannotated call or operator is assumed impure, so there is no
+  impure-local promotion until a purity engine exists.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Bare
   `return`/`continue`/`break` exits are neutral, so a validation guard composes

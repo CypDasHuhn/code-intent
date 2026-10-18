@@ -137,21 +137,23 @@ class BlockTest {
 
     @Test
     fun validationGuardClassifiesPlumbingLocals() {
-        val text = """
-            fun f(call: Call) {
-                val navigation = call.children.firstOrNull { it.kind == "navigation" }
-                if (navigation != null) {
-                    val suffix = navigation.children.lastOrNull()
-                    return suffix
+        val text =
+            """
+            fun f(value: String?): String {
+                val current = value
+                if (current != null) {
+                    return current
                 }
+                return ""
             }
-        """.trimIndent()
+            """.trimIndent()
 
         val annotations = analyze(text)
-        val navigation = annotations.first {
-            it.role == Role.DERIVATIVE_USE && it.evidence.contains("val navigation")
-        }
-        assertEquals(setOf("VALIDATION"), navigation.intents)
+        val current =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.evidence.contains("val current")
+            }
+        assertEquals(setOf("VALIDATION"), current.intents)
         val scaffold = annotations.first { it.rule == "intent-scaffold" }
         assertEquals(setOf("VALIDATION"), scaffold.intents)
     }
@@ -404,7 +406,7 @@ class BlockTest {
     }
 
     @Test
-    fun impureLocalUsedOnlyByLoggingIsDerivative() {
+    fun impureLocalUsedOnlyByLoggingIsNotDerivative() {
         val text =
             """
             private val log = LoggerFactory.getLogger(Foo::class.java)
@@ -415,15 +417,15 @@ class BlockTest {
             }
             """.trimIndent()
 
-        val derivative =
-            analyze(text).first {
+        assertTrue(
+            analyze(text).none {
                 it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
-            }
-        assertEquals(setOf("LOGGING"), derivative.intents)
+            },
+        )
     }
 
     @Test
-    fun impureLocalUsedOnlyByErrorHandlingIsDerivative() {
+    fun impureLocalUsedOnlyByErrorHandlingIsNotDerivative() {
         val text =
             """
             fun f(values: Map<String, Int>) {
@@ -432,11 +434,11 @@ class BlockTest {
             }
             """.trimIndent()
 
-        val derivative =
-            analyze(text).first {
+        assertTrue(
+            analyze(text).none {
                 it.role == Role.DERIVATIVE_USE && it.evidence.contains("val unknown")
-            }
-        assertEquals(setOf("ERROR_HANDLING"), derivative.intents)
+            },
+        )
     }
 
     @Test
@@ -583,6 +585,7 @@ class BlockTest {
         val text =
             """
             private val log = LoggerFactory.getLogger(Foo::class.java)
+            @Pure
             fun make(): String = "x"
             fun f() {
                 val source = make()
@@ -597,7 +600,7 @@ class BlockTest {
     }
 
     @Test
-    fun allClassifiedReferencesPromoteImpureLocal() {
+    fun impureInitializerIsNotDerivative() {
         val text =
             """
             private val log = LoggerFactory.getLogger(Foo::class.java)
@@ -611,7 +614,9 @@ class BlockTest {
             """.trimIndent()
 
         val derivatives = analyze(text).filter { it.role == Role.DERIVATIVE_USE }
-        assertTrue(derivatives.any { it.evidence.contains("val source") })
+        assertTrue(derivatives.any { it.evidence.contains("val message") })
+        assertTrue(derivatives.none { it.evidence.contains("val source") })
+        assertTrue(derivatives.none { it.evidence.contains("fun make") })
         assertTrue(derivatives.all { it.intents == setOf("LOGGING") })
     }
 

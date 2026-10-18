@@ -88,12 +88,11 @@ Blocks:
   on a validation guard's true edge is `VALIDATION`; a normal return or a
   non-rejection return on a guard's other edge is `UNTAGGED`. Normal returns
   therefore block whole-function scaffolds instead of staying neutral.
-- `derivative-use` — a local whose initializer is pure and whose reads flow into
-  classified statements, or a declaration (local or function) whose references
-  all occur inside other derivative-use declarations. An impure local is also
-  promoted when every read is contained in a classified span (`LOGGING`,
-  `ERROR_HANDLING`, `BOOKKEEPING`, or a scaffold). Purity is literal/local or
-  an explicit annotation.
+- `derivative-use` — a local whose initializer is explicitly pure (literal,
+  local read, or an annotated pure call) and whose reads flow into classified
+  statements, or an annotated pure function whose references all occur inside
+  other derivative-use declarations. Unannotated calls and operators are assumed
+  to have side effects and are not derivative.
 - `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
   gets the union of its guard and body intents. Side-effect-free guards
   (constants, comparisons, reads) are neutral; effectful guards add `UNTAGGED`.

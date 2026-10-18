@@ -94,10 +94,9 @@ class WebBlockTest {
         val text =
             """
             function f() {
-                const message = format()
+                const message = "x"
                 console.log(message)
             }
-            function format() { return "x" }
             """.trimIndent()
         val derivative =
             analyze("javascript", text).first {

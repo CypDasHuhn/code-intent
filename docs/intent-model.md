@@ -128,18 +128,18 @@ etc. have different semantics. Generic effects can be a separate taxonomy later.
 
 A property/local is `DERIVATIVE_USE` when its reads flow into classified spans.
 
-- Pure initializers are the original case.
-- An impure local is promoted when **every** read is contained in a classified
-  span (source or scaffold); this is how validation plumbing and error-message
-  locals become derived.
+- Only explicitly pure initializers qualify: literals, local reads, and calls
+  to annotated pure functions.
 - A local is only promoted when all reads are classified; mixed/untagged reads
-  prevent promotion.
+  prevent promotion. There is no impure-local promotion: an unannotated call or
+  operator is assumed to have side effects until a purity engine exists.
 - Intents at a read are resolved from the smallest containing annotation, which
   is what lets reads inside an error-handling lambda inherit `ERROR_HANDLING`.
 - Functions whose references all occur inside derivative-use declarations are
-  promoted too.
+  promoted only when they are explicitly pure.
 - Purity is explicit (`@Pure`, `@Contract(pure = true)`) or literal/local; there
-  is no real purity inference yet.
+  is no real purity inference yet, so unannotated calls and operators are
+  treated as impure.
 
 ### Scaffolds
 

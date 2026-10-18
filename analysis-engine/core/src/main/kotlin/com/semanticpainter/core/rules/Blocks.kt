@@ -469,9 +469,8 @@ class DerivativeUseBlock(
                 useIntents.all { intents ->
                     UNTAGGED_INTENT !in intents && intents.any { it != UNTAGGED_INTENT }
                 }
-            val local = ctx.syntax.enclosingFunction(declaration.node) != null
             if (!allClassified) continue
-            if (!isPure(ctx, initializer) && !local) continue
+            if (!isPure(ctx, initializer)) continue
 
             val intents = useIntents.flatten().toSet()
             if (intents.none { it != UNTAGGED_INTENT }) continue
@@ -483,6 +482,7 @@ class DerivativeUseBlock(
             val nameNode = declaration.nameNode ?: continue
             val name = nameNode.text
             if (name.isEmpty()) continue
+            if (!ctx.syntax.isAnnotatedPure(declaration.node, pureAnnotations)) continue
 
             val functionReferences =
                 references[name].orEmpty().filter { reference ->
