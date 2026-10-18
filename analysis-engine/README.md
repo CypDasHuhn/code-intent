@@ -1,4 +1,4 @@
-# Semantic Code Painter Engine
+# CodeIntent Engine
 
 Kotlin engine for intent classification. Tree-sitter provides structure, a
 function-local CFG provides control-flow facts, LSP provides types, and rule
@@ -74,12 +74,12 @@ Blocks:
   Live mode caps hover time.
 - `logging-state` — conditions using configured logging-state names.
 - `bookkeeping` — a property annotated with `@Bookkeeping` or preceded by
-  `// scp:bookkeeping`. The declaration and all writes to it are tagged
+  `// cint:bookkeeping`. The declaration and all writes to it are tagged
   Bookkeeping; reads are not.
 - `validation` — an `if` branch with a direct early exit (`return`, `continue`,
   or `break`). The guard condition is tagged Validation when the branch has a
   Bookkeeping write, the condition is a validity predicate, the condition is
-  side-effect-free, or a `// scp:validation` comment precedes it. Bare exits
+  side-effect-free, or a `// cint:validation` comment precedes it. Bare exits
   are neutral, so the enclosing scaffold composes `VALIDATION` with
   `BOOKKEEPING`/other intents.
 - `error-handling` — `throw` and configured checks (`require`, `assert`, ...).
@@ -181,13 +181,13 @@ The server can run as a per-project daemon over a Unix socket:
 
 ```sh
 ./gradlew :server:installDist
-semantic-code-painter-server --socket /path/to/project.sock --root /path/to/project
+cint-server --socket /path/to/project.sock --root /path/to/project
 ```
 
 Transport is NDJSON JSON-RPC. The client sends `textDocument/didOpen`,
 `didChange`, and `didClose` with full text and a monotonic version. The server
-re-runs that file and emits `semanticPainter/publishTags` with the analyzed
-version, content hash, and annotations. `semanticPainter/analyze` requests an
+re-runs that file and emits `cint/publishTags` with the analyzed
+version, content hash, and annotations. `cint/analyze` requests an
 explicit re-run. Profiles and shards stay client-side; changing them never
 re-runs analysis.
 
@@ -203,7 +203,7 @@ batch and editor-agnostic requests.
 
 # install the launcher
 ./gradlew :cli:installDist
-build/install/semantic-code-painter/bin/semantic-code-painter /path/to/project
+build/install/cint/bin/cint /path/to/project
 
 # HTTP
 ./gradlew :server:run --args="--port 8765"
@@ -251,5 +251,5 @@ annotations, Error Handling, and heuristic false positives. They are
 intentionally not part of Gradle and need not compile.
 
 ```sh
-semantic-code-painter ../testing-grounds --no-lsp --all
+cint ../testing-grounds --no-lsp --all
 ```

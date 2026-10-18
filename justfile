@@ -42,11 +42,11 @@ server *args:
 
 # Run the live Unix-socket server. The nvim client normally spawns this.
 live socket root *args:
-    ./{{engine}}/build/install/semantic-code-painter-server/bin/semantic-code-painter-server --socket "{{socket}}" --root "{{root}}" {{args}}
+    ./{{engine}}/build/install/cint-server/bin/cint-server --socket "{{socket}}" --root "{{root}}" {{args}}
 
 # Generate a tags.json artifact for a project.
 tags root *args:
-    ./{{engine}}/build/install/semantic-code-painter/bin/semantic-code-painter "{{root}}" --out "{{root}}/tags.json" {{args}}
+    ./{{engine}}/build/install/cint/bin/cint "{{root}}" --out "{{root}}/tags.json" {{args}}
 
 # Remove Gradle build outputs.
 clean:

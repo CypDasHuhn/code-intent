@@ -4,7 +4,7 @@ class BookkeepingExample {
     @Bookkeeping
     var skipped = 0
 
-    // scp:bookkeeping
+    // cint:bookkeeping
     var rejected = 0
 
     fun record(value: Int): Boolean {

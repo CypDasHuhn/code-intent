@@ -11,14 +11,14 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.semanticpainter.server.MainKt")
-    applicationName = "semantic-code-painter-server"
+    mainClass.set("dev.cint.server.MainKt")
+    applicationName = "cint-server"
     applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.named<Sync>("installDist") {
     destinationDir =
         rootProject.layout.projectDirectory
-            .dir("build/install/semantic-code-painter-server")
+            .dir("build/install/cint-server")
             .asFile
 }

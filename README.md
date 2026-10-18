@@ -1,4 +1,4 @@
-# Semantic Code Painter
+# CodeIntent
 
 > Code to Intent.
 

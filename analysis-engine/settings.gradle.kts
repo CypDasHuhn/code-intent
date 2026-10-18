@@ -1,3 +1,3 @@
-rootProject.name = "semantic-code-painter"
+rootProject.name = "codeintent"
 
 include(":core", ":treesitter", ":lsp", ":frontend", ":cli", ":server")

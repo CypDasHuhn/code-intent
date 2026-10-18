@@ -6,7 +6,7 @@ plugins {
 }
 
 allprojects {
-    group = "com.semanticpainter"
+    group = "dev.cint"
     version = "0.1.0"
 
     repositories {

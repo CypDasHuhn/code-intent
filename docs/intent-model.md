@@ -1,6 +1,6 @@
 # Intent Model — Design Notes
 
-Snapshot of the current model and the design directions discussed for SCP.
+Snapshot of the current model and the design directions discussed for CodeIntent.
 This is intentionally broader than the implementation: it separates what the
 engine does today from what we want to support later.
 
@@ -15,7 +15,7 @@ intents into visual meanings.
 - Tag/intent names are screaming snake case: `LOGGING`, `ERROR_HANDLING`,
   `BOOKKEEPING`, `VALIDATION`, `USER_FEEDBACK` (planned), `UNTAGGED`.
 - Source annotations remain code-shaped: `@Bookkeeping`, `@UserFeedback`,
-  `// scp:bookkeeping`, `// scp:validation`.
+  `// cint:bookkeeping`, `// cint:validation`.
 - The engine has no colors or visual policy. `tags[intent].meaning` and
   `rules[meaning]` live on the client.
 
@@ -45,7 +45,7 @@ possible.
 ### `BOOKKEEPING` (implemented)
 
 - Declared once on a property with `@Bookkeeping` or
-  `// scp:bookkeeping`.
+  `// cint:bookkeeping`.
 - The declaration and all writes (`x++`, `x += 1`, assignment) inherit
   `BOOKKEEPING`.
 - Reads are not tagged as bookkeeping.
@@ -66,7 +66,7 @@ Current v1 behavior:
   - the condition is a validation predicate (`isEmpty`, `isBlank`, `none`,
     `any`, `all`, `isValid*`, `has*`, ...),
   - the condition is side-effect-free,
-  - `// scp:validation` precedes the guard;
+  - `// cint:validation` precedes the guard;
 - contributes an ambient `VALIDATION` scaffold over the guard so plumbing
   locals read inside the guard become `DERIVATIVE_USE` with `VALIDATION`;
 - bare early exits are neutral; `return false` and bare `return` do not make a
@@ -104,7 +104,7 @@ fun Player.msg(...)
 or
 
 ```kotlin
-// scp:user-feedback
+// cint:user-feedback
 fun Player.msg(...)
 ```
 
@@ -170,12 +170,12 @@ Candidate rules:
 - use a separate style/namespace: dotted underline, muted highlight, `?` sign,
   virtual text, etc.;
 - be reviewable on demand, not with popups while typing;
-- show counts such as `SCP: 3 unsure`.
+- show counts such as `CodeIntent: 3 unsure`.
 
 Possible UX:
 
 ```text
-:SCPainterReview
+:CintReview
 Possible VALIDATION
 evidence: if (target == null) { player.msg(...); return }
 [Confirm] [Reject] [Skip]
@@ -212,7 +212,7 @@ Identity is the hard part:
 
 Confirmation should be applied as a client overlay immediately. The engine can
 read the same store later for batch/other clients. An optional action could
-write a `// scp:validation` source comment instead, which is maximally durable
+write a `// cint:validation` source comment instead, which is maximally durable
 but edits code.
 
 Numeric confidence remains diagnostic; the client uses the explicit
@@ -238,7 +238,7 @@ Support both eventually:
 
 ## 6. Analyzer DSL and query layer
 
-The long-term value is that SCP users can write their own intent analyzers.
+The long-term value is that CodeIntent users can write their own intent analyzers.
 
 Pipeline:
 
@@ -353,9 +353,9 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
   instead of silently using a stale artifact.
 - The live daemon is per project root, detached, and reused across nvim
   restarts.
-- `:SCPainterServerDisconnect` disconnects; `:SCPainterServerStop` kills the
-  daemon; `:SCPainterServerRestart` stops and respawns.
-- `:SCPainterLiveTags` shows versions, profile, shards, annotations, extmarks,
+- `:CintServerDisconnect` disconnects; `:CintServerStop` kills the
+  daemon; `:CintServerRestart` stops and respawns.
+- `:CintLiveTags` shows versions, profile, shards, annotations, extmarks,
   and pending state.
 - The daemon holds in-memory docs and loaded engine config; changes to
   `intents.yaml`, `server_cmd`, LSP flags, or a rebuilt binary require a
@@ -415,11 +415,11 @@ Key engine files:
 
 Key client files:
 
-- `nvim-renderer/lua/semantic_code_painter/init.lua` — live pipeline, profiles,
+- `nvim-renderer/lua/cint/init.lua` — live pipeline, profiles,
   shards, reveal.
-- `nvim-renderer/lua/semantic_code_painter/render.lua` — extmarks/concealment.
-- `nvim-renderer/lua/semantic_code_painter/live.lua` — daemon transport.
-- `nvim-renderer/plugin/semantic_code_painter.lua` — commands/autocmds.
+- `nvim-renderer/lua/cint/render.lua` — extmarks/concealment.
+- `nvim-renderer/lua/cint/live.lua` — daemon transport.
+- `nvim-renderer/plugin/cint.lua` — commands/autocmds.
 
 Fixtures:
 

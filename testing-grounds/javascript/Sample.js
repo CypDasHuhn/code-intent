@@ -2,7 +2,7 @@ import pino from "pino";
 
 const logger = pino();
 
-// scp:bookkeeping
+// cint:bookkeeping
 let skipped = 0;
 
 class Service {

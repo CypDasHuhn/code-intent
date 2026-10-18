@@ -1,10 +1,10 @@
-# Semantic Code Painter — session notes / knowledge dump
+# CodeIntent — session notes / knowledge dump
 
 Purpose: raw, self-contained dump of a brainstorming+PoC session so a future
 session can resume with no other context. Written for LLM consumption; density
 over polish. Not maintained for humans.
 
-Repo: `~/repos/semantic-code-painter` (monorepo).
+Repo: `~/repos/codeintent` (monorepo).
 Tagline: **Code to Intent.**
 Date of session: 2026-10-16.
 
@@ -123,7 +123,7 @@ resolution, no dataflow, no context sanitization. A non-logger receiver named
 
 ## 6. Renderer (nvim) as implemented
 
-- Per-tag **handler** registry (`lua/semantic_code_painter/handlers/`):
+- Per-tag **handler** registry (`lua/cint/handlers/`):
   - `color` — bg tint + gutter sign. opts `{bg,sign,icon}`. Falls back to
     builtin palette per tag name (`colors.lua`), else `fallback`.
   - `conceal` — `{char="…"}` inline replace; `{lines=true}` **vertical** hide.
@@ -137,7 +137,7 @@ resolution, no dataflow, no context sanitization. A non-logger receiver named
   when the active block changes.
 - Staleness guard in `init.render`: buffer hash != artifact hash => clear +
   notify + return 0. (Warns, does not self-heal.)
-- Commands: `:SCPainterRender|Clear|Toggle|Refresh|Info`. Headless test:
+- Commands: `:CintRender|Clear|Toggle|Refresh|Info`. Headless test:
   `nvim-renderer/tests/run.sh`.
 
 Important: for THIS tool, stale data is worse than for a linter — a stale
@@ -205,11 +205,10 @@ partly conflict; Joern would be a side/batch service, not the live engine.
 
 ## 11. Naming history
 
-Chose **Semantic Code Painter** (self-describing, searchable, no metaphor to
-outgrow). Tagline "Code to Intent". Avoid the acronym `scp` (collides with
-secure copy; npm `gloss`, Haskell `gloss`, etc. all taken — single-word names
-rejected as too crowded / hard to make meaningful). Installed launcher is
-`semantic-code-painter`; shorter candidate `scpaint` proposed but not adopted.
+Renamed to **CodeIntent** before the first push (self-describing, searchable,
+no metaphor to outgrow). Tagline "Code to Intent". Short handle: `cint` for the
+CLI, Lua module, and commands; the repo stays `codeintent`. CINT (the old C++
+interpreter) collides with the short handle, but the repo name disambiguates.
 
 ## 12. PoC state / artifacts
 
@@ -223,7 +222,7 @@ rejected as too crowded / hard to make meaningful). Installed launcher is
 - `fa4fe4d` content-hash staleness guard (CLI + renderer).
 - Verified: fixture + `mtquery` (78 files, ~1s full scan), e2e CLI->renderer.
 - dotfiles: added PATH entry in `shell/paths/10-unix.lua` ->
-  `analysis-engine/build/install/semantic-code-painter/bin`; regenerate via
+  `analysis-engine/build/install/cint/bin`; regenerate via
   `lua bootstrap.lua shell`. (Committed? check; may be uncommitted.)
 - Environment gotchas: system gradle broken (`GRADLE_HOME=/usr/share/java/gradle`
   missing module) -> use sdkman gradle or the project wrapper (9.7.0). JDK 26.
@@ -269,7 +268,7 @@ detected.
   sources, Bookkeeping annotations/comments, pure vs non-pure `if`/`catch`/`try`
   scaffolds, derivative uses, purity annotations, and the heuristic false
   positive for a log-named method on an unknown receiver.
-- Run: `semantic-code-painter testing-grounds --no-lsp --all`.
+- Run: `cint testing-grounds --no-lsp --all`.
 
 ## 17. Classification model (2026-10-17)
 
@@ -277,8 +276,8 @@ detected.
 - Intents are sets; `UNTAGGED` is a reserved label for unclassified effects.
 - Sources: Logging (typed/heuristic), Error Handling (`throw`, `require`,
   `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`),
-  Bookkeeping (`@Bookkeeping` or `// scp:bookkeeping`; writes inherit), and
-  Validation (early-exit guard conditions; `// scp:validation` override).
+  Bookkeeping (`@Bookkeeping` or `// cint:bookkeeping`; writes inherit), and
+  Validation (early-exit guard conditions; `// cint:validation` override).
 - Derivative use: explicitly pure initializer (literal, local read, or
   annotated pure call) and reads flow into classified statements. Transitive
   closure: a declaration whose reads all occur inside other derivative-use
@@ -309,18 +308,18 @@ detected.
   (including per-tag meanings), `resolve`, `rules`, `handlers`,
   `expand_on_cursor`.
 - `extends` chains; deep merge; `false` disables; lists replace.
-- Project profiles live in `<root>/.scpainter/profiles.lua`; saving reloads and
+- Project profiles live in `<root>/.cint/profiles.lua`; saving reloads and
   re-renders. Global profiles can come from `setup({ profiles = ... })`.
-- Picker uses `vim.ui.select`. Commands: `:SCPainterProfile [name]`,
-  `:SCPainterProfile! name`, `:SCPainterProfileEdit [name]`,
-  `:SCPainterProfileReload`.
+- Picker uses `vim.ui.select`. Commands: `:CintProfile [name]`,
+  `:CintProfile! name`, `:CintProfileEdit [name]`,
+  `:CintProfileReload`.
 - A profile switch applies buffer-locally when the current buffer was rendered;
   otherwise (e.g. the profile editor) it applies globally. Global switches clear
   buffer-local overrides.
 - Profiles must use `extends` for derived profiles; assigning one profile table
   to another shares the table and mutating it changes both.
 - Default keymaps: `<leader>pp` pick, `<leader>pe` edit; `<Plug>` mappings
-  `<Plug>(SCPainterProfilePick)` and `<Plug>(SCPainterProfileEdit)`.
+  `<Plug>(CintProfilePick)` and `<Plug>(CintProfileEdit)`.
 - Switching profiles only re-renders from cached spans; no artifact
   regeneration and no engine run.
 
@@ -333,7 +332,7 @@ detected.
 - Live server: per-project Unix-socket daemon, NDJSON JSON-RPC. Client sends
   `textDocument/didOpen|didChange|didClose` with full text + monotonic version;
   server re-runs tree-sitter + blocks and publishes versioned tags.
-- `BufWritePost`/`:SCPainterAnalyze` request an immediate re-run; normal edits
+- `BufWritePost`/`:CintAnalyze` request an immediate re-run; normal edits
   are debounced. Stale-version publishes are discarded.
 - Profiles/shards are client-side; changing them only re-renders cached
   annotations. The artifact + node anchors remain the offline/batch path; live
