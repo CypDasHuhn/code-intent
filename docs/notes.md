@@ -4,7 +4,7 @@ Purpose: raw, self-contained dump of a brainstorming+PoC session so a future
 session can resume with no other context. Written for LLM consumption; density
 over polish. Not maintained for humans.
 
-Repo: `~/repos/codeintent` (monorepo).
+Repo: `~/repos/code-intent` (monorepo).
 Tagline: **Code to Intent.**
 Date of session: 2026-10-16.
 
@@ -207,7 +207,7 @@ partly conflict; Joern would be a side/batch service, not the live engine.
 
 Renamed to **CodeIntent** before the first push (self-describing, searchable,
 no metaphor to outgrow). Tagline "Code to Intent". Short handle: `cint` for the
-CLI, Lua module, and commands; the repo stays `codeintent`. CINT (the old C++
+CLI, Lua module, and commands; the repo stays `code-intent`. CINT (the old C++
 interpreter) collides with the short handle, but the repo name disambiguates.
 
 ## 12. PoC state / artifacts
