@@ -1,7 +1,8 @@
 # Semantic Code Painter Engine
 
-Kotlin engine for intent classification. Tree-sitter provides structure, LSP
-provides types, and rule blocks classify the result into roles and intent sets.
+Kotlin engine for intent classification. Tree-sitter provides structure, a
+function-local CFG provides control-flow facts, LSP provides types, and rule
+blocks classify the result into roles and intent sets.
 The engine emits only semantic facts; clients resolve intent sets into meanings
 and visuals. Built-in frontends cover Kotlin, JavaScript, TypeScript, Vue, and
 C#.
@@ -10,7 +11,7 @@ C#.
 
 | module | responsibility |
 |--------|----------------|
-| `core` | model, config, artifact writer, oracle interface, block engine, language-neutral rules |
+| `core` | model, config, artifact writer, oracle interface, CFG, block engine, language-neutral rules |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
 | `frontend` | language registry wiring parser, syntax model, and oracle |
@@ -83,6 +84,10 @@ Blocks:
   `BOOKKEEPING`/other intents.
 - `error-handling` — `throw` and configured checks (`require`, `assert`, ...).
   Call spans include trailing lambda arguments.
+- `return-category` — classifies each `return` from the function CFG. A return
+  on a validation guard's true edge is `VALIDATION`; a normal return or a
+  non-rejection return on a guard's other edge is `UNTAGGED`. Normal returns
+  therefore block whole-function scaffolds instead of staying neutral.
 - `derivative-use` — a local whose initializer is pure and whose reads flow into
   classified statements, or a declaration (local or function) whose references
   all occur inside other derivative-use declarations. An impure local is also

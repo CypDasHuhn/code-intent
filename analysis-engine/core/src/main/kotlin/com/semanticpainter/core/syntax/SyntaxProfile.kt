@@ -86,6 +86,7 @@ object SyntaxFields {
     const val IF_THEN = "ifThen"
     const val IF_ELSE = "ifElse"
     const val LOOP_CONDITION = "loopCondition"
+    const val LOOP_BODY = "loopBody"
     const val FUNCTION_BODY = "functionBody"
     const val FUNCTION_NAME = "functionName"
     const val VARIABLE_NAME = "variableName"

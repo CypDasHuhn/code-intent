@@ -31,10 +31,17 @@ data class IfFact(
 
 data class TryFact(
     val node: SyntaxNode,
+    val body: SyntaxNode?,
     val catches: List<SyntaxNode>,
     val finallyBlock: SyntaxNode?,
     val headerStart: SyntaxNode?,
     val headerEnd: SyntaxNode?,
+)
+
+data class LoopFact(
+    val node: SyntaxNode,
+    val condition: SyntaxNode?,
+    val body: SyntaxNode?,
 )
 
 interface SyntaxModel {
@@ -47,6 +54,10 @@ interface SyntaxModel {
     fun functions(tree: SyntaxTree): Sequence<FunctionFact>
 
     fun ifs(tree: SyntaxTree): Sequence<IfFact>
+
+    fun loops(tree: SyntaxTree): Sequence<LoopFact>
+
+    fun loopBody(node: SyntaxNode): SyntaxNode?
 
     fun tries(tree: SyntaxTree): Sequence<TryFact>
 
@@ -100,6 +111,8 @@ interface SyntaxModel {
     fun isThrow(node: SyntaxNode): Boolean
 
     fun isExit(node: SyntaxNode): Boolean
+
+    fun isReturn(node: SyntaxNode): Boolean
 
     fun exitExpression(node: SyntaxNode): SyntaxNode?
 

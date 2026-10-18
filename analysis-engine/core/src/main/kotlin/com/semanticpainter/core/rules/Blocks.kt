@@ -270,8 +270,6 @@ class ValidationBlock(
     override val readsAnnotations: Boolean = true
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
-        val predicates = definition.list("predicates").toSet()
-        val prefixes = definition.list("predicatePrefixes")
         return ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
@@ -280,7 +278,7 @@ class ValidationBlock(
 
                 val explicit = hasValidationComment(ctx, guard.node)
                 val bookkeeping = hasBookkeeping(ctx, body)
-                val predicate = isPredicate(ctx, condition, predicates, prefixes)
+                val predicate = isValidationPredicate(ctx, condition, definition)
                 val pure = ctx.syntax.isSideEffectFree(condition)
                 if (!explicit && !bookkeeping && !predicate && !pure) return@flatMap emptyList()
                 if (ctx.syntax.isConstant(condition) && !explicit && !bookkeeping) {
@@ -314,17 +312,6 @@ class ValidationBlock(
             }.toList()
     }
 
-    private fun isPredicate(
-        ctx: AnalysisContext,
-        condition: SyntaxNode,
-        predicates: Set<String>,
-        prefixes: List<String>,
-    ): Boolean =
-        ctx.syntax.callsIn(condition).any { call ->
-            val name = call.callee ?: return@any false
-            name in predicates || prefixes.any { name.startsWith(it) }
-        }
-
     private fun hasDirectExit(
         ctx: AnalysisContext,
         body: SyntaxNode,
@@ -342,19 +329,80 @@ class ValidationBlock(
                 annotation.startByte >= body.startByte &&
                 annotation.endByte <= body.endByte
         }
+}
 
-    private fun hasValidationComment(
+private fun isValidationPredicate(
+    ctx: AnalysisContext,
+    condition: SyntaxNode,
+    definition: IntentDefinition,
+): Boolean {
+    val predicates = definition.list("predicates").toSet()
+    val prefixes = definition.list("predicatePrefixes")
+    return ctx.syntax.callsIn(condition).any { call ->
+        val name = call.callee ?: return@any false
+        name in predicates || prefixes.any { name.startsWith(it) }
+    }
+}
+
+private fun hasValidationComment(
+    ctx: AnalysisContext,
+    ifNode: SyntaxNode,
+): Boolean {
+    val scope =
+        ctx.syntax
+            .enclosingFunction(ifNode)
+            ?.let { ctx.syntax.bodyOf(it) }
+            ?: ctx.tree.root
+    val comment = ctx.syntax.closestCommentBefore(scope, ifNode) ?: return false
+    if (ifNode.startLine - comment.endLine > 1) return false
+    return Regex("""scp\s*:\s*validation""").containsMatchIn(comment.text.lowercase())
+}
+
+private val REJECTION_SENTINELS =
+    setOf("null", "undefined", "false", "0", "-1", "\"\"", "''", "[]", "{}")
+
+class ReturnBlock(
+    private val intent: String,
+    private val definition: IntentDefinition,
+) : RuleBlock {
+    override val id: String = "return-category"
+
+    override fun apply(ctx: AnalysisContext): List<RawAnnotation> =
+        ctx.flow.returns
+            .map { site ->
+                val validation = isValidationReturn(ctx, site)
+                site.node.raw(
+                    Role.SOURCE_INTENT,
+                    setOf(if (validation) intent else UNTAGGED_INTENT),
+                    if (validation) "return-validation" else "return-untagged",
+                    "cfg",
+                    if (validation) 0.8 else 1.0,
+                )
+            }.toList()
+
+    private fun isValidationReturn(
         ctx: AnalysisContext,
-        ifNode: SyntaxNode,
+        site: com.semanticpainter.core.flow.ReturnSite,
     ): Boolean {
-        val scope =
-            ctx.syntax
-                .enclosingFunction(ifNode)
-                ?.let { ctx.syntax.bodyOf(it) }
-                ?: ctx.tree.root
-        val comment = ctx.syntax.closestCommentBefore(scope, ifNode) ?: return false
-        if (ifNode.startLine - comment.endLine > 1) return false
-        return Regex("""scp\s*:\s*validation""").containsMatchIn(comment.text.lowercase())
+        val guard = site.guards.lastOrNull { isValidationGuard(ctx, it) } ?: return false
+        if (guard.onTrue) return true
+        return isRejection(site)
+    }
+
+    private fun isValidationGuard(
+        ctx: AnalysisContext,
+        guard: com.semanticpainter.core.flow.Guard,
+    ): Boolean {
+        val explicit = hasValidationComment(ctx, guard.node)
+        val predicate = isValidationPredicate(ctx, guard.condition, definition)
+        val pure = ctx.syntax.isSideEffectFree(guard.condition)
+        if (ctx.syntax.isConstant(guard.condition) && !explicit) return false
+        return explicit || predicate || pure
+    }
+
+    private fun isRejection(site: com.semanticpainter.core.flow.ReturnSite): Boolean {
+        val expression = site.expression ?: return true
+        return expression.text.trim() in REJECTION_SENTINELS
     }
 }
 
@@ -667,6 +715,12 @@ class IntentScaffoldBlock : RuleBlock {
         node: SyntaxNode,
     ): Set<String>? {
         if (!ctx.syntax.isExit(node)) return null
+        if (ctx.syntax.isReturn(node)) {
+            val covered = ctx.coverage(node)
+            if (covered.hasRealIntent || UNTAGGED_INTENT in covered.intents) {
+                return covered.intents
+            }
+        }
         val expression = ctx.syntax.exitExpression(node) ?: return emptySet()
         if (ctx.syntax.isConstant(expression) || ctx.syntax.isSideEffectFree(expression)) {
             return emptySet()
@@ -691,6 +745,10 @@ object IntentBlocks {
                         else -> error("unknown block '$blockId' for intent '${definition.name}'")
                     }
             }
+        }
+        val validation = config.intents["VALIDATION"]
+        if (validation != null) {
+            blocks += ReturnBlock(validation.name, validation)
         }
         blocks += DerivativeUseBlock(config.pureAnnotations)
         blocks += IntentScaffoldBlock()

@@ -61,6 +61,7 @@ fields:
   ifThen: [consequence]
   ifElse: [alternative]
   loopCondition: [condition]
+  loopBody: [body]
   functionBody: [body]
   functionName: [name]
   variableName: [name]

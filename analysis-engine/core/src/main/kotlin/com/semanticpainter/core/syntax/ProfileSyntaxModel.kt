@@ -91,6 +91,22 @@ class ProfileSyntaxModel(
             .filter { it.kind in ifKinds }
             .map(::ifFact)
 
+    override fun loops(tree: SyntaxTree): Sequence<LoopFact> =
+        tree.root
+            .descendants()
+            .filter { it.kind in loopKinds }
+            .map { node ->
+                LoopFact(
+                    node = node,
+                    condition = loopCondition(node),
+                    body = loopBody(node),
+                )
+            }
+
+    override fun loopBody(node: SyntaxNode): SyntaxNode? =
+        fieldNode(node, SyntaxFields.LOOP_BODY)
+            ?: node.children.firstOrNull { it.kind in controlBodyKinds }
+
     override fun tries(tree: SyntaxTree): Sequence<TryFact> =
         tree.root
             .descendants()
@@ -99,6 +115,7 @@ class ProfileSyntaxModel(
                 val body = fieldNode(node, SyntaxFields.TRY_BODY)
                 TryFact(
                     node = node,
+                    body = body,
                     catches = node.children.filter { it.kind in catchKinds },
                     finallyBlock = node.children.firstOrNull { it.kind in finallyKinds },
                     headerStart = node.children.firstOrNull { it.kind in tryTokenKinds },
@@ -321,6 +338,8 @@ class ProfileSyntaxModel(
             node.text.trimStart().startsWith(throwKeyword)
 
     override fun isExit(node: SyntaxNode): Boolean = node.kind in jumpKinds && exitKeywords.any { node.text.trimStart().startsWith(it) }
+
+    override fun isReturn(node: SyntaxNode): Boolean = node.kind in jumpKinds && node.text.trimStart().startsWith("return")
 
     override fun exitExpression(node: SyntaxNode): SyntaxNode? {
         if (!isExit(node)) return null

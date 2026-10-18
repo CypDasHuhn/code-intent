@@ -107,6 +107,32 @@ class WebBlockTest {
     }
 
     @Test
+    fun returnCategorizationUsesControlFlow() {
+        val text =
+            """
+            function run(options) {
+                if (!options.id) {
+                    return 0;
+                }
+                console.log("x");
+                return options.id.length;
+            }
+            """.trimIndent()
+        val annotations = analyze("typescript", text)
+        assertTrue(
+            annotations.any {
+                it.rule == "return-validation" && it.intents == setOf("VALIDATION")
+            },
+        )
+        assertTrue(
+            annotations.any {
+                it.rule == "return-untagged" && it.intents == setOf("UNTAGGED")
+            },
+        )
+        assertTrue(annotations.none { it.rule == "intent-scaffold-function" })
+    }
+
+    @Test
     fun typescriptConsoleLogging() {
         val annotations = analyze("typescript", """function f() { console.log("x") }""")
         val source = annotations.first { it.role == Role.SOURCE_INTENT }

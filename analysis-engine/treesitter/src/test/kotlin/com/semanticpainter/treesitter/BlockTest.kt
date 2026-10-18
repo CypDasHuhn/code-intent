@@ -724,6 +724,45 @@ class BlockTest {
     }
 
     @Test
+    fun returnsSplitValidationFromLogic() {
+        val text =
+            """
+            fun f(value: Int): Boolean {
+                if (value < 0) {
+                    return false
+                }
+                return true
+            }
+            """.trimIndent()
+        val annotations = analyze(text)
+        val returns = annotations.filter { it.rule.startsWith("return-") }
+        assertEquals(2, returns.size)
+        assertTrue(returns.any { it.rule == "return-validation" && it.intents == setOf("VALIDATION") })
+        assertTrue(returns.any { it.rule == "return-untagged" && it.intents == setOf("UNTAGGED") })
+        assertTrue(annotations.none { it.rule == "intent-scaffold-function" })
+    }
+
+    @Test
+    fun returnCategorizationRespectsGuardPolarity() {
+        val text =
+            """
+            fun choose(value: Int): Int {
+                if (value < 0) {
+                    return 0
+                } else {
+                    return 1
+                }
+            }
+            """.trimIndent()
+        val annotations = analyze(text)
+        val validation = annotations.first { it.rule == "return-validation" }
+        val untagged = annotations.first { it.rule == "return-untagged" }
+        assertTrue(validation.evidence.contains("return 0"))
+        assertTrue(untagged.evidence.contains("return 1"))
+        assertTrue(annotations.none { it.rule == "intent-scaffold-function" })
+    }
+
+    @Test
     fun pureFunctionBodyBecomesScaffold() {
         val text =
             """

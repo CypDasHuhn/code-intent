@@ -303,6 +303,30 @@ Design constraints:
 
 ## 7. CFG and intent queries
 
+### Implemented v1
+
+A function-local CFG is built from tree-sitter facts before rule evaluation.
+`ControlFlowBuilder` walks each function body and records every return with:
+
+- the chain of guarding `if` conditions and branch polarity,
+- the enclosing loop,
+- the enclosing catch/finally.
+
+`ReturnBlock` then classifies returns without reading other blocks' output:
+
+- a return on the true edge of a validation guard is `VALIDATION`,
+- a rejection return (`null`, `false`, `0`, bare return, ...) on the other edge
+  of a validation guard is also `VALIDATION`,
+- everything else is `UNTAGGED`, including normal final returns.
+
+`UNTAGGED` returns block whole-function scaffolds, so a function ending in a
+business return is no longer concealed or painted as one intent.
+
+Current limits: switch/when returns are not yet collected, Kotlin inline
+non-local returns are treated as lambda-local, and guard polarity is still
+approximate (a pure guard plus any value on the true edge counts as validation).
+
+
 Once facts include CFG nodes/edges, intents become graph predicates:
 
 - validation branches whose only effect is `USER_FEEDBACK`;
@@ -379,6 +403,10 @@ Key engine files:
 - `analysis-engine/core/.../frontend/LanguageFrontend.kt` and
   `analysis-engine/frontend/.../KotlinFrontend.kt` — language registry and
   wiring.
+- `analysis-engine/core/.../flow/ControlFlow.kt` — function-local CFG and
+  return sites.
+- `analysis-engine/core/.../rules/Blocks.kt` — `ReturnBlock` and the other rule
+  blocks.
 - `analysis-engine/core/.../frontend/Split.kt` and
   `analysis-engine/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
   with coordinate shifting; Vue uses it for `<script>` blocks.

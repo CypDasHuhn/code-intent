@@ -1,6 +1,8 @@
 package com.semanticpainter.core.engine
 
 import com.semanticpainter.core.config.IntentConfig
+import com.semanticpainter.core.flow.ControlFlow
+import com.semanticpainter.core.flow.ControlFlowBuilder
 import com.semanticpainter.core.model.Annotation
 import com.semanticpainter.core.model.RawAnnotation
 import com.semanticpainter.core.model.Role
@@ -130,6 +132,7 @@ class AnalysisContext(
     val file: SourceFile,
     val tree: SyntaxTree,
     val syntax: SyntaxModel,
+    val flow: ControlFlow,
     val oracle: TypeOracle,
     val config: IntentConfig,
 ) {
@@ -267,7 +270,8 @@ class AnalysisEngine(
         oracle: TypeOracle,
         config: IntentConfig,
     ): List<Annotation> {
-        val ctx = AnalysisContext(file, tree, syntax, oracle, config)
+        val flow = ControlFlowBuilder(tree, syntax).build()
+        val ctx = AnalysisContext(file, tree, syntax, flow, oracle, config)
         runPhase(ctx, Phase.SOURCE)
         runPhase(ctx, Phase.DERIVATIVE)
         runPhase(ctx, Phase.SCAFFOLD)
