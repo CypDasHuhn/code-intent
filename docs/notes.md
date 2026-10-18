@@ -301,7 +301,7 @@ detected.
 - Client meanings live on the tag declaration: `tags[tag].meaning` (e.g.
   `LOGGING = { meaning = "CONCEAL" }`). `rules[meaning]` decides how that meaning
   renders. Legacy `intentMeanings` is still accepted for old configs.
-- Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT`/`SHOW` applies a background
+- Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT` applies a background; `SHOW` is a no-op
   from the highest-priority intent tag, and `IGNORE` renders dark-gray text.
 
 ## 18. Client profiles (prototype)
