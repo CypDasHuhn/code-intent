@@ -4,15 +4,17 @@ import com.semanticpainter.core.artifact.Artifact
 import com.semanticpainter.core.artifact.FileEntry
 import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
+import com.semanticpainter.core.frontend.OracleOptions
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.model.UNTAGGED_INTENT
 import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.TypeOracle
-import com.semanticpainter.lsp.KotlinLspOracle
-import com.semanticpainter.treesitter.IntentBlocks
-import com.semanticpainter.treesitter.KotlinParser
+import com.semanticpainter.core.rules.IntentBlocks
+import com.semanticpainter.frontend.Frontends
 import java.io.File
+
+private const val DEFAULT_LSP_TIMEOUT_MS = 5_000L
 
 private data class Args(
     val root: String,
@@ -26,16 +28,15 @@ private data class Args(
 fun main(argv: Array<String>) {
     val args = parseArgs(argv)
     val config = loadIntentConfig(args.config, args.language)
-    require(config.language == "kotlin") { "only kotlin is supported by the tree-sitter frontend" }
+    val frontend = Frontends.require(config.language)
 
     val root = File(args.root)
     require(root.exists()) { "no such path: ${args.root}" }
 
-    val extensions = extensionsFor(config.language)
     val files =
         root
             .walkTopDown()
-            .filter { it.isFile && extensions.any { ext -> it.name.endsWith(ext) } }
+            .filter { it.isFile && frontend.extensions.any { ext -> it.name.endsWith(ext) } }
             .filterNot {
                 it.path.contains("/build/") ||
                     it.path.contains("/.git/") ||
@@ -43,14 +44,13 @@ fun main(argv: Array<String>) {
             }.sortedBy { it.path }
             .toList()
 
-    val parser = KotlinParser()
     val blocks = IntentBlocks.build(config)
     val entries = mutableListOf<FileEntry>()
     val oracle: TypeOracle =
         if (args.noLsp) {
             NullOracle
         } else {
-            runCatching { KotlinLspOracle.connect(root.toPath()) }
+            runCatching { frontend.oracle(root.toPath(), OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS)) }
                 .onFailure { System.err.println("lsp unavailable, using heuristic facts: ${it.message}") }
                 .getOrElse { NullOracle }
         }
@@ -61,10 +61,11 @@ fun main(argv: Array<String>) {
             val relative = root.toURI().relativize(file.toURI()).path
             val source = SourceFile(relative, text)
             val tree =
-                runCatching { parser.parse(source) }
+                runCatching { frontend.parse(source) }
                     .onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
                     .getOrNull() ?: continue
-            val annotations = AnalysisEngine(blocks).analyze(source, tree, oracle, config)
+            val syntax = frontend.syntax(tree)
+            val annotations = AnalysisEngine(blocks).analyze(source, tree, syntax, oracle, config)
             if (annotations.isNotEmpty() || args.all) {
                 entries.add(FileEntry(relative, contentHash(text), annotations))
             }
@@ -82,12 +83,6 @@ fun main(argv: Array<String>) {
     if (args.out != null) File(args.out).writeText(result) else print(result)
     System.err.println("scanned ${files.size} file(s), tagged ${entries.size} file(s)")
 }
-
-private fun extensionsFor(language: String): List<String> =
-    when (language) {
-        "kotlin" -> listOf(".kt", ".kts")
-        else -> listOf(".$language")
-    }
 
 private fun parseArgs(argv: Array<String>): Args {
     var root: String? = null

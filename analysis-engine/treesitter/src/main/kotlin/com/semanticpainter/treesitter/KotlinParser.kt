@@ -3,19 +3,30 @@ package com.semanticpainter.treesitter
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.syntax.SyntaxNode
 import com.semanticpainter.core.syntax.SyntaxTree
+import org.treesitter.TSLanguage
 import org.treesitter.TSNode
 import org.treesitter.TSParser
 import org.treesitter.TSTree
+import org.treesitter.TreeSitterJavascript
 import org.treesitter.TreeSitterKotlin
+import org.treesitter.TreeSitterTypescript
 
-class KotlinParser {
+open class TreeSitterParser(
+    private val languageFactory: () -> TSLanguage,
+) {
     fun parse(file: SourceFile): SyntaxTree {
         val parser = TSParser()
-        parser.setLanguage(TreeSitterKotlin())
+        parser.setLanguage(languageFactory())
         val tree = parser.parseString(null, file.text)
         return TsSyntaxTree(file, tree)
     }
 }
+
+class KotlinParser : TreeSitterParser({ TreeSitterKotlin() })
+
+class JavascriptParser : TreeSitterParser({ TreeSitterJavascript() })
+
+class TypescriptParser : TreeSitterParser({ TreeSitterTypescript() })
 
 class TsSyntaxTree(
     override val source: SourceFile,
@@ -50,6 +61,11 @@ class TsSyntaxNode(
     override val parent: SyntaxNode? get() {
         val parentNode = node.parent
         return if (parentNode == null || parentNode.isNull) null else TsSyntaxNode(tree, parentNode)
+    }
+
+    override fun childByField(name: String): SyntaxNode? {
+        val child = node.getChildByFieldName(name) ?: return null
+        return if (child.isNull) null else TsSyntaxNode(tree, child)
     }
 
     override val children: List<SyntaxNode> by lazy {

@@ -6,8 +6,7 @@ plugins {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":treesitter"))
-    implementation(project(":lsp"))
+    implementation(project(":frontend"))
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3")
 }
 

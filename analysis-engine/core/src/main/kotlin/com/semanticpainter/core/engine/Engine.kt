@@ -7,6 +7,7 @@ import com.semanticpainter.core.model.Role
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.model.UNTAGGED_INTENT
 import com.semanticpainter.core.oracle.TypeOracle
+import com.semanticpainter.core.syntax.SyntaxModel
 import com.semanticpainter.core.syntax.SyntaxNode
 import com.semanticpainter.core.syntax.SyntaxTree
 
@@ -39,6 +40,7 @@ private data class AnnotationKey(
 class AnalysisContext(
     val file: SourceFile,
     val tree: SyntaxTree,
+    val syntax: SyntaxModel,
     val oracle: TypeOracle,
     val config: IntentConfig,
 ) {
@@ -128,10 +130,11 @@ class AnalysisEngine(
     fun analyze(
         file: SourceFile,
         tree: SyntaxTree,
+        syntax: SyntaxModel,
         oracle: TypeOracle,
         config: IntentConfig,
     ): List<Annotation> {
-        val ctx = AnalysisContext(file, tree, oracle, config)
+        val ctx = AnalysisContext(file, tree, syntax, oracle, config)
         runPhase(ctx, Phase.SOURCE)
         runPhase(ctx, Phase.DERIVATIVE)
         runPhase(ctx, Phase.SCAFFOLD)

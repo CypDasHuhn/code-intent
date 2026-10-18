@@ -6,8 +6,7 @@ plugins {
 
 dependencies {
     implementation(project(":core"))
-    implementation(project(":treesitter"))
-    implementation(project(":lsp"))
+    implementation(project(":frontend"))
 }
 
 application {

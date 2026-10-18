@@ -1,0 +1,53 @@
+language: kotlin
+
+groups:
+  call: [call_expression]
+  navigation: [navigation_expression]
+  calleeSuffix: [navigation_suffix]
+  callSuffix: [call_suffix]
+  identifier: [simple_identifier]
+  import: [import_header]
+  property: [property_declaration]
+  variable: [variable_declaration]
+  function: [function_declaration]
+  functionBody: [function_body]
+  if: [if_expression]
+  loop: [while_expression]
+  controlBody: [control_structure_body]
+  else: [else]
+  statementList: [statements]
+  jump: [jump_expression]
+  try: [try_expression]
+  catch: [catch_block]
+  finally: [finally_block]
+  assignment: [assignment]
+  assignable: [directly_assignable_expression]
+  increment: [postfix_expression, prefix_expression]
+  annotation: [annotation]
+  modifier: [modifiers]
+  comment: [comment, line_comment, multiline_comment]
+  lambda: [annotated_lambda, lambda_literal]
+  object: [object_literal, object_declaration]
+  typeReference: [user_type]
+  blockClose: ["}"]
+  openBrace: ["{"]
+  equals: ["="]
+  ifToken: [if]
+  elseToken: [else]
+  loopToken: [while]
+  tryToken: [try]
+  conditionExcluded: ["(", ")", control_structure_body]
+  loopConditionExcluded: ["(", ")", control_structure_body]
+  reference: [simple_identifier, navigation_expression, call_expression, user_type]
+  effect: [call_expression, assignment, jump_expression, lambda_literal, annotated_lambda, object_literal, object_declaration]
+  effectFragment: [assignment, lambda, object, increment, decrement]
+
+operators:
+  increment: ["++", "--"]
+
+tokens:
+  importPrefix: "import"
+  throwKeyword: "throw"
+
+keywords:
+  exit: [return, continue, break]

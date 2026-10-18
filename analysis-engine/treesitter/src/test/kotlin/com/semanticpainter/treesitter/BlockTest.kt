@@ -10,6 +10,7 @@ import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.SymbolFact
 import com.semanticpainter.core.oracle.TypeFact
 import com.semanticpainter.core.oracle.TypeOracle
+import com.semanticpainter.core.rules.IntentBlocks
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -57,7 +58,7 @@ class BlockTest {
     private fun analyze(text: String): List<Annotation> {
         val source = SourceFile("Sample.kt", text)
         val tree = KotlinParser().parse(source)
-        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, NullOracle, config)
+        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, KotlinSyntaxModel, NullOracle, config)
     }
 
     @Test
@@ -512,7 +513,7 @@ class BlockTest {
         val source = SourceFile("Sample.kt", text)
         val tree = KotlinParser().parse(source)
         val oracle = CountingOracle()
-        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, oracle, config)
+        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, KotlinSyntaxModel, oracle, config)
 
         assertTrue(annotations.any { it.rule == "call-on-logger-symbol" })
         assertEquals(0, oracle.calls)
@@ -538,6 +539,7 @@ class BlockTest {
             AnalysisEngine(IntentBlocks.build(config)).analyze(
                 source,
                 tree,
+                KotlinSyntaxModel,
                 FixedOracle(TypeFact("FakeLogger", "lsp", 0.95)),
                 config,
             )
@@ -568,6 +570,7 @@ class BlockTest {
             AnalysisEngine(IntentBlocks.build(config)).analyze(
                 source,
                 tree,
+                KotlinSyntaxModel,
                 FixedOracle(TypeFact("Service", "lsp", 0.95)),
                 config,
             )

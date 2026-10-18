@@ -25,9 +25,9 @@ class KotlinPurityTest {
         val tree = KotlinParser().parse(SourceFile("Purity.kt", text))
         val patterns = config.pureAnnotations
 
-        assertTrue(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "literal")!!, patterns))
-        assertTrue(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "contracted")!!, patterns))
-        assertFalse(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "inferred")!!, patterns))
+        assertTrue(KotlinSyntaxModel.isAnnotatedPure(KotlinSyntaxModel.findFunction(tree, "literal")!!, patterns))
+        assertTrue(KotlinSyntaxModel.isAnnotatedPure(KotlinSyntaxModel.findFunction(tree, "contracted")!!, patterns))
+        assertFalse(KotlinSyntaxModel.isAnnotatedPure(KotlinSyntaxModel.findFunction(tree, "inferred")!!, patterns))
     }
 
     @Test
@@ -41,6 +41,6 @@ class KotlinPurityTest {
         val tree = KotlinParser().parse(SourceFile("Purity.kt", text))
         val patterns = config.pureAnnotations
 
-        assertFalse(KotlinPurity.isAnnotatedPure(KotlinPurity.findFunction(tree, "effectful")!!, patterns))
+        assertFalse(KotlinSyntaxModel.isAnnotatedPure(KotlinSyntaxModel.findFunction(tree, "effectful")!!, patterns))
     }
 }

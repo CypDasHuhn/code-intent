@@ -1,0 +1,73 @@
+language: javascript
+
+groups:
+  call: [call_expression]
+  navigation: [member_expression]
+  calleeSuffix: [property_identifier, private_property_identifier]
+  callSuffix: [arguments]
+  identifier: [identifier, property_identifier, private_property_identifier, shorthand_property_identifier, shorthand_property_identifier_pattern]
+  import: [import_statement]
+  property: [variable_declarator, field_definition]
+  variable: []
+  function: [function_declaration, generator_function_declaration, method_definition]
+  functionBody: [statement_block]
+  if: [if_statement]
+  loop: [for_statement, for_in_statement, while_statement, do_statement]
+  controlBody: [statement_block]
+  else: [else]
+  elseClause: [else_clause]
+  statementList: [statement_block, program]
+  statementWrapper: [expression_statement]
+  jump: [return_statement, break_statement, continue_statement, throw_statement]
+  try: [try_statement]
+  catch: [catch_clause]
+  finally: [finally_clause]
+  assignment: [assignment_expression, augmented_assignment_expression]
+  assignable: []
+  increment: [update_expression]
+  annotation: [decorator]
+  modifier: []
+  comment: [comment]
+  lambda: [arrow_function, function_expression]
+  object: [object]
+  typeReference: []
+  declarationWrapper: [lexical_declaration, export_statement]
+  blockClose: ["}"]
+  openBrace: ["{"]
+  equals: ["="]
+  ifToken: [if]
+  elseToken: [else]
+  loopToken: [while, for, do]
+  tryToken: [try]
+  conditionExcluded: ["(", ")"]
+  loopConditionExcluded: ["(", ")"]
+  parenthesized: [parenthesized_expression]
+  reference: [identifier, property_identifier, private_property_identifier, member_expression, call_expression]
+  effect: [call_expression, assignment_expression, augmented_assignment_expression, update_expression, new_expression, yield_expression, await_expression, throw_statement, arrow_function, function_expression, object]
+  effectFragment: []
+
+operators:
+  increment: ["++", "--"]
+
+tokens:
+  importPrefix: "import"
+  throwKeyword: "throw"
+
+keywords:
+  exit: [return, break, continue]
+
+fields:
+  ifCondition: [condition]
+  ifThen: [consequence]
+  ifElse: [alternative]
+  loopCondition: [condition]
+  functionBody: [body]
+  functionName: [name]
+  variableName: [name, property]
+  variableValue: [value]
+  callFunction: [function]
+  memberObject: [object]
+  memberProperty: [property]
+  tryBody: [body]
+  returnArgument: [argument]
+  importSource: [source]

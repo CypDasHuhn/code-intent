@@ -9,7 +9,7 @@ Business Logic, ...) instead of by syntax.
 
 | dir | what |
 |-----|------|
-| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, composable rule blocks, batch CLI, and HTTP host. |
+| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, composable rule blocks, batch CLI, and HTTP host. Built-in Kotlin, JavaScript, and TypeScript syntax profiles. |
 | `nvim-renderer/` | Neovim plugin that consumes tags and paints spans (background tint, gutter icon, conceal). |
 
 ## Flow
@@ -32,7 +32,8 @@ source / buffer
 
 Tree-sitter owns statement-level structure (tier 0). LSP only annotates those
 nodes with semantic facts (tier 1). The engine stays editor- and
-language-agnostic; language specifics live in config and block selection.
+language-agnostic; language specifics are data in a syntax profile, and a small
+frontend binding selects the parser, profile, and oracle.
 
 ## Quick start
 

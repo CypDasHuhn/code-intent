@@ -7,6 +7,7 @@ import com.semanticpainter.core.artifact.Artifact
 import com.semanticpainter.core.artifact.FileEntry
 import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
+import com.semanticpainter.core.frontend.OracleOptions
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.model.UNTAGGED_INTENT
@@ -14,19 +15,20 @@ import com.semanticpainter.core.oracle.MapOracle
 import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.TypeFact
 import com.semanticpainter.core.oracle.TypeOracle
-import com.semanticpainter.lsp.KotlinLspOracle
-import com.semanticpainter.treesitter.IntentBlocks
-import com.semanticpainter.treesitter.KotlinParser
+import com.semanticpainter.core.rules.IntentBlocks
+import com.semanticpainter.frontend.Frontends
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.nio.file.Path
 
+private const val DEFAULT_LSP_TIMEOUT_MS = 5_000L
+
 data class AnalyzeRequest(
     val path: String = "<buffer>",
     val root: String? = null,
     val text: String,
-    val language: String = "kotlin",
+    val language: String? = null,
     val config: String? = null,
     val types: Map<String, String> = emptyMap(),
 )
@@ -42,6 +44,7 @@ fun main(argv: Array<String>) {
     var socket: String? = null
     var root = Path.of(".").toAbsolutePath().normalize()
     var configPath: String? = null
+    var language = "kotlin"
     var i = 0
     while (i < argv.size) {
         when (argv[i]) {
@@ -51,13 +54,14 @@ fun main(argv: Array<String>) {
             "--socket" -> socket = argv[++i]
             "--root" -> root = Path.of(argv[++i]).toAbsolutePath().normalize()
             "--config" -> configPath = argv[++i]
+            "--lang" -> language = argv[++i]
             else -> error("unknown flag: ${argv[i]}")
         }
         i++
     }
 
     if (socket != null) {
-        LiveServer(root, Path.of(socket), configPath, useLsp).run()
+        LiveServer(root, Path.of(socket), configPath, useLsp, language).run()
         return
     }
 
@@ -72,7 +76,7 @@ fun main(argv: Array<String>) {
         }
         try {
             val request = exchange.requestBody.use { mapper.readValue<AnalyzeRequest>(it) }
-            respond(exchange, 200, analyze(request, useLsp, configPath))
+            respond(exchange, 200, analyze(request, useLsp, configPath, language))
         } catch (error: Exception) {
             respond(exchange, 400, """{"error":"${error.message?.replace("\"", "'")}"}""")
         }
@@ -85,13 +89,15 @@ private fun analyze(
     request: AnalyzeRequest,
     useLsp: Boolean,
     defaultConfig: String?,
+    defaultLanguage: String,
 ): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
-    val config = loadIntentConfig(request.config ?: defaultConfig, request.language)
-    require(config.language == "kotlin") { "only kotlin is supported by the tree-sitter frontend" }
+    val config = loadIntentConfig(request.config ?: defaultConfig, request.language ?: defaultLanguage)
+    val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
-    val tree = KotlinParser().parse(source)
+    val tree = frontend.parse(source)
+    val syntax = frontend.syntax(tree)
     val oracle: TypeOracle =
         when {
             request.types.isNotEmpty() -> {
@@ -101,7 +107,9 @@ private fun analyze(
             }
 
             useLsp -> {
-                runCatching { KotlinLspOracle.connect(root) }.getOrElse { NullOracle }
+                runCatching {
+                    frontend.oracle(root, OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS))
+                }.getOrElse { NullOracle }
             }
 
             else -> {
@@ -109,7 +117,7 @@ private fun analyze(
             }
         }
     try {
-        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, oracle, config)
+        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, oracle, config)
         return Artifact.render(
             config.language,
             config.intents.keys.toList() + UNTAGGED_INTENT,

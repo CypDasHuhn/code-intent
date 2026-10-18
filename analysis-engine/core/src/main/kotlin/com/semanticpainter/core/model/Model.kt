@@ -34,7 +34,7 @@ data class RawAnnotation(
     fun merge(other: RawAnnotation): RawAnnotation =
         copy(
             intents = intents + other.intents,
-            rule = if (rule == other.rule) rule else "$rule+${other.rule}",
+            rule = (rule.split('+') + other.rule.split('+')).distinct().joinToString("+"),
             evidence = if (evidence.length >= other.evidence.length) evidence else other.evidence,
             source = if (source == other.source) source else "mixed",
             confidence = maxOf(confidence, other.confidence),

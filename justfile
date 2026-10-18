@@ -11,7 +11,7 @@ list:
 
 # Build engine modules without running tests.
 build:
-    cd {{engine}} && ./gradlew :core:build :treesitter:build :cli:build :server:build
+    cd {{engine}} && ./gradlew :core:build :treesitter:build :lsp:build :frontend:build :cli:build :server:build
 
 # Run the deterministic engine tests (no live LSP dependency).
 test-engine:

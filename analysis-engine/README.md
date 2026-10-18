@@ -9,13 +9,35 @@ and visuals.
 
 | module | responsibility |
 |--------|----------------|
-| `core` | model, config, artifact writer, oracle interface, block engine |
-| `treesitter` | Kotlin parser and rule blocks |
-| `lsp` | shared `kotlin-lsp` oracle |
+| `core` | model, config, artifact writer, oracle interface, block engine, language-neutral rules |
+| `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, and TypeScript |
+| `lsp` | spec-driven LSP oracle |
+| `frontend` | language registry wiring parser, syntax model, and oracle |
 | `cli` | batch host over a directory |
 | `server` | HTTP host for buffers and files |
 
-`core` has no tree-sitter, LSP, or editor dependency. Hosts wire the pieces.
+`core` has no tree-sitter, LSP, or editor dependency. `frontend` is the composition
+root that binds a language id to its parser, syntax profile, and oracle.
+
+## Languages
+
+Rules, the engine, and intents are shared. A new language adds data and a small
+frontend binding, not new analysis code:
+
+1. Add the grammar dependency and a parser under `treesitter`.
+2. Add `treesitter/src/main/resources/syntax/<language>.yaml`. It maps the
+   canonical `SyntaxGroups` names to that grammar's node kinds.
+3. Register a `LanguageFrontend` under `frontend`. It supplies `parse`, `syntax`,
+   and `oracle`.
+4. Add the language's semantic names (calls, types, imports, predicates) to
+   `intents.yaml` under `params`, or override individual keys under
+   `overrides.<language>`.
+
+`params` is the shared default; `overrides.<language>` replaces individual keys for
+that language. Kotlin, JavaScript, and TypeScript are built in. Their profiles are
+`treesitter/src/main/resources/syntax/{kotlin,javascript,typescript}.yaml`, and
+their frontends are registered in `frontend/.../KotlinFrontend.kt` and
+`frontend/.../JavascriptFrontend.kt`.
 
 ## Classification
 
@@ -29,7 +51,8 @@ how `UNTAGGED` should influence a scaffold or derivative.
 
 Blocks:
 
-- `print` — `println`/`print`, including `System.out`/`System.err`.
+- `print` — configured call names and receiver qualifiers (`println`/`print`,
+  `System.out`/`System.err`, `console.log`/`console.error`, ...).
 - `logger-interaction` — a call on a receiver whose LSP type is a configured
   logger type. Factory properties and qualifiers answer without LSP; ambiguous
   receiver names and import-gated matches consult the type oracle. A resolved
@@ -45,9 +68,8 @@ Blocks:
   side-effect-free, or a `// scp:validation` comment precedes it. Bare exits
   are neutral, so the enclosing scaffold composes `VALIDATION` with
   `BOOKKEEPING`/other intents.
-- `error-handling` — `throw` and configured Kotlin checks
-  (`require`, `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`,
-  `assert`). Call spans include trailing lambda arguments.
+- `error-handling` — `throw` and configured checks (`require`, `assert`, ...).
+  Call spans include trailing lambda arguments.
 - `derivative-use` — a local whose initializer is pure and whose reads flow into
   classified statements, or a declaration (local or function) whose references
   all occur inside other derivative-use declarations. An impure local is also
@@ -76,12 +98,12 @@ win for mixed scaffolds.
 `core/src/main/resources/intents.yaml` is bundled; `--config` overrides it.
 
 ```yaml
-language: kotlin
-
 intents:
   LOGGING:
     blocks: [print, logger-interaction, logging-state]
-    kotlin:
+    params:
+      printCalls: [println, print]
+      printQualifiers: [System.out, System.err]
       methods: [info, debug, warn, error, trace, log, verbose, fatal]
       types: [org.slf4j.Logger, org.apache.logging.log4j.Logger, java.util.logging.Logger]
       factories: [LoggerFactory.getLogger, KotlinLogging.logger, LogManager.getLogger, Logger.getLogger]
@@ -89,18 +111,30 @@ intents:
       qualifiers: [System.out, System.err]
       guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
       imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
+    overrides:
+      javascript:
+        printCalls: [log, error, warn, info, debug, trace]
+        printQualifiers: [console]
+        imports: []
 
   BOOKKEEPING:
     blocks: [bookkeeping]
 
   ERROR_HANDLING:
     blocks: [error-handling]
+    params:
+      calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
+      throws: true
+    overrides:
+      javascript:
+        calls: [assert, invariant]
+        throws: true
 
   VALIDATION:
     blocks: [validation]
-    kotlin:
-      calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
-      throws: true
+    params:
+      predicates: [none, any, all, isEmpty, isBlank, contains, matches]
+      predicatePrefixes: [is, has]
 
 purity:
   annotations:
@@ -140,9 +174,9 @@ version, content hash, and annotations. `semanticPainter/analyze` requests an
 explicit re-run. Profiles and shards stay client-side; changing them never
 re-runs analysis.
 
-Flags: `--socket`, `--root`, `--no-lsp`, `--config`. The live server reuses the
-shared `kotlin-lsp` socket. The HTTP server remains available for batch and
-editor-agnostic requests.
+Flags: `--socket`, `--root`, `--no-lsp`, `--config`, `--lang`. The live server
+reuses the shared `kotlin-lsp` socket. The HTTP server remains available for
+batch and editor-agnostic requests.
 
 ## Usage
 

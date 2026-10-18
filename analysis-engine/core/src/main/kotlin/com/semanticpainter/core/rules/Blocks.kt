@@ -1,4 +1,4 @@
-package com.semanticpainter.treesitter
+package com.semanticpainter.core.rules
 
 import com.semanticpainter.core.config.IntentConfig
 import com.semanticpainter.core.config.IntentDefinition
@@ -10,9 +10,6 @@ import com.semanticpainter.core.model.Role
 import com.semanticpainter.core.model.Span
 import com.semanticpainter.core.model.UNTAGGED_INTENT
 import com.semanticpainter.core.syntax.SyntaxNode
-
-private val PRINT_CALLS = setOf("println", "print")
-private val STD_STREAMS = setOf("System.out", "System.err")
 
 private fun typeMatches(
     actual: String,
@@ -68,21 +65,23 @@ private fun tagRange(
 
 class PrintBlock(
     private val intent: String,
+    private val definition: IntentDefinition,
 ) : RuleBlock {
     override val id: String = "print"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> =
-        KotlinSyntax
+    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+        val calls = definition.list("printCalls").toSet()
+        val qualifiers = definition.list("printQualifiers").toSet()
+        return ctx.syntax
             .calls(ctx.tree)
             .mapNotNull { call ->
-                val callee = KotlinSyntax.calleeName(call) ?: return@mapNotNull null
-                if (callee !in PRINT_CALLS) return@mapNotNull null
-                val receiver = KotlinSyntax.receiverNode(call)
-                if (receiver != null && receiver.text !in STD_STREAMS) return@mapNotNull null
-                KotlinSyntax
-                    .callWithTrailingLambda(call)
-                    .raw(Role.SOURCE_INTENT, setOf(intent), "print", "treesitter", 1.0)
+                val callee = call.callee ?: return@mapNotNull null
+                if (callee !in calls) return@mapNotNull null
+                val receiver = call.receiver
+                if (receiver != null && receiver.text !in qualifiers) return@mapNotNull null
+                call.site.raw(Role.SOURCE_INTENT, setOf(intent), "print", "treesitter", 1.0)
             }.toList()
+    }
 }
 
 class LoggerInteractionBlock(
@@ -96,22 +95,24 @@ class LoggerInteractionBlock(
         val types = definition.list("types")
         val receiverNames = definition.list("receiverNames")
         val loggerSymbols =
-            KotlinSyntax
+            ctx.syntax
                 .properties(ctx.tree)
-                .filter { it.initCallPath != null && definition.has("factories", it.initCallPath) }
-                .map { it.name }
+                .filter { property ->
+                    val path = property.initializer?.let { ctx.syntax.callPath(it) }
+                    path != null && definition.has("factories", path)
+                }.mapNotNull { it.name }
                 .toSet()
         val importsMatch =
-            KotlinSyntax.imports(ctx.tree).any { import ->
+            ctx.syntax.imports(ctx.tree).any { import ->
                 definition.list("imports").any { import == it || import.startsWith("$it.") }
             }
 
-        return KotlinSyntax
+        return ctx.syntax
             .calls(ctx.tree)
             .mapNotNull { call ->
-                val callee = KotlinSyntax.calleeName(call) ?: return@mapNotNull null
+                val callee = call.callee ?: return@mapNotNull null
                 if (methods.isNotEmpty() && callee !in methods) return@mapNotNull null
-                val receiver = KotlinSyntax.receiverNode(call) ?: return@mapNotNull null
+                val receiver = call.receiver ?: return@mapNotNull null
                 val receiverName = receiver.text.substringAfterLast('.')
 
                 val heuristic =
@@ -143,7 +144,7 @@ class LoggerInteractionBlock(
                         heuristic.rule == "receiver-name" ||
                         heuristic.rule == "name-import-gated"
                     ) {
-                        val type = ctx.oracle.typeAt(ctx.file, KotlinSyntax.receiverOffset(receiver))
+                        val type = ctx.oracle.typeAt(ctx.file, ctx.syntax.receiverOffset(receiver))
                         when {
                             type == null -> {
                                 heuristic
@@ -161,9 +162,7 @@ class LoggerInteractionBlock(
                         heuristic
                     } ?: return@mapNotNull null
 
-                KotlinSyntax
-                    .callWithTrailingLambda(call)
-                    .raw(Role.SOURCE_INTENT, setOf(intent), match.rule, match.source, match.confidence)
+                call.site.raw(Role.SOURCE_INTENT, setOf(intent), match.rule, match.source, match.confidence)
             }.toList()
     }
 
@@ -182,25 +181,8 @@ class LoggingStateBlock(
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         if (guardNames.isEmpty()) return emptyList()
-        val conditions =
-            ctx.tree.root.descendants().mapNotNull { node ->
-                when (node.kind) {
-                    "if_expression" -> {
-                        KotlinSyntax.ifCondition(node)
-                    }
-
-                    "while_expression" -> {
-                        node.children.firstOrNull {
-                            it.kind !in setOf("while", "(", ")", "control_structure_body")
-                        }
-                    }
-
-                    else -> {
-                        null
-                    }
-                }
-            }
-        return conditions
+        return ctx.syntax
+            .guardConditions(ctx.tree)
             .mapNotNull { condition ->
                 if (guardNames.any { condition.text.contains(it, ignoreCase = true) }) {
                     condition.raw(Role.SOURCE_INTENT, setOf(intent), "logging-state", "treesitter", 0.7)
@@ -216,19 +198,16 @@ class BookkeepingBlock : RuleBlock {
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        val identifiersByName =
-            ctx.tree.root
-                .descendants("simple_identifier")
-                .groupBy { it.text }
+        val references = ctx.syntax.referencesByName(ctx.tree)
 
-        for (declaration in ctx.tree.root.descendants("property_declaration")) {
-            val (source, startNode) = bookkeepingSource(declaration) ?: continue
-            val name = KotlinSyntax.variableName(declaration) ?: continue
-            val nameNode = declaration.child("variable_declaration")?.child("simple_identifier") ?: continue
+        for (declaration in ctx.syntax.properties(ctx.tree)) {
+            val (source, startNode) = bookkeepingSource(ctx, declaration.node) ?: continue
+            val name = declaration.name ?: continue
+            val nameNode = declaration.nameNode ?: continue
 
             result +=
                 if (startNode == null) {
-                    declaration.raw(
+                    declaration.node.raw(
                         Role.SOURCE_INTENT,
                         setOf("BOOKKEEPING"),
                         "bookkeeping-declaration",
@@ -238,7 +217,7 @@ class BookkeepingBlock : RuleBlock {
                 } else {
                     tagRange(
                         startNode,
-                        declaration,
+                        declaration.node,
                         setOf("BOOKKEEPING"),
                         "bookkeeping-declaration",
                         source,
@@ -247,12 +226,12 @@ class BookkeepingBlock : RuleBlock {
                     )
                 }
 
-            val scope = declaration.parent ?: continue
+            val scope = ctx.syntax.declarationHolder(declaration.node) ?: continue
             val seen = mutableSetOf<String>()
-            for (reference in identifiersByName[name].orEmpty()) {
+            for (reference in references[name].orEmpty()) {
                 if (reference.startByte < scope.startByte || reference.endByte > scope.endByte) continue
                 if (reference.startByte == nameNode.startByte && reference.endByte == nameNode.endByte) continue
-                val write = writeExpression(reference) ?: continue
+                val write = ctx.syntax.writes(reference) ?: continue
                 val key = "${write.startByte}:${write.endByte}"
                 if (!seen.add(key)) continue
                 result +=
@@ -268,67 +247,47 @@ class BookkeepingBlock : RuleBlock {
         return result
     }
 
-    private fun bookkeepingSource(declaration: SyntaxNode): Pair<String, SyntaxNode?>? {
+    private fun bookkeepingSource(
+        ctx: AnalysisContext,
+        declaration: SyntaxNode,
+    ): Pair<String, SyntaxNode?>? {
         val annotation =
-            KotlinPurity.annotationTexts(declaration).firstOrNull {
+            ctx.syntax.annotationTexts(declaration).firstOrNull {
                 it == "Bookkeeping" || it.endsWith(".Bookkeeping")
             }
         if (annotation != null) return "annotation" to null
 
-        val parent = declaration.parent ?: return null
-        val index =
-            parent.children.indexOfFirst {
-                it.startByte == declaration.startByte && it.endByte == declaration.endByte
-            }
-        if (index <= 0) return null
-        var current = index - 1
-        while (current >= 0 && parent.children[current].kind.contains("comment")) {
-            val comment = parent.children[current]
-            val text = comment.text.lowercase()
-            if (Regex("""scp\s*:\s*bookkeeping""").containsMatchIn(text)) {
+        for (comment in ctx.syntax.precedingComments(declaration)) {
+            if (Regex("""scp\s*:\s*bookkeeping""").containsMatchIn(comment.text.lowercase())) {
                 return "comment" to comment
             }
-            current--
         }
         return null
     }
-
-    private fun writeExpression(reference: SyntaxNode): SyntaxNode? {
-        val parent = reference.parent ?: return null
-        return when (parent.kind) {
-            "postfix_expression", "prefix_expression" -> {
-                if (parent.text.contains("++") || parent.text.contains("--")) parent else null
-            }
-
-            "directly_assignable_expression" -> {
-                val assignment = parent.parent ?: return null
-                if (assignment.kind == "assignment") assignment else null
-            }
-
-            else -> {
-                null
-            }
-        }
-    }
 }
 
-class ValidationBlock : RuleBlock {
+class ValidationBlock(
+    private val intent: String,
+    private val definition: IntentDefinition,
+) : RuleBlock {
     override val id: String = "validation"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.tree.root
-            .descendants("if_expression")
-            .flatMap { ifNode ->
-                val condition = KotlinSyntax.ifCondition(ifNode) ?: return@flatMap emptyList()
-                val body = ifNode.child("control_structure_body") ?: return@flatMap emptyList()
-                if (!hasDirectExit(body)) return@flatMap emptyList()
+    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+        val predicates = definition.list("predicates").toSet()
+        val prefixes = definition.list("predicatePrefixes")
+        return ctx.syntax
+            .ifs(ctx.tree)
+            .flatMap { guard ->
+                val condition = guard.condition ?: return@flatMap emptyList()
+                val body = guard.thenBody ?: return@flatMap emptyList()
+                if (!hasDirectExit(ctx, body)) return@flatMap emptyList()
 
-                val explicit = hasValidationComment(ctx, ifNode)
+                val explicit = hasValidationComment(ctx, guard.node)
                 val bookkeeping = hasBookkeeping(ctx, body)
-                val predicate = KotlinSyntax.isValidationPredicate(condition)
-                val pure = KotlinSyntax.isSideEffectFree(condition)
+                val predicate = isPredicate(ctx, condition, predicates, prefixes)
+                val pure = ctx.syntax.isSideEffectFree(condition)
                 if (!explicit && !bookkeeping && !predicate && !pure) return@flatMap emptyList()
-                if (KotlinSyntax.isConstant(condition) && !explicit && !bookkeeping) {
+                if (ctx.syntax.isConstant(condition) && !explicit && !bookkeeping) {
                     return@flatMap emptyList()
                 }
 
@@ -343,34 +302,39 @@ class ValidationBlock : RuleBlock {
                 listOf(
                     condition.raw(
                         Role.SOURCE_INTENT,
-                        setOf("VALIDATION"),
+                        setOf(intent),
                         "validation-guard",
                         source,
                         confidence,
                     ),
-                    ifNode.raw(
+                    guard.node.raw(
                         Role.SCAFFOLD,
-                        setOf("VALIDATION"),
+                        setOf(intent),
                         "validation-guard-block",
                         source,
                         confidence,
                     ),
                 )
             }.toList()
-
-    private fun hasDirectExit(body: SyntaxNode): Boolean {
-        val statements =
-            body.child("statements")?.children?.filterNot {
-                it.kind in COMMENT_KINDS
-            } ?: listOf(body)
-        return statements.any { it.kind == "jump_expression" && isExit(it.text) }
     }
 
-    private fun isExit(text: String): Boolean {
-        val trimmed = text.trimStart()
-        return trimmed.startsWith("return") ||
-            trimmed.startsWith("continue") ||
-            trimmed.startsWith("break")
+    private fun isPredicate(
+        ctx: AnalysisContext,
+        condition: SyntaxNode,
+        predicates: Set<String>,
+        prefixes: List<String>,
+    ): Boolean =
+        ctx.syntax.callsIn(condition).any { call ->
+            val name = call.callee ?: return@any false
+            name in predicates || prefixes.any { name.startsWith(it) }
+        }
+
+    private fun hasDirectExit(
+        ctx: AnalysisContext,
+        body: SyntaxNode,
+    ): Boolean {
+        val statements = ctx.syntax.statements(body) ?: listOf(body)
+        return statements.any { ctx.syntax.isExit(it) }
     }
 
     private fun hasBookkeeping(
@@ -387,13 +351,12 @@ class ValidationBlock : RuleBlock {
         ctx: AnalysisContext,
         ifNode: SyntaxNode,
     ): Boolean {
-        val scope = KotlinSyntax.enclosingFunction(ifNode)?.child("function_body") ?: ctx.tree.root
-        val comment =
-            scope
-                .descendants()
-                .filter { it.kind in COMMENT_KINDS && it.endByte <= ifNode.startByte }
-                .maxByOrNull { it.startByte }
-                ?: return false
+        val scope =
+            ctx.syntax
+                .enclosingFunction(ifNode)
+                ?.let { ctx.syntax.bodyOf(it) }
+                ?: ctx.tree.root
+        val comment = ctx.syntax.closestCommentBefore(scope, ifNode) ?: return false
         if (ifNode.startLine - comment.endLine > 1) return false
         return Regex("""scp\s*:\s*validation""").containsMatchIn(comment.text.lowercase())
     }
@@ -410,22 +373,20 @@ class ErrorHandlingBlock(
         val detectThrows = definition.list("throws").any { it.equals("true", ignoreCase = true) }
 
         val callAnnotations =
-            KotlinSyntax
+            ctx.syntax
                 .calls(ctx.tree)
                 .mapNotNull { call ->
-                    val callee = KotlinSyntax.calleeName(call) ?: return@mapNotNull null
+                    val callee = call.callee ?: return@mapNotNull null
                     if (callee !in calls) return@mapNotNull null
-                    if (KotlinSyntax.receiverNode(call) != null) return@mapNotNull null
-                    KotlinSyntax
-                        .callWithTrailingLambda(call)
-                        .raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-call", "treesitter", 1.0)
+                    if (call.receiver != null) return@mapNotNull null
+                    call.site.raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-call", "treesitter", 1.0)
                 }.toList()
 
         val throwAnnotations =
             if (detectThrows) {
                 ctx.tree.root
-                    .descendants("jump_expression")
-                    .filter(KotlinSyntax::isThrow)
+                    .descendants()
+                    .filter { ctx.syntax.isThrow(it) }
                     .map { it.raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-throw", "treesitter", 1.0) }
                     .toList()
             } else {
@@ -444,19 +405,16 @@ class DerivativeUseBlock(
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        val identifiersByName =
-            ctx.tree.root
-                .descendants("simple_identifier")
-                .groupBy { it.text }
+        val references = ctx.syntax.referencesByName(ctx.tree)
 
-        for (declaration in ctx.tree.root.descendants("property_declaration")) {
-            val name = KotlinSyntax.variableName(declaration) ?: continue
-            val nameNode = declaration.child("variable_declaration")?.child("simple_identifier") ?: continue
-            val initializer = KotlinSyntax.initializerOf(declaration) ?: continue
+        for (declaration in ctx.syntax.properties(ctx.tree)) {
+            val name = declaration.name ?: continue
+            val nameNode = declaration.nameNode ?: continue
+            val initializer = declaration.initializer ?: continue
 
-            val scope = KotlinSyntax.enclosingFunction(declaration) ?: ctx.tree.root
+            val scope = ctx.syntax.enclosingFunction(declaration.node) ?: ctx.tree.root
             val uses =
-                identifiersByName[name]
+                references[name]
                     .orEmpty()
                     .filter { it.startByte in scope.startByte until scope.endByte }
                     .filter { it.startByte != nameNode.startByte }
@@ -468,36 +426,36 @@ class DerivativeUseBlock(
                 useIntents.all { intents ->
                     UNTAGGED_INTENT !in intents && intents.any { it != UNTAGGED_INTENT }
                 }
-            val local = KotlinSyntax.enclosingFunction(declaration) != null
+            val local = ctx.syntax.enclosingFunction(declaration.node) != null
             if (!allClassified) continue
             if (!isPure(ctx, initializer) && !local) continue
 
             val intents = useIntents.flatten().toSet()
             if (intents.none { it != UNTAGGED_INTENT }) continue
 
-            result += declaration.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
+            result += declaration.node.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
         }
 
-        for (declaration in ctx.tree.root.descendants("function_declaration")) {
-            val nameNode = declaration.children.firstOrNull { it.kind == "simple_identifier" } ?: continue
+        for (declaration in ctx.syntax.functions(ctx.tree)) {
+            val nameNode = declaration.nameNode ?: continue
             val name = nameNode.text
             if (name.isEmpty()) continue
 
-            val references =
-                identifiersByName[name].orEmpty().filter { reference ->
+            val functionReferences =
+                references[name].orEmpty().filter { reference ->
                     (reference.startByte != nameNode.startByte || reference.endByte != nameNode.endByte) &&
-                        reference.startByte !in declaration.startByte until declaration.endByte &&
-                        reference.parent?.kind != "function_declaration"
+                        reference.startByte !in declaration.node.startByte until declaration.node.endByte &&
+                        !ctx.syntax.isDeclarationName(reference)
                 }
-            if (references.isEmpty()) continue
+            if (functionReferences.isEmpty()) continue
 
-            val places = references.mapNotNull { derivativePlaceIntents(ctx, it) }
-            if (places.size != references.size) continue
+            val places = functionReferences.mapNotNull { derivativePlaceIntents(ctx, it) }
+            if (places.size != functionReferences.size) continue
 
             val intents = places.flatten().toSet()
             if (intents.none { it != UNTAGGED_INTENT }) continue
 
-            result += declaration.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
+            result += declaration.node.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
         }
 
         return result
@@ -507,7 +465,7 @@ class DerivativeUseBlock(
         ctx: AnalysisContext,
         reference: SyntaxNode,
     ): Set<String>? {
-        val place = KotlinSyntax.enclosingDeclaration(reference) ?: return null
+        val place = ctx.syntax.enclosingDeclaration(reference) ?: return null
         val annotations = ctx.covering(place).filter { it.role == Role.DERIVATIVE_USE }
         if (annotations.isEmpty()) return null
         return annotations.flatMap { it.intents }.toSet()
@@ -517,12 +475,9 @@ class DerivativeUseBlock(
         ctx: AnalysisContext,
         initializer: SyntaxNode,
     ): Boolean =
-        KotlinSyntax.isConstant(initializer) ||
-            initializer.kind == "simple_identifier" ||
-            (
-                initializer.kind == "call_expression" &&
-                    KotlinPurity.isAnnotatedPureCall(ctx.tree, initializer, pureAnnotations)
-            )
+        ctx.syntax.isConstant(initializer) ||
+            ctx.syntax.isIdentifier(initializer) ||
+            ctx.syntax.isAnnotatedPureCall(ctx.tree, initializer, pureAnnotations)
 }
 
 class IntentScaffoldBlock : RuleBlock {
@@ -539,32 +494,31 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun ifScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.tree.root
-            .descendants("if_expression")
-            .flatMap { ifNode ->
-                val condition = KotlinSyntax.ifCondition(ifNode) ?: return@flatMap emptyList()
-                val thenBody = ifNode.child("control_structure_body") ?: return@flatMap emptyList()
+        ctx.syntax
+            .ifs(ctx.tree)
+            .flatMap { guard ->
+                val condition = guard.condition ?: return@flatMap emptyList()
+                val thenBody = guard.thenBody ?: return@flatMap emptyList()
                 val thenIntents = mutableSetOf<String>()
                 thenIntents += conditionIntents(ctx, condition)
                 thenIntents += bodyIntents(ctx, thenBody)
 
-                val elseBody = KotlinSyntax.elseBodyOf(ifNode)
+                val elseBody = guard.elseBody
                 if (elseBody == null) {
                     if (thenIntents.none { it != UNTAGGED_INTENT }) return@flatMap emptyList()
                     return@flatMap listOf(
-                        ifNode.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
+                        guard.node.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
                     )
                 }
 
                 val elseIntents = bodyIntents(ctx, elseBody)
-                val elseKeyword = ifNode.children.firstOrNull { it.kind == "else" }
-                val elseStart = (elseKeyword ?: elseBody).startByte
+                val elseStart = (guard.elseKeyword ?: elseBody).startByte
                 if (thenIntents == elseIntents) {
                     if (thenIntents.none { it != UNTAGGED_INTENT }) return@flatMap emptyList()
-                    ctx.remove(Role.SCAFFOLD, ifNode.startByte, thenBody.endByte)
+                    ctx.remove(Role.SCAFFOLD, guard.node.startByte, thenBody.endByte)
                     ctx.remove(Role.SCAFFOLD, elseStart, elseBody.endByte)
                     return@flatMap listOf(
-                        ifNode.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
+                        guard.node.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
                     )
                 }
 
@@ -575,11 +529,11 @@ class IntentScaffoldBlock : RuleBlock {
                     return@flatMap emptyList()
                 }
 
-                ctx.remove(Role.SCAFFOLD, ifNode.startByte, ifNode.endByte)
+                ctx.remove(Role.SCAFFOLD, guard.node.startByte, guard.node.endByte)
                 val result = mutableListOf<RawAnnotation>()
                 result +=
                     tagRange(
-                        ifNode,
+                        guard.node,
                         thenBody,
                         thenIntents,
                         "intent-scaffold-if-then",
@@ -588,7 +542,7 @@ class IntentScaffoldBlock : RuleBlock {
                     )
                 result +=
                     tagRange(
-                        elseKeyword ?: elseBody,
+                        guard.elseKeyword ?: elseBody,
                         elseBody,
                         elseIntents,
                         "intent-scaffold-if-else",
@@ -599,19 +553,14 @@ class IntentScaffoldBlock : RuleBlock {
             }.toList()
 
     private fun catchScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.tree.root
-            .descendants("catch_block")
+        ctx.syntax
+            .catches(ctx.tree)
             .mapNotNull { catchNode ->
                 val intents = bodyIntents(ctx, catchNode)
                 if (intents.none { it != UNTAGGED_INTENT }) return@mapNotNull null
 
-                val parent = catchNode.parent
-                val index =
-                    parent?.children?.indexOfFirst {
-                        it.startByte == catchNode.startByte && it.endByte == catchNode.endByte
-                    } ?: -1
-                val previous = if (index > 0) parent!!.children[index - 1] else null
-                if (previous != null && previous.kind == "}") {
+                val previous = ctx.syntax.previousBlockClose(catchNode)
+                if (previous != null) {
                     tagRange(previous, catchNode, intents, "intent-scaffold-catch", "treesitter", 0.9)
                 } else {
                     catchNode.raw(Role.SCAFFOLD, intents, "intent-scaffold-catch", "treesitter", 0.9)
@@ -620,14 +569,13 @@ class IntentScaffoldBlock : RuleBlock {
 
     private fun tryScaffolds(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        for (tryNode in ctx.tree.root.descendants("try_expression")) {
-            val catches = tryNode.childrenOfKind("catch_block")
+        for (tryFact in ctx.syntax.tries(ctx.tree)) {
+            val catches = tryFact.catches
             if (catches.isEmpty()) continue
 
-            val tryBodyIntents = bodyIntents(ctx, tryNode)
+            val tryBodyIntents = bodyIntents(ctx, tryFact.node)
             val catchIntents = catches.map { bodyIntents(ctx, it) }
-            val finallyBlock = tryNode.children.firstOrNull { it.kind == "finally_block" }
-            val finallyIntents = finallyBlock?.let { bodyIntents(ctx, it) } ?: emptySet()
+            val finallyIntents = tryFact.finallyBlock?.let { bodyIntents(ctx, it) } ?: emptySet()
 
             val catchesCovered = catchIntents.all { it.isNotEmpty() && UNTAGGED_INTENT !in it }
             val catchesHaveRealIntent =
@@ -639,17 +587,17 @@ class IntentScaffoldBlock : RuleBlock {
                 tryBodyIntents.isNotEmpty() &&
                     UNTAGGED_INTENT !in tryBodyIntents &&
                     catchesCovered &&
-                    (finallyBlock == null || (finallyIntents.isNotEmpty() && UNTAGGED_INTENT !in finallyIntents))
+                    (tryFact.finallyBlock == null || (finallyIntents.isNotEmpty() && UNTAGGED_INTENT !in finallyIntents))
 
-            val start = tryNode.children.firstOrNull { it.kind == "try" }
-            val end = tryNode.children.firstOrNull { it.kind == "{" }
+            val start = tryFact.headerStart
+            val end = tryFact.headerEnd
 
             if (wholeCovered) {
                 if (start != null && end != null) {
                     ctx.remove(Role.SCAFFOLD, start.startByte, end.endByte)
                 }
                 val intents = tryBodyIntents + catchIntents.flatten().toSet() + finallyIntents
-                result += tryNode.raw(Role.SCAFFOLD, intents, "intent-scaffold-try", "treesitter", 0.9)
+                result += tryFact.node.raw(Role.SCAFFOLD, intents, "intent-scaffold-try", "treesitter", 0.9)
             } else if (catchesCovered && catchesHaveRealIntent && start != null && end != null) {
                 val intents = catchIntents.flatten().toSet()
                 result +=
@@ -667,15 +615,15 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun functionScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.tree.root
-            .descendants("function_declaration")
+        ctx.syntax
+            .functions(ctx.tree)
             .mapNotNull { function ->
-                val body = function.child("function_body") ?: return@mapNotNull null
+                val body = function.body ?: return@mapNotNull null
                 val intents = bodyIntents(ctx, body)
                 if (intents.isEmpty()) return@mapNotNull null
                 if (UNTAGGED_INTENT in intents) return@mapNotNull null
                 if (intents.none { it != UNTAGGED_INTENT }) return@mapNotNull null
-                function.raw(Role.SCAFFOLD, intents, "intent-scaffold-function", "treesitter", 0.9)
+                function.node.raw(Role.SCAFFOLD, intents, "intent-scaffold-function", "treesitter", 0.9)
             }.toList()
 
     private fun conditionIntents(
@@ -684,7 +632,7 @@ class IntentScaffoldBlock : RuleBlock {
     ): Set<String> {
         val covered = ctx.coverage(condition).intents
         if (covered.any { it != UNTAGGED_INTENT }) return covered
-        if (KotlinSyntax.isConstant(condition) || KotlinSyntax.isSideEffectFree(condition)) {
+        if (ctx.syntax.isConstant(condition) || ctx.syntax.isSideEffectFree(condition)) {
             return emptySet()
         }
         return covered
@@ -695,44 +643,43 @@ class IntentScaffoldBlock : RuleBlock {
         body: SyntaxNode?,
     ): Set<String> {
         if (body == null) return emptySet()
-        val statements = body.child("statements")
+        val statements = ctx.syntax.statements(body)
         if (statements != null) {
-            val effects = statements.children.filterNot { it.kind in COMMENT_KINDS }
-            return effects
-                .flatMap { statement ->
-                    exitIntents(ctx, statement) ?: ctx.coverage(statement).intents
-                }.toSet()
+            return statements.flatMap { statementIntents(ctx, it) }.toSet()
         }
         val exit = exitIntents(ctx, body)
         if (exit != null) return exit
-        return ctx.coverage(body).intents
+        val direct = ctx.coverage(body).intents
+        if (direct.any { it != UNTAGGED_INTENT }) return direct
+        val expression = ctx.syntax.statementExpression(body) ?: return direct
+        val inner = ctx.coverage(expression).intents
+        return if (inner.any { it != UNTAGGED_INTENT }) inner else direct
+    }
+
+    private fun statementIntents(
+        ctx: AnalysisContext,
+        statement: SyntaxNode,
+    ): Set<String> {
+        exitIntents(ctx, statement)?.let { return it }
+        val direct = ctx.coverage(statement).intents
+        if (direct.any { it != UNTAGGED_INTENT }) return direct
+        val expression = ctx.syntax.statementExpression(statement) ?: return direct
+        val inner = ctx.coverage(expression).intents
+        return if (inner.any { it != UNTAGGED_INTENT }) inner else direct
     }
 
     private fun exitIntents(
         ctx: AnalysisContext,
         node: SyntaxNode,
     ): Set<String>? {
-        if (node.kind != "jump_expression") return null
-        val trimmed = node.text.trimStart()
-        if (
-            !trimmed.startsWith("return") &&
-            !trimmed.startsWith("continue") &&
-            !trimmed.startsWith("break")
-        ) {
-            return null
-        }
-        val expression =
-            node.children.lastOrNull {
-                it.kind !in setOf("return", "continue", "break") && it.kind !in COMMENT_KINDS
-            } ?: return emptySet()
-        if (KotlinSyntax.isConstant(expression) || KotlinSyntax.isSideEffectFree(expression)) {
+        if (!ctx.syntax.isExit(node)) return null
+        val expression = ctx.syntax.exitExpression(node) ?: return emptySet()
+        if (ctx.syntax.isConstant(expression) || ctx.syntax.isSideEffectFree(expression)) {
             return emptySet()
         }
         return ctx.intentsAt(expression)
     }
 }
-
-private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment")
 
 object IntentBlocks {
     fun build(config: IntentConfig): List<RuleBlock> {
@@ -741,12 +688,12 @@ object IntentBlocks {
             for (blockId in definition.blocks) {
                 blocks +=
                     when (blockId) {
-                        "print" -> PrintBlock(definition.name)
+                        "print" -> PrintBlock(definition.name, definition)
                         "logger-interaction" -> LoggerInteractionBlock(definition.name, definition)
                         "logging-state" -> LoggingStateBlock(definition.name, definition.list("guardNames"))
                         "bookkeeping" -> BookkeepingBlock()
                         "error-handling" -> ErrorHandlingBlock(definition.name, definition)
-                        "validation" -> ValidationBlock()
+                        "validation" -> ValidationBlock(definition.name, definition)
                         else -> error("unknown block '$blockId' for intent '${definition.name}'")
                     }
             }

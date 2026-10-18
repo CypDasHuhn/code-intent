@@ -1,3 +1,3 @@
 rootProject.name = "semantic-code-painter"
 
-include(":core", ":treesitter", ":lsp", ":cli", ":server")
+include(":core", ":treesitter", ":lsp", ":frontend", ":cli", ":server")

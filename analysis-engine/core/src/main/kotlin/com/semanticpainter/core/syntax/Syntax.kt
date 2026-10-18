@@ -24,6 +24,8 @@ interface SyntaxNode {
 
     fun child(kind: String): SyntaxNode? = children.firstOrNull { it.kind == kind }
 
+    fun childByField(name: String): SyntaxNode? = null
+
     fun childrenOfKind(kind: String): List<SyntaxNode> = children.filter { it.kind == kind }
 
     fun descendants(): Sequence<SyntaxNode> =

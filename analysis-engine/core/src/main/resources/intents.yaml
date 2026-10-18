@@ -1,9 +1,24 @@
-language: kotlin
+javascript-logging: &javascript-logging
+  printCalls: [log, error, warn, info, debug, trace]
+  printQualifiers: [console]
+  methods: [log, info, warn, error, debug, trace, verbose, fatal]
+  types: []
+  factories: [createLogger, pino]
+  receiverNames: [log, logger, LOG, LOGGER, Logger]
+  qualifiers: []
+  guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
+  imports: []
+
+javascript-error: &javascript-error
+  calls: [assert, invariant]
+  throws: true
 
 intents:
   LOGGING:
     blocks: [print, logger-interaction, logging-state]
-    kotlin:
+    params:
+      printCalls: [println, print]
+      printQualifiers: [System.out, System.err]
       methods: [info, debug, warn, error, trace, log, verbose, fatal]
       types:
         - org.slf4j.Logger
@@ -21,18 +36,42 @@ intents:
         - org.slf4j
         - mu.KotlinLogging
         - java.util.logging
+    overrides:
+      javascript: *javascript-logging
+      typescript: *javascript-logging
 
   BOOKKEEPING:
     blocks: [bookkeeping]
 
   ERROR_HANDLING:
     blocks: [error-handling]
-    kotlin:
+    params:
       calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
       throws: true
+    overrides:
+      javascript: *javascript-error
+      typescript: *javascript-error
 
   VALIDATION:
     blocks: [validation]
+    params:
+      predicates:
+        - none
+        - any
+        - all
+        - isEmpty
+        - isNotEmpty
+        - isBlank
+        - isNotBlank
+        - isNullOrBlank
+        - isNullOrEmpty
+        - contains
+        - containsKey
+        - containsValue
+        - startsWith
+        - endsWith
+        - matches
+      predicatePrefixes: [is, has]
 
 purity:
   annotations:

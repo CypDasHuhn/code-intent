@@ -363,13 +363,22 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 
 Key engine files:
 
-- `analysis-engine/treesitter/.../Blocks.kt` — source blocks, derivative use,
+- `analysis-engine/core/.../rules/Blocks.kt` — source blocks, derivative use,
   scaffolds, Bookkeeping, Validation.
-- `analysis-engine/treesitter/.../KotlinSyntax.kt` — syntax helpers, purity,
-  validation predicates, trailing lambdas.
+- `analysis-engine/core/.../syntax/SyntaxModel.kt` — language-neutral syntax
+  facts and canonical groups.
+- `analysis-engine/core/.../syntax/ProfileSyntaxModel.kt` — generic model
+  driven by a syntax profile.
 - `analysis-engine/core/.../engine/Engine.kt` — coverage and containing-intent
   resolution.
 - `analysis-engine/core/src/main/resources/intents.yaml` — intent config.
+- `analysis-engine/treesitter/src/main/resources/syntax/kotlin.yaml` — Kotlin
+  node-kind profile.
+- `analysis-engine/treesitter/src/main/resources/syntax/javascript.yaml` and
+  `typescript.yaml` — JavaScript and TypeScript profiles.
+- `analysis-engine/core/.../frontend/LanguageFrontend.kt` and
+  `analysis-engine/frontend/.../KotlinFrontend.kt` — language registry and
+  wiring.
 
 Key client files:
 

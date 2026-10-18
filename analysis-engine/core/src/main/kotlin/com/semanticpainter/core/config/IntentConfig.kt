@@ -31,18 +31,27 @@ fun loadIntentConfig(
         Yaml().load<Map<String, Any?>>(readConfigText(path))
             ?: error("empty config")
 
-    val configuredLanguage = root["language"] as? String ?: language
+    val configuredLanguage = language.ifBlank { root["language"] as? String ?: "kotlin" }
     val intentNodes = root["intents"] as? Map<String, Any?> ?: error("config missing 'intents'")
 
     val intents =
         intentNodes.mapValues { (name, value) ->
             val node = value as? Map<String, Any?> ?: error("intent '$name' must be a map")
             val blocks = (node["blocks"] as? List<*>)?.map { it.toString() }.orEmpty()
-            val lang = node[configuredLanguage] as? Map<String, Any?> ?: emptyMap()
+            val base =
+                node["params"] as? Map<String, Any?>
+                    ?: node[configuredLanguage] as? Map<String, Any?>
+                    ?: emptyMap()
+            val override =
+                (node["overrides"] as? Map<String, Any?>)
+                    ?.get(configuredLanguage) as? Map<String, Any?>
+                    ?: emptyMap()
             IntentDefinition(
                 name = name,
                 blocks = blocks,
-                params = lang.mapValues { (_, v) -> toStringList(v) },
+                params =
+                    base.mapValues { (_, v) -> toStringList(v) } +
+                        override.mapValues { (_, v) -> toStringList(v) },
             )
         }
 

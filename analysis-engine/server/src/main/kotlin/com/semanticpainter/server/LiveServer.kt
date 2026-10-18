@@ -6,15 +6,15 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.semanticpainter.core.config.IntentConfig
 import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
+import com.semanticpainter.core.frontend.OracleOptions
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.Annotation
 import com.semanticpainter.core.model.Role
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.TypeOracle
-import com.semanticpainter.lsp.KotlinLspOracle
-import com.semanticpainter.treesitter.IntentBlocks
-import com.semanticpainter.treesitter.KotlinParser
+import com.semanticpainter.core.rules.IntentBlocks
+import com.semanticpainter.frontend.Frontends
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.StandardProtocolFamily
@@ -43,9 +43,11 @@ class LiveServer(
     private val socketPath: Path,
     private val configPath: String?,
     private val useLsp: Boolean,
+    private val defaultLanguage: String,
 ) {
     private val mapper: ObjectMapper = jacksonObjectMapper()
-    private val config: IntentConfig by lazy { loadIntentConfig(configPath, "kotlin") }
+    private val config: IntentConfig by lazy { loadIntentConfig(configPath, defaultLanguage) }
+    private val frontend by lazy { Frontends.require(config.language) }
     private val blocks by lazy { IntentBlocks.build(config) }
     private val docs = ConcurrentHashMap<String, DocState>()
     private val clients = Executors.newCachedThreadPool()
@@ -157,7 +159,7 @@ class LiveServer(
         val uri = params?.get("uri")?.asText() ?: return null
         val text = params.get("text")?.asText() ?: return null
         val version = params.get("version")?.asInt() ?: 0
-        val language = params.get("languageId")?.asText() ?: "kotlin"
+        val language = params.get("languageId")?.asText() ?: defaultLanguage
         return DocState(uri, text, version, language)
     }
 
@@ -165,22 +167,24 @@ class LiveServer(
         writer: BufferedWriter,
         doc: DocState,
     ) {
-        if (doc.language != "kotlin") {
-            sendError(writer, null, "only kotlin is supported")
+        if (doc.language != frontend.language) {
+            sendError(writer, null, "only ${frontend.language} is supported")
             return
         }
 
         val source = SourceFile(doc.uri, doc.text)
-        val tree = KotlinParser().parse(source)
+        val tree = frontend.parse(source)
+        val syntax = frontend.syntax(tree)
         val analysis =
             synchronized(this) {
                 val activeOracle =
                     oracle ?: if (useLsp) {
-                        runCatching { KotlinLspOracle.connect(root, LIVE_LSP_TIMEOUT_MS) }
-                            .onFailure { error ->
-                                System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
-                                error.printStackTrace()
-                            }.getOrNull()
+                        runCatching {
+                            frontend.oracle(root, OracleOptions(true, LIVE_LSP_TIMEOUT_MS))
+                        }.onFailure { error ->
+                            System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
+                            error.printStackTrace()
+                        }.getOrNull()
                             ?.also { oracle = it }
                             ?: NullOracle
                     } else {
@@ -188,11 +192,11 @@ class LiveServer(
                     }
 
                 runCatching {
-                    AnalysisEngine(blocks).analyze(source, tree, activeOracle, config)
+                    AnalysisEngine(blocks).analyze(source, tree, syntax, activeOracle, config)
                 }.getOrElse { error ->
                     System.err.println("semantic-code-painter: LSP analysis failed, using heuristics")
                     error.printStackTrace()
-                    AnalysisEngine(blocks).analyze(source, tree, NullOracle, config)
+                    AnalysisEngine(blocks).analyze(source, tree, syntax, NullOracle, config)
                 }
             }
 

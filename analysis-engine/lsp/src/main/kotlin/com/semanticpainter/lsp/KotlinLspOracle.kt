@@ -26,8 +26,44 @@ import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-class KotlinLspOracle private constructor(
+data class LspServerSpec(
+    val languageId: String,
+    val executable: String,
+    val arguments: List<String>,
+    val cacheName: String,
+    val hoverFence: String,
+    val portBase: Int = 13000,
+    val portRange: Int = 20000,
+    val typePattern: Regex = DEFAULT_TYPE_PATTERN,
+    val declarationPattern: Regex = DEFAULT_DECLARATION_PATTERN,
+) {
+    companion object {
+        val DEFAULT_TYPE_PATTERN = Regex(""":\s*([A-Za-z_][A-Za-z0-9_.$]*)""")
+        val DEFAULT_DECLARATION_PATTERN = Regex("""(?:class|interface|object|typealias)\s+([A-Za-z_][A-Za-z0-9_.$]*)""")
+    }
+}
+
+val KotlinLspSpec =
+    LspServerSpec(
+        languageId = "kotlin",
+        executable = "kotlin-lsp",
+        arguments =
+            listOf(
+                "--socket",
+                "127.0.0.1:{port}",
+                "--multi-client",
+                "--data-sharing",
+                "none",
+                "--log-level",
+                "ERROR",
+            ),
+        cacheName = "kotlin-lsp",
+        hoverFence = "```kotlin",
+    )
+
+class LspOracle private constructor(
     private val root: Path,
+    private val spec: LspServerSpec,
     private val socket: Socket,
     private val executor: java.util.concurrent.ExecutorService,
     private val server: LanguageServer,
@@ -47,7 +83,7 @@ class KotlinLspOracle private constructor(
             server.textDocumentService
                 .hover(HoverParams(TextDocumentIdentifier(uri), position))
                 .get(typeTimeoutMs, TimeUnit.MILLISECONDS)
-        val type = hoverText(hover)?.let(::extractType) ?: return null
+        val type = hoverText(hover)?.let { extractType(it, spec) } ?: return null
         return TypeFact(type, "lsp", 0.95)
     }
 
@@ -73,7 +109,7 @@ class KotlinLspOracle private constructor(
         }
         server.textDocumentService.didOpen(
             org.eclipse.lsp4j.DidOpenTextDocumentParams(
-                TextDocumentItem(uri, "kotlin", 1, text),
+                TextDocumentItem(uri, spec.languageId, 1, text),
             ),
         )
         opened[uri] = text
@@ -93,32 +129,26 @@ class KotlinLspOracle private constructor(
     }
 
     companion object {
-        private const val DEFAULT_TYPE_TIMEOUT_MS = 5_000L
-
         fun connect(
             root: Path,
-            typeTimeoutMs: Long = DEFAULT_TYPE_TIMEOUT_MS,
-        ): KotlinLspOracle {
+            spec: LspServerSpec,
+            typeTimeoutMs: Long,
+        ): LspOracle {
             java.util.logging.LogManager
                 .getLogManager()
                 .reset()
             val absoluteRoot = root.toAbsolutePath().normalize()
-            val port = portFor(absoluteRoot)
+            val port = portFor(absoluteRoot, spec)
             if (!portOpen(port)) {
-                ProcessBuilder(
-                    "kotlin-lsp",
-                    "--socket",
-                    "127.0.0.1:$port",
-                    "--multi-client",
-                    "--data-sharing",
-                    "none",
-                    "--log-level",
-                    "ERROR",
-                ).redirectErrorStream(true)
+                val command =
+                    listOf(spec.executable) +
+                        spec.arguments.map { it.replace("{port}", port.toString()) }
+                ProcessBuilder(command)
+                    .redirectErrorStream(true)
                     .also {
-                        it.environment()["XDG_CACHE_HOME"] = cacheRoot().toString()
+                        it.environment()["XDG_CACHE_HOME"] = cacheRoot(spec).toString()
                     }.start()
-                waitForPort(port)
+                waitForPort(port, spec)
             }
 
             val socket = Socket()
@@ -155,24 +185,30 @@ class KotlinLspOracle private constructor(
             server.initialize(params).get(30, TimeUnit.SECONDS)
             server.initialized(org.eclipse.lsp4j.InitializedParams())
 
-            return KotlinLspOracle(absoluteRoot, socket, executor, server, typeTimeoutMs)
+            return LspOracle(absoluteRoot, spec, socket, executor, server, typeTimeoutMs)
         }
 
-        private fun cacheRoot(): Path =
+        fun isRunning(
+            root: Path,
+            spec: LspServerSpec,
+        ): Boolean = portOpen(portFor(root.toAbsolutePath().normalize(), spec))
+
+        private fun cacheRoot(spec: LspServerSpec): Path =
             Path
                 .of(System.getProperty("user.cache.home") ?: "${System.getProperty("user.home")}/.cache")
                 .resolve("semantic-code-painter")
-                .resolve("kotlin-lsp")
+                .resolve(spec.cacheName)
 
-        fun isRunning(root: Path): Boolean = portOpen(portFor(root.toAbsolutePath().normalize()))
-
-        private fun portFor(root: Path): Int {
+        private fun portFor(
+            root: Path,
+            spec: LspServerSpec,
+        ): Int {
             val digest =
                 MessageDigest
                     .getInstance("SHA-256")
                     .digest(root.toString().toByteArray(Charsets.UTF_8))
             val hex = digest.joinToString("") { "%02x".format(it) }.substring(0, 8)
-            return 13000 + (hex.toLong(16) % 20000).toInt()
+            return spec.portBase + (hex.toLong(16) % spec.portRange).toInt()
         }
 
         private fun portOpen(port: Int): Boolean =
@@ -180,15 +216,29 @@ class KotlinLspOracle private constructor(
                 Socket().use { it.connect(InetSocketAddress("127.0.0.1", port), 200) }
             }.isSuccess
 
-        private fun waitForPort(port: Int) {
+        private fun waitForPort(
+            port: Int,
+            spec: LspServerSpec,
+        ) {
             val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
             while (System.nanoTime() < deadline) {
                 if (portOpen(port)) return
                 Thread.sleep(250)
             }
-            error("kotlin-lsp did not start on port $port")
+            error("${spec.executable} did not start on port $port")
         }
     }
+}
+
+object KotlinLspOracle {
+    private const val DEFAULT_TYPE_TIMEOUT_MS = 5_000L
+
+    fun connect(
+        root: Path,
+        typeTimeoutMs: Long = DEFAULT_TYPE_TIMEOUT_MS,
+    ): LspOracle = LspOracle.connect(root, KotlinLspSpec, typeTimeoutMs)
+
+    fun isRunning(root: Path): Boolean = LspOracle.isRunning(root, KotlinLspSpec)
 }
 
 private class Client : LanguageClient {
@@ -227,15 +277,16 @@ private fun hoverText(hover: Hover?): String? {
     }
 }
 
-private val TYPE_AFTER_COLON = Regex(""":\s*([A-Za-z_][A-Za-z0-9_.$]*)""")
-
-private fun extractType(hover: String): String? {
-    val text = hover.replace("```kotlin", "").replace("```", "").trim()
-    TYPE_AFTER_COLON.find(text)?.let { return it.groupValues[1] }
-    val declaration =
-        Regex("""(?:class|interface|object|typealias)\s+([A-Za-z_][A-Za-z0-9_.$]*)""")
-            .find(text)
-    return declaration?.groupValues?.get(1)
+private fun extractType(
+    hover: String,
+    spec: LspServerSpec,
+): String? {
+    val text = hover.replace(spec.hoverFence, "").replace("```", "").trim()
+    spec.typePattern.find(text)?.let { return it.groupValues[1] }
+    return spec.declarationPattern
+        .find(text)
+        ?.groupValues
+        ?.get(1)
 }
 
 private fun positionAt(
