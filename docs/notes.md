@@ -6,10 +6,11 @@ over polish. Not maintained for humans.
 
 Repo: `~/repos/code-intent` (monorepo).
 Tagline: **Code to Intent.**
-Date of session: 2026-10-16.
+First session: 2026-10-16. Last update: 2026-10-18.
 
-> Update 2026-10-17: the engine is now `analysis-engine/` (core / treesitter /
-> lsp / cli / server). Sections 3–5 and 12 describe the old PSI PoC.
+> Update 2026-10-18: project renamed to **CodeIntent** / `cint`; repo moved to
+> `~/repos/code-intent`. Section 20 is the authoritative current state. Older
+> sections are historical where they conflict (especially artifact/offline mode).
 
 ---
 
@@ -35,20 +36,24 @@ the initial inspiration (language-agnostic code graph).
 ## 2. Architecture / flow
 
 ```
-source repo -> analysis-engine (facts + config -> tags) -> tags.json (editor-agnostic)
-            -> nvim-renderer (reads artifact) -> editor decorations
+source repo -> analysis-engine
+              tree-sitter -> syntax facts -> CFG
+              LSP (optional) -> type facts
+              rules -> annotations -> JSON-RPC over Unix socket
+            -> nvim-renderer -> extmarks
+
 ```
 
-Two components:
-- `analysis-engine/` — Kotlin/JVM Gradle app. Parses, tags, emits JSON.
-- `nvim-renderer/` — Lua Neovim plugin. Consumes artifact, paints extmarks.
+Components:
+- `analysis-engine/` — Kotlin/JVM Gradle app. Parses, builds facts/CFG, tags.
+- `nvim-renderer/` — Lua Neovim plugin. Socket-only; renders published tags.
 
-Editor-agnostic: only the renderer is editor-specific; artifact is the contract.
+The engine is editor-agnostic. The renderer is the only editor-specific part.
 
 ## 3. The artifact contract
 
-`tags.json` at project root (default) is the offline/batch contract. Live mode
-streams the same annotation shape over JSON-RPC and never writes this file.
+`tags.json` is only the CLI/batch output. The live renderer is socket-only and
+never reads it.
 Shape:
 
 ```json
@@ -286,8 +291,8 @@ detected.
   impure-local promotion until a purity engine exists.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Bare
-  `return`/`continue`/`break` exits are neutral, so a validation guard composes
-  `VALIDATION` with its branch intents. Mixed `if`/`else` splits into then/else
+  `continue`/`break` exits remain neutral. `return` statements are classified by
+  the CFG `ReturnBlock` (see §20), not neutral. Mixed `if`/`else` splits into then/else
   spans so an untagged else does not force the then branch to be shown.
   Whole-try classification requires full coverage; try-header classification
   requires only covered catches. Catch spans include the try-body closing brace
@@ -335,5 +340,96 @@ detected.
 - `BufWritePost`/`:CintAnalyze` request an immediate re-run; normal edits
   are debounced. Stale-version publishes are discarded.
 - Profiles/shards are client-side; changing them only re-renders cached
-  annotations. The artifact + node anchors remain the offline/batch path; live
-  mode uses exact-version byte ranges.
+  annotations. There is no artifact/offline renderer path; live mode uses
+  exact-version byte ranges.
+
+
+## 20. Current state (2026-10-18)
+
+Authoritative for resuming. Older sections are historical where they conflict.
+
+### Naming / paths
+
+- Repo: `~/repos/code-intent`; GitHub remote intended as `code-intent` (no local
+  `origin` configured yet).
+- Product: **CodeIntent**. CLI: `cint`. Server: `cint-server`.
+- Kotlin package: `dev.cint.*`. Lua module: `require("cint")`.
+- Commands: `:CintRender|Clear|Toggle|Refresh|Info|Profile|ProfileEdit|`
+  `ProfileReload|Shard|ShardUndo|ShardReset|ShardHistory|Analyze|LiveTags|`
+  `ServerStatus|ServerDisconnect|ServerStop|ServerRestart`.
+- Project config: `<root>/.cint/profiles.lua`. Global config:
+  `stdpath("config")/cint/profiles.lua` (currently
+  `~/.config/nvim/cint/profiles.lua`, symlinked from dotfiles).
+- Socket dir: `cint-<uid>`. Log: `stdpath("log")/cint-live.log`.
+- JSON-RPC: `cint/publishTags`, `cint/analyze`, `cint/error`.
+- Magic comments: `// cint:bookkeeping`, `// cint:validation` (planned
+  `cint:user-feedback`).
+
+### Engine
+
+- Modules: `core`, `treesitter`, `lsp`, `frontend`, `cli`, `server`.
+  Rules live in `core/rules`; `core` has no tree-sitter/LSP dependency.
+- `SyntaxModel` + per-language profiles in
+  `treesitter/src/main/resources/syntax/*.yaml`; generic `ProfileSyntaxModel`.
+- `LanguageFrontend` in core; `frontend` registry: Kotlin, JavaScript,
+  TypeScript, Vue, C#.
+- LSP: spec-driven `LspOracle`; Kotlin only. JS/TS/Vue/C# use `NullOracle`.
+- Split handlers: `SplitHandler`/`SplitRegion` + `SplitAnalyzer`. Vue extracts
+  `<script>` / `<script setup lang="ts">`, analyzes as JS/TS, shifts spans.
+- CFG: `core/flow/ControlFlow.kt`, built before blocks.
+- `ReturnBlock` (SOURCE):
+  - return on a validation guard's true edge -> `VALIDATION`;
+  - rejection sentinel (`null`, `false`, `0`, bare return, ...) on the other
+    edge -> `VALIDATION`;
+  - normal/final return -> `UNTAGGED`.
+  - Normal returns block whole-function scaffolds, so a function ending in a
+    business return is not painted as one intent.
+- Purity is explicit only. Derivative-use requires a literal, local read, or
+  annotated pure call; function promotion requires `@Pure`. Unannotated calls
+  and operators are assumed to have side effects. No purity engine yet.
+- Analysis caches: per-context syntax facts; annotation list + exact-span map +
+  interval index; `RuleBlock.readsAnnotations` avoids rerunning non-readers.
+
+### Renderer
+
+- Socket-only; the artifact/offline path is gone.
+- `scope = "project" | "global"` controls profile file and selection.
+- `languages` list maps Neovim filetypes/extensions to engine language ids.
+- Perf: cached render plan per `(spans, config, changedtick)`, style cache,
+  line-length cache, config cache, incremental reveal (updates only affected
+  extmarks).
+- Defaults: `SHOW = false` (no-op), `HIGHLIGHT` paints, `CONCEAL` hides,
+  `IGNORE` dims. Multi-intent scaffolds skip color/highlight; `IGNORE`/`CONCEAL`
+  still apply.
+- Bench (1,500 spans / 4,000 lines): full render ~5 ms, reveal same block
+  ~0.002 ms, reveal changing block ~0.37 ms.
+- Dotfiles: `lua/plugins/visual/codeintent.lua` has `lazy = false`,
+  `scope = "global"`, `server_cmd` -> `build/install/cint-server/...`,
+  `SHOW = false`, `<leader>pr` -> `CintServerRestart`.
+- Shard syntax:
+  `shards = { NAME = { tags = { LOGGING = { meaning = "IGNORE" } } } }`.
+  The `tags` nesting is required; shards are config patches.
+
+### Daemon latency / Rust
+
+- Cold start ~150 ms. Warm `didChange` (no LSP): ~5 ms/10 lines, ~30 ms/90,
+  ~80 ms/270, ~310 ms/1080 (before CFG; CFG adds ~10–18%, ~367 ms at 1080).
+- Analysis dominates; serialization ~11 ms. Bottleneck is passes/allocation,
+  not JSON/socket. Rust would help cold start/constants, not linear scaling;
+  optimize algorithms first.
+
+### Known gaps / next
+
+- CFG does not collect `switch`/`when` returns; Kotlin inline non-local returns
+  are treated as lambda-local; guard polarity is approximate (pure guard + any
+  value on true edge = validation).
+- Vue LSP is not wired (NullOracle); TSX is unsupported by the binding.
+- No independent purity engine; no incremental analysis.
+- Next candidates: switch/when facts; real Volar oracle; dogfood on a real
+  project; switch/polarity tests; CFG performance.
+
+### Recent commits
+
+`3150e00` rename project; `3efc102` code-intent paths; `bf9ac56` renderer perf;
+`c831898` engine cache/index; `7c9532f` CFG return categorization; `fb32564`
+explicit purity; `039f978` multi-intent scaffold color; `4534f17` SHOW no-op.
