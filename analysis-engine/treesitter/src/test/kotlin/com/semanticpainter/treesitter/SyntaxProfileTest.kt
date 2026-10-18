@@ -28,7 +28,7 @@ class SyntaxProfileTest {
                 SyntaxGroups.REFERENCE,
                 SyntaxGroups.EFFECT,
             )
-        for (language in listOf("kotlin", "javascript", "typescript")) {
+        for (language in listOf("kotlin", "javascript", "typescript", "csharp")) {
             val profile = SyntaxProfiles.load(language)
             assertEquals(language, profile.language)
             for (group in required) {

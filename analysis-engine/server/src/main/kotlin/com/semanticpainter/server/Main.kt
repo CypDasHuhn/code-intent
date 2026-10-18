@@ -8,6 +8,7 @@ import com.semanticpainter.core.artifact.FileEntry
 import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
 import com.semanticpainter.core.frontend.OracleOptions
+import com.semanticpainter.core.frontend.SplitHandler
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.model.UNTAGGED_INTENT
@@ -17,6 +18,7 @@ import com.semanticpainter.core.oracle.TypeFact
 import com.semanticpainter.core.oracle.TypeOracle
 import com.semanticpainter.core.rules.IntentBlocks
 import com.semanticpainter.frontend.Frontends
+import com.semanticpainter.frontend.SplitAnalyzer
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -96,36 +98,47 @@ private fun analyze(
     val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
-    val tree = frontend.parse(source)
-    val syntax = frontend.syntax(tree)
-    val oracle: TypeOracle =
-        when {
-            request.types.isNotEmpty() -> {
-                MapOracle(
-                    types = request.types.mapKeys { it.key.toInt() }.mapValues { TypeFact(it.value) },
-                )
-            }
+    val annotations =
+        if (frontend is SplitHandler) {
+            SplitAnalyzer.analyze(
+                source,
+                frontend,
+                root,
+                request.config ?: defaultConfig,
+                OracleOptions(useLsp, DEFAULT_LSP_TIMEOUT_MS),
+            )
+        } else {
+            val tree = frontend.parse(source)
+            val syntax = frontend.syntax(tree)
+            val oracle: TypeOracle =
+                when {
+                    request.types.isNotEmpty() -> {
+                        MapOracle(
+                            types = request.types.mapKeys { it.key.toInt() }.mapValues { TypeFact(it.value) },
+                        )
+                    }
 
-            useLsp -> {
-                runCatching {
-                    frontend.oracle(root, OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS))
-                }.getOrElse { NullOracle }
-            }
+                    useLsp -> {
+                        runCatching {
+                            frontend.oracle(root, OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS))
+                        }.getOrElse { NullOracle }
+                    }
 
-            else -> {
-                NullOracle
+                    else -> {
+                        NullOracle
+                    }
+                }
+            try {
+                AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, oracle, config)
+            } finally {
+                (oracle as? AutoCloseable)?.close()
             }
         }
-    try {
-        val annotations = AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, oracle, config)
-        return Artifact.render(
-            config.language,
-            config.intents.keys.toList() + UNTAGGED_INTENT,
-            listOf(FileEntry(request.path, contentHash(request.text), annotations)),
-        )
-    } finally {
-        (oracle as? AutoCloseable)?.close()
-    }
+    return Artifact.render(
+        config.language,
+        config.intents.keys.toList() + UNTAGGED_INTENT,
+        listOf(FileEntry(request.path, contentHash(request.text), annotations)),
+    )
 }
 
 private fun respond(

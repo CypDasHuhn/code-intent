@@ -1,0 +1,73 @@
+language: csharp
+
+groups:
+  call: [invocation_expression]
+  navigation: [member_access_expression]
+  calleeSuffix: [identifier]
+  callSuffix: [argument_list]
+  identifier: [identifier]
+  import: [using_directive]
+  property: [variable_declarator, property_declaration]
+  variable: [variable_declaration]
+  function: [method_declaration, local_function_statement, constructor_declaration]
+  functionBody: [block, arrow_expression_clause]
+  if: [if_statement]
+  loop: [while_statement, for_statement, foreach_statement, do_statement]
+  controlBody: [block]
+  else: [else]
+  elseClause: []
+  statementList: [block]
+  statementWrapper: [expression_statement]
+  jump: [return_statement, break_statement, continue_statement, throw_statement, throw_expression]
+  try: [try_statement]
+  catch: [catch_clause]
+  finally: [finally_clause]
+  assignment: [assignment_expression]
+  assignable: []
+  increment: [postfix_unary_expression, prefix_unary_expression]
+  annotation: [attribute]
+  modifier: [attribute_list]
+  comment: [comment]
+  lambda: [lambda_expression]
+  object: [object_creation_expression]
+  typeReference: [predefined_type]
+  declarationWrapper: [variable_declaration, local_declaration_statement, field_declaration]
+  blockClose: ["}"]
+  openBrace: ["{"]
+  equals: ["="]
+  ifToken: [if]
+  elseToken: [else]
+  loopToken: [while, for, foreach, do]
+  tryToken: [try]
+  conditionExcluded: ["(", ")"]
+  loopConditionExcluded: ["(", ")"]
+  parenthesized: [parenthesized_expression]
+  reference: [identifier, member_access_expression, invocation_expression, predefined_type]
+  effect: [invocation_expression, assignment_expression, postfix_unary_expression, prefix_unary_expression, object_creation_expression, await_expression, throw_statement, throw_expression, lambda_expression]
+  effectFragment: []
+
+operators:
+  increment: ["++", "--"]
+
+tokens:
+  importPrefix: "using"
+  throwKeyword: "throw"
+
+keywords:
+  exit: [return, break, continue]
+
+fields:
+  ifCondition: [condition]
+  ifThen: [consequence]
+  ifElse: [alternative]
+  loopCondition: [condition]
+  functionBody: [body]
+  functionName: [name]
+  variableName: [name]
+  variableValue: [value]
+  callFunction: [function]
+  memberObject: [expression]
+  memberProperty: [name]
+  tryBody: [body]
+  returnArgument: []
+  importSource: []

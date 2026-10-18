@@ -15,7 +15,7 @@ build:
 
 # Run the deterministic engine tests (no live LSP dependency).
 test-engine:
-    cd {{engine}} && ./gradlew :core:test :treesitter:test
+    cd {{engine}} && ./gradlew :core:test :treesitter:test :frontend:test
 
 # Run the shared-LSP oracle test (requires kotlin-lsp).
 test-lsp:

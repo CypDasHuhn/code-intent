@@ -13,6 +13,21 @@ javascript-error: &javascript-error
   calls: [assert, invariant]
   throws: true
 
+csharp-logging: &csharp-logging
+  printCalls: [WriteLine, Write, WriteError]
+  printQualifiers: [Console, Console.Error, Debug, Trace]
+  methods: [Log, LogInformation, LogWarning, LogError, LogDebug, LogTrace, Debug, Info, Warn, Error]
+  types: []
+  factories: [CreateLogger, GetLogger, LoggerFactory.Create, Log.ForContext]
+  receiverNames: [log, logger, LOG, LOGGER, Logger, _log, _logger]
+  qualifiers: []
+  guardNames: [loggingEnabled, IsEnabled]
+  imports: [Microsoft.Extensions.Logging, Serilog, NLog, log4net]
+
+csharp-error: &csharp-error
+  calls: [Assert]
+  throws: true
+
 intents:
   LOGGING:
     blocks: [print, logger-interaction, logging-state]
@@ -39,6 +54,7 @@ intents:
     overrides:
       javascript: *javascript-logging
       typescript: *javascript-logging
+      csharp: *csharp-logging
 
   BOOKKEEPING:
     blocks: [bookkeeping]
@@ -51,6 +67,7 @@ intents:
     overrides:
       javascript: *javascript-error
       typescript: *javascript-error
+      csharp: *csharp-error
 
   VALIDATION:
     blocks: [validation]
@@ -71,7 +88,7 @@ intents:
         - startsWith
         - endsWith
         - matches
-      predicatePrefixes: [is, has]
+      predicatePrefixes: [is, has, Is, Has]
 
 purity:
   annotations:

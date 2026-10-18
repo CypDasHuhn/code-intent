@@ -5,6 +5,7 @@ import com.semanticpainter.core.artifact.FileEntry
 import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
 import com.semanticpainter.core.frontend.OracleOptions
+import com.semanticpainter.core.frontend.SplitHandler
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.SourceFile
 import com.semanticpainter.core.model.UNTAGGED_INTENT
@@ -12,6 +13,7 @@ import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.TypeOracle
 import com.semanticpainter.core.rules.IntentBlocks
 import com.semanticpainter.frontend.Frontends
+import com.semanticpainter.frontend.SplitAnalyzer
 import java.io.File
 
 private const val DEFAULT_LSP_TIMEOUT_MS = 5_000L
@@ -47,7 +49,7 @@ fun main(argv: Array<String>) {
     val blocks = IntentBlocks.build(config)
     val entries = mutableListOf<FileEntry>()
     val oracle: TypeOracle =
-        if (args.noLsp) {
+        if (args.noLsp || frontend is SplitHandler) {
             NullOracle
         } else {
             runCatching { frontend.oracle(root.toPath(), OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS)) }
@@ -60,12 +62,26 @@ fun main(argv: Array<String>) {
             val text = runCatching { file.readText() }.getOrNull() ?: continue
             val relative = root.toURI().relativize(file.toURI()).path
             val source = SourceFile(relative, text)
-            val tree =
-                runCatching { frontend.parse(source) }
-                    .onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
-                    .getOrNull() ?: continue
-            val syntax = frontend.syntax(tree)
-            val annotations = AnalysisEngine(blocks).analyze(source, tree, syntax, oracle, config)
+            val annotations =
+                if (frontend is SplitHandler) {
+                    runCatching {
+                        SplitAnalyzer.analyze(
+                            source,
+                            frontend,
+                            root.toPath(),
+                            args.config,
+                            OracleOptions(!args.noLsp, DEFAULT_LSP_TIMEOUT_MS),
+                        )
+                    }.onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
+                        .getOrNull() ?: continue
+                } else {
+                    val tree =
+                        runCatching { frontend.parse(source) }
+                            .onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
+                            .getOrNull() ?: continue
+                    val syntax = frontend.syntax(tree)
+                    AnalysisEngine(blocks).analyze(source, tree, syntax, oracle, config)
+                }
             if (annotations.isNotEmpty() || args.all) {
                 entries.add(FileEntry(relative, contentHash(text), annotations))
             }

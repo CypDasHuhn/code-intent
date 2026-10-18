@@ -32,7 +32,9 @@ object KotlinFrontend : LanguageFrontend {
 }
 
 object Frontends {
-    private val all: List<LanguageFrontend> = listOf(KotlinFrontend, JavascriptFrontend, TypescriptFrontend)
+    private val all: List<LanguageFrontend> = listOf(KotlinFrontend, JavascriptFrontend, TypescriptFrontend, VueFrontend, CsharpFrontend)
+
+    fun languages(): List<String> = all.map { it.language }
 
     fun forLanguage(language: String): LanguageFrontend? = all.firstOrNull { it.language.equals(language, ignoreCase = true) }
 

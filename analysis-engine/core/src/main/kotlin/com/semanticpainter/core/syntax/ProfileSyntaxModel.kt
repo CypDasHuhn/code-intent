@@ -126,11 +126,13 @@ class ProfileSyntaxModel(
             .filter { it.kind in importKinds }
             .map { node ->
                 val source = fieldNode(node, SyntaxFields.IMPORT_SOURCE)
-                when {
-                    source != null -> source.text.trim('"', '\'', '`')
-                    importPrefix != null -> node.text.removePrefix(importPrefix).trim()
-                    else -> node.text.trim()
-                }
+                val value =
+                    when {
+                        source != null -> source.text.trim('"', '\'', '`')
+                        importPrefix != null -> node.text.removePrefix(importPrefix).trim()
+                        else -> node.text.trim()
+                    }
+                value.trimEnd(';')
             }.toList()
 
     override fun referencesByName(tree: SyntaxTree): Map<String, List<SyntaxNode>> =
@@ -259,14 +261,20 @@ class ProfileSyntaxModel(
     }
 
     override fun annotationTexts(declaration: SyntaxNode): List<String> {
-        val container = declaration.children.firstOrNull { it.kind in modifierKinds }
-        val annotations =
-            if (container != null) {
-                container.children.filter { it.kind in annotationKinds }
-            } else {
-                declaration.children.filter { it.kind in annotationKinds }
-            }
-        return annotations.map { normalizeAnnotation(it.text) }
+        var node: SyntaxNode? = declaration
+        while (node != null) {
+            val container = node.children.firstOrNull { it.kind in modifierKinds }
+            val annotations =
+                if (container != null) {
+                    container.children.filter { it.kind in annotationKinds }
+                } else {
+                    node.children.filter { it.kind in annotationKinds }
+                }
+            if (annotations.isNotEmpty()) return annotations.map { normalizeAnnotation(it.text) }
+            val ascend = node.kind in declarationWrapperKinds || node.kind in propertyKinds
+            node = if (ascend) node.parent else null
+        }
+        return emptyList()
     }
 
     override fun precedingComments(node: SyntaxNode): Sequence<SyntaxNode> =
@@ -372,9 +380,9 @@ class ProfileSyntaxModel(
     override fun calleeName(call: SyntaxNode): String? {
         val navigation = navigationOf(call)
         if (navigation != null) {
-            fieldNode(navigation, SyntaxFields.MEMBER_PROPERTY)?.let { return it.text }
+            fieldNode(navigation, SyntaxFields.MEMBER_PROPERTY)?.let { return it.text.substringBefore('<') }
             val suffix = navigation.children.lastOrNull { it.kind in calleeSuffixKinds }
-            return suffix?.children?.firstOrNull { it.kind in identifierKinds }?.text ?: suffix?.text
+            return suffix?.children?.firstOrNull { it.kind in identifierKinds }?.text ?: suffix?.text?.substringBefore('<')
         }
         val function = callFunctionNode(call)
         if (function != null && function.kind in identifierKinds) return function.text

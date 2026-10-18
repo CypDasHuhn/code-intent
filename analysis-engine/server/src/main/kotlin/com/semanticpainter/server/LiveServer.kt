@@ -6,7 +6,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.semanticpainter.core.config.IntentConfig
 import com.semanticpainter.core.config.loadIntentConfig
 import com.semanticpainter.core.engine.AnalysisEngine
+import com.semanticpainter.core.frontend.LanguageFrontend
 import com.semanticpainter.core.frontend.OracleOptions
+import com.semanticpainter.core.frontend.SplitHandler
 import com.semanticpainter.core.hashing.contentHash
 import com.semanticpainter.core.model.Annotation
 import com.semanticpainter.core.model.Role
@@ -15,6 +17,7 @@ import com.semanticpainter.core.oracle.NullOracle
 import com.semanticpainter.core.oracle.TypeOracle
 import com.semanticpainter.core.rules.IntentBlocks
 import com.semanticpainter.frontend.Frontends
+import com.semanticpainter.frontend.SplitAnalyzer
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.StandardProtocolFamily
@@ -46,12 +49,10 @@ class LiveServer(
     private val defaultLanguage: String,
 ) {
     private val mapper: ObjectMapper = jacksonObjectMapper()
-    private val config: IntentConfig by lazy { loadIntentConfig(configPath, defaultLanguage) }
-    private val frontend by lazy { Frontends.require(config.language) }
-    private val blocks by lazy { IntentBlocks.build(config) }
+    private val configs = ConcurrentHashMap<String, IntentConfig>()
+    private val oracles = ConcurrentHashMap<String, TypeOracle>()
     private val docs = ConcurrentHashMap<String, DocState>()
     private val clients = Executors.newCachedThreadPool()
-    private var oracle: TypeOracle? = null
 
     fun run() {
         val parent = socketPath.parent
@@ -72,7 +73,7 @@ class LiveServer(
         Runtime.getRuntime().addShutdownHook(
             Thread {
                 runCatching { server.close() }
-                runCatching { (oracle as? AutoCloseable)?.close() }
+                runCatching { oracles.values.forEach { (it as? AutoCloseable)?.close() } }
                 runCatching { Files.deleteIfExists(socketPath) }
             },
         )
@@ -117,6 +118,7 @@ class LiveServer(
                     mapOf(
                         "protocol" to 1,
                         "root" to root.toString(),
+                        "languages" to Frontends.languages(),
                     ),
                 )
             }
@@ -167,36 +169,22 @@ class LiveServer(
         writer: BufferedWriter,
         doc: DocState,
     ) {
-        if (doc.language != frontend.language) {
-            sendError(writer, null, "only ${frontend.language} is supported")
-            return
-        }
-
+        val frontend =
+            Frontends.forLanguage(doc.language)
+                ?: run {
+                    sendError(writer, null, "unsupported language: ${doc.language}")
+                    return
+                }
+        val config = configFor(frontend.language)
         val source = SourceFile(doc.uri, doc.text)
-        val tree = frontend.parse(source)
-        val syntax = frontend.syntax(tree)
         val analysis =
             synchronized(this) {
-                val activeOracle =
-                    oracle ?: if (useLsp) {
-                        runCatching {
-                            frontend.oracle(root, OracleOptions(true, LIVE_LSP_TIMEOUT_MS))
-                        }.onFailure { error ->
-                            System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
-                            error.printStackTrace()
-                        }.getOrNull()
-                            ?.also { oracle = it }
-                            ?: NullOracle
-                    } else {
-                        NullOracle
-                    }
-
                 runCatching {
-                    AnalysisEngine(blocks).analyze(source, tree, syntax, activeOracle, config)
+                    analyze(frontend, source, config)
                 }.getOrElse { error ->
-                    System.err.println("semantic-code-painter: LSP analysis failed, using heuristics")
+                    System.err.println("semantic-code-painter: analysis failed, using heuristics")
                     error.printStackTrace()
-                    AnalysisEngine(blocks).analyze(source, tree, syntax, NullOracle, config)
+                    analyzeHeuristic(frontend, source, config)
                 }
             }
 
@@ -215,6 +203,61 @@ class LiveServer(
                 "params" to params,
             ),
         )
+    }
+
+    private fun configFor(language: String): IntentConfig =
+        configs.computeIfAbsent(language) {
+            loadIntentConfig(configPath, it)
+        }
+
+    private fun oracleFor(frontend: LanguageFrontend): TypeOracle {
+        if (!useLsp) return NullOracle
+        return oracles.computeIfAbsent(frontend.language) {
+            runCatching { frontend.oracle(root, OracleOptions(true, LIVE_LSP_TIMEOUT_MS)) }
+                .onFailure { error ->
+                    System.err.println("semantic-code-painter: LSP connect failed, using heuristics")
+                    error.printStackTrace()
+                }.getOrNull()
+                ?: NullOracle
+        }
+    }
+
+    private fun analyze(
+        frontend: LanguageFrontend,
+        source: SourceFile,
+        config: IntentConfig,
+    ): List<Annotation> {
+        if (frontend is SplitHandler) {
+            return SplitAnalyzer.analyze(
+                source,
+                frontend,
+                root,
+                configPath,
+                OracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS),
+            )
+        }
+        val tree = frontend.parse(source)
+        val syntax = frontend.syntax(tree)
+        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, oracleFor(frontend), config)
+    }
+
+    private fun analyzeHeuristic(
+        frontend: LanguageFrontend,
+        source: SourceFile,
+        config: IntentConfig,
+    ): List<Annotation> {
+        if (frontend is SplitHandler) {
+            return SplitAnalyzer.analyze(
+                source,
+                frontend,
+                root,
+                configPath,
+                OracleOptions(false, LIVE_LSP_TIMEOUT_MS),
+            )
+        }
+        val tree = frontend.parse(source)
+        val syntax = frontend.syntax(tree)
+        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, NullOracle, config)
     }
 
     private fun annotationJson(annotation: Annotation): Map<String, Any?> =

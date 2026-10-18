@@ -9,7 +9,7 @@ Business Logic, ...) instead of by syntax.
 
 | dir | what |
 |-----|------|
-| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, composable rule blocks, batch CLI, and HTTP host. Built-in Kotlin, JavaScript, and TypeScript syntax profiles. |
+| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, composable rule blocks, batch CLI, and HTTP host. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# syntax profiles. |
 | `nvim-renderer/` | Neovim plugin that consumes tags and paints spans (background tint, gutter icon, conceal). |
 
 ## Flow

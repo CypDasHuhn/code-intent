@@ -7,9 +7,11 @@ import org.treesitter.TSLanguage
 import org.treesitter.TSNode
 import org.treesitter.TSParser
 import org.treesitter.TSTree
+import org.treesitter.TreeSitterCSharp
 import org.treesitter.TreeSitterJavascript
 import org.treesitter.TreeSitterKotlin
 import org.treesitter.TreeSitterTypescript
+import org.treesitter.TreeSitterVue
 
 open class TreeSitterParser(
     private val languageFactory: () -> TSLanguage,
@@ -27,6 +29,10 @@ class KotlinParser : TreeSitterParser({ TreeSitterKotlin() })
 class JavascriptParser : TreeSitterParser({ TreeSitterJavascript() })
 
 class TypescriptParser : TreeSitterParser({ TreeSitterTypescript() })
+
+class VueParser : TreeSitterParser({ TreeSitterVue() })
+
+class CsharpParser : TreeSitterParser({ TreeSitterCSharp() })
 
 class TsSyntaxTree(
     override val source: SourceFile,

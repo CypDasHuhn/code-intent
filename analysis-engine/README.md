@@ -3,14 +3,15 @@
 Kotlin engine for intent classification. Tree-sitter provides structure, LSP
 provides types, and rule blocks classify the result into roles and intent sets.
 The engine emits only semantic facts; clients resolve intent sets into meanings
-and visuals.
+and visuals. Built-in frontends cover Kotlin, JavaScript, TypeScript, Vue, and
+C#.
 
 ## Modules
 
 | module | responsibility |
 |--------|----------------|
 | `core` | model, config, artifact writer, oracle interface, block engine, language-neutral rules |
-| `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, and TypeScript |
+| `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
 | `frontend` | language registry wiring parser, syntax model, and oracle |
 | `cli` | batch host over a directory |
@@ -34,10 +35,22 @@ frontend binding, not new analysis code:
    `overrides.<language>`.
 
 `params` is the shared default; `overrides.<language>` replaces individual keys for
-that language. Kotlin, JavaScript, and TypeScript are built in. Their profiles are
-`treesitter/src/main/resources/syntax/{kotlin,javascript,typescript}.yaml`, and
-their frontends are registered in `frontend/.../KotlinFrontend.kt` and
-`frontend/.../JavascriptFrontend.kt`.
+that language. Kotlin, JavaScript, TypeScript, Vue, and C# are built in. Profiles
+live under `treesitter/src/main/resources/syntax/`, and frontends are registered
+in `frontend/`.
+
+### Split handlers
+
+A frontend can also implement `SplitHandler`. Its `regions(file)` returns
+`SplitRegion(language, text, startByte, startLine, startCol)` entries for
+embedded content. `SplitAnalyzer` parses each region with that language's
+frontend, runs the normal rules, and shifts the resulting spans back into the
+host file coordinates. Vue uses this to analyze `<script>` and
+`<script setup lang="ts">` blocks as JavaScript or TypeScript while reporting
+positions in the `.vue` file.
+
+Split handlers can nest. The host file itself is not analyzed unless a handler
+returns a region for it.
 
 ## Classification
 
@@ -228,9 +241,10 @@ trailing newline removed) so consumers can reject stale artifacts.
 
 ## Testing grounds
 
-`../testing-grounds/kotlin/` contains fixtures for interactions, scaffolds,
-catches, derivative uses, purity annotations, Error Handling, and heuristic
-false positives. They are intentionally not part of Gradle and need not compile.
+`../testing-grounds/kotlin/`, `javascript/`, `typescript/`, `vue/`, and `csharp/`
+contain fixtures for interactions, scaffolds, catches, derivative uses, purity
+annotations, Error Handling, and heuristic false positives. They are
+intentionally not part of Gradle and need not compile.
 
 ```sh
 semantic-code-painter ../testing-grounds --no-lsp --all

@@ -379,6 +379,11 @@ Key engine files:
 - `analysis-engine/core/.../frontend/LanguageFrontend.kt` and
   `analysis-engine/frontend/.../KotlinFrontend.kt` — language registry and
   wiring.
+- `analysis-engine/core/.../frontend/Split.kt` and
+  `analysis-engine/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
+  with coordinate shifting; Vue uses it for `<script>` blocks.
+- `analysis-engine/treesitter/src/main/resources/syntax/csharp.yaml` — C#
+  profile.
 
 Key client files:
 
