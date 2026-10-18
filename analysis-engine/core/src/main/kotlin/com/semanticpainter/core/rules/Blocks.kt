@@ -72,8 +72,7 @@ class PrintBlock(
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val calls = definition.list("printCalls").toSet()
         val qualifiers = definition.list("printQualifiers").toSet()
-        return ctx.syntax
-            .calls(ctx.tree)
+        return ctx.calls
             .mapNotNull { call ->
                 val callee = call.callee ?: return@mapNotNull null
                 if (callee !in calls) return@mapNotNull null
@@ -95,20 +94,18 @@ class LoggerInteractionBlock(
         val types = definition.list("types")
         val receiverNames = definition.list("receiverNames")
         val loggerSymbols =
-            ctx.syntax
-                .properties(ctx.tree)
+            ctx.properties
                 .filter { property ->
                     val path = property.initializer?.let { ctx.syntax.callPath(it) }
                     path != null && definition.has("factories", path)
                 }.mapNotNull { it.name }
                 .toSet()
         val importsMatch =
-            ctx.syntax.imports(ctx.tree).any { import ->
+            ctx.imports.any { import ->
                 definition.list("imports").any { import == it || import.startsWith("$it.") }
             }
 
-        return ctx.syntax
-            .calls(ctx.tree)
+        return ctx.calls
             .mapNotNull { call ->
                 val callee = call.callee ?: return@mapNotNull null
                 if (methods.isNotEmpty() && callee !in methods) return@mapNotNull null
@@ -181,8 +178,7 @@ class LoggingStateBlock(
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         if (guardNames.isEmpty()) return emptyList()
-        return ctx.syntax
-            .guardConditions(ctx.tree)
+        return ctx.guardConditions
             .mapNotNull { condition ->
                 if (guardNames.any { condition.text.contains(it, ignoreCase = true) }) {
                     condition.raw(Role.SOURCE_INTENT, setOf(intent), "logging-state", "treesitter", 0.7)
@@ -198,9 +194,9 @@ class BookkeepingBlock : RuleBlock {
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        val references = ctx.syntax.referencesByName(ctx.tree)
+        val references = ctx.references
 
-        for (declaration in ctx.syntax.properties(ctx.tree)) {
+        for (declaration in ctx.properties) {
             val (source, startNode) = bookkeepingSource(ctx, declaration.node) ?: continue
             val name = declaration.name ?: continue
             val nameNode = declaration.nameNode ?: continue
@@ -271,12 +267,12 @@ class ValidationBlock(
     private val definition: IntentDefinition,
 ) : RuleBlock {
     override val id: String = "validation"
+    override val readsAnnotations: Boolean = true
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val predicates = definition.list("predicates").toSet()
         val prefixes = definition.list("predicatePrefixes")
-        return ctx.syntax
-            .ifs(ctx.tree)
+        return ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
                 val body = guard.thenBody ?: return@flatMap emptyList()
@@ -384,11 +380,9 @@ class ErrorHandlingBlock(
 
         val throwAnnotations =
             if (detectThrows) {
-                ctx.tree.root
-                    .descendants()
-                    .filter { ctx.syntax.isThrow(it) }
-                    .map { it.raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-throw", "treesitter", 1.0) }
-                    .toList()
+                ctx.throws.map {
+                    it.raw(Role.SOURCE_INTENT, setOf(intent), "error-handling-throw", "treesitter", 1.0)
+                }
             } else {
                 emptyList()
             }
@@ -402,12 +396,13 @@ class DerivativeUseBlock(
 ) : RuleBlock {
     override val id: String = "derivative-use"
     override val phase: Phase = Phase.DERIVATIVE
+    override val readsAnnotations: Boolean = true
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        val references = ctx.syntax.referencesByName(ctx.tree)
+        val references = ctx.references
 
-        for (declaration in ctx.syntax.properties(ctx.tree)) {
+        for (declaration in ctx.properties) {
             val name = declaration.name ?: continue
             val nameNode = declaration.nameNode ?: continue
             val initializer = declaration.initializer ?: continue
@@ -436,7 +431,7 @@ class DerivativeUseBlock(
             result += declaration.node.raw(Role.DERIVATIVE_USE, intents, "derivative-use", "treesitter", 0.7)
         }
 
-        for (declaration in ctx.syntax.functions(ctx.tree)) {
+        for (declaration in ctx.functions) {
             val nameNode = declaration.nameNode ?: continue
             val name = nameNode.text
             if (name.isEmpty()) continue
@@ -483,6 +478,7 @@ class DerivativeUseBlock(
 class IntentScaffoldBlock : RuleBlock {
     override val id: String = "intent-scaffold"
     override val phase: Phase = Phase.SCAFFOLD
+    override val readsAnnotations: Boolean = true
 
     override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
@@ -494,8 +490,7 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun ifScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.syntax
-            .ifs(ctx.tree)
+        ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
                 val thenBody = guard.thenBody ?: return@flatMap emptyList()
@@ -553,8 +548,7 @@ class IntentScaffoldBlock : RuleBlock {
             }.toList()
 
     private fun catchScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
-        ctx.syntax
-            .catches(ctx.tree)
+        ctx.catches
             .mapNotNull { catchNode ->
                 val intents = bodyIntents(ctx, catchNode)
                 if (intents.none { it != UNTAGGED_INTENT }) return@mapNotNull null
@@ -569,7 +563,7 @@ class IntentScaffoldBlock : RuleBlock {
 
     private fun tryScaffolds(ctx: AnalysisContext): List<RawAnnotation> {
         val result = mutableListOf<RawAnnotation>()
-        for (tryFact in ctx.syntax.tries(ctx.tree)) {
+        for (tryFact in ctx.tries) {
             val catches = tryFact.catches
             if (catches.isEmpty()) continue
 
