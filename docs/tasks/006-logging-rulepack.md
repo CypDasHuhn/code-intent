@@ -1,0 +1,47 @@
+---
+name: logging rulepack
+status: todo
+depends-on: [003, 004, 005]
+reviewers: [correctness, detection-fidelity]
+---
+
+## Goal
+
+Re-express logging detection as a single bundled `logging` rule on the new API
+(architecture.md §11.3), owning `LOGGING`, replacing the current
+`LoggingBlock`/`PrintBlock` paths.
+
+## Scope
+
+- One rule owns `LOGGING` and runs three internal matchers (private functions),
+  keeping §2's 1:1 ownership strict:
+  - `print` — configured call names and receiver qualifiers (`println`/`print`,
+    `System.out`/`System.err`, `console.log`/`console.error`, ...).
+  - `logger-interaction` — a call on a receiver whose LSP type is a configured
+    logger type. Factory properties and qualifiers answer without LSP; ambiguous
+    receiver names and import-gated matches consult the oracle; a resolved
+    non-logger type vetoes the heuristic; an unresolved type falls back; live
+    hover time is capped.
+  - `logging-state` — conditions using configured logging-state names.
+- Trailing lambda arguments are included in the call span.
+- The rule's contribution is the union of matcher hits; it stays a pure
+  `(View) -> List<Emit>` with no store mutation.
+
+## Acceptance
+
+- Detection parity with the current engine over `testing-grounds/` and the golden
+  fixtures (the fixtures are a development check, not a compatibility contract).
+- No core branching on language; all language specifics are pack config.
+- `reads` declarations are honest; no undeclared intent access.
+- `just test-engine` green.
+
+## Out of scope
+
+- Other intents; config migration (013).
+
+## Notes
+
+- Decision (README #1): `print`/`logger-interaction`/`logging-state` are matchers
+  inside this one rule, not three rules; stratum 0 holds a single logging node.
+  This refines `§4`'s worked example.
+- Configuration values move to pack config in 013; keep them pack-local now.
