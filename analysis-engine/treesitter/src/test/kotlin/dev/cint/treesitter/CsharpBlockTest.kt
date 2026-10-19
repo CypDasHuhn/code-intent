@@ -1,10 +1,10 @@
 package dev.cint.treesitter
 
+import dev.cint.api.Annotation
+import dev.cint.api.Role
+import dev.cint.core.model.SourceFile
 import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.engine.AnalysisEngine
-import dev.cint.core.model.Annotation
-import dev.cint.core.model.Role
-import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.rules.IntentBlocks
 import dev.cint.core.syntax.ProfileSyntaxModel

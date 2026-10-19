@@ -1,7 +1,7 @@
 package dev.cint.treesitter
 
-import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.model.SourceFile
+import dev.cint.core.config.loadIntentConfig
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

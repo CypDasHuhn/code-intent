@@ -3,6 +3,8 @@ package dev.cint.server
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import dev.cint.api.Annotation
+import dev.cint.core.model.SourceFile
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.engine.AnalysisEngine
@@ -10,9 +12,6 @@ import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
-import dev.cint.core.model.Annotation
-import dev.cint.core.model.Role
-import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.rules.IntentBlocks
@@ -259,29 +258,6 @@ class LiveServer(
         val syntax = frontend.syntax(tree)
         return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, NullOracle, config)
     }
-
-    private fun annotationJson(annotation: Annotation): Map<String, Any?> =
-        mapOf(
-            "role" to roleName(annotation.role),
-            "intents" to annotation.intents,
-            "rule" to annotation.rule,
-            "evidence" to annotation.evidence,
-            "source" to annotation.source,
-            "confidence" to annotation.confidence,
-            "startLine" to annotation.span.startLine,
-            "startCol" to annotation.span.startCol,
-            "endLine" to annotation.span.endLine,
-            "endCol" to annotation.span.endCol,
-            "startByte" to annotation.startByte,
-            "endByte" to annotation.endByte,
-        )
-
-    private fun roleName(role: Role): String =
-        when (role) {
-            Role.SOURCE_INTENT -> "source-intent"
-            Role.DERIVATIVE_USE -> "derivative-use"
-            Role.SCAFFOLD -> "scaffold"
-        }
 
     private fun respond(
         writer: BufferedWriter,

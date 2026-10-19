@@ -1,7 +1,8 @@
 package dev.cint.core.artifact
 
-import dev.cint.core.model.Annotation
-import dev.cint.core.model.Role
+import dev.cint.api.Annotation
+import dev.cint.api.Contribution
+import dev.cint.api.Role
 
 data class FileEntry(
     val path: String,
@@ -37,7 +38,11 @@ object Artifact {
                     append("\"source\":\"${Json.escape(annotation.source)}\",")
                     append("\"confidence\":${annotation.confidence},")
                     append("\"startLine\":${annotation.span.startLine},\"startCol\":${annotation.span.startCol},")
-                    append("\"endLine\":${annotation.span.endLine},\"endCol\":${annotation.span.endCol}}")
+                    append("\"endLine\":${annotation.span.endLine},\"endCol\":${annotation.span.endCol},")
+                    append("\"startByte\":${annotation.startByte},\"endByte\":${annotation.endByte},")
+                    append("\"provenance\":[")
+                    append(annotation.provenance.joinToString(",") { contributionJson(it) })
+                    append("]}")
                     if (j < entry.annotations.size - 1) append(",")
                     append("\n")
                 }
@@ -46,6 +51,21 @@ object Artifact {
                 append("\n")
             }
             append("  ]\n}\n")
+        }
+
+    private fun contributionJson(contribution: Contribution): String =
+        buildString {
+            append("{\"rule\":\"${Json.escape(contribution.rule)}\",")
+            append("\"role\":\"${roleName(contribution.role)}\",")
+            append("\"intents\":[")
+            append(contribution.intents.joinToString(",") { "\"${Json.escape(it)}\"" })
+            append("],")
+            append("\"evidence\":\"${Json.escape(contribution.evidence)}\",")
+            append("\"source\":\"${Json.escape(contribution.source)}\",")
+            append("\"confidence\":${contribution.confidence},")
+            append("\"startLine\":${contribution.span.startLine},\"startCol\":${contribution.span.startCol},")
+            append("\"endLine\":${contribution.span.endLine},\"endCol\":${contribution.span.endCol},")
+            append("\"startByte\":${contribution.startByte},\"endByte\":${contribution.endByte}}")
         }
 
     private fun roleName(role: Role): String =

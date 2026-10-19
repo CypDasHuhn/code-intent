@@ -1,22 +1,24 @@
 package dev.cint.core.engine
 
+import dev.cint.api.Annotation
+import dev.cint.api.CallFact
+import dev.cint.api.Contribution
+import dev.cint.api.Coverage
+import dev.cint.api.FunctionFact
+import dev.cint.api.IfFact
+import dev.cint.api.PropertyFact
+import dev.cint.api.Role
+import dev.cint.api.SyntaxNode
+import dev.cint.api.TryFact
+import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.flow.ControlFlow
 import dev.cint.core.flow.ControlFlowBuilder
-import dev.cint.core.model.Annotation
 import dev.cint.core.model.RawAnnotation
-import dev.cint.core.model.Role
 import dev.cint.core.model.SourceFile
-import dev.cint.core.model.UNTAGGED_INTENT
 import dev.cint.core.oracle.TypeOracle
-import dev.cint.core.syntax.CallFact
-import dev.cint.core.syntax.FunctionFact
-import dev.cint.core.syntax.IfFact
-import dev.cint.core.syntax.PropertyFact
 import dev.cint.core.syntax.SyntaxModel
-import dev.cint.core.syntax.SyntaxNode
 import dev.cint.core.syntax.SyntaxTree
-import dev.cint.core.syntax.TryFact
 
 enum class Phase {
     SOURCE,
@@ -29,14 +31,7 @@ interface RuleBlock {
     val phase: Phase get() = Phase.SOURCE
     val readsAnnotations: Boolean get() = false
 
-    fun apply(ctx: AnalysisContext): List<RawAnnotation>
-}
-
-data class Coverage(
-    val intents: Set<String>,
-) {
-    val hasRealIntent: Boolean get() = intents.any { it != UNTAGGED_INTENT }
-    val hasUntagged: Boolean get() = UNTAGGED_INTENT in intents
+    fun apply(ctx: AnalysisContext): List<Contribution>
 }
 
 private data class AnnotationKey(
@@ -164,14 +159,15 @@ class AnalysisContext(
         intervalIndex = null
     }
 
-    fun emit(annotation: RawAnnotation) {
-        val key = AnnotationKey(annotation.role, annotation.startByte, annotation.endByte)
+    fun emit(contribution: Contribution) {
+        val key = AnnotationKey(contribution.role, contribution.startByte, contribution.endByte)
         val existing = raw[key]
+        val incoming = RawAnnotation.of(contribution)
         val merged =
             when {
-                existing == null -> annotation
-                annotation.role == Role.SCAFFOLD -> annotation
-                else -> existing.merge(annotation)
+                existing == null -> incoming
+                contribution.role == Role.SCAFFOLD -> incoming
+                else -> existing.merge(incoming)
             }
         if (merged != existing) {
             raw[key] = merged
@@ -180,8 +176,8 @@ class AnalysisContext(
         }
     }
 
-    fun emitAll(annotations: Iterable<RawAnnotation>) {
-        annotations.forEach(::emit)
+    fun emitAll(contributions: Iterable<Contribution>) {
+        contributions.forEach(::emit)
     }
 
     fun remove(
@@ -209,13 +205,13 @@ class AnalysisContext(
                 Annotation(
                     role = rawAnnotation.role,
                     intents = rawAnnotation.intents,
-                    rule = rawAnnotation.rule,
                     evidence = rawAnnotation.evidence,
                     span = rawAnnotation.span,
                     source = rawAnnotation.source,
                     confidence = rawAnnotation.confidence,
                     startByte = rawAnnotation.startByte,
                     endByte = rawAnnotation.endByte,
+                    provenance = rawAnnotation.provenance,
                 )
             }
         cachedAnnotations = list

@@ -1,5 +1,12 @@
 package dev.cint.core.syntax
 
+import dev.cint.api.CallFact
+import dev.cint.api.FunctionFact
+import dev.cint.api.IfFact
+import dev.cint.api.PropertyFact
+import dev.cint.api.SyntaxNode
+import dev.cint.api.TryFact
+
 class ProfileSyntaxModel(
     private val profile: SyntaxProfile,
 ) : SyntaxModel {

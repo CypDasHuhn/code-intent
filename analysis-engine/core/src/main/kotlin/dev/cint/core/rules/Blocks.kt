@@ -1,15 +1,15 @@
 package dev.cint.core.rules
 
+import dev.cint.api.Contribution
+import dev.cint.api.Role
+import dev.cint.api.Span
+import dev.cint.api.SyntaxNode
+import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.IntentDefinition
 import dev.cint.core.engine.AnalysisContext
 import dev.cint.core.engine.Phase
 import dev.cint.core.engine.RuleBlock
-import dev.cint.core.model.RawAnnotation
-import dev.cint.core.model.Role
-import dev.cint.core.model.Span
-import dev.cint.core.model.UNTAGGED_INTENT
-import dev.cint.core.syntax.SyntaxNode
 
 private fun typeMatches(
     actual: String,
@@ -29,11 +29,11 @@ private fun SyntaxNode.raw(
     rule: String,
     source: String,
     confidence: Double,
-): RawAnnotation =
-    RawAnnotation(
+): Contribution =
+    Contribution(
+        rule = rule,
         role = role,
         intents = intents,
-        rule = rule,
         evidence = text.replace("\n", " ").take(160),
         span = span(),
         source = source,
@@ -50,11 +50,11 @@ private fun tagRange(
     source: String,
     confidence: Double,
     role: Role = Role.SCAFFOLD,
-): RawAnnotation =
-    RawAnnotation(
+): Contribution =
+    Contribution(
+        rule = rule,
         role = role,
         intents = intents,
-        rule = rule,
         evidence = "${start.text} ${end.text}".take(160),
         span = Span(start.startLine, start.startCol, end.endLine, end.endCol),
         source = source,
@@ -69,7 +69,7 @@ class PrintBlock(
 ) : RuleBlock {
     override val id: String = "print"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
         val calls = definition.list("printCalls").toSet()
         val qualifiers = definition.list("printQualifiers").toSet()
         return ctx.calls
@@ -89,7 +89,7 @@ class LoggerInteractionBlock(
 ) : RuleBlock {
     override val id: String = "logger-interaction"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
         val methods = definition.list("methods").toSet()
         val types = definition.list("types")
         val receiverNames = definition.list("receiverNames")
@@ -176,7 +176,7 @@ class LoggingStateBlock(
 ) : RuleBlock {
     override val id: String = "logging-state"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
         if (guardNames.isEmpty()) return emptyList()
         return ctx.guardConditions
             .mapNotNull { condition ->
@@ -192,8 +192,8 @@ class LoggingStateBlock(
 class BookkeepingBlock : RuleBlock {
     override val id: String = "bookkeeping"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
-        val result = mutableListOf<RawAnnotation>()
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
+        val result = mutableListOf<Contribution>()
         val references = ctx.references
 
         for (declaration in ctx.properties) {
@@ -269,7 +269,7 @@ class ValidationBlock(
     override val id: String = "validation"
     override val readsAnnotations: Boolean = true
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
         return ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
@@ -367,7 +367,7 @@ class ReturnBlock(
 ) : RuleBlock {
     override val id: String = "return-category"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> =
+    override fun apply(ctx: AnalysisContext): List<Contribution> =
         ctx.flow.returns
             .map { site ->
                 val validation = isValidationReturn(ctx, site)
@@ -412,7 +412,7 @@ class ErrorHandlingBlock(
 ) : RuleBlock {
     override val id: String = "error-handling"
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
         val calls = definition.list("calls").toSet()
         val detectThrows = definition.list("throws").any { it.equals("true", ignoreCase = true) }
 
@@ -447,8 +447,8 @@ class DerivativeUseBlock(
     override val phase: Phase = Phase.DERIVATIVE
     override val readsAnnotations: Boolean = true
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
-        val result = mutableListOf<RawAnnotation>()
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
+        val result = mutableListOf<Contribution>()
         val references = ctx.references
 
         for (declaration in ctx.properties) {
@@ -529,8 +529,8 @@ class IntentScaffoldBlock : RuleBlock {
     override val phase: Phase = Phase.SCAFFOLD
     override val readsAnnotations: Boolean = true
 
-    override fun apply(ctx: AnalysisContext): List<RawAnnotation> {
-        val result = mutableListOf<RawAnnotation>()
+    override fun apply(ctx: AnalysisContext): List<Contribution> {
+        val result = mutableListOf<Contribution>()
         result += ifScaffolds(ctx)
         result += catchScaffolds(ctx)
         result += tryScaffolds(ctx)
@@ -538,7 +538,7 @@ class IntentScaffoldBlock : RuleBlock {
         return result
     }
 
-    private fun ifScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
+    private fun ifScaffolds(ctx: AnalysisContext): List<Contribution> =
         ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
@@ -574,7 +574,7 @@ class IntentScaffoldBlock : RuleBlock {
                 }
 
                 ctx.remove(Role.SCAFFOLD, guard.node.startByte, guard.node.endByte)
-                val result = mutableListOf<RawAnnotation>()
+                val result = mutableListOf<Contribution>()
                 result +=
                     tagRange(
                         guard.node,
@@ -596,7 +596,7 @@ class IntentScaffoldBlock : RuleBlock {
                 result
             }.toList()
 
-    private fun catchScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
+    private fun catchScaffolds(ctx: AnalysisContext): List<Contribution> =
         ctx.catches
             .mapNotNull { catchNode ->
                 val intents = bodyIntents(ctx, catchNode)
@@ -610,8 +610,8 @@ class IntentScaffoldBlock : RuleBlock {
                 }
             }.toList()
 
-    private fun tryScaffolds(ctx: AnalysisContext): List<RawAnnotation> {
-        val result = mutableListOf<RawAnnotation>()
+    private fun tryScaffolds(ctx: AnalysisContext): List<Contribution> {
+        val result = mutableListOf<Contribution>()
         for (tryFact in ctx.tries) {
             val catches = tryFact.catches
             if (catches.isEmpty()) continue
@@ -657,7 +657,7 @@ class IntentScaffoldBlock : RuleBlock {
         return result
     }
 
-    private fun functionScaffolds(ctx: AnalysisContext): List<RawAnnotation> =
+    private fun functionScaffolds(ctx: AnalysisContext): List<Contribution> =
         ctx.syntax
             .functions(ctx.tree)
             .mapNotNull { function ->

@@ -1,7 +1,7 @@
 package dev.cint.core.flow
 
+import dev.cint.api.SyntaxNode
 import dev.cint.core.syntax.SyntaxModel
-import dev.cint.core.syntax.SyntaxNode
 import dev.cint.core.syntax.SyntaxTree
 
 data class Guard(

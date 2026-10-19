@@ -1,57 +1,40 @@
 package dev.cint.core.model
 
-const val UNTAGGED_INTENT = "UNTAGGED"
+import dev.cint.api.Contribution
+import dev.cint.api.Intent
+import dev.cint.api.Role
+import dev.cint.api.Span
 
 data class SourceFile(
     val path: String,
     val text: String,
 )
 
-enum class Role {
-    SOURCE_INTENT,
-    DERIVATIVE_USE,
-    SCAFFOLD,
-}
-
-data class Span(
-    val startLine: Int,
-    val startCol: Int,
-    val endLine: Int,
-    val endCol: Int,
-)
-
-data class RawAnnotation(
-    val role: Role,
-    val intents: Set<String>,
-    val rule: String,
-    val evidence: String,
+internal data class RawAnnotation(
     val span: Span,
-    val source: String,
-    val confidence: Double,
     val startByte: Int,
     val endByte: Int,
+    val provenance: List<Contribution>,
 ) {
-    fun merge(other: RawAnnotation): RawAnnotation =
-        copy(
-            intents = intents + other.intents,
-            rule = (rule.split('+') + other.rule.split('+')).distinct().joinToString("+"),
-            evidence = if (evidence.length >= other.evidence.length) evidence else other.evidence,
-            source = if (source == other.source) source else "mixed",
-            confidence = maxOf(confidence, other.confidence),
-        )
-}
+    val role: Role get() = provenance.first().role
+    val intents: Set<Intent> get() = provenance.flatMap { it.intents }.toSet()
+    val evidence: String get() = provenance.maxByOrNull { it.evidence.length }?.evidence.orEmpty()
+    val source: String get() = provenance.map { it.source }.distinct().singleOrNull() ?: "mixed"
+    val confidence: Double get() = provenance.maxOf { it.confidence }
 
-data class Annotation(
-    val role: Role,
-    val intents: Set<String>,
-    val rule: String,
-    val evidence: String,
-    val span: Span,
-    val source: String,
-    val confidence: Double,
-    val startByte: Int,
-    val endByte: Int,
-)
+    fun merge(other: RawAnnotation): RawAnnotation =
+        copy(provenance = (provenance + other.provenance).distinct())
+
+    companion object {
+        fun of(contribution: Contribution): RawAnnotation =
+            RawAnnotation(
+                span = contribution.span,
+                startByte = contribution.startByte,
+                endByte = contribution.endByte,
+                provenance = listOf(contribution),
+            )
+    }
+}
 
 class LineIndex(
     private val text: String,

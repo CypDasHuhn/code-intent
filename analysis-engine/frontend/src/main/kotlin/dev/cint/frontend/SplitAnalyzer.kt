@@ -1,13 +1,13 @@
 package dev.cint.frontend
 
+import dev.cint.api.Annotation
+import dev.cint.api.Span
 import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.frontend.SplitRegion
-import dev.cint.core.model.Annotation
 import dev.cint.core.model.SourceFile
-import dev.cint.core.model.Span
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.rules.IntentBlocks
@@ -53,14 +53,24 @@ object SplitAnalyzer {
 
     private fun Annotation.shift(region: SplitRegion): Annotation =
         copy(
-            span =
-                Span(
-                    startLine = region.startLine + span.startLine,
-                    startCol = if (span.startLine == 0) region.startCol + span.startCol else span.startCol,
-                    endLine = region.startLine + span.endLine,
-                    endCol = if (span.endLine == 0) region.startCol + span.endCol else span.endCol,
-                ),
+            span = span.shift(region),
             startByte = region.startByte + startByte,
             endByte = region.startByte + endByte,
+            provenance =
+                provenance.map {
+                    it.copy(
+                        span = it.span.shift(region),
+                        startByte = region.startByte + it.startByte,
+                        endByte = region.startByte + it.endByte,
+                    )
+                },
+        )
+
+    private fun Span.shift(region: SplitRegion): Span =
+        Span(
+            startLine = region.startLine + startLine,
+            startCol = if (startLine == 0) region.startCol + startCol else startCol,
+            endLine = region.startLine + endLine,
+            endCol = if (endLine == 0) region.startCol + endCol else endCol,
         )
 }

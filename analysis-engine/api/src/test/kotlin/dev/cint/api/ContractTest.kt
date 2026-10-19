@@ -1,0 +1,147 @@
+package dev.cint.api
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+private class TestRule(
+    override val id: String,
+    override val owns: Intent,
+    override val reads: Set<Intent> = emptySet(),
+) : Rule {
+    override fun run(view: View): List<Emit> = emptyList()
+}
+
+private class TestPack(
+    override val id: String,
+    override val languages: Set<String> = setOf("kotlin"),
+    private val entries: List<Rule>,
+) : RulePack {
+    override fun rules(): List<Rule> = entries
+}
+
+private fun resolve(packs: List<RulePack>): List<Relation> {
+    val owners = mutableMapOf<Intent, Rule>()
+    for (rule in packs.flatMap { it.rules() }) {
+        require(owners.putIfAbsent(rule.owns, rule) == null) { "duplicate owner for intent ${rule.owns}" }
+    }
+    return packs.flatMap { it.rules() }.flatMap { reader ->
+        reader.reads.map { intent ->
+            val owner = owners[intent] ?: throw IllegalArgumentException("unknown intent '$intent' read by ${reader.id}")
+            Relation(reader, intent, owner)
+        }
+    }
+}
+
+class ContractTest {
+    private val bookkeeping = TestRule("demo:bookkeeping", "BOOKKEEPING")
+    private val validation = TestRule("demo:validation", "VALIDATION", setOf("BOOKKEEPING"))
+    private val pack = TestPack("demo", entries = listOf(bookkeeping, validation))
+
+    @Test
+    fun ruleIdsAreNamespacedByPack() {
+        assertEquals("demo:validation", validation.id)
+        assertTrue(pack.rules().all { it.id.startsWith("${pack.id}:") })
+        assertEquals(1, pack.rules().count { it.owns == "VALIDATION" })
+    }
+
+    @Test
+    fun untaggedIsReservedAndUnowned() {
+        assertEquals("UNTAGGED", UNTAGGED_INTENT)
+        assertTrue(pack.rules().none { it.owns == UNTAGGED_INTENT })
+        assertTrue(pack.rules().none { UNTAGGED_INTENT in it.reads })
+    }
+
+    @Test
+    fun relationResolvesReadIntentToOwningRule() {
+        val relation = resolve(listOf(pack)).single()
+
+        assertTrue(relation.intent in relation.reader.reads)
+        assertEquals(relation.intent, relation.owner.owns)
+        assertEquals(validation, relation.reader)
+        assertEquals(bookkeeping, relation.owner)
+        assertEquals(1, pack.rules().count { it.owns == relation.intent })
+        assertEquals(listOf(Relation(validation, "BOOKKEEPING", bookkeeping)), resolve(listOf(pack)))
+    }
+
+    @Test
+    fun relationRejectsUnknownReadIntent() {
+        val broken = TestRule("demo:broken", "BROKEN", setOf("MISSING"))
+        val malformed = TestPack("demo", entries = listOf(bookkeeping, broken))
+
+        val error = assertFailsWith<IllegalArgumentException> { resolve(listOf(malformed)) }
+
+        assertTrue(error.message.orEmpty().contains("MISSING"))
+    }
+
+    @Test
+    fun annotationKeepsReservedAnchorAndStructuredProvenance() {
+        val span = Span(1, 2, 1, 8)
+        val first =
+            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), "log.warn", span, "treesitter", 1.0, 10, 16)
+        val second =
+            Contribution("demo:error-handling", Role.SOURCE_INTENT, setOf("ERROR_HANDLING"), "throw", span, "lsp", 0.9, 10, 16)
+        val annotation =
+            Annotation(
+                role = Role.SCAFFOLD,
+                intents = first.intents + second.intents,
+                evidence = "throw",
+                span = span,
+                source = "mixed",
+                confidence = 1.0,
+                startByte = 10,
+                endByte = 16,
+                provenance = listOf(first, second),
+            )
+
+        assertNull(annotation.nodeAnchor)
+        assertEquals(setOf("LOGGING", "ERROR_HANDLING"), annotation.intents)
+        assertEquals(listOf(first, second), annotation.provenance)
+        assertEquals("demo:logging", annotation.rule)
+        assertFalse(annotation.rule.contains("+"))
+    }
+
+    @Test
+    fun annotationRequiresAtLeastOneContributor() {
+        assertFailsWith<IllegalArgumentException> {
+            Annotation(
+                role = Role.SOURCE_INTENT,
+                intents = setOf("LOGGING"),
+                evidence = "log",
+                span = Span(0, 0, 0, 3),
+                source = "treesitter",
+                confidence = 1.0,
+                startByte = 0,
+                endByte = 3,
+                provenance = emptyList(),
+            )
+        }
+    }
+
+    @Test
+    fun emitCannotChooseItsRoleOrRuleId() {
+        val fields = Emit::class.java.declaredFields.map { it.name }
+        assertFalse("role" in fields)
+        assertFalse("rule" in fields)
+
+        val emit =
+            Emit(
+                intents = setOf("LOGGING"),
+                evidence = "log.warn",
+                span = Span(0, 0, 0, 8),
+                source = "treesitter",
+                confidence = 1.0,
+                startByte = 0,
+                endByte = 8,
+            )
+        val contribution = bookkeeping.toContribution(emit)
+
+        assertEquals("demo:bookkeeping", contribution.rule)
+        assertEquals(Role.SOURCE_INTENT, contribution.role)
+        assertEquals(setOf("LOGGING"), contribution.intents)
+        assertNull(emit.nodeAnchor)
+    }
+}

@@ -1,47 +1,16 @@
 package dev.cint.core.syntax
 
-data class CallFact(
-    val node: SyntaxNode,
-    val site: SyntaxNode,
-    val callee: String?,
-    val receiver: SyntaxNode?,
-)
-
-data class PropertyFact(
-    val node: SyntaxNode,
-    val name: String?,
-    val nameNode: SyntaxNode?,
-    val initializer: SyntaxNode?,
-)
-
-data class FunctionFact(
-    val node: SyntaxNode,
-    val name: String?,
-    val nameNode: SyntaxNode?,
-    val body: SyntaxNode?,
-)
-
-data class IfFact(
-    val node: SyntaxNode,
-    val condition: SyntaxNode?,
-    val thenBody: SyntaxNode?,
-    val elseBody: SyntaxNode?,
-    val elseKeyword: SyntaxNode?,
-)
-
-data class TryFact(
-    val node: SyntaxNode,
-    val body: SyntaxNode?,
-    val catches: List<SyntaxNode>,
-    val finallyBlock: SyntaxNode?,
-    val headerStart: SyntaxNode?,
-    val headerEnd: SyntaxNode?,
-)
+import dev.cint.api.CallFact
+import dev.cint.api.FunctionFact
+import dev.cint.api.IfFact
+import dev.cint.api.PropertyFact
+import dev.cint.api.SyntaxNode
+import dev.cint.api.TryFact
 
 data class LoopFact(
     val node: SyntaxNode,
-    val condition: SyntaxNode?,
     val body: SyntaxNode?,
+    val condition: SyntaxNode?,
 )
 
 interface SyntaxModel {

@@ -1,5 +1,7 @@
 package dev.cint.cli
 
+import dev.cint.core.model.SourceFile
+import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
 import dev.cint.core.config.loadIntentConfig
@@ -7,8 +9,6 @@ import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
-import dev.cint.core.model.SourceFile
-import dev.cint.core.model.UNTAGGED_INTENT
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.rules.IntentBlocks
