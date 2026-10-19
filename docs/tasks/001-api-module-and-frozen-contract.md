@@ -1,6 +1,6 @@
 ---
 name: api module and frozen contract
-status: todo
+status: done
 depends-on: []
 reviewers: [correctness, api-fidelity]
 ---
@@ -53,3 +53,19 @@ plugins depend only on `api` (architecture.md §9).
 - Bundled rulepacks live in a new `:rulepacks` module depending only on `:api`,
   so the `§1` boundary is structural (README #3).
 - `dsl` folds into `api` for now (README #4).
+
+## Outcome (2026-10-19)
+
+Both reviews clean: round-1 findings (plugin emit boundary, core-only types in
+`api`, empty/lossy `Annotation.rule`, competing `RawAnnotation`, untested split
+provenance shift, tautological `Relation` test) were fixed and round 2 concurs.
+`just build` and `just test-engine` green; forced reruns api 7 / core 3 /
+treesitter 58 / frontend 4 / server 1 tests, 0 failures.
+
+Contract decisions: `Emit` is source-only (no `role`/`rule`; the framework stamps
+`SOURCE_INTENT` and the running rule id via `Rule.toContribution`); `Annotation`
+requires non-empty `provenance`; `Contribution` carries byte offsets; the artifact
+and live payloads publish `provenance` additively.
+
+Deferred, named: duplicate-owner/cycle/unknown-rule load errors → 003; physical
+store swap and `RawAnnotation` removal → 002; final renderer payload shape → 016.
