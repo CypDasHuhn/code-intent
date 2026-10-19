@@ -4,13 +4,7 @@ Purpose: raw, self-contained dump of a brainstorming+PoC session so a future
 session can resume with no other context. Written for LLM consumption; density
 over polish. Not maintained for humans.
 
-Repo: `~/repos/code-intent` (monorepo).
-Tagline: **Code to Intent.**
-First session: 2026-10-16. Last update: 2026-10-18.
-
-> Update 2026-10-18: project renamed to **CodeIntent** / `cint`; repo moved to
-> `~/repos/code-intent`. Section 20 is the authoritative current state. Older
-> sections are historical where they conflict (especially artifact/offline mode).
+Repo: `~/repos/code-intent` (monorepo). Tagline: **Code to Intent.**
 
 ---
 
@@ -18,7 +12,7 @@ First session: 2026-10-16. Last update: 2026-10-18.
 
 Paint code in the editor by **intent** (Logging, Error Handling, Validation,
 Business Logic, …) instead of by syntax. Like syntax highlighting, but for what
-code *means*. Rendered as background tint + gutter icon; optionally conceal
+code _means_. Rendered as background tint + gutter icon; optionally conceal
 (inline char or vertical hiding of lines).
 
 Core premise: **intent is not derivable from the AST alone.** Structurally
@@ -45,6 +39,7 @@ source repo -> analysis-engine
 ```
 
 Components:
+
 - `analysis-engine/` — Kotlin/JVM Gradle app. Parses, builds facts/CFG, tags.
 - `nvim-renderer/` — Lua Neovim plugin. Socket-only; renders published tags.
 
@@ -53,8 +48,7 @@ The engine is editor-agnostic. The renderer is the only editor-specific part.
 ## 3. The artifact contract
 
 `tags.json` is only the CLI/batch output. The live renderer is socket-only and
-never reads it.
-Shape:
+never reads it. Shape:
 
 ```json
 {
@@ -62,11 +56,21 @@ Shape:
   "tag": "LOGGING",
   "language": "kotlin",
   "files": [
-    { "path": "relative/from/scanned/root.kt",
+    {
+      "path": "relative/from/scanned/root.kt",
       "hash": "sha256-hex",
       "spans": [
-        {"tag":"LOGGING","rule":"call-on-logger-symbol","evidence":"log.info(...)",
-         "startLine":10,"startCol":12,"endLine":10,"endCol":44} ] }
+        {
+          "tag": "LOGGING",
+          "rule": "call-on-logger-symbol",
+          "evidence": "log.info(...)",
+          "startLine": 10,
+          "startCol": 12,
+          "endLine": 10,
+          "endCol": 44
+        }
+      ]
+    }
   ]
 }
 ```
@@ -79,7 +83,8 @@ Shape:
 
 ## 4. The config contract
 
-`analysis-engine/core/src/main/resources/logging.yaml`, keyed **feature -> language -> params**:
+`analysis-engine/core/src/main/resources/logging.yaml`, keyed **feature ->
+language -> params**:
 
 ```yaml
 features:
@@ -88,8 +93,13 @@ features:
     languages:
       kotlin:
         methods: [info, debug, warn, error, trace, log, verbose, fatal]
-        factories: [LoggerFactory.getLogger, KotlinLogging.logger,
-                    LogManager.getLogger, Logger.getLogger]
+        factories:
+          [
+            LoggerFactory.getLogger,
+            KotlinLogging.logger,
+            LogManager.getLogger,
+            Logger.getLogger,
+          ]
         receiverNames: [log, logger, LOG, LOGGER, Logger]
         qualifiers: [System.out, System.err]
         imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
@@ -101,6 +111,7 @@ overrides. Engine NEVER branches on language — only config values are specific
 ## 5. Detection as implemented (Logging only)
 
 Frontend facts (`KotlinFrontend`, PSI, NO type resolution):
+
 - `imports` — FQNs
 - `declarations` — property name + initializer call-path (e.g.
   `LoggerFactory.getLogger`)
@@ -109,17 +120,19 @@ Frontend facts (`KotlinFrontend`, PSI, NO type resolution):
 - `callPath` for initializers = `Receiver.callee`.
 
 Generic rules (`IntentQuery`, first match wins). Call tagged `Logging` if:
+
 1. `call-on-logger-symbol` — receiver is a symbol declared via a `factories`
    initializer. (Strong rule; name-independent.)
 2. `receiver-name` — receiver simple-name case-insensitive in `receiverNames`
    AND callee in `methods`.
 3. `qualified-static` — receiver in `qualifiers` AND callee in `methods`.
-4. `name-import-gated` — callee in `methods` AND file imports a `imports` module.
+4. `name-import-gated` — callee in `methods` AND file imports a `imports`
+   module.
 5. `print` — callee is `println`/`print` (unqualified, or on `System.out`/
    `System.err`). Builtin, not config.
 
-Design choice: rules 2–4 require a **receiver** — this is what suppresses
-Kotlin stdlib `error()`/`require()`/`check()` false positives (unqualified).
+Design choice: rules 2–4 require a **receiver** — this is what suppresses Kotlin
+stdlib `error()`/`require()`/`check()` false positives (unqualified).
 `has(factories, x)` matches exact OR suffix (`…KotlinLogging.logger`).
 
 Limits (deliberate PoC scope): no type resolution, no cross-file symbol
@@ -145,14 +158,15 @@ resolution, no dataflow, no context sanitization. A non-logger receiver named
 - Commands: `:CintRender|Clear|Toggle|Refresh|Info`. Headless test:
   `nvim-renderer/tests/run.sh`.
 
-Important: for THIS tool, stale data is worse than for a linter — a stale
-linter shows wrong squiggles; a stale painter **hides the wrong lines**.
+Important: for THIS tool, stale data is worse than for a linter — a stale linter
+shows wrong squiggles; a stale painter **hides the wrong lines**.
 
 ## 7. Freshness problem (unsolved, key)
 
 Tagging lives in a separate JVM process with heavy startup
 (KotlinCoreEnvironment), so per-save re-tag is laggy; full-repo per keystroke is
 worse. Options considered:
+
 1. single-file re-tag on save (debounced) — cheap, still JVM-startup latency,
    cross-file facts can drift.
 2. resident daemon (socket) — amortizes JVM start; keeps Kotlin engine.
@@ -166,52 +180,53 @@ Likely destination: #3 (or #1 daemonized into #2 as a midpoint).
 Freshness requirement is PER TAG CLASS, not global. So don't treat it as one
 engine. Tiers:
 
-| tier | source | latency | owns |
-|---|---|---|---|
-| 0 | parser (tree-sitter / today PSI) | instant, per-buffer | STRUCTURE: spans, nesting, blocks; structural tags |
-| 1 | LSP (types, symbols, refs, call/type hierarchy) | live, server-maintained | semantics on top of tier-0 nodes |
-| 2 | Joern (whole-program dataflow/taint) | batch/cached | reachability tags: Validation, Sanitization, Auth |
+| tier | source                                          | latency                 | owns                                               |
+| ---- | ----------------------------------------------- | ----------------------- | -------------------------------------------------- |
+| 0    | parser (tree-sitter / today PSI)                | instant, per-buffer     | STRUCTURE: spans, nesting, blocks; structural tags |
+| 1    | LSP (types, symbols, refs, call/type hierarchy) | live, server-maintained | semantics on top of tier-0 nodes                   |
+| 2    | Joern (whole-program dataflow/taint)            | batch/cached            | reachability tags: Validation, Sanitization, Auth  |
 
 Critical correction: **LSP does NOT give structure.** It has no statement-level
 syntax tree. `documentSymbol` = declarations only; `foldingRange` and
 `semanticTokens` are lossy interfaces, not a walkable tree. So the parser tier
 (tier 0) is non-negotiable — it owns the spans we conceal and the enclosing
-structure (`inCatch`). LSP only *annotates* tier-0 nodes. Stack is
+structure (`inCatch`). LSP only _annotates_ tier-0 nodes. Stack is
 complementary, not substitutable.
 
 Duplication concern: you only duplicate logic if two tiers compute the SAME tag.
 Assign each tag to a tier => merge, not duplication. Cheaper tiers are different
-queries over different substrates, sharing the output contract. To enable:
-add per-span `source` + `confidence`, and degrade gracefully (dim a stale
-Joern-tier tag rather than hide it).
+queries over different substrates, sharing the output contract. To enable: add
+per-span `source` + `confidence`, and degrade gracefully (dim a stale Joern-tier
+tag rather than hide it).
 
 ## 9. Joern
 
 Value (huge, matches the "can't do" list): type resolution, cross-file symbol
-resolution + call graph, dataflow/REACHES (taint), rich control-flow.
-Cost: Scala/JVM, full-parse, NOT incremental — wrong runtime shape for a live
-editor painter. Irreplaceable for tier-2 taint-class tags; overkill for
-structural tags (Logging, even Error Handling).
-Ecosystem note: Joern itself is deep/mature; things BUILT ON it are thin and
-security-focused (~30 querydb rules, a few security vendors, academic ML).
+resolution + call graph, dataflow/REACHES (taint), rich control-flow. Cost:
+Scala/JVM, full-parse, NOT incremental — wrong runtime shape for a live editor
+painter. Irreplaceable for tier-2 taint-class tags; overkill for structural tags
+(Logging, even Error Handling). Ecosystem note: Joern itself is deep/mature;
+things BUILT ON it are thin and security-focused (~30 querydb rules, a few
+security vendors, academic ML).
 
 ## 10. Language / rewrite direction
 
 Engine is expected to move to **Rust** later (fast startup, first-class
 tree-sitter, single static binary, in-process/daemon-able — also solves
-freshness). PoC deliberately in Kotlin (language the author likes; PSI is a
-free parser). To make it a PORT not a rewrite, protect:
+freshness). PoC deliberately in Kotlin (language the author likes; PSI is a free
+parser). To make it a PORT not a rewrite, protect:
+
 - the artifact contract (§3),
 - the config contract (§4),
-- keep language specifics isolated in the frontend (`KotlinFrontend` is the
-  only PSI-aware file).
-K1/PSI usage is throwaway. Consequence: Joern (Scala) and "eventually Rust"
-partly conflict; Joern would be a side/batch service, not the live engine.
+- keep language specifics isolated in the frontend (`KotlinFrontend` is the only
+  PSI-aware file). K1/PSI usage is throwaway. Consequence: Joern (Scala) and
+  "eventually Rust" partly conflict; Joern would be a side/batch service, not
+  the live engine.
 
 ## 11. Naming history
 
-Renamed to **CodeIntent** before the first push (self-describing, searchable,
-no metaphor to outgrow). Tagline "Code to Intent". Short handle: `cint` for the
+Renamed to **CodeIntent** before the first push (self-describing, searchable, no
+metaphor to outgrow). Tagline "Code to Intent". Short handle: `cint` for the
 CLI, Lua module, and commands; the repo stays `code-intent`. CINT (the old C++
 interpreter) collides with the short handle, but the repo name disambiguates.
 
@@ -229,9 +244,9 @@ interpreter) collides with the short handle, but the repo name disambiguates.
 - dotfiles: added PATH entry in `shell/paths/10-unix.lua` ->
   `analysis-engine/build/install/cint/bin`; regenerate via
   `lua bootstrap.lua shell`. (Committed? check; may be uncommitted.)
-- Environment gotchas: system gradle broken (`GRADLE_HOME=/usr/share/java/gradle`
-  missing module) -> use sdkman gradle or the project wrapper (9.7.0). JDK 26.
-  Neovim 0.12.5.
+- Environment gotchas: system gradle broken
+  (`GRADLE_HOME=/usr/share/java/gradle` missing module) -> use sdkman gradle or
+  the project wrapper (9.7.0). JDK 26. Neovim 0.12.5.
 
 ## 13. Open questions / next forks
 
@@ -239,7 +254,8 @@ interpreter) collides with the short handle, but the repo name disambiguates.
    honest) vs a dataflow-class tag (forces the Joern-vs-Rust decision).
 2. **Tier contract**: add `source`/`confidence` per span now to unblock tiering?
 3. **Freshness**: pick #1/#2/#3 from §7.
-4. **Visual tuning**: tint strength, icons, overlap/blend model for nested spans.
+4. **Visual tuning**: tint strength, icons, overlap/blend model for nested
+   spans.
 5. **Artifact scope**: whole-repo vs per-file sidecars (incremental + internal).
 6. **Emit ergonomics**: auto-write artifact to repo root (no `--out` flag).
 
@@ -267,8 +283,8 @@ detected.
 
 ## 16. Testing grounds
 
-- `testing-grounds/kotlin/` — fixtures for the tagger, intentionally not part
-  of Gradle and not required to compile.
+- `testing-grounds/kotlin/` — fixtures for the tagger, intentionally not part of
+  Gradle and not required to compile.
 - Covers logger interactions (typed + heuristics), print, Error Handling
   sources, Bookkeeping annotations/comments, pure vs non-pure `if`/`catch`/`try`
   scaffolds, derivative uses, purity annotations, and the heuristic false
@@ -280,32 +296,34 @@ detected.
 - Roles: `SOURCE_INTENT`, `DERIVATIVE_USE`, `SCAFFOLD`.
 - Intents are sets; `UNTAGGED` is a reserved label for unclassified effects.
 - Sources: Logging (typed/heuristic), Error Handling (`throw`, `require`,
-  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`),
-  Bookkeeping (`@Bookkeeping` or `// cint:bookkeeping`; writes inherit), and
-  Validation (early-exit guard conditions; `// cint:validation` override).
-- Derivative use: explicitly pure initializer (literal, local read, or
-  annotated pure call) and reads flow into classified statements. Transitive
-  closure: a declaration whose reads all occur inside other derivative-use
-  declarations is derivative too, but function promotion requires explicit
-  purity. An unannotated call or operator is assumed impure, so there is no
-  impure-local promotion until a purity engine exists.
+  `requireNotNull`, `check`, `checkNotNull`, `error`, `TODO`, `assert`, plus
+  qualified configured calls such as C# `Debug.Assert`), Bookkeeping
+  (`@Bookkeeping` or `// cint:bookkeeping`; writes inherit), and Validation
+  (early-exit guard conditions; `// cint:validation` override).
+- Derivative use: explicitly pure initializer (literal, local read, or annotated
+  pure call) and reads flow into classified statements. Transitive closure: a
+  declaration whose reads all occur inside other derivative-use declarations is
+  derivative too, but function promotion requires explicit purity. An
+  unannotated call or operator is assumed impure, so there is no impure-local
+  promotion until a purity engine exists.
 - Scaffolds: bottom-up union of guard/body intents, including `UNTAGGED`.
   Side-effect-free guards are neutral; effectful guards add `UNTAGGED`. Bare
   `continue`/`break` exits remain neutral. `return` statements are classified by
-  the CFG `ReturnBlock` (see §20), not neutral. Mixed `if`/`else` splits into then/else
-  spans so an untagged else does not force the then branch to be shown.
-  Whole-try classification requires full coverage; try-header classification
-  requires only covered catches. Catch spans include the try-body closing brace
-  so the boundary conceals with the catch. Functions whose body is fully
-  classified are scaffolds as well.
+  the CFG `ReturnBlock` (see §20), not neutral. Mixed `if`/`else` splits into
+  then/else spans so an untagged else does not force the then branch to be
+  shown. Whole-try classification requires full coverage; try-header
+  classification requires only covered catches. Catch spans include the try-body
+  closing brace so the boundary conceals with the catch. Functions whose body is
+  fully classified are scaffolds as well.
 - The engine emits `role` + `intents` only. It has no meaning labels or
   resolution table; clients merge intent sets on render, so presentation changes
   do not require re-analysis.
 - Client meanings live on the tag declaration: `tags[tag].meaning` (e.g.
-  `LOGGING = { meaning = "CONCEAL" }`). `rules[meaning]` decides how that meaning
-  renders. Legacy `intentMeanings` is still accepted for old configs.
-- Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT` applies a background; `SHOW` is a no-op
-  from the highest-priority intent tag, and `IGNORE` renders dark-gray text.
+  `LOGGING = { meaning = "CONCEAL" }`). `rules[meaning]` decides how that
+  meaning renders. Legacy `intentMeanings` is still accepted for old configs.
+- Renderer rules: `CONCEAL` hides lines, `HIGHLIGHT` applies a background;
+  `SHOW` is a no-op from the highest-priority intent tag, and `IGNORE` renders
+  dark-gray text.
 
 ## 18. Client profiles (prototype)
 
@@ -316,8 +334,7 @@ detected.
 - Project profiles live in `<root>/.cint/profiles.lua`; saving reloads and
   re-renders. Global profiles can come from `setup({ profiles = ... })`.
 - Picker uses `vim.ui.select`. Commands: `:CintProfile [name]`,
-  `:CintProfile! name`, `:CintProfileEdit [name]`,
-  `:CintProfileReload`.
+  `:CintProfile! name`, `:CintProfileEdit [name]`, `:CintProfileReload`.
 - A profile switch applies buffer-locally when the current buffer was rendered;
   otherwise (e.g. the profile editor) it applies globally. Global switches clear
   buffer-local overrides.
@@ -325,8 +342,8 @@ detected.
   to another shares the table and mutating it changes both.
 - Default keymaps: `<leader>pp` pick, `<leader>pe` edit; `<Plug>` mappings
   `<Plug>(CintProfilePick)` and `<Plug>(CintProfileEdit)`.
-- Switching profiles only re-renders from cached spans; no artifact
-  regeneration and no engine run.
+- Switching profiles only re-renders from cached spans; no artifact regeneration
+  and no engine run.
 
 ## 19. Live freshness and shards (prototype)
 
@@ -337,14 +354,13 @@ detected.
 - Live server: per-project Unix-socket daemon, NDJSON JSON-RPC. Client sends
   `textDocument/didOpen|didChange|didClose` with full text + monotonic version;
   server re-runs tree-sitter + blocks and publishes versioned tags.
-- `BufWritePost`/`:CintAnalyze` request an immediate re-run; normal edits
-  are debounced. Stale-version publishes are discarded.
+- `BufWritePost`/`:CintAnalyze` request an immediate re-run; normal edits are
+  debounced. Stale-version publishes are discarded.
 - Profiles/shards are client-side; changing them only re-renders cached
   annotations. There is no artifact/offline renderer path; live mode uses
   exact-version byte ranges.
 
-
-## 20. Current state (2026-10-18)
+## 20. Current state (2026-10-19)
 
 Authoritative for resuming. Older sections are historical where they conflict.
 
@@ -367,12 +383,16 @@ Authoritative for resuming. Older sections are historical where they conflict.
 
 ### Engine
 
-- Modules: `core`, `treesitter`, `lsp`, `frontend`, `cli`, `server`.
-  Rules live in `core/rules`; `core` has no tree-sitter/LSP dependency.
+- Modules: `core`, `treesitter`, `lsp`, `frontend`, `cli`, `server`. Rules live
+  in `core/rules`; `core` has no tree-sitter/LSP dependency.
 - `SyntaxModel` + per-language profiles in
   `treesitter/src/main/resources/syntax/*.yaml`; generic `ProfileSyntaxModel`.
 - `LanguageFrontend` in core; `frontend` registry: Kotlin, JavaScript,
   TypeScript, Vue, C#.
+- `ErrorHandlingBlock` accepts a configured call with a receiver only when the
+  receiver text is in the intent's `qualifiers`. C# config sets
+  `qualifiers: [Debug, Trace, Contract]`, so those `Assert` calls tag as
+  `ERROR_HANDLING` while an arbitrary `receiver.Assert(...)` stays untagged.
 - LSP: spec-driven `LspOracle`; Kotlin only. JS/TS/Vue/C# use `NullOracle`.
 - Split handlers: `SplitHandler`/`SplitRegion` + `SplitAnalyzer`. Vue extracts
   `<script>` / `<script setup lang="ts">`, analyzes as JS/TS, shifts spans.
@@ -401,21 +421,21 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - Defaults: `SHOW = false` (no-op), `HIGHLIGHT` paints, `CONCEAL` hides,
   `IGNORE` dims. Multi-intent scaffolds skip color/highlight; `IGNORE`/`CONCEAL`
   still apply.
-- Bench (1,500 spans / 4,000 lines): full render ~5 ms, reveal same block
-  ~0.002 ms, reveal changing block ~0.37 ms.
+- Bench (1,500 spans / 4,000 lines): full render ~5 ms, reveal same block ~0.002
+  ms, reveal changing block ~0.37 ms.
 - Dotfiles: `lua/plugins/visual/codeintent.lua` has `lazy = false`,
   `scope = "global"`, `server_cmd` -> `build/install/cint-server/...`,
   `SHOW = false`, `<leader>pr` -> `CintServerRestart`.
 - Shard syntax:
-  `shards = { NAME = { tags = { LOGGING = { meaning = "IGNORE" } } } }`.
-  The `tags` nesting is required; shards are config patches.
+  `shards = { NAME = { tags = { LOGGING = { meaning = "IGNORE" } } } }`. The
+  `tags` nesting is required; shards are config patches.
 
 ### Daemon latency / Rust
 
-- Cold start ~150 ms. Warm `didChange` (no LSP): ~5 ms/10 lines, ~30 ms/90,
-  ~80 ms/270, ~310 ms/1080 (before CFG; CFG adds ~10–18%, ~367 ms at 1080).
-- Analysis dominates; serialization ~11 ms. Bottleneck is passes/allocation,
-  not JSON/socket. Rust would help cold start/constants, not linear scaling;
+- Cold start ~150 ms. Warm `didChange` (no LSP): ~5 ms/10 lines, ~30 ms/90, ~80
+  ms/270, ~310 ms/1080 (before CFG; CFG adds ~10–18%, ~367 ms at 1080).
+- Analysis dominates; serialization ~11 ms. Bottleneck is passes/allocation, not
+  JSON/socket. Rust would help cold start/constants, not linear scaling;
   optimize algorithms first.
 
 ### Known gaps / next
@@ -432,4 +452,6 @@ Authoritative for resuming. Older sections are historical where they conflict.
 
 `3150e00` rename project; `3efc102` code-intent paths; `bf9ac56` renderer perf;
 `c831898` engine cache/index; `7c9532f` CFG return categorization; `fb32564`
-explicit purity; `039f978` multi-intent scaffold color; `4534f17` SHOW no-op.
+explicit purity; `039f978` multi-intent scaffold color; `4534f17` SHOW no-op;
+`5e68ecc` current-state notes; `bcf34fc` GPLv3 + README note; `9c1eb8c`
+qualified error-handling calls.
