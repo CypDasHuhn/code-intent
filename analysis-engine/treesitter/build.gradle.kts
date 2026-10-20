@@ -7,5 +7,6 @@ dependencies {
     implementation("io.github.bonede:tree-sitter-typescript:0.23.2")
     implementation("io.github.bonede:tree-sitter-vue:0.2.1a")
     implementation("io.github.bonede:tree-sitter-c-sharp:0.23.1")
+    testImplementation(project(":rulepacks"))
     testImplementation(kotlin("test"))
 }
