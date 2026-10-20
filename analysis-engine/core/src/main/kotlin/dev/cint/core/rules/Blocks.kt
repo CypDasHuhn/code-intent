@@ -7,9 +7,9 @@ import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.IntentDefinition
-import dev.cint.core.engine.AnalysisContext
 import dev.cint.core.engine.Phase
 import dev.cint.core.engine.RuleBlock
+import dev.cint.core.engine.RuleContext
 
 private fun typeMatches(
     actual: String,
@@ -69,7 +69,7 @@ class PrintBlock(
 ) : RuleBlock {
     override val id: String = "print"
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         val calls = definition.list("printCalls").toSet()
         val qualifiers = definition.list("printQualifiers").toSet()
         return ctx.calls
@@ -89,7 +89,7 @@ class LoggerInteractionBlock(
 ) : RuleBlock {
     override val id: String = "logger-interaction"
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         val methods = definition.list("methods").toSet()
         val types = definition.list("types")
         val receiverNames = definition.list("receiverNames")
@@ -176,7 +176,7 @@ class LoggingStateBlock(
 ) : RuleBlock {
     override val id: String = "logging-state"
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         if (guardNames.isEmpty()) return emptyList()
         return ctx.guardConditions
             .mapNotNull { condition ->
@@ -192,7 +192,7 @@ class LoggingStateBlock(
 class BookkeepingBlock : RuleBlock {
     override val id: String = "bookkeeping"
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         val result = mutableListOf<Contribution>()
         val references = ctx.references
 
@@ -244,7 +244,7 @@ class BookkeepingBlock : RuleBlock {
     }
 
     private fun bookkeepingSource(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         declaration: SyntaxNode,
     ): Pair<String, SyntaxNode?>? {
         val annotation =
@@ -269,7 +269,7 @@ class ValidationBlock(
     override val id: String = "validation"
     override val readsAnnotations: Boolean = true
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         return ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
@@ -301,19 +301,12 @@ class ValidationBlock(
                         source,
                         confidence,
                     ),
-                    guard.node.raw(
-                        Role.SCAFFOLD,
-                        setOf(intent),
-                        "validation-guard-block",
-                        source,
-                        confidence,
-                    ),
                 )
             }.toList()
     }
 
     private fun hasDirectExit(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         body: SyntaxNode,
     ): Boolean {
         val statements = ctx.syntax.statements(body) ?: listOf(body)
@@ -321,7 +314,7 @@ class ValidationBlock(
     }
 
     private fun hasBookkeeping(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         body: SyntaxNode,
     ): Boolean =
         ctx.annotations().any { annotation ->
@@ -332,7 +325,7 @@ class ValidationBlock(
 }
 
 private fun isValidationPredicate(
-    ctx: AnalysisContext,
+    ctx: RuleContext,
     condition: SyntaxNode,
     definition: IntentDefinition,
 ): Boolean {
@@ -345,7 +338,7 @@ private fun isValidationPredicate(
 }
 
 private fun hasValidationComment(
-    ctx: AnalysisContext,
+    ctx: RuleContext,
     ifNode: SyntaxNode,
 ): Boolean {
     val scope =
@@ -367,7 +360,7 @@ class ReturnBlock(
 ) : RuleBlock {
     override val id: String = "return-category"
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> =
+    override fun apply(ctx: RuleContext): List<Contribution> =
         ctx.flow.returns
             .map { site ->
                 val validation = isValidationReturn(ctx, site)
@@ -381,7 +374,7 @@ class ReturnBlock(
             }.toList()
 
     private fun isValidationReturn(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         site: dev.cint.core.flow.ReturnSite,
     ): Boolean {
         val guard = site.guards.lastOrNull { isValidationGuard(ctx, it) } ?: return false
@@ -390,7 +383,7 @@ class ReturnBlock(
     }
 
     private fun isValidationGuard(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         guard: dev.cint.core.flow.Guard,
     ): Boolean {
         val explicit = hasValidationComment(ctx, guard.node)
@@ -412,7 +405,7 @@ class ErrorHandlingBlock(
 ) : RuleBlock {
     override val id: String = "error-handling"
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         val calls = definition.list("calls").toSet()
         val detectThrows = definition.list("throws").any { it.equals("true", ignoreCase = true) }
 
@@ -447,7 +440,7 @@ class DerivativeUseBlock(
     override val phase: Phase = Phase.DERIVATIVE
     override val readsAnnotations: Boolean = true
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         val result = mutableListOf<Contribution>()
         val references = ctx.references
 
@@ -506,7 +499,7 @@ class DerivativeUseBlock(
     }
 
     private fun derivativePlaceIntents(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         reference: SyntaxNode,
     ): Set<String>? {
         val place = ctx.syntax.enclosingDeclaration(reference) ?: return null
@@ -516,7 +509,7 @@ class DerivativeUseBlock(
     }
 
     private fun isPure(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         initializer: SyntaxNode,
     ): Boolean =
         ctx.syntax.isConstant(initializer) ||
@@ -529,7 +522,7 @@ class IntentScaffoldBlock : RuleBlock {
     override val phase: Phase = Phase.SCAFFOLD
     override val readsAnnotations: Boolean = true
 
-    override fun apply(ctx: AnalysisContext): List<Contribution> {
+    override fun apply(ctx: RuleContext): List<Contribution> {
         val result = mutableListOf<Contribution>()
         result += ifScaffolds(ctx)
         result += catchScaffolds(ctx)
@@ -538,7 +531,7 @@ class IntentScaffoldBlock : RuleBlock {
         return result
     }
 
-    private fun ifScaffolds(ctx: AnalysisContext): List<Contribution> =
+    private fun ifScaffolds(ctx: RuleContext): List<Contribution> =
         ctx.ifs
             .flatMap { guard ->
                 val condition = guard.condition ?: return@flatMap emptyList()
@@ -556,11 +549,8 @@ class IntentScaffoldBlock : RuleBlock {
                 }
 
                 val elseIntents = bodyIntents(ctx, elseBody)
-                val elseStart = (guard.elseKeyword ?: elseBody).startByte
                 if (thenIntents == elseIntents) {
                     if (thenIntents.none { it != UNTAGGED_INTENT }) return@flatMap emptyList()
-                    ctx.remove(Role.SCAFFOLD, guard.node.startByte, thenBody.endByte)
-                    ctx.remove(Role.SCAFFOLD, elseStart, elseBody.endByte)
                     return@flatMap listOf(
                         guard.node.raw(Role.SCAFFOLD, thenIntents, "intent-scaffold", "treesitter", 0.9),
                     )
@@ -573,7 +563,6 @@ class IntentScaffoldBlock : RuleBlock {
                     return@flatMap emptyList()
                 }
 
-                ctx.remove(Role.SCAFFOLD, guard.node.startByte, guard.node.endByte)
                 val result = mutableListOf<Contribution>()
                 result +=
                     tagRange(
@@ -596,7 +585,7 @@ class IntentScaffoldBlock : RuleBlock {
                 result
             }.toList()
 
-    private fun catchScaffolds(ctx: AnalysisContext): List<Contribution> =
+    private fun catchScaffolds(ctx: RuleContext): List<Contribution> =
         ctx.catches
             .mapNotNull { catchNode ->
                 val intents = bodyIntents(ctx, catchNode)
@@ -610,7 +599,7 @@ class IntentScaffoldBlock : RuleBlock {
                 }
             }.toList()
 
-    private fun tryScaffolds(ctx: AnalysisContext): List<Contribution> {
+    private fun tryScaffolds(ctx: RuleContext): List<Contribution> {
         val result = mutableListOf<Contribution>()
         for (tryFact in ctx.tries) {
             val catches = tryFact.catches
@@ -636,9 +625,6 @@ class IntentScaffoldBlock : RuleBlock {
             val end = tryFact.headerEnd
 
             if (wholeCovered) {
-                if (start != null && end != null) {
-                    ctx.remove(Role.SCAFFOLD, start.startByte, end.endByte)
-                }
                 val intents = tryBodyIntents + catchIntents.flatten().toSet() + finallyIntents
                 result += tryFact.node.raw(Role.SCAFFOLD, intents, "intent-scaffold-try", "treesitter", 0.9)
             } else if (catchesCovered && catchesHaveRealIntent && start != null && end != null) {
@@ -657,7 +643,7 @@ class IntentScaffoldBlock : RuleBlock {
         return result
     }
 
-    private fun functionScaffolds(ctx: AnalysisContext): List<Contribution> =
+    private fun functionScaffolds(ctx: RuleContext): List<Contribution> =
         ctx.syntax
             .functions(ctx.tree)
             .mapNotNull { function ->
@@ -670,7 +656,7 @@ class IntentScaffoldBlock : RuleBlock {
             }.toList()
 
     private fun conditionIntents(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         condition: SyntaxNode,
     ): Set<String> {
         val covered = ctx.coverage(condition).intents
@@ -682,7 +668,7 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun bodyIntents(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         body: SyntaxNode?,
     ): Set<String> {
         if (body == null) return emptySet()
@@ -700,7 +686,7 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun statementIntents(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         statement: SyntaxNode,
     ): Set<String> {
         exitIntents(ctx, statement)?.let { return it }
@@ -712,7 +698,7 @@ class IntentScaffoldBlock : RuleBlock {
     }
 
     private fun exitIntents(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
         node: SyntaxNode,
     ): Set<String>? {
         if (!ctx.syntax.isExit(node)) return null

@@ -7,18 +7,18 @@ import dev.cint.api.Coverage
 import dev.cint.api.FunctionFact
 import dev.cint.api.IfFact
 import dev.cint.api.PropertyFact
-import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.flow.ControlFlow
 import dev.cint.core.flow.ControlFlowBuilder
-import dev.cint.core.model.RawAnnotation
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.TypeOracle
+import dev.cint.core.store.AnnotationStore
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
+import java.util.IdentityHashMap
 
 enum class Phase {
     SOURCE,
@@ -26,19 +26,40 @@ enum class Phase {
     SCAFFOLD,
 }
 
+interface RuleContext {
+    val file: SourceFile
+    val tree: SyntaxTree
+    val syntax: SyntaxModel
+    val flow: ControlFlow
+    val oracle: TypeOracle
+
+    val calls: List<CallFact>
+    val properties: List<PropertyFact>
+    val functions: List<FunctionFact>
+    val ifs: List<IfFact>
+    val tries: List<TryFact>
+    val catches: List<SyntaxNode>
+    val guardConditions: List<SyntaxNode>
+    val imports: List<String>
+    val references: Map<String, List<SyntaxNode>>
+    val throws: List<SyntaxNode>
+
+    fun annotations(): List<Annotation>
+    fun covering(node: SyntaxNode): List<Annotation>
+    fun intentsAt(node: SyntaxNode): Set<String>
+    fun coverage(
+        node: SyntaxNode,
+        effect: Boolean = true,
+    ): Coverage
+}
+
 interface RuleBlock {
     val id: String
     val phase: Phase get() = Phase.SOURCE
     val readsAnnotations: Boolean get() = false
 
-    fun apply(ctx: AnalysisContext): List<Contribution>
+    fun apply(ctx: RuleContext): List<Contribution>
 }
-
-private data class AnnotationKey(
-    val role: Role,
-    val startByte: Int,
-    val endByte: Int,
-)
 
 private fun spanKey(
     startByte: Int,
@@ -124,107 +145,52 @@ private class IntervalIndex(
 }
 
 class AnalysisContext(
-    val file: SourceFile,
-    val tree: SyntaxTree,
-    val syntax: SyntaxModel,
-    val flow: ControlFlow,
-    val oracle: TypeOracle,
+    override val file: SourceFile,
+    override val tree: SyntaxTree,
+    override val syntax: SyntaxModel,
+    override val flow: ControlFlow,
+    override val oracle: TypeOracle,
     val config: IntentConfig,
-) {
-    private val raw = LinkedHashMap<AnnotationKey, RawAnnotation>()
-    private var dirty = false
-    private var cachedAnnotations: List<Annotation>? = null
+    private val store: AnnotationStore,
+) : RuleContext {
     private var exactIndex: Map<Long, List<Annotation>>? = null
     private var intervalIndex: IntervalIndex? = null
+    private var indexRevision = -1L
 
-    val calls: List<CallFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.calls(tree).toList() }
-    val properties: List<PropertyFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.properties(tree).toList() }
-    val functions: List<FunctionFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.functions(tree).toList() }
-    val ifs: List<IfFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.ifs(tree).toList() }
-    val tries: List<TryFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.tries(tree).toList() }
-    val catches: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) { syntax.catches(tree).toList() }
-    val guardConditions: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) { syntax.guardConditions(tree).toList() }
-    val imports: List<String> by lazy(LazyThreadSafetyMode.NONE) { syntax.imports(tree) }
-    val references: Map<String, List<SyntaxNode>> by lazy(LazyThreadSafetyMode.NONE) { syntax.referencesByName(tree) }
-    val throws: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) {
+    override val calls: List<CallFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.calls(tree).toList() }
+    override val properties: List<PropertyFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.properties(tree).toList() }
+    override val functions: List<FunctionFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.functions(tree).toList() }
+    override val ifs: List<IfFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.ifs(tree).toList() }
+    override val tries: List<TryFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.tries(tree).toList() }
+    override val catches: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) { syntax.catches(tree).toList() }
+    override val guardConditions: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) { syntax.guardConditions(tree).toList() }
+    override val imports: List<String> by lazy(LazyThreadSafetyMode.NONE) { syntax.imports(tree) }
+    override val references: Map<String, List<SyntaxNode>> by lazy(LazyThreadSafetyMode.NONE) { syntax.referencesByName(tree) }
+    override val throws: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) {
         tree.root
             .descendants()
             .filter { syntax.isThrow(it) }
             .toList()
     }
 
-    private fun invalidateAnnotations() {
-        cachedAnnotations = null
+    private fun refreshIndexes() {
+        val revision = store.revision()
+        if (revision == indexRevision) return
         exactIndex = null
         intervalIndex = null
+        indexRevision = revision
     }
 
-    fun emit(contribution: Contribution) {
-        val key = AnnotationKey(contribution.role, contribution.startByte, contribution.endByte)
-        val existing = raw[key]
-        val incoming = RawAnnotation.of(contribution)
-        val merged =
-            when {
-                existing == null -> incoming
-                contribution.role == Role.SCAFFOLD -> incoming
-                else -> existing.merge(incoming)
-            }
-        if (merged != existing) {
-            raw[key] = merged
-            dirty = true
-            invalidateAnnotations()
-        }
+    override fun annotations(): List<Annotation> = store.annotations()
+
+    override fun covering(node: SyntaxNode): List<Annotation> {
+        refreshIndexes()
+        val index = exactIndex ?: annotations().groupBy { spanKey(it.startByte, it.endByte) }.also { exactIndex = it }
+        return index[spanKey(node.startByte, node.endByte)].orEmpty()
     }
 
-    fun emitAll(contributions: Iterable<Contribution>) {
-        contributions.forEach(::emit)
-    }
-
-    fun remove(
-        role: Role,
-        startByte: Int,
-        endByte: Int,
-    ) {
-        if (raw.remove(AnnotationKey(role, startByte, endByte)) != null) {
-            dirty = true
-            invalidateAnnotations()
-        }
-    }
-
-    fun clearDirty() {
-        dirty = false
-    }
-
-    fun isDirty(): Boolean = dirty
-
-    fun annotations(): List<Annotation> {
-        val cached = cachedAnnotations
-        if (cached != null) return cached
-        val list =
-            raw.values.map { rawAnnotation ->
-                Annotation(
-                    role = rawAnnotation.role,
-                    intents = rawAnnotation.intents,
-                    evidence = rawAnnotation.evidence,
-                    span = rawAnnotation.span,
-                    source = rawAnnotation.source,
-                    confidence = rawAnnotation.confidence,
-                    startByte = rawAnnotation.startByte,
-                    endByte = rawAnnotation.endByte,
-                    provenance = rawAnnotation.provenance,
-                )
-            }
-        cachedAnnotations = list
-        exactIndex = list.groupBy { spanKey(it.startByte, it.endByte) }
-        return list
-    }
-
-    fun covering(node: SyntaxNode): List<Annotation> {
-        annotations()
-        return exactIndex?.get(spanKey(node.startByte, node.endByte)).orEmpty()
-    }
-
-    fun intentsAt(node: SyntaxNode): Set<String> {
+    override fun intentsAt(node: SyntaxNode): Set<String> {
+        refreshIndexes()
         val index = intervalIndex ?: IntervalIndex(annotations()).also { intervalIndex = it }
         var smallest = Int.MAX_VALUE
         var intents: MutableSet<String>? = null
@@ -244,9 +210,9 @@ class AnalysisContext(
         return intents ?: setOf(UNTAGGED_INTENT)
     }
 
-    fun coverage(
+    override fun coverage(
         node: SyntaxNode,
-        effect: Boolean = true,
+        effect: Boolean,
     ): Coverage {
         val covering = covering(node)
         if (covering.isNotEmpty()) {
@@ -259,6 +225,11 @@ class AnalysisContext(
 class AnalysisEngine(
     private val blocks: List<RuleBlock>,
 ) {
+    private val blockKeys: Map<RuleBlock, String> =
+        IdentityHashMap<RuleBlock, String>().apply {
+            blocks.forEachIndexed { index, block -> put(block, "${block.id}#$index") }
+        }
+
     fun analyze(
         file: SourceFile,
         tree: SyntaxTree,
@@ -267,10 +238,11 @@ class AnalysisEngine(
         config: IntentConfig,
     ): List<Annotation> {
         val flow = ControlFlowBuilder(tree, syntax).build()
-        val ctx = AnalysisContext(file, tree, syntax, flow, oracle, config)
-        runPhase(ctx, Phase.SOURCE)
-        runPhase(ctx, Phase.DERIVATIVE)
-        runPhase(ctx, Phase.SCAFFOLD)
+        val store = AnnotationStore()
+        val ctx = AnalysisContext(file, tree, syntax, flow, oracle, config, store)
+        runPhase(ctx, store, Phase.SOURCE)
+        runPhase(ctx, store, Phase.DERIVATIVE)
+        runPhase(ctx, store, Phase.SCAFFOLD)
 
         return ctx.annotations().sortedWith(
             compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
@@ -278,20 +250,21 @@ class AnalysisEngine(
     }
 
     private fun runPhase(
-        ctx: AnalysisContext,
+        ctx: RuleContext,
+        store: AnnotationStore,
         phase: Phase,
     ) {
         val phaseBlocks = blocks.filter { it.phase == phase }
         if (phaseBlocks.isEmpty()) return
         var first = true
         do {
-            ctx.clearDirty()
+            store.clearDirty()
             for (block in phaseBlocks) {
                 if (first || block.readsAnnotations) {
-                    ctx.emitAll(block.apply(ctx))
+                    store.replaceRule(blockKeys.getValue(block), block.apply(ctx))
                 }
             }
             first = false
-        } while (ctx.isDirty())
+        } while (store.isDirty())
     }
 }

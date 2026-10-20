@@ -6,6 +6,7 @@ import dev.cint.api.Role
 import dev.cint.api.Span
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ArtifactTest {
@@ -38,8 +39,10 @@ class ArtifactTest {
 
         assertTrue(json.contains("\"provenance\":[{\"rule\":\"logging-state\""))
         assertTrue(json.indexOf("\"rule\":\"validation-guard\"") > json.indexOf("\"provenance\":["))
+        assertTrue(json.contains("{\"role\":\"source-intent\",\"intents\":[\"LOGGING\",\"VALIDATION\"],\"evidence\""))
+        assertFalse(json.contains("\"intents\":[\"LOGGING\",\"VALIDATION\"],\"rule\""))
         assertEquals(3, Regex("\"startByte\":12").findAll(json).count())
         assertEquals(3, Regex("\"endByte\":26").findAll(json).count())
-        assertEquals(2, Regex("\"rule\":\"logging-state\"").findAll(json).count())
+        assertEquals(1, Regex("\"rule\":\"logging-state\"").findAll(json).count())
     }
 }

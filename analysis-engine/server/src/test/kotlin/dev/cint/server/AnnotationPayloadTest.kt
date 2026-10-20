@@ -7,6 +7,7 @@ import dev.cint.api.Role
 import dev.cint.api.Span
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class AnnotationPayloadTest {
     @Test
@@ -32,7 +33,7 @@ class AnnotationPayloadTest {
         val parsed = jacksonObjectMapper().readTree(jacksonObjectMapper().writeValueAsString(annotationJson(annotation)))
         val provenance = parsed["provenance"]
 
-        assertEquals("logging-state", parsed["rule"].asText())
+        assertFalse(parsed.has("rule"))
         assertEquals(2, provenance.size())
         assertEquals("logging-state", provenance[0]["rule"].asText())
         assertEquals("validation-guard", provenance[1]["rule"].asText())

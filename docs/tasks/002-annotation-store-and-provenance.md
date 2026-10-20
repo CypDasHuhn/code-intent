@@ -1,6 +1,6 @@
 ---
 name: annotation store and provenance
-status: todo
+status: done
 depends-on: [001]
 reviewers: [correctness]
 ---
@@ -43,3 +43,14 @@ iteration; provenance is structured and per-contributor (architecture.md §6).
 
 - The store keys contributions by rule id (`§3`).
 - This is why the current `ctx.remove(...)` calls disappear (`§6`).
+
+## Outcome (2026-10-20)
+
+Store implemented as `core/store/AnnotationStore.kt`, keyed per configured rule
+instance; whole-output replacement, union of intents across contributors,
+structured provenance, deterministic ordering, and no removal API. Rules now
+receive a read-only `RuleContext`; store mutation and dirty tracking stay in
+`AnalysisEngine`. Round-1 findings (rule-facing mutation surface, non-unique
+replacement key) fixed and round 2 concurs. The legacy `validation-guard-block`
+scaffold emission was removed; final scaffold behavior is owned by 010 and
+renderer confirmation by 016. `just build` and `just test-engine` green.

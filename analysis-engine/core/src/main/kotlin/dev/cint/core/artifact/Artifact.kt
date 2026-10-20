@@ -33,7 +33,6 @@ object Artifact {
                     append("\"intents\":[")
                     append(annotation.intents.joinToString(",") { "\"${Json.escape(it)}\"" })
                     append("],")
-                    append("\"rule\":\"${Json.escape(annotation.rule)}\",")
                     append("\"evidence\":\"${Json.escape(annotation.evidence)}\",")
                     append("\"source\":\"${Json.escape(annotation.source)}\",")
                     append("\"confidence\":${annotation.confidence},")

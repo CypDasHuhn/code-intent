@@ -8,7 +8,6 @@ internal fun annotationJson(annotation: Annotation): Map<String, Any?> =
     mapOf(
         "role" to roleName(annotation.role),
         "intents" to annotation.intents,
-        "rule" to annotation.rule,
         "evidence" to annotation.evidence,
         "source" to annotation.source,
         "confidence" to annotation.confidence,
