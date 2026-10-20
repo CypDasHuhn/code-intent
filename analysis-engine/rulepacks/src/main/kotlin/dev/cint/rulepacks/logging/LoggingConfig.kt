@@ -23,7 +23,7 @@ data class LoggingConfig(
         LanguageConfig(languages).forLanguage(language, "kotlin")
             ?: LoggingLanguageConfig()
 
-    fun withOverrides(values: Map<String, Any?>): LoggingConfig = SCHEMA.decode(this, values, "logging")
+    fun withOverrides(values: Map<String, Any?>): LoggingConfig = SCHEMA.decode(this, values, LOGGING_PACK_ID)
 
     companion object {
         private val LANGUAGE_SCHEMA =
@@ -72,7 +72,7 @@ data class LoggingConfig(
 
         fun from(values: Map<String, Any?>): LoggingConfig = LoggingConfig().withOverrides(values)
 
-        fun defaults(): Map<String, LoggingLanguageConfig> =
+        private val LANGUAGE_DEFAULTS: Map<String, LoggingLanguageConfig> =
             mapOf(
                 "kotlin" to
                     LoggingLanguageConfig(
@@ -144,5 +144,7 @@ data class LoggingConfig(
                         imports = setOf("Microsoft.Extensions.Logging", "Serilog", "NLog", "log4net"),
                     ),
             )
+
+        fun defaults(): Map<String, LoggingLanguageConfig> = LANGUAGE_DEFAULTS
     }
 }

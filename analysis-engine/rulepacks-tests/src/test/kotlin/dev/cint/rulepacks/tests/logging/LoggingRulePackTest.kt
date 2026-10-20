@@ -237,6 +237,64 @@ class LoggingRulePackTest {
     }
 
     @Test
+    fun qualifiedStaticBypassesOracleEvenForResolvedNonLoggerType() {
+        val text =
+            """
+            fun f() {
+                System.out.info("x")
+            }
+            """.trimIndent()
+
+        val counting = CountingOracle()
+        val fallback = loggingSpans(newFor("kotlin", text, counting))
+        assertEquals(1, fallback.size)
+        assertEquals("heuristic", fallback.single().source)
+        assertEquals(0.8, fallback.single().confidence)
+        assertEquals(0, counting.calls)
+
+        val nonLogger = FixedOracle(TypeFact("Service", "lsp", 0.95))
+        val bypassed = loggingSpans(newFor("kotlin", text, nonLogger))
+        assertEquals(1, bypassed.size)
+        assertEquals("heuristic", bypassed.single().source)
+        assertEquals(0.8, bypassed.single().confidence)
+    }
+
+    @Test
+    fun resolvedLoggerTypeOverridesReceiverNameHeuristic() {
+        val text =
+            """
+            fun f() {
+                logger.info("x")
+            }
+            """.trimIndent()
+        val oracle = FixedOracle(TypeFact("org.slf4j.Logger", "lsp", 0.91))
+        val annotation =
+            newFor("kotlin", text, oracle).first {
+                it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents
+            }
+        assertEquals("lsp", annotation.source)
+        assertEquals(0.91, annotation.confidence)
+    }
+
+    @Test
+    fun resolvedLoggerTypeOverridesImportGatedHeuristic() {
+        val text =
+            """
+            import org.slf4j.LoggerFactory
+            fun f() {
+                fake.info("x")
+            }
+            """.trimIndent()
+        val oracle = FixedOracle(TypeFact("org.slf4j.Logger", "lsp", 0.88))
+        val annotation =
+            newFor("kotlin", text, oracle).first {
+                it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents
+            }
+        assertEquals("lsp", annotation.source)
+        assertEquals(0.88, annotation.confidence)
+    }
+
+    @Test
     fun importGatedReceiverUsesOracle() {
         val text =
             """
