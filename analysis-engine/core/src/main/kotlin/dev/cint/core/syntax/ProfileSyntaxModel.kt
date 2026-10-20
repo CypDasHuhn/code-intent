@@ -1,11 +1,17 @@
 package dev.cint.core.syntax
 
 import dev.cint.api.CallFact
+import dev.cint.api.CommentFact
+import dev.cint.api.DeclarationFact
 import dev.cint.api.FunctionFact
+import dev.cint.api.GuardFact
 import dev.cint.api.IfFact
 import dev.cint.api.PropertyFact
+import dev.cint.api.ScopeFact
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
+import dev.cint.api.WriteFact
+import dev.cint.api.WriteKind
 
 internal class ProfileSyntaxKinds(
     private val profile: SyntaxProfile,
@@ -34,10 +40,20 @@ internal class ProfileSyntaxKinds(
     val assignmentKinds = profile.kinds(SyntaxGroups.ASSIGNMENT)
     val assignableKinds = profile.kinds(SyntaxGroups.ASSIGNABLE)
     val incrementKinds = profile.kinds(SyntaxGroups.INCREMENT)
+    val writeKinds = profile.kinds(SyntaxGroups.WRITE)
+    val guardKinds = profile.kinds(SyntaxGroups.GUARD)
     val annotationKinds = profile.kinds(SyntaxGroups.ANNOTATION)
     val modifierKinds = profile.kinds(SyntaxGroups.MODIFIER)
     val commentKinds = profile.kinds(SyntaxGroups.COMMENT)
     val lambdaKinds = profile.kinds(SyntaxGroups.LAMBDA)
+    val objectKinds = profile.kinds(SyntaxGroups.OBJECT)
+    val classKinds = profile.kinds(SyntaxGroups.CLASS)
+    val classBodyKinds = profile.kinds(SyntaxGroups.CLASS_BODY)
+    val callArgumentKinds = profile.kinds(SyntaxGroups.CALL_ARGUMENT)
+    val parameterKinds = profile.kinds(SyntaxGroups.PARAMETER)
+    val parameterListKinds = profile.kinds(SyntaxGroups.PARAMETER_LIST)
+    val bindingKinds = profile.kinds(SyntaxGroups.BINDING)
+    val loopBindingContainerKinds = profile.kinds(SyntaxGroups.LOOP_BINDING_CONTAINER)
     val typeReferenceKinds = profile.kinds(SyntaxGroups.TYPE_REFERENCE)
     val declarationWrapperKinds = profile.kinds(SyntaxGroups.DECLARATION_WRAPPER)
     val blockCloseKinds = profile.kinds(SyntaxGroups.BLOCK_CLOSE)
@@ -69,9 +85,9 @@ class ProfileSyntaxModel(
 ) : SyntaxModel {
     private val kinds = ProfileSyntaxKinds(profile)
     private val callFacts = CallFacts(kinds)
-    private val declarations = DeclarationFacts(kinds, callFacts)
-    private val controlFlow = ControlFlowFacts(kinds)
     private val semantics = SemanticFacts(kinds)
+    private val controlFlow = ControlFlowFacts(kinds)
+    private val declarations = DeclarationFacts(kinds, callFacts, semantics, controlFlow)
 
     override fun calls(tree: SyntaxTree): Sequence<CallFact> = callFacts.calls(tree)
 
@@ -80,6 +96,24 @@ class ProfileSyntaxModel(
     override fun properties(tree: SyntaxTree): Sequence<PropertyFact> = declarations.properties(tree)
 
     override fun functions(tree: SyntaxTree): Sequence<FunctionFact> = declarations.functions(tree)
+
+    override fun declarations(tree: SyntaxTree): Sequence<DeclarationFact> = declarations.declarations(tree)
+
+    override fun guards(tree: SyntaxTree): Sequence<GuardFact> = controlFlow.guards(tree)
+
+    override fun writes(tree: SyntaxTree): Sequence<WriteFact> = semantics.allWrites(tree)
+
+    override fun writeKind(node: SyntaxNode): WriteKind = semantics.writeKind(node)
+
+    override fun comments(tree: SyntaxTree): Sequence<CommentFact> = semantics.comments(tree)
+
+    override fun commentBefore(node: SyntaxNode): CommentFact? = declarations.commentBefore(node)
+
+    override fun scopes(tree: SyntaxTree): Sequence<ScopeFact> = controlFlow.scopes(tree)
+
+    override fun enclosingScope(node: SyntaxNode): ScopeFact? = controlFlow.enclosingScope(node)
+
+    override fun enclosingBlock(node: SyntaxNode): SyntaxNode? = controlFlow.enclosingBlock(node)
 
     override fun ifs(tree: SyntaxTree): Sequence<IfFact> = controlFlow.ifs(tree)
 
@@ -126,11 +160,6 @@ class ProfileSyntaxModel(
     override fun annotationTexts(declaration: SyntaxNode): List<String> = declarations.annotationTexts(declaration)
 
     override fun precedingComments(node: SyntaxNode): Sequence<SyntaxNode> = declarations.precedingComments(node)
-
-    override fun closestCommentBefore(
-        scope: SyntaxNode,
-        node: SyntaxNode,
-    ): SyntaxNode? = declarations.closestCommentBefore(scope, node)
 
     override fun isConstant(node: SyntaxNode): Boolean = semantics.isConstant(node)
 

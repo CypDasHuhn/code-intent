@@ -2,17 +2,23 @@ package dev.cint.core.facts.view
 
 import dev.cint.api.Annotation
 import dev.cint.api.CallFact
+import dev.cint.api.CommentFact
 import dev.cint.api.Contribution
 import dev.cint.api.Coverage
+import dev.cint.api.DeclarationFact
 import dev.cint.api.FunctionFact
+import dev.cint.api.GuardFact
 import dev.cint.api.IfFact
 import dev.cint.api.Intent
 import dev.cint.api.PropertyFact
+import dev.cint.api.ReturnFact
 import dev.cint.api.Role
+import dev.cint.api.ScopeFact
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
 import dev.cint.api.TypeRef
 import dev.cint.api.View
+import dev.cint.api.WriteFact
 import dev.cint.core.runtime.engine.RuleContext
 
 class CapabilityView(
@@ -31,11 +37,31 @@ class CapabilityView(
             .typeAt(context.file, context.syntax.receiverOffset(node))
             ?.let { TypeRef(it.fqName, it.source, it.confidence) }
 
+    override fun receiverType(call: CallFact): TypeRef? = context.receiverType(call)
+
     override fun calls(): List<CallFact> = context.calls
 
     override fun properties(): List<PropertyFact> = context.properties
 
     override fun functions(): List<FunctionFact> = context.functions
+
+    override fun declarations(): List<DeclarationFact> = context.declarations
+
+    override fun writes(): List<WriteFact> = context.writes
+
+    override fun comments(): List<CommentFact> = context.comments
+
+    override fun commentBefore(node: SyntaxNode): CommentFact? = context.commentBefore(node)
+
+    override fun scopes(): List<ScopeFact> = context.scopes
+
+    override fun enclosingScope(node: SyntaxNode): ScopeFact? = context.syntax.enclosingScope(node)
+
+    override fun enclosingBlock(node: SyntaxNode): SyntaxNode? = context.syntax.enclosingBlock(node)
+
+    override fun guards(): List<GuardFact> = context.guards
+
+    override fun returnSites(): List<ReturnFact> = context.returnSites
 
     override fun ifs(): List<IfFact> = context.ifs
 

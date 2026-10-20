@@ -1,11 +1,16 @@
 package dev.cint.core.syntax
 
 import dev.cint.api.CallFact
+import dev.cint.api.CommentFact
+import dev.cint.api.DeclarationFact
 import dev.cint.api.FunctionFact
+import dev.cint.api.GuardFact
 import dev.cint.api.IfFact
 import dev.cint.api.PropertyFact
+import dev.cint.api.ScopeFact
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
+import dev.cint.api.WriteFact
 import dev.cint.core.facts.model.SourceFile
 import org.yaml.snakeyaml.Yaml
 
@@ -28,6 +33,24 @@ interface SyntaxModel {
     fun properties(tree: SyntaxTree): Sequence<PropertyFact>
 
     fun functions(tree: SyntaxTree): Sequence<FunctionFact>
+
+    fun declarations(tree: SyntaxTree): Sequence<DeclarationFact>
+
+    fun guards(tree: SyntaxTree): Sequence<GuardFact>
+
+    fun writes(tree: SyntaxTree): Sequence<WriteFact>
+
+    fun writeKind(node: SyntaxNode): dev.cint.api.WriteKind
+
+    fun comments(tree: SyntaxTree): Sequence<CommentFact>
+
+    fun commentBefore(node: SyntaxNode): CommentFact?
+
+    fun scopes(tree: SyntaxTree): Sequence<ScopeFact>
+
+    fun enclosingScope(node: SyntaxNode): ScopeFact?
+
+    fun enclosingBlock(node: SyntaxNode): SyntaxNode?
 
     fun ifs(tree: SyntaxTree): Sequence<IfFact>
 
@@ -74,11 +97,6 @@ interface SyntaxModel {
     fun annotationTexts(declaration: SyntaxNode): List<String>
 
     fun precedingComments(node: SyntaxNode): Sequence<SyntaxNode>
-
-    fun closestCommentBefore(
-        scope: SyntaxNode,
-        node: SyntaxNode,
-    ): SyntaxNode?
 
     fun isConstant(node: SyntaxNode): Boolean
 
@@ -177,11 +195,21 @@ object SyntaxGroups {
     const val ASSIGNMENT = "assignment"
     const val ASSIGNABLE = "assignable"
     const val INCREMENT = "increment"
+    const val WRITE = "write"
+    const val GUARD = "guard"
     const val ANNOTATION = "annotation"
     const val MODIFIER = "modifier"
     const val COMMENT = "comment"
     const val LAMBDA = "lambda"
     const val OBJECT = "object"
+    const val CLASS = "class"
+    const val TYPE_DECLARATION = CLASS
+    const val CLASS_BODY = "classBody"
+    const val CALL_ARGUMENT = "callArgument"
+    const val PARAMETER = "parameter"
+    const val PARAMETER_LIST = "parameterList"
+    const val BINDING = "binding"
+    const val LOOP_BINDING_CONTAINER = "loopBindingContainer"
     const val TYPE_REFERENCE = "typeReference"
     const val DECLARATION_WRAPPER = "declarationWrapper"
     const val BLOCK_CLOSE = "blockClose"

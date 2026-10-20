@@ -27,11 +27,31 @@ private class FakeView(
 
     override fun typeAt(node: SyntaxNode): TypeRef? = null
 
+    override fun receiverType(call: CallFact): TypeRef? = null
+
     override fun calls(): List<CallFact> = callFacts
 
     override fun properties(): List<PropertyFact> = emptyList()
 
     override fun functions(): List<FunctionFact> = emptyList()
+
+    override fun declarations(): List<DeclarationFact> = emptyList()
+
+    override fun writes(): List<WriteFact> = emptyList()
+
+    override fun comments(): List<CommentFact> = emptyList()
+
+    override fun commentBefore(node: SyntaxNode): CommentFact? = null
+
+    override fun scopes(): List<ScopeFact> = emptyList()
+
+    override fun enclosingScope(node: SyntaxNode): ScopeFact? = null
+
+    override fun enclosingBlock(node: SyntaxNode): SyntaxNode? = null
+
+    override fun guards(): List<GuardFact> = emptyList()
+
+    override fun returnSites(): List<ReturnFact> = emptyList()
 
     override fun ifs(): List<IfFact> = emptyList()
 

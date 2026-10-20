@@ -36,6 +36,111 @@ data class CallFact(
     val site: SyntaxNode,
     val callee: String?,
     val receiver: SyntaxNode?,
+    val path: String? = callee?.let { name -> receiver?.let { "${it.text}.$name" } ?: name },
+    val trailingLambda: SyntaxNode? = null,
+) {
+    val trailingLambdaSpan: Span? get() = trailingLambda?.span()
+
+    val trailingLambdaStartByte: Int? get() = trailingLambda?.startByte
+
+    val trailingLambdaEndByte: Int? get() = trailingLambda?.endByte
+}
+
+enum class WriteKind {
+    ASSIGNMENT,
+    INCREMENT,
+    UNKNOWN,
+}
+
+data class WriteFact(
+    val node: SyntaxNode,
+    val kind: WriteKind,
+    val reference: SyntaxNode? = null,
+)
+
+enum class DeclarationKind {
+    PROPERTY,
+    VARIABLE,
+    FUNCTION,
+}
+
+data class CommentFact(
+    val node: SyntaxNode,
+    val magicComment: String? = magicCommentIn(node.text),
+) {
+    val text: String get() = node.text
+
+    fun isMagicComment(name: String): Boolean = matchesMagicComment(node.text, name)
+}
+
+data class DeclarationFact(
+    val node: SyntaxNode,
+    val kind: DeclarationKind,
+    val name: String?,
+    val nameNode: SyntaxNode?,
+    val annotations: List<String> = emptyList(),
+    val annotationNodes: List<SyntaxNode> = emptyList(),
+    val precedingComments: List<CommentFact> = emptyList(),
+    val scope: ScopeFact? = null,
+    val writes: List<WriteFact> = emptyList(),
+) {
+    val precedingComment: CommentFact? get() = precedingComments.lastOrNull()
+
+    val isProperty: Boolean get() = kind == DeclarationKind.PROPERTY
+
+    val isVariable: Boolean get() = kind == DeclarationKind.VARIABLE
+
+    fun hasAnnotation(name: String): Boolean = annotations.any { matchesAnnotation(it, name) }
+
+    fun hasMagicComment(name: String): Boolean = magicComment(name) != null
+
+    fun magicComment(name: String): CommentFact? = precedingComments.lastOrNull { it.isMagicComment(name) }
+
+    fun writes(): List<WriteFact> = writes
+}
+
+enum class ScopeKind {
+    FILE,
+    FUNCTION,
+    BLOCK,
+    LAMBDA,
+    CLASS,
+}
+
+data class ScopeFact(
+    val node: SyntaxNode,
+    val kind: ScopeKind,
+    val owner: SyntaxNode? = null,
+)
+
+enum class GuardKind {
+    CONDITIONAL,
+    LOOP,
+    OTHER,
+}
+
+data class GuardFact(
+    val node: SyntaxNode,
+    val kind: GuardKind,
+    val condition: SyntaxNode?,
+    val thenBody: SyntaxNode?,
+    val elseBody: SyntaxNode?,
+    val exits: List<SyntaxNode> = emptyList(),
+)
+
+data class ReturnGuardFact(
+    val condition: SyntaxNode,
+    val guard: SyntaxNode,
+    val onTrue: Boolean,
+)
+
+data class ReturnFact(
+    val node: SyntaxNode,
+    val expression: SyntaxNode?,
+    val guards: List<ReturnGuardFact> = emptyList(),
+    val loop: SyntaxNode? = null,
+    val handler: SyntaxNode? = null,
+    val scope: ScopeFact? = null,
 )
 
 data class PropertyFact(
@@ -81,3 +186,24 @@ data class TypeRef(
     val source: String,
     val confidence: Double,
 )
+
+private fun magicCommentIn(text: String): String? {
+    val match = Regex("""cint\s*:\s*([A-Za-z0-9_.-]+)""", RegexOption.IGNORE_CASE).find(text) ?: return null
+    return match.groupValues[1]
+}
+
+private fun matchesMagicComment(
+    text: String,
+    name: String,
+): Boolean = Regex("""cint\s*:\s*${Regex.escape(name)}(?![A-Za-z0-9_.-])""", RegexOption.IGNORE_CASE).containsMatchIn(text)
+
+private fun matchesAnnotation(
+    annotation: String,
+    pattern: String,
+): Boolean {
+    val actual = annotation.trim()
+    val expected = pattern.trim()
+    if (actual == expected) return true
+    if (actual.contains('(') || expected.contains('(')) return false
+    return actual.endsWith(".$expected")
+}

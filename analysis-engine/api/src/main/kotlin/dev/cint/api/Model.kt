@@ -4,7 +4,7 @@ typealias Intent = String
 
 const val UNTAGGED_INTENT: Intent = "UNTAGGED"
 
-const val CINT_API_VERSION: Int = 1
+const val CINT_API_VERSION: Int = 2
 
 enum class Role {
     SOURCE_INTENT,

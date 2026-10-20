@@ -1,7 +1,12 @@
 package dev.cint.core.syntax
 
 import dev.cint.api.CallFact
+import dev.cint.api.CommentFact
 import dev.cint.api.SyntaxNode
+import dev.cint.api.WriteFact
+import dev.cint.api.WriteKind
+
+private val separatorKinds = setOf("(", ")", ",", ";", "{", "}")
 
 internal class CallFacts(
     private val kinds: ProfileSyntaxKinds,
@@ -45,13 +50,27 @@ internal class CallFacts(
             receiver.startByte
         }
 
-    private fun callFact(call: SyntaxNode): CallFact =
-        CallFact(
+    fun trailingLambda(call: SyntaxNode): SyntaxNode? {
+        val suffix = call.children.lastOrNull { it.kind in kinds.callSuffixKinds } ?: return null
+        val last = suffix.children.lastOrNull { it.kind !in separatorKinds && it.kind !in kinds.commentKinds } ?: return null
+        if (last.kind in kinds.lambdaKinds) return last
+        if (last.kind in kinds.callArgumentKinds) {
+            return last.children.lastOrNull { it.kind in kinds.lambdaKinds }
+        }
+        return null
+    }
+
+    private fun callFact(call: SyntaxNode): CallFact {
+        val site = callSite(call)
+        return CallFact(
             node = call,
-            site = callSite(call),
+            site = site,
             callee = calleeName(call),
             receiver = receiverNode(call),
+            path = callPath(call),
+            trailingLambda = trailingLambda(site),
         )
+    }
 
     private fun callFunctionNode(call: SyntaxNode): SyntaxNode? = kinds.fieldNode(call, SyntaxFields.CALL_FUNCTION)
 
@@ -68,9 +87,7 @@ internal class CallFacts(
         var current = call
         var parent = current.parent
         while (parent != null && parent.kind in kinds.callKinds) {
-            val suffix = parent.children.firstOrNull { it.kind in kinds.callSuffixKinds }
-            val hasLambda = suffix?.children?.any { it.kind in kinds.lambdaKinds } == true
-            if (!hasLambda) break
+            if (trailingLambda(parent) == null) break
             current = parent
             parent = current.parent
         }
@@ -102,8 +119,33 @@ internal class SemanticFacts(
             .filter { it.kind in kinds.identifierKinds }
             .groupBy { it.text }
 
+    fun comments(tree: SyntaxTree): Sequence<CommentFact> =
+        tree.root
+            .descendants()
+            .filter { it.kind in kinds.commentKinds }
+            .map(::CommentFact)
+
+    fun allWrites(tree: SyntaxTree): Sequence<WriteFact> =
+        tree.root
+            .descendants()
+            .filter { it.kind in kinds.writeKinds }
+            .filter { write ->
+                write.kind !in kinds.incrementKinds ||
+                    kinds.incrementOperators.any { write.text.contains(it) }
+            }.map { write -> WriteFact(write, writeKind(write)) }
+
+    fun writeKind(node: SyntaxNode): WriteKind =
+        when (node.kind) {
+            in kinds.assignmentKinds -> WriteKind.ASSIGNMENT
+            in kinds.incrementKinds -> WriteKind.INCREMENT
+            else -> WriteKind.UNKNOWN
+        }
+
     fun writes(reference: SyntaxNode): SyntaxNode? {
-        val parent = reference.parent ?: return null
+        var parent = reference.parent ?: return null
+        if (parent.kind in kinds.calleeSuffixKinds) {
+            parent = parent.parent ?: return null
+        }
         return when (parent.kind) {
             in kinds.incrementKinds -> {
                 if (kinds.incrementOperators.any { parent.text.contains(it) }) parent else null
@@ -111,7 +153,7 @@ internal class SemanticFacts(
 
             in kinds.assignableKinds -> {
                 val assignment = parent.parent ?: return null
-                if (assignment.kind in kinds.assignmentKinds) assignment else null
+                if (assignment.kind in kinds.assignmentKinds && isLeftOperand(parent, assignment)) assignment else null
             }
 
             in kinds.assignmentKinds -> {
@@ -131,7 +173,7 @@ internal class SemanticFacts(
                     }
 
                     in kinds.assignmentKinds -> {
-                        operation
+                        if (isLeftOperand(parent, operation)) operation else null
                     }
 
                     else -> {
@@ -144,6 +186,14 @@ internal class SemanticFacts(
                 null
             }
         }
+    }
+
+    private fun isLeftOperand(
+        operand: SyntaxNode,
+        assignment: SyntaxNode,
+    ): Boolean {
+        val left = assignment.childByField("left") ?: assignment.children.firstOrNull() ?: return false
+        return operand.startByte >= left.startByte && operand.endByte <= left.endByte
     }
 
     fun isConstant(node: SyntaxNode): Boolean = node.descendants().none { it.kind in kinds.referenceKinds }

@@ -2,15 +2,22 @@ package dev.cint.core.facts.view
 
 import dev.cint.api.Annotation
 import dev.cint.api.CallFact
+import dev.cint.api.CommentFact
 import dev.cint.api.Contribution
 import dev.cint.api.Coverage
+import dev.cint.api.DeclarationFact
 import dev.cint.api.FunctionFact
+import dev.cint.api.GuardFact
 import dev.cint.api.IfFact
 import dev.cint.api.PropertyFact
+import dev.cint.api.ReturnFact
 import dev.cint.api.Role
+import dev.cint.api.ScopeFact
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
+import dev.cint.api.TypeRef
+import dev.cint.api.WriteFact
 import dev.cint.core.facts.flow.ControlFlow
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
@@ -33,6 +40,12 @@ private class AnnotationContext(
     override val calls: List<CallFact> get() = emptyList()
     override val properties: List<PropertyFact> get() = emptyList()
     override val functions: List<FunctionFact> get() = emptyList()
+    override val declarations: List<DeclarationFact> get() = emptyList()
+    override val writes: List<WriteFact> get() = emptyList()
+    override val comments: List<CommentFact> get() = emptyList()
+    override val scopes: List<ScopeFact> get() = emptyList()
+    override val guards: List<GuardFact> get() = emptyList()
+    override val returnSites: List<ReturnFact> get() = emptyList()
     override val ifs: List<IfFact> get() = emptyList()
     override val tries: List<TryFact> get() = emptyList()
     override val catches: List<SyntaxNode> get() = emptyList()
@@ -40,6 +53,10 @@ private class AnnotationContext(
     override val imports: List<String> get() = emptyList()
     override val references: Map<String, List<SyntaxNode>> get() = emptyMap()
     override val throws: List<SyntaxNode> get() = emptyList()
+
+    override fun receiverType(call: CallFact): TypeRef? = null
+
+    override fun commentBefore(node: SyntaxNode): CommentFact? = null
 
     override fun annotations(): List<Annotation> = entries
 
