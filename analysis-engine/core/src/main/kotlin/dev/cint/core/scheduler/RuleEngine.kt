@@ -8,6 +8,7 @@ import dev.cint.api.Role
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
 import dev.cint.api.toContribution
+import dev.cint.core.composition.Composition
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.engine.AnalysisContext
 import dev.cint.core.flow.ControlFlow
@@ -88,7 +89,19 @@ class RuleEngine(
         for ((id, contributions) in settled) {
             store.replaceRule(id, contributions)
         }
-        return store.annotations().sortedWith(
+        val sources = settled.values.flatten()
+        val composed =
+            Composition().compose(
+                plan.terminal,
+                file,
+                tree,
+                syntax,
+                flow,
+                oracle,
+                config,
+                sources,
+            )
+        return (store.annotations() + composed).sortedWith(
             compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
         )
     }
