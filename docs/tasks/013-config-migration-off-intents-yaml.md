@@ -1,6 +1,6 @@
 ---
 name: config migration off intents.yaml
-status: todo
+status: done
 depends-on: [006, 007, 012]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -36,3 +36,16 @@ into the owning packs' typed config, preserving current behavior
 
 - Covers logging, error-handling, bookkeeping and validation values; validation
   predicates are validation-pack config.
+
+## Outcome (2026-10-20)
+
+All detection values from `intents.yaml` now live in the owning packs' typed
+config (logging, error-handling per language, bookkeeping, validation), with
+strict decoders and per-language sections. `ProjectConfigLoader`/`HostPipeline`
+apply project config to discovered and constructed packs; production hosts no
+longer load `intents.yaml` for detection. `core:` policy is framework-owned, and
+`core.lsp` drives host oracle options (live keeps a 750 ms default unless the
+config explicitly sets a timeout). The composition magic-comment fallback is
+config-driven. Frozen state: golden-fixture parity remains m006 (unverified),
+parity across testing-grounds including Vue is automated, and legacy deletion is
+014. Both reviewers concur after rounds.

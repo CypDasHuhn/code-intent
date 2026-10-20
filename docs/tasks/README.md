@@ -22,7 +22,7 @@ host and client cutover at the end.
 | 010 | [core composition terminal](010-core-composition-terminal.md) | done | 003, 004 | Coverage, scaffolds, derivative use, return category as the terminal graph node. |
 | 011 | [pack loading and degradation](011-pack-loading-and-degradation.md) | done | 003 | `ServiceLoader` loading, graceful degradation, collision/unknown-dep/cycle load errors, reload = restart. |
 | 012 | [typed pack config](012-typed-pack-config.md) | done | 006 | Per-pack typed `Config` + project file keyed by pack id + `core:` policy section. |
-| 013 | [config migration off intents.yaml](013-config-migration-off-intents-yaml.md) | todo | 006, 007, 012 | Move detection values and language overrides into pack config. |
+| 013 | [config migration off intents.yaml](013-config-migration-off-intents-yaml.md) | done | 006, 007, 012 | Move detection values and language overrides into pack config. |
 | 014 | [delete legacy config and phase](014-delete-legacy-config-and-phase.md) | todo | 010, 013 | Remove `intents.yaml`, the `Phase` enum, and `rules/Blocks.kt`. |
 | 015 | [host cutover: cli and server](015-host-cutover-cli-and-server.md) | done | 003, 010, 011 | Batch CLI and live daemon publish from the new engine. |
 | 016 | [renderer annotation contract](016-renderer-annotation-contract.md) | done | 002, 011 | Structured provenance, open intent names, reserved node anchor in the live contract. |
