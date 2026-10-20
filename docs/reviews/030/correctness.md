@@ -249,3 +249,175 @@ request-root, or renderer paths.
   strengthen the boundary coverage.
 - Static review only; no source edit, build, test, lint, or formatter command
   was run by this role, per `docs/workflow.md`.
+
+## Round 3
+
+Verdict: Both Round 2 findings are addressed. `HostPipeline.scopeToRegion` now
+verifies a hashed record against its original host span before remapping and
+then derives the hash from the clipped local selection, so a real client range
+that crosses a region boundary is clipped and kept rather than dropped; the
+hashless path keeps the coordinate fallback. The stale-symbol test now resolves
+against a syntax model that has real candidates (`keep`, `ref`) and a tree that
+still contains the `make` identifier, so it exercises the removed
+all-descendant fallback instead of passing through an empty candidate list. No
+regression was found in the changed paths: the callback host is correct at each
+split level, the non-split path is unchanged, and the unrelated import removals
+are clean. One new finding remains, independent of the two fixes: the Lua writer
+and the Kotlin resolver disagree on hashing a range whose last selected line is
+empty, so such a valid client range annotation is silently dropped in every
+path.
+
+### Findings
+
+1. **`nvim-renderer/lua/cint/ops/annotations.lua:154-163,177` with `analysis-engine/core/core/src/main/kotlin/dev/cint/core/support/hashing/Hashing.kt:5-8` and `analysis-engine/core/core/src/main/kotlin/dev/cint/core/user/UserAnnotationResolver.kt:76-78` — a range ending on an empty line hashes differently in the client and the engine and is silently dropped.**
+
+   `range_anchor` joins the selected buffer lines with `"\n"` and
+   `record_for` hashes that string raw. When the last selected line is empty,
+   the joined text ends with `"\n"` (for example `"code\n"`), and the client
+   stores `sha256("code\n")`. `contentHash` canonicalizes with
+   `replace("\r\n", "\n").removeSuffix("\n")`, so the resolver hashes the same
+   selection as `sha256("code")` and rejects the record as stale at
+   `UserAnnotationResolver.kt:77`; in split files the new host-span check
+   (`HostPipeline.kt:99-102`) rejects it earlier. The user sees the range
+   annotation persisted and listed but never applied, and re-annotating the same
+   empty-terminated selection reproduces the drop. `CintAnnotate` accepts
+   linewise ranges (`commands.lua:161-168`), so selecting a block through a
+   blank separator line is enough to trigger this. The nvim spec only hashes a
+   single non-empty line (`annotations_spec.lua:47`), and every Kotlin test
+   synthesizes hashes with `contentHash`, so the two layers never meet and the
+   mismatch is unpinned.
+
+   Fix: make the writer canonicalize exactly like `contentHash` (normalize
+   `"\r\n"` and strip one trailing `"\n"`) before hashing, or make the engine
+   hash the exact selected bytes; pick one canonical form and state it. Add a
+   cross-language test: persist a two-line range whose last line is empty
+   through the Lua writer shape and assert the resolver produces a
+   contribution (a resolver-level fixture plus an nvim assertion on the stored
+   hash).
+
+### Concurs / Dissents
+
+- Concurs: Round 2 finding 1 is fixed. `scopeToRegion` verifies the stored hash
+  against the original host text before any remapping and recomputes
+  `contentHash` from the clipped local selection, so clipping no longer
+  conflicts with the range-hash rejection. The hashless branch still passes
+  `null` through.
+- Concurs: the new split tests pin the claimed behavior. The start-before-region
+  case and the end-tag-line case both carry a client-shaped hash and a
+  non-empty last line, the stale case hashes only the region text (so it fails
+  if the host-span check is removed while a clip-only hash would otherwise be
+  accepted), and the start case uses non-ASCII in both the prefix and the
+  region so character-based offsets and line lengths would fail the byte-column
+  assertions.
+- Concurs: Round 2 finding 2 is fixed. `staleSymbolDoesNotRebindToANonDeclaration`
+  supplies `keep`/`ref` candidates and keeps a `make` identifier in the tree;
+  restoring the old `candidates`-as-all-descendants fallback would make the
+  identifier a verified candidate and the assertion fail.
+- Concurs: the callback signature change is threaded correctly. `analyze`
+  passes `host` once, every leaf call passes `userContributionsFor(host, file,
+  ...)`, the recursion re-enters `analyze` with the current region text as its
+  host, and the CLI, both `LiveServer` split paths, the server HTTP path, and
+  the tests all adapt to the five-argument shape. The default lambda has the
+  same arity.
+- Concurs: the non-split path is unchanged (`userContributionsFor(source,
+  source, tree, syntax)` with no region), and client-produced symbol records
+  are not newly dropped: they store `sha256(symbol)` with the symbol span, so
+  the pre-check hashes the same word the resolver's range fallback would.
+- Concurs: the three `just lint` import removals (`ScopeFact`,
+  `ErrorHandlingConfig`, `validationPipeline`) had no remaining references and
+  do not change behavior.
+- Dissents: finding 1 above; no dissent against the Round 2 fixes.
+
+### Residual observations (not filed)
+
+- Nested split recursion still passes the immediate region text as `host` while
+  persisted records stay in root-file coordinates, so a language whose region
+  contains another split region would drop or misplace its annotations. The
+  current Vue frontend cannot produce nested `script_element` regions, and the
+  behaviour predates this change, so it is latent rather than a regression.
+- `lineLength` counts the `"\r"` of a CRLF line, so a record clipped to the end
+  of the region gets an `endCol` one byte past what Neovim shows for that line.
+  This is pre-existing, affects only split clipping on CRLF files, and the hash
+  stays internally consistent because both sides slice the same bytes.
+- All split fixtures use a single-line region with `startCol = 0`. The typical
+  Vue shape (leading newline in `raw_text` plus non-zero `startCol`) and
+  multi-line local column mapping are therefore not pinned by a test; they look
+  correct by inspection.
+- `scopeToRegion` materializes a fresh UTF-8 copy of the whole host file for
+  every record; this is allocation cost per region, not a correctness issue.
+- Static review only; no source edit, build, test, lint, or formatter command
+  was run by this role, per `docs/workflow.md`.
+
+## Round 4
+
+Verdict: The Round 3 finding is fixed on both sides of the contract. The Lua
+writer now canonicalizes range text exactly like the engine (`\r\n` to `\n`,
+then one trailing `\n` removed) before hashing, so a linewise range ending on an
+empty line stores the hash the resolver expects; the nvim spec pins the writer
+against the raw joined-text hash, and the new Kotlin test independently mirrors
+the canonical form and exercises the resolver with a selection whose text ends
+in `\n`. The `gsub` multi-return is consumed safely, the multi-line end-column
+case is the one the new tests cover, the added fixture blank line does not
+disturb the earlier assertions, and symbol records and ordinary ranges still
+round-trip because their text is unchanged by canonicalization. No new finding
+and no regression was found, so the review loop can close.
+
+### Findings
+
+None.
+
+### Concurs / Dissents
+
+- Concurs: Round 3 finding 1 is fixed. `content_hash`
+  (`annotations.lua:165-169`) replaces `\r\n` and strips one trailing `\n`,
+  matching `Hashing.kt:5-8`; `record_for` uses it for every record. The symbol
+  anchor still hashes `anchor.text == symbol`, which contains neither `\r` nor a
+  trailing newline, so symbol records are unchanged.
+- Concurs: the Lua multi-return is safe. Both `gsub` calls are single-variable
+  assignments, which take the first result (the string), and the replacement
+  count is not appended to the `sha256` argument. Both replacements are
+  global, and `"\n$"` can only match the final newline, so `"a\n\n"` becomes
+  `"a\n"` exactly as `removeSuffix("\n")` does.
+- Concurs: the nvim spec pins the writer. The fixture now ends with a blank
+  line, `annotate_range(2, 3)` selects `"val third = 2"` and the empty line, and
+  the spec asserts `sha256("val third = 2")` and rejects
+  `sha256("val third = 2\n")`, so the old raw hash would fail.
+- Concurs: test isolation holds. The added blank line leaves line 0 and line 1
+  text unchanged, the single-line range assertion still hashes the current line
+  exactly (canonicalization is a no-op without a trailing newline), the
+  annotation count is reset to zero before the new block, and
+  `unannotate_range(2, 3)` contains the new record so the buffer is clean for
+  the malformed-file test.
+- Concurs: the Kotlin test mirrors the writer rather than reusing `contentHash`:
+  `writerContentHash` performs its own `MessageDigest` over
+  `replace("\r\n", "\n").removeSuffix("\n")`, and the span `Span(0, 0, 1, 0)`
+  slices text ending in `\n`. It fails if the resolver stops stripping the
+  newline and pins the actual writer shape, not just the helper.
+- Concurs: multi-line end columns are covered by the new cases. The writer's
+  `endCol = #last` is a byte length (zero for an empty last line), and the
+  resolver addresses the same end position (`line + 1`, column 0) whose slice
+  ends in `\n`; non-empty last lines are unchanged. CRLF is symmetric by
+  construction because the writer joins buffer lines with `\n` while the host
+  slice's `\r\n` is normalized on the Kotlin side.
+- Concurs: the range and symbol shapes still round-trip. Only selections that
+  end with a newline change hash, and those were precisely the records that
+  previously never resolved; re-annotating replaces them at the same position.
+- Dissents: none.
+
+### Residual observations (not filed)
+
+- Neither new test exercises the CRLF branch: there is no `fileformat=dos` or
+  literal-`\r` fixture, so the `\r\n` normalization agreement is checked by
+  inspection rather than execution. The rules are identical on both sides, and
+  a one-sided change would still be caught by the existing assertions for the
+  newline case.
+- The contract is now pinned at both ends (a Lua hash assertion and an
+  independent Kotlin canonicalization helper) but still not by a single
+  artifact written in Lua and fed through `UserAnnotationsJson` to the resolver;
+  the cross-language fixture gap recorded in the api-fidelity review remains.
+- Records persisted before this fix whose selection ended on an empty line
+  still carry the old raw hash and remain stale. They never resolved before, so
+  no working behaviour is lost and no migration is required; the user
+  re-annotates to replace them.
+- Static review only; no source edit, build, test, lint, or formatter command
+  was run by this role, per `docs/workflow.md`.

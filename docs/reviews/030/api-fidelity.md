@@ -173,3 +173,123 @@ the architecture docs. Round 1 residuals about the Lua/Kotlin fixture gap,
 client-side byte columns, stderr-only malformed-file reporting, and the
 `_live_tags` injection bypass remain unchanged. This round was read/reason only;
 no build, test, formatter, or source edit was run.
+
+## Round 3
+
+Verdict: No finding. The changes made since Round 2 are contract-consistent and
+close the remaining hash/identity gap between the client and the engine. The
+frozen `api` module is still untouched (`git diff main -- analysis-engine/core/api`
+is empty), `CINT_API_VERSION` is 4, `Emit` and `Annotation.nodeAnchor` are
+unchanged, and the engine still publishes `nodeAnchor = null` for user
+annotations. The persisted record shape, the `source = "user"` provenance tier,
+the `core:user-annotations` contributor id, and the artifact/user-intent
+vocabulary carry over from Round 2 unchanged. Split clipping now verifies the
+stored hash against the original host span before remapping and then re-hashes
+the clipped local selection; that is internal-only (records are never written
+back or published), so a client record keeps one identity even though the same
+record is clipped per region. The Lua writer's canonicalization now matches
+Kotlin `contentHash` exactly (`\r\n` -> `\n`, strip one trailing `\n`), and the
+new Kotlin and nvim tests pin the same canonical form from both sides. I concur
+with correctness Rounds 3-4 closing; this dimension can close.
+
+### Findings
+
+None.
+
+### Concurs / Dissents
+
+- Concurs: the host-span verification restores the client contract instead of
+  changing it. A record's hash has always meant "canonical text of the persisted
+  host span"; before this change a hashed selection crossing a region boundary
+  was hashed correctly at persist time and then compared against the clipped
+  region text, so it could never resolve. Recomputing the hash only after the
+  host-span check (and only for the in-memory scoped copy) makes split and
+  non-split paths agree on identity. Hashless records keep `null` and the
+  coordinate fallback.
+- Concurs: the clipped copy never escapes the analysis path. `scopeToRegion`
+  returns `UserAnnotation` values to `UserAnnotationResolver.resolve`; no code
+  writes records back to `.cint/user-annotations.json`, so the persisted shape
+  and its hash are not silently redefined by the engine.
+- Concurs: cross-language hashing now agrees for every writer-produced shape.
+  `content_hash` (`annotations.lua:165-169`) equals `contentHash`
+  (`Hashing.kt:5-8`): both replace `\r\n` globally and remove exactly one
+  trailing `\n`. Symbol records hash `anchor.text == symbol`, which contains
+  neither sequence, so they are unaffected. A linewise range ending on an empty
+  line now stores `sha256("code")`, matching the resolver's slice that ends in
+  `\n` and is canonicalized the same way; the same check holds by construction
+  for CRLF, where Neovim joins lines with `\n` and the engine normalizes the
+  host slice's `\r\n`.
+- Concurs: the agreement is pinned on both sides without sharing an
+  implementation. `annotations_spec.lua` asserts the canonical hash and rejects
+  the old raw joined-text hash; `rangeEndingOnAnEmptyLineUsesTheWriterCanonicalHash`
+  uses an independent `MessageDigest` helper that re-implements the writer's
+  normalization rather than calling `contentHash`, so a one-sided change fails a
+  test.
+- Concurs: the `SplitAnalyzer` callback widened from four to five parameters
+  without touching the `api` surface. `analyze` passes the current file as
+  `host`, recursion re-enters `analyze` with the region file as its own host,
+  the default lambda has matching arity, and every in-repo call site (CLI,
+  `Main`, both `LiveServer` paths, `SplitUserAnnotationsTest`, and the
+  callback-less integration tests) is consistent.
+- Concurs: `HostPipeline.userContributionsFor(host, source, ...)` remains the
+  single resolver entry point; the non-split `analyze` passes
+  `userContributionsFor(source, source, tree, syntax)`, so host and source are
+  the same file there.
+- Concurs: `UserAnnotationResolver.selectionText` is additive and reuses the
+  existing `lineStarts`/`offset`/`slice` helpers, so the precheck, the clipped
+  re-hash, and `resolve`'s own range slice compute identical bytes in the
+  current code. The overloads are in `core`, not `api`; no rulepack contract
+  changes.
+- Concurs: provenance, roles, and vocabulary are unchanged from Round 2. User
+  contributions are still `Role.SOURCE_INTENT`, `rule = USER_CONTRIBUTOR_ID`,
+  `source = "user"`, merged by role/byte span, and `intents()` still unions
+  `PURE` and open user names with pack vocabulary and `UNTAGGED`.
+- Concurs: the renderer change since Round 2 is limited to the writer's hash;
+  marker, cache key, and `sign_text` precedence are untouched. The three removed
+  imports have no remaining references and are pure lint cleanup.
+- Dissents: none. The five Round 1 findings remain addressed, and I do not
+  re-open the Round 2 residuals.
+
+### Residual observations (not filed)
+
+- `scopeToRegion` hashes the clipped selection from `region.text` while
+  `UserAnnotationResolver.resolve` verifies against `source.text`. These are the
+  same string in the only production path because `SplitAnalyzer.analyzeRegions`
+  constructs `SourceFile(host.path, region.text)`, but nothing in the signature
+  or KDoc states the requirement; a future caller passing a different `source`
+  would silently drop every hashed record.
+- The two verifiers accept slightly different hash definitions in principle:
+  `scopeToRegion` requires the hash to equal the *persisted span* text, while
+  `UserAnnotationResolver.verified` also accepts the *node* text hash for symbol
+  records. The writer always stores the symbol text over the symbol span, so
+  they agree for every client-produced record; a hand-authored record with a
+  declaration-text hash and a symbol-only span would resolve non-split and be
+  dropped in a split file.
+- `selectionText` introduces a public identity primitive while `resolve` keeps
+  a parallel inline slice over the same private helpers. They cannot drift
+  today, but there is no contract note that they must stay byte-identical.
+- The record contract (`path`, span, `symbol`, `contentHash` and its
+  canonicalization, `intents`, `note`, `createdAt`) and the `source = "user"`
+  tier are specified in code, KDoc, and tests only; `docs/architecture.md` §6
+  still lists the removed `evidence` field and no user tier, and no schema
+  version is checked by either reader. This predates the ticket's recent work
+  and remains a documentation gap rather than a wire inconsistency.
+- The nvim and Kotlin tests now pin the same canonical form independently, but
+  still not by a single artifact written in Lua and fed through
+  `UserAnnotationsJson` to the resolver; the CRLF branch is covered by
+  inspection only, as correctness Round 4 also noted.
+- Round 2's residuals remain as recorded: `intents()` over-declares user names
+  from unmatched or stale records (it cannot omit a published span name),
+  `UNTAGGED` survives in the parsed record and the client list but is filtered
+  before publication, `PURE` is indistinguishable from a detection intent in
+  `intents`/provenance, nodeAnchor non-participation is documented only in KDoc
+  and tests, and the `_live_tags` injection path still bypasses the wire-level
+  `source`/`provenance` contract.
+- The HTTP `analyze` path now builds a `HostPipeline` per request (the shared
+  `defaultPacks` was removed so the request root can scope annotations). That is
+  the intended root behavior and does not change the artifact shape, but it
+  re-runs pack discovery per request rather than at startup.
+- Static review only; no source edit, build, test, lint, or formatter command
+  was run by this role, per `docs/workflow.md`. The implementor reports
+  `just build`, `just test-engine`, `just lint`, and `just test-nvim` green, and
+  this review assumes that handover.
