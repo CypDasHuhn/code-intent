@@ -13,13 +13,13 @@ import dev.cint.core.runtime.engine.AnalysisContext
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
+import dev.cint.core.test.testConfig
 import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.JavascriptParser
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import dev.cint.treesitter.SyntaxProfiles
 import dev.cint.treesitter.TypescriptParser
-import dev.cint.treesitter.support.testConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

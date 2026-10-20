@@ -1,3 +1,7 @@
+plugins {
+    `java-test-fixtures`
+}
+
 dependencies {
     implementation(project(":api"))
     implementation("org.yaml:snakeyaml:2.4")

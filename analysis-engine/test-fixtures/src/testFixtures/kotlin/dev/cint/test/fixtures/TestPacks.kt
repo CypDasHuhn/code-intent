@@ -1,0 +1,15 @@
+package dev.cint.test.fixtures
+
+import dev.cint.api.RulePack
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
+import dev.cint.rulepacks.logging.LoggingRulePack
+import dev.cint.rulepacks.validation.ValidationRulePack
+
+fun testPacks(language: String): List<RulePack> =
+    listOf(
+        LoggingRulePack(),
+        ErrorHandlingRulePack.forLanguage(language),
+        BookkeepingRulePack(),
+        ValidationRulePack(),
+    )

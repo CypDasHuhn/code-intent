@@ -11,9 +11,9 @@ import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.facts.store.AnnotationStore
 import dev.cint.core.runtime.engine.AnalysisContext
+import dev.cint.core.test.testConfig
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
-import dev.cint.treesitter.support.testConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
