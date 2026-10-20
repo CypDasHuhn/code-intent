@@ -28,6 +28,22 @@ test-nvim:
 # Run engine and renderer tests.
 test: test-engine test-nvim
 
+# Check Kotlin formatting with ktlint.
+lint:
+    ktlint --relative '{{engine}}/**/src/**/*.kt'
+
+# Auto-format Kotlin sources with ktlint.
+lint-fix:
+    ktlint --format --relative '{{engine}}/**/src/**/*.kt'
+
+# Apply the first Kotlin LSP code action for each diagnostic across Kotlin files.
+lsp-fix root=engine max="25":
+    LSP_FIX_ROOT={{quote(root)}} LSP_FIX_MAX={{quote(max)}} nvim --headless -u NONE -c 'luafile {{quote(justfile_directory() + "/scripts/kotlin-lsp-fixall.lua")}}'
+
+# Classify Kotlin files as SUSPICIOUS or EXTREME by line count.
+size root=engine:
+    ./scripts/classify-kotlin-size.nu {{quote(root)}}
+
 # Build the CLI and live server distributions.
 install:
     cd {{engine}} && ./gradlew :cli:installDist :server:installDist
