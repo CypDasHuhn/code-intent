@@ -3,22 +3,21 @@ package dev.cint.server
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import dev.cint.core.model.SourceFile
-import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
+import dev.cint.core.host.HostConfig
+import dev.cint.core.host.HostPipeline
+import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.MapOracle
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeFact
 import dev.cint.core.oracle.TypeOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
+import dev.cint.rulepacks.BundledRulePackSelection
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -62,8 +61,12 @@ fun main(argv: Array<String>) {
         i++
     }
 
+    if (configPath != null) HostConfig.load(configPath, language)
+
+    val packs = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+
     if (socket != null) {
-        LiveServer(root, Path.of(socket), configPath, useLsp, language).run()
+        LiveServer(root, Path.of(socket), useLsp, language, packs).run()
         return
     }
 
@@ -78,7 +81,7 @@ fun main(argv: Array<String>) {
         }
         try {
             val request = exchange.requestBody.use { mapper.readValue<AnalyzeRequest>(it) }
-            respond(exchange, 200, analyze(request, useLsp, configPath, language))
+            respond(exchange, 200, analyze(request, useLsp, language, packs))
         } catch (error: Exception) {
             respond(exchange, 400, """{"error":"${error.message?.replace("\"", "'")}"}""")
         }
@@ -90,11 +93,11 @@ fun main(argv: Array<String>) {
 private fun analyze(
     request: AnalyzeRequest,
     useLsp: Boolean,
-    defaultConfig: String?,
     defaultLanguage: String,
+    packs: HostPipeline,
 ): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
-    val config = loadIntentConfig(request.config ?: defaultConfig, request.language ?: defaultLanguage)
+    val config = HostConfig.load(request.config, request.language ?: defaultLanguage)
     val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
@@ -104,8 +107,9 @@ private fun analyze(
                 source,
                 frontend,
                 root,
-                request.config ?: defaultConfig,
+                null,
                 OracleOptions(useLsp, DEFAULT_LSP_TIMEOUT_MS),
+                packs::plan,
             )
         } else {
             val tree = frontend.parse(source)
@@ -129,14 +133,20 @@ private fun analyze(
                     }
                 }
             try {
-                AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, oracle, config)
+                packs.analyze(source, tree, syntax, oracle, config)
             } finally {
                 (oracle as? AutoCloseable)?.close()
             }
         }
+    val languages =
+        if (frontend is SplitHandler) {
+            frontend.regions(source).map { it.language }.toSet().ifEmpty { setOf(config.language) }
+        } else {
+            setOf(config.language)
+        }
     return Artifact.render(
         config.language,
-        config.intents.keys.toList() + UNTAGGED_INTENT,
+        packs.intents(languages),
         listOf(FileEntry(request.path, contentHash(request.text), annotations)),
     )
 }

@@ -2,8 +2,10 @@ package dev.cint.frontend
 
 import dev.cint.api.Annotation
 import dev.cint.api.Span
+import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.engine.AnalysisEngine
+import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.frontend.SplitRegion
@@ -11,7 +13,23 @@ import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.rules.IntentBlocks
+import dev.cint.core.scheduler.ExecutionPlan
+import dev.cint.core.scheduler.RuleEngine
+import dev.cint.core.syntax.SyntaxModel
+import dev.cint.core.syntax.SyntaxTree
 import java.nio.file.Path
+
+private typealias RegionAnalysis =
+    (
+        SourceFile,
+        LanguageFrontend,
+        SyntaxTree,
+        SyntaxModel,
+        TypeOracle,
+        IntentConfig,
+    ) -> List<Annotation>
+
+private typealias SplitRecursion = (SourceFile, SplitHandler) -> List<Annotation>
 
 object SplitAnalyzer {
     fun analyze(
@@ -20,6 +38,47 @@ object SplitAnalyzer {
         root: Path,
         configPath: String?,
         options: OracleOptions,
+    ): List<Annotation> =
+        analyzeRegions(
+            host,
+            handler,
+            root,
+            configPath,
+            options,
+            leaf = { file, frontend, tree, syntax, oracle, config ->
+                AnalysisEngine(IntentBlocks.build(config)).analyze(file, tree, syntax, oracle, config)
+            },
+            recurse = { file, frontend -> analyze(file, frontend, root, configPath, options) },
+        )
+
+    fun analyze(
+        host: SourceFile,
+        handler: SplitHandler,
+        root: Path,
+        configPath: String?,
+        options: OracleOptions,
+        planFor: (String) -> ExecutionPlan,
+    ): List<Annotation> =
+        analyzeRegions(
+            host,
+            handler,
+            root,
+            configPath,
+            options,
+            leaf = { file, frontend, tree, syntax, oracle, config ->
+                RuleEngine().analyze(planFor(frontend.language), file, tree, syntax, oracle, config)
+            },
+            recurse = { file, frontend -> analyze(file, frontend, root, configPath, options, planFor) },
+        )
+
+    private fun analyzeRegions(
+        host: SourceFile,
+        handler: SplitHandler,
+        root: Path,
+        configPath: String?,
+        options: OracleOptions,
+        leaf: RegionAnalysis,
+        recurse: SplitRecursion,
     ): List<Annotation> {
         val result = mutableListOf<Annotation>()
         for (region in handler.regions(host)) {
@@ -28,7 +87,7 @@ object SplitAnalyzer {
             val file = SourceFile(host.path, region.text)
             val annotations =
                 if (frontend is SplitHandler) {
-                    analyze(file, frontend, root, configPath, options)
+                    recurse(file, frontend)
                 } else {
                     val tree = frontend.parse(file)
                     val syntax = frontend.syntax(tree)
@@ -39,7 +98,7 @@ object SplitAnalyzer {
                             NullOracle
                         }
                     try {
-                        AnalysisEngine(IntentBlocks.build(config)).analyze(file, tree, syntax, oracle, config)
+                        leaf(file, frontend, tree, syntax, oracle, config)
                     } finally {
                         (oracle as? AutoCloseable)?.close()
                     }

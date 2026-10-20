@@ -7,14 +7,13 @@ import dev.cint.api.Annotation
 import dev.cint.core.model.SourceFile
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
+import dev.cint.core.host.HostPipeline
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import java.io.BufferedReader
@@ -43,9 +42,9 @@ private const val LIVE_LSP_TIMEOUT_MS = 750L
 class LiveServer(
     private val root: Path,
     private val socketPath: Path,
-    private val configPath: String?,
     private val useLsp: Boolean,
     private val defaultLanguage: String,
+    private val packs: HostPipeline,
 ) {
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val configs = ConcurrentHashMap<String, IntentConfig>()
@@ -206,7 +205,7 @@ class LiveServer(
 
     private fun configFor(language: String): IntentConfig =
         configs.computeIfAbsent(language) {
-            loadIntentConfig(configPath, it)
+            loadIntentConfig(null, it)
         }
 
     private fun oracleFor(frontend: LanguageFrontend): TypeOracle {
@@ -231,13 +230,14 @@ class LiveServer(
                 source,
                 frontend,
                 root,
-                configPath,
+                null,
                 OracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS),
+                packs::plan,
             )
         }
         val tree = frontend.parse(source)
         val syntax = frontend.syntax(tree)
-        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, oracleFor(frontend), config)
+        return packs.analyze(source, tree, syntax, oracleFor(frontend), config)
     }
 
     private fun analyzeHeuristic(
@@ -250,13 +250,14 @@ class LiveServer(
                 source,
                 frontend,
                 root,
-                configPath,
+                null,
                 OracleOptions(false, LIVE_LSP_TIMEOUT_MS),
+                packs::plan,
             )
         }
         val tree = frontend.parse(source)
         val syntax = frontend.syntax(tree)
-        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, NullOracle, config)
+        return packs.analyze(source, tree, syntax, NullOracle, config)
     }
 
     private fun respond(
