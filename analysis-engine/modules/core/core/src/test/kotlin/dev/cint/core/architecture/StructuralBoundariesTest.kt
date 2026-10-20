@@ -28,6 +28,22 @@ class StructuralBoundariesTest {
     }
 
     @Test
+    fun modulesUseGroupedProjectDirectories() {
+        val roots = moduleRoots()
+        assertEquals(includedModules().toSet(), roots.keys, "settings must wire a projectDir for every included module")
+
+        val engine = engineRoot()
+        for ((module, root) in roots) {
+            val segments = engine.relativize(root).map { it.toString() }
+            assertEquals(3, segments.size, "module '$module' must live under modules/<group>/$module: $root")
+            assertEquals("modules", segments[0], "module '$module' must live under modules/: $root")
+            assertTrue(segments[1].isNotBlank(), "module '$module' must have a group directory: $root")
+            assertEquals(module, segments[2], "module directory must match project name '$module': $root")
+            assertTrue(root.resolve("src").isDirectory(), "module root missing src/: $root")
+        }
+    }
+
+    @Test
     fun testModulesDoNotDependOnHigherLevelModules() {
         assertEquals(emptySet(), testProjectDependencies("frontend") intersect setOf(":host", ":rulepacks"))
         assertEquals(emptySet(), testProjectDependencies("rulepacks") intersect setOf(":host"))
@@ -179,9 +195,23 @@ class StructuralBoundariesTest {
 
     private fun includedModules(): List<String> =
         settingsModulePattern
-            .findAll(moduleSourceRoot("core").parent.resolve("settings.gradle.kts").readText())
+            .findAll(settingsText())
             .map { it.groupValues[1].removePrefix(":") }
+            .distinct()
             .toList()
+
+    private fun moduleRoots(): Map<String, Path> {
+        val engine = engineRoot()
+        return projectDirPattern
+            .findAll(settingsText())
+            .associate { match ->
+                val projectName = match.groupValues[1].removePrefix(":")
+                val group = match.groupValues[2]
+                val directory = match.groupValues[3]
+                assertEquals(projectName, directory, "projectDir for '$projectName' must end in its project name")
+                projectName to engine.resolve("modules/$group/$directory")
+            }
+    }
 
     private fun buildFile(module: String): Path =
         moduleSourceRoot(module)
@@ -194,14 +224,20 @@ class StructuralBoundariesTest {
 
     private fun moduleSource(module: String): Path = moduleSourceRoot(module).resolve("src/main/kotlin")
 
-    private fun moduleSourceRoot(module: String): Path {
+    private fun moduleSourceRoot(module: String): Path =
+        moduleRoots()[module]
+            ?: error("settings.gradle.kts has no projectDir wiring for module '$module'")
+
+    private fun settingsText(): String = engineRoot().resolve("settings.gradle.kts").readText()
+
+    private fun engineRoot(): Path {
         val cwd = Path.of("").toAbsolutePath()
         return generateSequence(cwd) { it.parent }
             .mapNotNull { directory ->
-                listOf(directory.resolve(module), directory.resolve("analysis-engine/$module"))
-                    .firstOrNull { candidate -> candidate.resolve("src").isDirectory() }
+                listOf(directory, directory.resolve("analysis-engine"))
+                    .firstOrNull { candidate -> Files.isRegularFile(candidate.resolve("settings.gradle.kts")) }
             }.firstOrNull()
-            ?: error("could not locate module '$module' from $cwd")
+            ?: error("could not locate settings.gradle.kts from $cwd")
     }
 
     private data class PackageSource(
@@ -210,6 +246,8 @@ class StructuralBoundariesTest {
     )
 
     private companion object {
+        val projectDirPattern =
+            Regex("""project\("(:[^"]+)"\)\.projectDir\s*=\s*file\("modules/([^/"]+)/([^/"]+)"\)""")
         val importPattern = Regex("^\\s*import\\s+([\\w.]+?)(?:\\.\\*)?\\s*$", RegexOption.MULTILINE)
         val packagePattern = Regex("^\\s*package\\s+([\\w.]+)", RegexOption.MULTILINE)
         val projectDependencyPattern = Regex("project\\(\"(:[^\"]+)\"\\)")

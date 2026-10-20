@@ -58,7 +58,7 @@ cd analysis-engine
 ./gradlew :server:run --args="--port 8765"
 ```
 
-See [`analysis-engine/README.md`](analysis-engine/README.md) for the module
+See [`docs/engine.md`](docs/engine.md) for the module
 layout, config, rulepacks, and LSP sharing. The full documentation index is
 [`docs/README.md`](docs/README.md).
 
