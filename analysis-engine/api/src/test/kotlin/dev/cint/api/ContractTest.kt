@@ -143,6 +143,13 @@ class ContractTest {
     }
 
     @Test
+    fun viewExposesValidationSyntaxFacts() {
+        val methods = View::class.java.methods.map { it.name }.toSet()
+
+        assertTrue(methods.containsAll(setOf("isConstant", "isSideEffectFree", "statements", "isExit")))
+    }
+
+    @Test
     fun emitCannotChooseItsRoleOrRuleId() {
         val fields = Emit::class.java.declaredFields.map { it.name }
         assertFalse("role" in fields)

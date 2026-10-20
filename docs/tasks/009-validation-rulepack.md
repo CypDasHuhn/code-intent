@@ -41,3 +41,17 @@ it `reads = {BOOKKEEPING}` (architecture.md §4), replacing the current
 - The known problem (side-effect-free conditions are too broad; the gradient
   cannot be drawn with local shape heuristics) stays deferred per `intent-model.md
   §2` and `§10`.
+
+## Contract note (2026-10-20)
+
+The validation pack needs generic syntax facts that the frozen `View` did not
+expose. The following are additive `api` members, pinned by a contract test and
+gated by 011's `CINT_API_VERSION = 1` compatibility check:
+
+- `View.isConstant(node)`
+- `View.isSideEffectFree(node)`
+- `View.statements(node)`
+- `View.isExit(node)`
+
+External `View` implementations must implement these members. No removal or
+behavioral change to existing members is involved.

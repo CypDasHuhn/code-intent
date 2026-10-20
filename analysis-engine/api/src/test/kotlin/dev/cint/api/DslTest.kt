@@ -57,6 +57,14 @@ private class FakeView(
 
     override fun isAnnotatedPure(node: SyntaxNode): Boolean = false
 
+    override fun isConstant(node: SyntaxNode): Boolean = false
+
+    override fun isSideEffectFree(node: SyntaxNode): Boolean = false
+
+    override fun statements(container: SyntaxNode): List<SyntaxNode>? = null
+
+    override fun isExit(node: SyntaxNode): Boolean = false
+
     override fun annotations(intent: Intent): List<Annotation> = emptyList()
 
     override fun intentsAt(node: SyntaxNode): Set<Intent> = emptySet()
