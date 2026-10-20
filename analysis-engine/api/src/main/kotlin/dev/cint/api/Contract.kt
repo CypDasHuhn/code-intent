@@ -1,8 +1,13 @@
 package dev.cint.api
 
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class RulePackApi(val version: Int)
+
 interface RulePack {
     val id: String
     val languages: Set<String>
+    val apiVersion: Int
 
     fun rules(): List<Rule>
 }

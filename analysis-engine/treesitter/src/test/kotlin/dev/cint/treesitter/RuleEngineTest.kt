@@ -1,5 +1,6 @@
 package dev.cint.treesitter
 
+import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
@@ -38,6 +39,7 @@ private class TestPack(
     private val entries: List<Rule>,
 ) : RulePack {
     override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION
 
     override fun rules(): List<Rule> = entries
 }

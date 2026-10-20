@@ -18,9 +18,19 @@ private class TestRule(
 private class TestPack(
     override val id: String,
     override val languages: Set<String> = setOf("kotlin"),
+    override val apiVersion: Int = CINT_API_VERSION,
     private val entries: List<Rule>,
 ) : RulePack {
     override fun rules(): List<Rule> = entries
+}
+
+@RulePackApi(CINT_API_VERSION + 1)
+private class TestAnnotatedPack : RulePack {
+    override val id: String = "annotated"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION + 1
+
+    override fun rules(): List<Rule> = emptyList()
 }
 
 private fun resolve(packs: List<RulePack>): List<Relation> {
@@ -40,6 +50,17 @@ class ContractTest {
     private val bookkeeping = TestRule("demo:bookkeeping", "BOOKKEEPING")
     private val validation = TestRule("demo:validation", "VALIDATION", setOf("BOOKKEEPING"))
     private val pack = TestPack("demo", entries = listOf(bookkeeping, validation))
+
+    @Test
+    fun rulePackApiVersionMustBeDeclaredByThePack() {
+        assertFalse(RulePack::class.java.getMethod("getApiVersion").isDefault)
+        assertEquals(CINT_API_VERSION, pack.apiVersion)
+    }
+
+    @Test
+    fun rulePackApiMetadataIsReadableFromTheClass() {
+        assertEquals(CINT_API_VERSION + 1, TestAnnotatedPack::class.java.getAnnotation(RulePackApi::class.java)?.version)
+    }
 
     @Test
     fun ruleIdsAreNamespacedByPack() {
