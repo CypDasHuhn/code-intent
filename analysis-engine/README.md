@@ -14,16 +14,26 @@ C#.
 |--------|----------------|
 | `api` | frozen plugin contract: intents, rules, views, emits, annotations |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
-| `rulepacks-tests` | integration tests for bundled packs using real parsers/frontends |
-| `core` | model, config, artifact writer, oracle interface, CFG, scheduler, composition |
+| `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, composition |
+| `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
 | `frontend` | language registry wiring parser, syntax model, and oracle |
 | `cli` | batch host over a directory |
-| `server` | HTTP host for buffers and files |
+| `server` | HTTP host and per-project Unix-socket daemon |
+| `rulepacks-tests` | integration tests for bundled packs using real parsers/frontends |
+| `test-fixtures` | shared `java-test-fixtures` parser, pack, and fixture helpers |
+| `integration-tests` | composition, host, frontend-pipeline, and snapshot integration tests |
 
 `core` has no tree-sitter, LSP, or editor dependency. `frontend` is the composition
-root that binds a language id to its parser, syntax profile, and oracle.
+root that binds a language id to its parser, syntax profile, and oracle. `host`
+owns the pipeline that assembles discovered and constructed packs, applies
+project config, and is reused by every host.
+
+Rulepacks are discovered from `META-INF/services/dev.cint.api.RulePack`
+descriptors. The loader parses those descriptors explicitly, validates each
+provider's API version and ownership, and degrades per provider instead of
+aborting the whole load. The tests-only modules are not production dependencies.
 
 ## Languages
 
@@ -207,12 +217,21 @@ facts. `--no-lsp` disables the LSP oracle on the server.
       "hash": "sha256-hex",
       "spans": [
         {"role":"source-intent","intents":["LOGGING"],
-         "rule":"logging:logging","evidence":"log.info(...)","source":"lsp",
-         "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22},
+         "evidence":"log.info(...)","source":"lsp","confidence":0.95,
+         "startLine":10,"startCol":8,"endLine":10,"endCol":22,
+         "startByte":240,"endByte":278,"nodeAnchor":null,
+         "provenance":[{"rule":"logging:logging","role":"source-intent",
+           "intents":["LOGGING"],"evidence":"log.info(...)","source":"lsp",
+           "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22,
+           "startByte":240,"endByte":278}]},
         {"role":"scaffold","intents":["LOGGING","ERROR_HANDLING"],
-         "rule":"core:scaffold","evidence":"if (...) { ... }",
-         "source":"treesitter","confidence":0.9,
-         "startLine":12,"startCol":4,"endLine":18,"endCol":5}
+         "evidence":"if (...) { ... }","source":"treesitter","confidence":0.9,
+         "startLine":12,"startCol":4,"endLine":18,"endCol":5,
+         "startByte":310,"endByte":455,"nodeAnchor":null,
+         "provenance":[{"rule":"core:scaffold","role":"scaffold",
+           "intents":["LOGGING","ERROR_HANDLING"],"evidence":"if (...) { ... }",
+           "source":"treesitter","confidence":0.9,"startLine":12,"startCol":4,
+           "endLine":18,"endCol":5,"startByte":310,"endByte":455}]}
       ]
     }
   ]
@@ -221,6 +240,20 @@ facts. `--no-lsp` disables the LSP oracle on the server.
 
 Lines and columns are 0-based. `hash` covers canonical content (CRLF -> LF, one
 trailing newline removed) so consumers can reject stale artifacts.
+
+## Development
+
+```sh
+just build        # assemble every module; does not run tests
+just test-engine  # deterministic engine, host, server, and integration tests
+just test-lsp     # opt-in shared-LSP oracle test (CINT_LSP_ROOT)
+just test-nvim    # headless renderer tests
+just lint         # ktlint over Kotlin sources
+just install      # CLI and live-server distributions
+```
+
+Lint scope is Kotlin only; the Lua renderer is covered by `just test-nvim` but
+is not format-linted here.
 
 ## Testing grounds
 

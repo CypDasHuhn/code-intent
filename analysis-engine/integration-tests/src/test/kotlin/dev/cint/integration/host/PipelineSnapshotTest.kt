@@ -14,12 +14,22 @@ import dev.cint.host.HostPipeline
 import dev.cint.integration.assumeFixtureRoot
 import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.nio.file.Path
+import java.security.MessageDigest
 import kotlin.io.path.readText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private const val SNAPSHOT_COMMIT = "3f20435"
+private const val CURRENT_COMMIT = "f22b596"
+private const val CURRENT_NOTE = "post-018 current pipeline; validation intentionally widened from the pre-018 014-tree baseline"
+
+private val PRE_018_SNAPSHOT_DIGESTS =
+    mapOf(
+        "/snapshots/legacy-3f20435.json" to
+            "3ddfc74813202046074f1ee0d270e48060917f97cd6fb7b250c06df8a9442c50",
+        "/snapshots/pipeline-3f20435.json" to
+            "89ea2be21e09b40b417e6c4d014761add594fc11668e48742c072292e8de42b7",
+    )
 
 private data class SnapshotFixture(
     val path: String,
@@ -83,14 +93,17 @@ private fun annotationOrder(): Comparator<Annotation> =
 private fun renderSnapshot(
     kind: String,
     includeRule: Boolean,
+    commit: String,
+    note: String? = null,
     build: (SnapshotFixture) -> Pair<List<String>, List<Annotation>>,
 ): String {
     val root = snapshotRoot()
     return buildString {
         append("{\n")
         append("  \"provenance\": {")
-        append("\"commit\":\"$SNAPSHOT_COMMIT\",")
+        append("\"commit\":\"$commit\",")
         append("\"kind\":\"$kind\",")
+        if (note != null) append("\"note\":\"${Json.escape(note)}\",")
         append("\"fields\":[\"role\",\"intents\",\"evidence\",\"span\",\"source\",\"confidence\",\"startByte\",\"endByte\"]")
         if (includeRule) append(",\"rule\":true")
         append(",\"fixtures\":")
@@ -117,7 +130,7 @@ private fun renderSnapshot(
     }
 }
 
-class LegacyParitySnapshotTest {
+class PipelineSnapshotTest {
     private fun currentFixture(
         fixture: SnapshotFixture,
         root: Path,
@@ -151,30 +164,37 @@ class LegacyParitySnapshotTest {
         }
     }
 
-    private fun resource(path: String): String =
-        LegacyParitySnapshotTest::class.java
+    private fun resourceBytes(path: String): ByteArray =
+        PipelineSnapshotTest::class.java
             .getResourceAsStream(path)
-            ?.bufferedReader()
-            ?.use { it.readText() }
+            ?.use { it.readBytes() }
             ?: error("missing snapshot resource $path")
 
-    @Test
-    fun legacyPre014SnapshotFromCommit3f20435MatchesCurrentHostPipeline() {
-        val root = snapshotRoot()
-        val expected = resource("/snapshots/legacy-pre014.json")
-        val actual = renderSnapshot("legacy", includeRule = false) { fixture -> currentFixture(fixture, root) }
+    private fun resource(path: String): String = resourceBytes(path).toString(Charsets.UTF_8)
 
-        assertTrue(expected.contains("\"commit\":\"3f20435\""))
+    private fun sha256(bytes: ByteArray): String =
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(bytes)
+            .joinToString("") { "%02x".format(it) }
+
+    @Test
+    fun currentPipelineMatchesFrozenSnapshot() {
+        val root = snapshotRoot()
+        val expected = resource("/snapshots/pipeline-current.json")
+        val actual =
+            renderSnapshot("pipeline", includeRule = true, commit = CURRENT_COMMIT, note = CURRENT_NOTE) { fixture ->
+                currentFixture(fixture, root)
+            }
+
+        assertTrue(expected.contains("\"commit\":\"$CURRENT_COMMIT\""))
         assertEquals(expected, actual)
     }
 
     @Test
-    fun pipelinePre014SnapshotFromCommit3f20435KeepsRuleIdentity() {
-        val root = snapshotRoot()
-        val expected = resource("/snapshots/pipeline-pre014.json")
-        val actual = renderSnapshot("pipeline", includeRule = true) { fixture -> currentFixture(fixture, root) }
-
-        assertTrue(expected.contains("\"commit\":\"3f20435\""))
-        assertEquals(expected, actual)
+    fun pre018SnapshotsMatchTheirFrozenContent() {
+        for ((path, expected) in PRE_018_SNAPSHOT_DIGESTS) {
+            assertEquals(expected, sha256(resourceBytes(path)), path)
+        }
     }
 }

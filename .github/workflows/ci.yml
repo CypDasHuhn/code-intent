@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      CINT_TESTING_GROUNDS: ${{ github.workspace }}/testing-grounds
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: extractions/setup-just@v2
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install ktlint
+        run: |
+          curl --fail --silent --show-error --location \
+            https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint \
+            --output ktlint
+          chmod +x ktlint
+          sudo mv ktlint /usr/local/bin/ktlint
+
+      - name: Build
+        run: just build
+
+      - name: Test engine
+        run: just test-engine
+
+      - name: Lint
+        run: just lint
+
+      - name: Test renderer
+        run: just test-nvim

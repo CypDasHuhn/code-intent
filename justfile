@@ -11,13 +11,13 @@ list:
 
 # Build engine modules without running tests.
 build:
-    cd {{engine}} && ./gradlew :api:build :rulepacks:build :core:build :treesitter:build :lsp:build :frontend:build :cli:build :server:build :rulepacks-tests:build
+    cd {{engine}} && ./gradlew assemble
 
 # Run the deterministic engine tests (no live LSP dependency).
 test-engine:
-    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :treesitter:test :frontend:test :rulepacks-tests:test
+    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :host:test :treesitter:test :frontend:test :cli:test :server:test :rulepacks-tests:test :test-fixtures:test :integration-tests:test
 
-# Run the shared-LSP oracle test (requires kotlin-lsp).
+# Run the shared-LSP oracle test. Set CINT_LSP_ROOT to a project with a running kotlin-lsp.
 test-lsp:
     cd {{engine}} && ./gradlew :lsp:test
 
@@ -28,7 +28,7 @@ test-nvim:
 # Run engine and renderer tests.
 test: test-engine test-nvim
 
-# Check Kotlin formatting with ktlint.
+# Check Kotlin formatting with ktlint. Lua is not format-linted in this repo.
 lint:
     ktlint --relative '{{engine}}/**/src/**/*.kt'
 
@@ -61,12 +61,12 @@ server *args:
     cd {{engine}} && ./gradlew :server:run {{ if args == "" { "" } else { "--args=" + quote(args) } }}
 
 # Run the live Unix-socket server. The nvim client normally spawns this.
-live socket root *args:
-    ./{{engine}}/build/install/cint-server/bin/cint-server --socket "{{socket}}" --root "{{root}}" {{args}}
+live socket root *args: install
+    ./{{engine}}/build/install/cint-server/bin/cint-server --socket {{quote(socket)}} --root {{quote(root)}} {{args}}
 
 # Generate a tags.json artifact for a project.
-tags root *args:
-    ./{{engine}}/build/install/cint/bin/cint "{{root}}" --out "{{root}}/tags.json" {{args}}
+tags root *args: install
+    ./{{engine}}/build/install/cint/bin/cint {{quote(root)}} --out {{quote(root + "/tags.json")}} {{args}}
 
 # Remove Gradle build outputs.
 clean:

@@ -38,7 +38,7 @@ host and client cutover at the end.
 | 024 | [core structural boundaries](024-core-structural-boundaries.md) | done | — | Resource ownership, package cycles, host boundary guard. |
 | 025 | [config api and output cleanup](025-config-api-and-output-cleanup.md) | todo | 019, 024 | Dead API/config removal; one serializer and config path. |
 | 026 | [test topology and hermetic tests](026-test-topology-and-hermetic-tests.md) | done | 020 | Tests by ownership; hermetic fixtures/LSP. |
-| 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | todo | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |
+| 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | done | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |
 | 028 | [renderer structural cleanup](028-renderer-structural-cleanup.md) | done | — | Split Lua monolith; live transport tests; docs config. |
 | 029 | [rulepack registration consistency](029-rulepack-registration-consistency.md) | todo | 023 | Uniform pack identity/selection. |
 | 030 | [client-authored annotations](030-client-authored-annotations.md) | todo | — | Experimental: runtime user annotations persisted per project. |

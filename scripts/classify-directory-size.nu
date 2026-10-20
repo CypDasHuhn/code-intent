@@ -5,7 +5,7 @@ def main [root: path = "."] {
   let base = (pwd)
 
   let rows = (
-    glob **/* --no-file --no-symlink --exclude [ **/build/** **/.gradle/** **/.git/** **/.*/** ]
+    glob **/* --no-file --no-symlink --exclude [ **/build/** **/.gradle/** **/.git/** **/bin/** **/.*/** ]
     | each {|dir|
         let entries = (ls $dir)
         let files = ($entries | where type == file | length)

@@ -23,8 +23,8 @@ This note here is the last Human-written lines in this repository.
 
 | dir                                   | what                                                                                                                                                                             |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, composable rule blocks, batch CLI, and HTTP host. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# syntax profiles. |
-| `nvim-renderer/`                      | Neovim plugin that consumes tags and paints spans (background tint, gutter icon, conceal).                                                                                       |
+| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, pluggable rulepacks, core composition, batch CLI, HTTP host, and live Unix-socket daemon. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# syntax profiles. |
+| `nvim-renderer/`                      | Neovim plugin that consumes live annotations and paints spans (background tint, gutter icon, conceal).                                                                          |
 
 ## Flow
 
@@ -35,11 +35,11 @@ source / buffer
       └─ LSP ─────────► types, symbols, definitions
                 │
                 ▼
-        core rule blocks
+     rulepacks + core composition
                 │
         ┌───────┴────────┐
         ▼                ▼
-     tags.json       HTTP /analyze
+     tags.json       HTTP /analyze / live publish
         │                │
         └──────► nvim-renderer
 ```
@@ -59,7 +59,8 @@ cd analysis-engine
 ```
 
 See [`analysis-engine/README.md`](analysis-engine/README.md) for the module
-layout, config, blocks, and LSP sharing.
+layout, config, rulepacks, and LSP sharing. The full documentation index is
+[`docs/README.md`](docs/README.md).
 
 ## Tasks
 
@@ -67,7 +68,10 @@ Common workflows are wrapped in the [`justfile`](justfile):
 
 ```sh
 just --list
-just test
+just build
+just test-engine
+just test-nvim
+just lint
 just install
 just tags /path/to/project --no-lsp
 ```

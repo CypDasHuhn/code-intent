@@ -8,7 +8,7 @@ def main [root: path = "."] {
 
   let base = (pwd)
   let rows = (
-    glob **/*.kt --exclude [ **/build/** **/.gradle/** **/.git/** ]
+    glob **/*.kt --exclude [ **/build/** **/.gradle/** **/.git/** **/bin/** ]
     | each {|file|
         { file: ($file | path relative-to $base), lines: (open --raw $file | lines | length) }
       }
