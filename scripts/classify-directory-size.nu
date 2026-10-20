@@ -1,12 +1,19 @@
 #!/usr/bin/env nu
 
+def is_ignored [path: string] {
+  (^git check-ignore -q -- $path | complete).exit_code == 0
+}
+
 def main [root: path = "."] {
   cd $root
   let base = (pwd)
 
   let dirs = (
     [ "." ]
-    | append (glob **/* --no-file --no-symlink --exclude [ **/build/** **/.gradle/** **/.git/** **/bin/** **/.*/** ])
+    | append (
+        glob **/* --no-file --no-symlink --exclude [ **/build/** **/.gradle/** **/.git/** **/bin/** **/.*/** ]
+        | where {|dir| not (is_ignored $dir) }
+      )
   )
 
   let rows = (
@@ -17,7 +24,7 @@ def main [root: path = "."] {
           ls $target
           | where {|entry|
               let name = ($entry.name | path basename)
-              not (($name | str starts-with ".") or ($name in [ "build" ".gradle" "bin" ]))
+              not (($name | str starts-with ".") or ($name in [ "build" ".gradle" "bin" ]) or (is_ignored $entry.name))
             }
         )
         let files = ($entries | where type == file | length)
