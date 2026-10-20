@@ -164,7 +164,7 @@ internal class DeclarationFacts(
         for (node in tree.root.descendants()) {
             when {
                 node.kind in kinds.parameterKinds -> {
-                    add(bindingNameNode(node), callableScope(node))
+                    bindingNameNodes(node).forEach { add(it, callableScope(node)) }
                 }
 
                 node.kind in kinds.parameterListKinds -> {
@@ -176,16 +176,7 @@ internal class DeclarationFacts(
         }
         for (loop in tree.root.descendants().filter { it.kind in kinds.loopKinds }) {
             val limit = controlFlow.loopBody(loop)?.startByte ?: loop.endByte
-            val nameNode =
-                if (loop.kind in kinds.loopBindingContainerKinds) {
-                    loop.children.firstOrNull { it.startByte < limit && it.kind in kinds.identifierKinds }
-                } else {
-                    loop
-                        .descendants()
-                        .firstOrNull { it.startByte < limit && it.kind in kinds.bindingKinds }
-                        ?.let(::bindingNameNode)
-                }
-            add(nameNode, ScopeFact(loop, ScopeKind.BLOCK, loop))
+            loopBindingNames(loop, limit).forEach { add(it, ScopeFact(loop, ScopeKind.BLOCK, loop)) }
         }
         for (catch in tree.root.descendants().filter { it.kind in kinds.catchKinds }) {
             val bodyStart =
@@ -207,7 +198,47 @@ internal class DeclarationFacts(
         return result.distinctBy { it.nameNode.startByte to it.nameNode.endByte }
     }
 
-    private fun bindingNameNode(node: SyntaxNode): SyntaxNode? = node.descendants().firstOrNull { it.kind in kinds.identifierKinds }
+    private fun loopBindingNames(
+        loop: SyntaxNode,
+        limit: Int,
+    ): List<SyntaxNode> {
+        kinds.fieldNode(loop, SyntaxFields.LOOP_BINDING)?.let { return bindingNameNodes(it) }
+        return loop.children
+            .filter { it.startByte < limit }
+            .flatMap { child ->
+                when {
+                    child.kind in kinds.bindingKinds -> bindingNameNodes(child)
+                    child.kind in kinds.loopBindingContainerKinds -> bindingsWithin(child)
+                    child.kind in kinds.declarationWrapperKinds -> bindingsWithin(child)
+                    else -> emptyList()
+                }
+            }
+    }
+
+    private fun bindingsWithin(node: SyntaxNode): List<SyntaxNode> =
+        node.children.flatMap { child ->
+            when {
+                child.kind in kinds.bindingKinds -> bindingNameNodes(child)
+                child.kind in kinds.declarationWrapperKinds -> bindingsWithin(child)
+                else -> emptyList()
+            }
+        }
+
+    private fun bindingNameNodes(node: SyntaxNode): List<SyntaxNode> {
+        if (node.kind in kinds.bindingNameKinds) return listOf(node)
+        if (node.kind in kinds.patternBindingKinds) {
+            return kinds.fieldNode(node, SyntaxFields.PATTERN_BINDING)?.let(::bindingNameNodes).orEmpty()
+        }
+        if (node.kind in kinds.patternKinds) return node.children.flatMap(::bindingNameNodes)
+        kinds.fieldNode(node, SyntaxFields.VARIABLE_NAME)?.let { return bindingNameNodes(it) }
+        val nested = node.children.filter { it.kind in kinds.bindingKinds || it.kind in kinds.patternKinds }
+        if (nested.isNotEmpty()) return nested.flatMap(::bindingNameNodes)
+        val direct = node.children.filter { it.kind in kinds.bindingNameKinds }
+        if (direct.isNotEmpty()) return direct
+        return node.children
+            .filter { it.kind in kinds.variableKinds }
+            .flatMap { it.children.flatMap(::bindingNameNodes) }
+    }
 
     private fun isWithinTypeReference(
         node: SyntaxNode,
@@ -626,7 +657,10 @@ internal class ControlFlowFacts(
     fun loopCondition(node: SyntaxNode): SyntaxNode? {
         kinds.fieldNode(node, SyntaxFields.LOOP_CONDITION)?.let { return unwrapParenthesized(it) }
         return node.children.firstOrNull {
-            it.kind !in kinds.loopConditionExcludedKinds && it.kind !in kinds.loopTokenKinds
+            it.kind !in kinds.loopConditionExcludedKinds &&
+                it.kind !in kinds.loopTokenKinds &&
+                it.kind !in kinds.bindingKinds &&
+                it.kind !in kinds.loopBindingContainerKinds
         }
     }
 
