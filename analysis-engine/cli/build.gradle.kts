@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(project(":api"))
     implementation(project(":core"))
+    implementation(project(":host"))
     implementation(project(":frontend"))
     implementation(project(":rulepacks"))
 }

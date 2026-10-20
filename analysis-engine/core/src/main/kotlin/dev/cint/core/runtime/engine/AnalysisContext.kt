@@ -25,51 +25,9 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.facts.store.AnnotationStore
 import dev.cint.core.facts.view.CapabilityView
+import dev.cint.core.runtime.context.RuleContext
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
-
-interface RuleContext {
-    val file: SourceFile
-    val language: String
-    val tree: SyntaxTree
-    val syntax: SyntaxModel
-    val flow: ControlFlow
-    val oracle: TypeOracle
-
-    val calls: List<CallFact>
-    val properties: List<PropertyFact>
-    val functions: List<FunctionFact>
-    val declarations: List<DeclarationFact>
-    val writes: List<WriteFact>
-    val comments: List<CommentFact>
-    val scopes: List<ScopeFact>
-    val guards: List<GuardFact>
-    val returnSites: List<ReturnFact>
-    val ifs: List<IfFact>
-    val tries: List<TryFact>
-    val catches: List<SyntaxNode>
-    val guardConditions: List<SyntaxNode>
-    val imports: List<String>
-    val references: Map<String, List<SyntaxNode>>
-    val throws: List<SyntaxNode>
-
-    fun receiverType(call: CallFact): TypeRef?
-
-    fun commentBefore(node: SyntaxNode): CommentFact?
-
-    fun annotations(): List<Annotation>
-
-    fun covering(node: SyntaxNode): List<Annotation>
-
-    fun containingAnnotations(node: SyntaxNode): List<Annotation>
-
-    fun intentsAt(node: SyntaxNode): Set<String>
-
-    fun coverage(
-        node: SyntaxNode,
-        effect: Boolean = true,
-    ): Coverage
-}
 
 private fun spanKey(
     startByte: Int,

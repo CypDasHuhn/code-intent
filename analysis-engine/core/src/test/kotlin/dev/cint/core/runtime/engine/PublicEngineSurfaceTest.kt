@@ -1,5 +1,6 @@
 package dev.cint.core.runtime.engine
 
+import dev.cint.core.runtime.context.RuleContext
 import java.lang.reflect.Method
 import kotlin.test.Test
 import kotlin.test.assertTrue

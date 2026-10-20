@@ -1,4 +1,4 @@
-package dev.cint.core.runtime.host
+package dev.cint.host
 
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.ConfigurableRulePack

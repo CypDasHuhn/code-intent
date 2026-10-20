@@ -6,7 +6,7 @@ import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.facts.flow.Guard
 import dev.cint.core.facts.flow.ReturnSite
-import dev.cint.core.runtime.engine.RuleContext
+import dev.cint.core.runtime.context.RuleContext
 
 internal fun returnContributions(ctx: RuleContext): List<Contribution> =
     ctx.flow.returns

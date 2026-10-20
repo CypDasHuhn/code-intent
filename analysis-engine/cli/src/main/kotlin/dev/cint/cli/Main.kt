@@ -6,11 +6,11 @@ import dev.cint.core.facts.frontend.SplitHandler
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.oracle.TypeOracle
-import dev.cint.core.runtime.host.HostConfig
-import dev.cint.core.runtime.host.HostPipeline
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
+import dev.cint.host.HostConfig
+import dev.cint.host.HostPipeline
 import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.io.File
 

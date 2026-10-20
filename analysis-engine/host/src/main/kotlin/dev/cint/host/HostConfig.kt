@@ -1,9 +1,8 @@
-package dev.cint.core.runtime.host
+package dev.cint.host
 
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.config.ProjectConfigIssue
-import dev.cint.core.config.oracleOptions
 import dev.cint.core.config.parseProjectConfig
 import dev.cint.core.facts.frontend.OracleOptions
 import java.io.File
@@ -17,14 +16,14 @@ data class HostSettings(
         useLsp: Boolean = true,
         defaultTimeoutMs: Long? = null,
     ): OracleOptions {
-        val policy = project.core.oracleOptions()
+        val lsp = project.core.lsp
         val timeoutMs =
             if (lspTimeoutConfigured || defaultTimeoutMs == null) {
-                policy.timeoutMs
+                lsp.timeoutMs
             } else {
                 defaultTimeoutMs
             }
-        return OracleOptions(policy.enabled && useLsp, timeoutMs)
+        return OracleOptions(lsp.enabled && useLsp, timeoutMs)
     }
 
     fun intentConfig(language: String): IntentConfig =

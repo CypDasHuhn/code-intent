@@ -35,7 +35,7 @@ host and client cutover at the end.
 | 021 | [simplify bookkeeping pack](021-simplify-bookkeeping-pack.md) | todo | 020 | Pilot semantic-fact rewrite; target <80 lines. |
 | 022 | [simplify error and validation packs](022-simplify-error-and-validation-packs.md) | todo | 020 | Call/guard facts; remove traversal/config boilerplate. |
 | 023 | [simplify logging pack](023-simplify-logging-pack.md) | todo | 020 | Call/type/config predicates; remove call extraction. |
-| 024 | [core structural boundaries](024-core-structural-boundaries.md) | todo | — | Resource ownership, package cycles, host boundary guard. |
+| 024 | [core structural boundaries](024-core-structural-boundaries.md) | done | — | Resource ownership, package cycles, host boundary guard. |
 | 025 | [config api and output cleanup](025-config-api-and-output-cleanup.md) | todo | 019, 024 | Dead API/config removal; one serializer and config path. |
 | 026 | [test topology and hermetic tests](026-test-topology-and-hermetic-tests.md) | todo | 020 | Tests by ownership; hermetic fixtures/LSP. |
 | 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | todo | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |

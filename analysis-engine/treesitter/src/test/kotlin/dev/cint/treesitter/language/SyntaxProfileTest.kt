@@ -1,7 +1,7 @@
 package dev.cint.treesitter.language
 
 import dev.cint.core.syntax.SyntaxGroups
-import dev.cint.core.syntax.SyntaxProfiles
+import dev.cint.treesitter.SyntaxProfiles
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

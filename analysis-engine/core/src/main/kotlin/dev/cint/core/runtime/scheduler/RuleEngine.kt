@@ -92,7 +92,7 @@ class RuleEngine(
         val sources = settled.values.flatten()
         val composed =
             Composition().compose(
-                plan.terminal,
+                plan.terminal.sourceIntents,
                 file,
                 tree,
                 syntax,

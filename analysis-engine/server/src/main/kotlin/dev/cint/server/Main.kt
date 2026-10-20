@@ -13,12 +13,12 @@ import dev.cint.core.facts.oracle.MapOracle
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
-import dev.cint.core.runtime.host.HostConfig
-import dev.cint.core.runtime.host.HostPipeline
-import dev.cint.core.runtime.host.HostSettings
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
+import dev.cint.host.HostConfig
+import dev.cint.host.HostPipeline
+import dev.cint.host.HostSettings
 import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.net.InetSocketAddress
 import java.nio.file.Path
