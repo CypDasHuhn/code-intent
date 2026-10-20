@@ -39,16 +39,18 @@ class DuplicateRuleId(
 
 class ReservedIntentOwner(
     val rule: Rule,
+    val intent: Intent = UNTAGGED_INTENT,
 ) : SchedulerException(
         SchedulerError.RESERVED_INTENT_OWNER,
-        "rule '${rule.id}' owns reserved intent '$UNTAGGED_INTENT'",
+        "rule '${rule.id}' owns reserved intent '$intent'",
     )
 
 class ReservedContributorId(
     val rule: Rule,
+    val prefix: String = CoreContributors.PREFIX,
 ) : SchedulerException(
         SchedulerError.RESERVED_CONTRIBUTOR_ID,
-        "rule '${rule.id}' uses the reserved core contributor prefix '${CoreContributors.PREFIX}'",
+        "rule '${rule.id}' uses the reserved contributor prefix '$prefix'",
     )
 
 class UnknownDependency(
@@ -114,7 +116,7 @@ class RuleScheduler {
         val owners = sortedMapOf<Intent, Rule>()
         for (rule in rules) {
             if (rule.owns == UNTAGGED_INTENT) {
-                throw ReservedIntentOwner(rule)
+                throw ReservedIntentOwner(rule, rule.owns)
             }
             val existing = owners[rule.owns]
             if (existing != null) {

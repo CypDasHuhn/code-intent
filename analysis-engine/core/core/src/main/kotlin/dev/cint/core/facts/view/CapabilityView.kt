@@ -85,7 +85,8 @@ class CapabilityView(
 
     override fun writes(reference: SyntaxNode): SyntaxNode? = context.syntax.writes(reference)
 
-    override fun isAnnotatedPure(node: SyntaxNode): Boolean = context.syntax.isAnnotatedPure(node, pureAnnotations)
+    override fun isAnnotatedPure(node: SyntaxNode): Boolean =
+        context.syntax.isAnnotatedPure(node, pureAnnotations) || context.isUserPure(node)
 
     override fun isConstant(node: SyntaxNode): Boolean = context.syntax.isConstant(node)
 

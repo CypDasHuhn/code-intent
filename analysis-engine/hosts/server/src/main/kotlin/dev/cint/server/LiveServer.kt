@@ -238,6 +238,7 @@ class LiveServer(
                 root,
                 oracleOptions(),
                 packs::plan,
+                packs::userContributionsFor,
             ) { language -> settings.intentConfig(language) }
         }
         val tree = frontend.parse(source)
@@ -257,6 +258,7 @@ class LiveServer(
                 root,
                 oracleOptions(false),
                 packs::plan,
+                packs::userContributionsFor,
             ) { language -> settings.intentConfig(language) }
         }
         val tree = frontend.parse(source)

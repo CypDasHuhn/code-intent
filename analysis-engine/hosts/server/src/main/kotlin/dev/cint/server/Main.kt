@@ -17,7 +17,6 @@ import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.host.HostConfig
-import dev.cint.host.HostPipeline
 import dev.cint.host.HostRuntime
 import dev.cint.host.HostSettings
 import dev.cint.rulepacks.BundledRulePackConfigResolver
@@ -62,7 +61,7 @@ fun main(argv: Array<String>) {
 
     val settings = HostConfig.load(configPath)
 
-    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
+    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver, root)
 
     if (socket != null) {
         LiveServer(root, Path.of(socket), useLsp, language, packs, settings).run()
@@ -80,7 +79,7 @@ fun main(argv: Array<String>) {
         }
         try {
             val request = exchange.requestBody.use { mapper.readValue<AnalyzeRequest>(it) }
-            respond(exchange, 200, analyze(request, useLsp, language, settings, packs))
+            respond(exchange, 200, analyze(request, useLsp, language, settings))
         } catch (error: Exception) {
             respond(exchange, 400, """{"error":"${error.message?.replace("\"", "'")}"}""")
         }
@@ -89,24 +88,18 @@ fun main(argv: Array<String>) {
     System.err.println("cint listening on http://$host:$port")
 }
 
-private fun analyze(
+internal fun analyze(
     request: AnalyzeRequest,
     useLsp: Boolean,
     defaultLanguage: String,
     defaultSettings: HostSettings,
-    defaultPacks: HostPipeline,
 ): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
     val requestedLanguage = request.language ?: defaultLanguage
     val settings = request.config?.let { HostConfig.load(it) } ?: defaultSettings
     val config = settings.intentConfig(requestedLanguage)
     val lspOptions = settings.oracleOptions(useLsp)
-    val packs =
-        if (request.config != null) {
-            HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
-        } else {
-            defaultPacks
-        }
+    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver, root)
     val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
@@ -118,6 +111,7 @@ private fun analyze(
                 root,
                 lspOptions,
                 packs::plan,
+                packs::userContributionsFor,
             ) { language -> settings.intentConfig(language) }
         } else {
             val tree = frontend.parse(source)
