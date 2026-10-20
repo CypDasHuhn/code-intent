@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -305,6 +306,28 @@ class ContractTest {
     @Test
     fun callFactHasNoDeadReceiverTypeField() {
         assertFalse(CallFact::class.java.declaredFields.any { it.name == "receiverType" })
+    }
+
+    @Test
+    fun commentFactKeepsLegacyPositionalConstructor() {
+        val node = TestNode("comment", 0, 9, "// cint:bookkeeping")
+        val legacy = CommentFact(node, "bookkeeping")
+        val defaulted = CommentFact(node)
+        val classified = CommentFact(node, kind = CommentKind.LINE)
+
+        assertEquals("bookkeeping", legacy.magicComment)
+        assertEquals(CommentKind.OTHER, legacy.kind)
+        assertEquals("bookkeeping", defaulted.magicComment)
+        assertEquals(CommentKind.LINE, classified.kind)
+        assertEquals(listOf("node", "magicComment", "kind"), CommentFact::class.java.declaredFields.map { it.name })
+        assertNotNull(CommentFact::class.java.getDeclaredConstructor(SyntaxNode::class.java, String::class.java))
+        assertNotNull(
+            CommentFact::class.java.getDeclaredConstructor(
+                SyntaxNode::class.java,
+                String::class.java,
+                CommentKind::class.java,
+            ),
+        )
     }
 
     @Test

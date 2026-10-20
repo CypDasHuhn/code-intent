@@ -1,5 +1,6 @@
 package dev.cint.treesitter.view
 
+import dev.cint.api.CommentKind
 import dev.cint.api.DeclarationKind
 import dev.cint.api.GuardKind
 import dev.cint.api.ScopeKind
@@ -125,6 +126,15 @@ class SemanticFactsTest {
             )
         assertEquals(text.indexOf("// cint:bookkeeping"), emit.startByte)
         assertEquals(declaration.node.endByte, emit.endByte)
+    }
+
+    @Test
+    fun allCommentPathsShareSemanticKind() {
+        val declaration = view.declarations().single { it.name == "count" }
+
+        assertEquals(CommentKind.LINE, view.comments().single { it.magicComment != null }.kind)
+        assertEquals(CommentKind.LINE, view.commentBefore(declaration.node)?.kind)
+        assertTrue(declaration.precedingComments.all { it.kind == CommentKind.LINE })
     }
 
     @Test

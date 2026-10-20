@@ -59,6 +59,13 @@ class PackConfigMigrationTest {
     }
 
     @Test
+    fun errorHandlingAcceptsDetectThrowsAlias() {
+        val config = ErrorHandlingConfig.from(mapOf("detectThrows" to false), "kotlin")
+
+        assertEquals(false, config.detectThrows)
+    }
+
+    @Test
     fun bookkeepingConfigIsTypedAndStrict() {
         val config =
             BookkeepingConfig.from(

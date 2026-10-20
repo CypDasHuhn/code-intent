@@ -2,6 +2,7 @@ package dev.cint.core.syntax
 
 import dev.cint.api.CallFact
 import dev.cint.api.CommentFact
+import dev.cint.api.CommentKind
 import dev.cint.api.SyntaxNode
 import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
@@ -123,7 +124,7 @@ internal class SemanticFacts(
         tree.root
             .descendants()
             .filter { it.kind in kinds.commentKinds }
-            .map(::CommentFact)
+            .map(::commentFact)
 
     fun allWrites(tree: SyntaxTree): Sequence<WriteFact> =
         tree.root
@@ -225,3 +226,32 @@ internal class SemanticFacts(
 
     fun isIdentifier(node: SyntaxNode): Boolean = node.kind in kinds.identifierKinds
 }
+
+internal fun commentFact(node: SyntaxNode): CommentFact = CommentFact(node, kind = commentKind(node))
+
+private fun commentKind(node: SyntaxNode): CommentKind =
+    when (node.kind) {
+        "line_comment" -> {
+            CommentKind.LINE
+        }
+
+        "block_comment", "multiline_comment" -> {
+            CommentKind.BLOCK
+        }
+
+        "documentation_comment", "doc_comment" -> {
+            CommentKind.DOC
+        }
+
+        "comment" -> {
+            when {
+                node.text.trimStart().startsWith("//") -> CommentKind.LINE
+                node.text.trimStart().startsWith("/*") -> CommentKind.BLOCK
+                else -> CommentKind.OTHER
+            }
+        }
+
+        else -> {
+            CommentKind.OTHER
+        }
+    }
