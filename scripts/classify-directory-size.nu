@@ -4,14 +4,27 @@ def main [root: path = "."] {
   cd $root
   let base = (pwd)
 
+  let dirs = (
+    [ "." ]
+    | append (glob **/* --no-file --no-symlink --exclude [ **/build/** **/.gradle/** **/.git/** **/bin/** **/.*/** ])
+  )
+
   let rows = (
-    glob **/* --no-file --no-symlink --exclude [ **/build/** **/.gradle/** **/.git/** **/bin/** **/.*/** ]
+    $dirs
     | each {|dir|
-        let entries = (ls $dir)
+        let target = if $dir == "." { $base } else { $dir }
+        let entries = (
+          ls $target
+          | where {|entry|
+              let name = ($entry.name | path basename)
+              not (($name | str starts-with ".") or ($name in [ "build" ".gradle" "bin" ]))
+            }
+        )
         let files = ($entries | where type == file | length)
         let dirs = ($entries | where type == dir | length)
+        let label = if $dir == "." { "." } else { $dir | path relative-to $base }
         {
-          dir: ($dir | path relative-to $base)
+          dir: $label
           files: $files
           dirs: $dirs
           entries: ($files + $dirs)
