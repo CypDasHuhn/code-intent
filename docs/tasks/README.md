@@ -4,6 +4,7 @@ One file per unit of work. Status is owned by the orchestrator. See
 [../workflow.md](../workflow.md) for format and pipeline, and
 [../architecture.md](../architecture.md) for the target design.
 
+New work is planned in [`rulepack-support-plan.md`](../rulepack-support-plan.md).
 The queue follows architecture.md §11 (sequencing): contract → scheduler →
 detection as rulepacks → composition → config → delete the legacy path, with
 host and client cutover at the end.
@@ -28,6 +29,18 @@ host and client cutover at the end.
 | 016 | [renderer annotation contract](016-renderer-annotation-contract.md) | done | 002, 011 | Structured provenance, open intent names, reserved node anchor in the live contract. |
 | 017 | [fixpoint metadata convergence](017-fixpoint-metadata-convergence.md) | blocked | 003 | Define bounded convergence for evidence/source/confidence changes at a stable annotation identity. |
 | 018 | [return parity for non-direct-exit guards](018-return-parity-non-direct-exit.md) | done | 009, 010 | Restore ReturnBlock parity for nested/else-edge validation returns without direct then-exit guards. |
+
+| 019 | [rulepack semantic foundation](019-rulepack-semantic-foundation.md) | todo | — | Profile semantic roles, View facts, emit builders. |
+| 020 | [rulepack skeleton and config support](020-rulepack-skeleton-and-config.md) | todo | 019 | Single-intent skeleton, typed config decoding, shared test harness. |
+| 021 | [simplify bookkeeping pack](021-simplify-bookkeeping-pack.md) | todo | 020 | Pilot semantic-fact rewrite; target <80 lines. |
+| 022 | [simplify error and validation packs](022-simplify-error-and-validation-packs.md) | todo | 020 | Call/guard facts; remove traversal/config boilerplate. |
+| 023 | [simplify logging pack](023-simplify-logging-pack.md) | todo | 020 | Call/type/config predicates; remove call extraction. |
+| 024 | [core structural boundaries](024-core-structural-boundaries.md) | todo | — | Resource ownership, package cycles, host boundary guard. |
+| 025 | [config api and output cleanup](025-config-api-and-output-cleanup.md) | todo | 019, 024 | Dead API/config removal; one serializer and config path. |
+| 026 | [test topology and hermetic tests](026-test-topology-and-hermetic-tests.md) | todo | 020 | Tests by ownership; hermetic fixtures/LSP. |
+| 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | todo | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |
+| 028 | [renderer structural cleanup](028-renderer-structural-cleanup.md) | todo | — | Split Lua monolith; live transport tests; docs config. |
+| 029 | [rulepack registration consistency](029-rulepack-registration-consistency.md) | todo | 023 | Uniform pack identity/selection. |
 
 ## Resolved decisions
 
