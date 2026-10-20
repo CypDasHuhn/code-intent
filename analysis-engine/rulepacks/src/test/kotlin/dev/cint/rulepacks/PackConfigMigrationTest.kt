@@ -65,21 +65,17 @@ class PackConfigMigrationTest {
                 mapOf(
                     "annotation" to "Tracked",
                     "magicComment" to "tracked",
-                    "propertyKinds" to listOf("my_property"),
-                    "declarationWrappersByRoot" to
-                        mapOf(
-                            "program" to listOf("lexical_declaration"),
-                            "source_file" to emptyList<String>(),
-                        ),
                 ),
             )
 
         assertEquals("Tracked", config.annotation)
         assertEquals("tracked", config.magicComment)
-        assertEquals(setOf("my_property"), config.propertyKinds)
-        assertEquals(setOf("lexical_declaration"), config.declarationWrappersByRoot.getValue("program"))
-        assertEquals(emptySet(), config.declarationWrappersByRoot.getValue("source_file"))
-        assertEquals(setOf("modifiers", "attribute_list"), config.modifierKinds)
+
+        val grammarError =
+            assertFailsWith<RulePackConfigException> {
+                BookkeepingRulePack().configure(mapOf("propertyKinds" to listOf("my_property")))
+            }
+        assertTrue(grammarError.message.orEmpty().contains("bookkeeping.propertyKinds: unknown key"))
 
         val error =
             assertFailsWith<RulePackConfigException> {

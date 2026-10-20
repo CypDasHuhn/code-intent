@@ -2,14 +2,13 @@ package dev.cint.rulepacks.bookkeeping
 
 import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema
+import dev.cint.api.DeclarationKind
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Matcher
-import dev.cint.api.PropertyFact
 import dev.cint.api.SingleIntentPack
-import dev.cint.api.Span
-import dev.cint.api.SyntaxNode
 import dev.cint.api.View
+import dev.cint.api.emit
 
 const val BOOKKEEPING_INTENT: Intent = "BOOKKEEPING"
 const val BOOKKEEPING_PACK_ID: String = "bookkeeping"
@@ -18,17 +17,6 @@ const val BOOKKEEPING_RULE_ID: String = "$BOOKKEEPING_PACK_ID:bookkeeping"
 data class BookkeepingConfig(
     val annotation: String = "Bookkeeping",
     val magicComment: String = "bookkeeping",
-    val annotationKinds: Set<String> = setOf("annotation", "decorator", "attribute"),
-    val modifierKinds: Set<String> = setOf("modifiers", "attribute_list"),
-    val propertyKinds: Set<String> =
-        setOf("property_declaration", "variable_declarator", "public_field_definition", "field_definition"),
-    val declarationWrappersByRoot: Map<String, Set<String>> =
-        mapOf(
-            "source_file" to emptySet(),
-            "program" to setOf("lexical_declaration", "export_statement"),
-            "compilation_unit" to
-                setOf("variable_declaration", "local_declaration_statement", "field_declaration"),
-        ),
 ) {
     fun withOverrides(values: Map<String, Any?>): BookkeepingConfig = SCHEMA.decode(this, values, BOOKKEEPING_PACK_ID)
 
@@ -44,26 +32,6 @@ data class BookkeepingConfig(
                     "magicComment",
                     { it.magicComment },
                     { config, value -> config.copy(magicComment = value) },
-                ),
-                ConfigField.strings<BookkeepingConfig>(
-                    "annotationKinds",
-                    { it.annotationKinds },
-                    { config, value -> config.copy(annotationKinds = value) },
-                ),
-                ConfigField.strings<BookkeepingConfig>(
-                    "modifierKinds",
-                    { it.modifierKinds },
-                    { config, value -> config.copy(modifierKinds = value) },
-                ),
-                ConfigField.strings<BookkeepingConfig>(
-                    "propertyKinds",
-                    { it.propertyKinds },
-                    { config, value -> config.copy(propertyKinds = value) },
-                ),
-                ConfigField.stringSets<BookkeepingConfig>(
-                    "declarationWrappersByRoot",
-                    { it.declarationWrappersByRoot },
-                    { config, value -> config.copy(declarationWrappersByRoot = value) },
                 ),
             )
 
@@ -81,170 +49,26 @@ class BookkeepingRulePack(
         schema = BookkeepingConfig.SCHEMA,
         ruleId = BOOKKEEPING_RULE_ID,
     ) {
-    override val matchers: List<Matcher> = listOf(Matcher { view -> BookkeepingRule(config).match(view) })
+    override val matchers: List<Matcher> = listOf(Matcher { view -> bookkeeping(view, config) })
 
     override fun withConfig(config: BookkeepingConfig): SingleIntentPack<BookkeepingConfig> = BookkeepingRulePack(config)
 }
 
-private class BookkeepingRule(
-    private val config: BookkeepingConfig,
-) : Matcher {
-    private val annotationPattern = Regex("""\.${Regex.escape(config.annotation)}$""")
-    private val magicCommentPattern =
-        Regex("""cint\s*:\s*${Regex.escape(config.magicComment)}""", RegexOption.IGNORE_CASE)
-
-    override fun match(view: View): List<Emit> {
-        val references = view.references()
-        val properties = view.properties()
-        val wrapperKinds =
-            properties.firstOrNull()?.let { config.declarationWrappersByRoot[it.node.rootKind()] }.orEmpty()
-        val result = mutableListOf<Emit>()
-
-        for (declaration in properties) {
-            val name = declaration.name ?: continue
-            val nameNode = declaration.nameNode ?: continue
-            val source = declarationSource(declaration.node, wrapperKinds) ?: continue
-
-            result += declarationEmit(declaration, source)
-
-            val scope = declarationHolder(declaration.node, wrapperKinds) ?: continue
-            val seen = mutableSetOf<String>()
-            for (reference in references[name].orEmpty()) {
-                if (reference.startByte < scope.startByte || reference.endByte > scope.endByte) continue
-                if (reference.startByte == nameNode.startByte && reference.endByte == nameNode.endByte) continue
-                val write = view.writes(reference) ?: continue
-                val key = "${write.startByte}:${write.endByte}"
-                if (!seen.add(key)) continue
-                result += write.rawEmit(source.source)
-            }
+private fun bookkeeping(
+    view: View,
+    config: BookkeepingConfig,
+): List<Emit> =
+    view
+        .declarations()
+        .filter { it.kind != DeclarationKind.FUNCTION && it.name != null }
+        .flatMap { declaration ->
+            val source =
+                when {
+                    declaration.hasAnnotation(config.annotation) -> "annotation"
+                    declaration.hasMagicComment(config.magicComment) -> "comment"
+                    else -> return@flatMap emptyList()
+                }
+            val magicComment = config.magicComment.takeIf { source == "comment" }
+            listOf(declaration.emit(BOOKKEEPING_INTENT, source, magicComment = magicComment)) +
+                declaration.writes().map { it.emit(BOOKKEEPING_INTENT, source) }
         }
-
-        return result
-    }
-
-    private fun declarationEmit(
-        declaration: PropertyFact,
-        source: DeclarationSource,
-    ): Emit {
-        val start = source.startNode ?: return declaration.node.rawEmit(source.source)
-        return Emit(
-            intents = setOf(BOOKKEEPING_INTENT),
-            evidence = "${start.text} ${declaration.node.text}".take(160),
-            span = Span(start.startLine, start.startCol, declaration.node.endLine, declaration.node.endCol),
-            source = source.source,
-            confidence = 1.0,
-            startByte = start.startByte,
-            endByte = declaration.node.endByte,
-        )
-    }
-
-    private fun declarationSource(
-        declaration: SyntaxNode,
-        wrapperKinds: Set<String>,
-    ): DeclarationSource? {
-        if (hasAnnotation(declaration, wrapperKinds)) return DeclarationSource("annotation", null)
-        val comment = precedingMagicComment(declaration, wrapperKinds) ?: return null
-        return DeclarationSource("comment", comment)
-    }
-
-    private fun hasAnnotation(
-        declaration: SyntaxNode,
-        wrapperKinds: Set<String>,
-    ): Boolean {
-        var node: SyntaxNode? = declaration
-        while (node != null) {
-            val container = node.children.firstOrNull { it.kind in config.modifierKinds }
-            val annotations =
-                container?.children?.filter { it.kind in config.annotationKinds }
-                    ?: node.children.filter { it.kind in config.annotationKinds }
-            if (annotations.any { isAnnotation(it.text) }) return true
-            val ascend = node.kind in wrapperKinds || node.kind in config.propertyKinds
-            node = if (ascend) node.parent else null
-        }
-        return false
-    }
-
-    private fun isAnnotation(text: String): Boolean {
-        val normalized = normalizeAnnotation(text.trim())
-        return normalized == config.annotation || annotationPattern.containsMatchIn(normalized)
-    }
-
-    private fun precedingMagicComment(
-        declaration: SyntaxNode,
-        wrapperKinds: Set<String>,
-    ): SyntaxNode? {
-        var anchor = declaration
-        var wrapper = anchor.parent
-        while (wrapper != null && wrapper.kind in wrapperKinds) {
-            anchor = wrapper
-            wrapper = anchor.parent
-        }
-        val parent = anchor.parent ?: return null
-        return magicCommentBefore(parent, anchor)
-    }
-
-    private fun magicCommentBefore(
-        parent: SyntaxNode,
-        anchor: SyntaxNode,
-    ): SyntaxNode? {
-        val index =
-            parent.children.indexOfFirst {
-                it.startByte == anchor.startByte && it.endByte == anchor.endByte
-            }
-        if (index <= 0) return null
-        var current = index - 1
-        while (current >= 0) {
-            val sibling = parent.children[current]
-            if (!isComment(sibling)) break
-            if (magicCommentPattern.containsMatchIn(sibling.text)) return sibling
-            current--
-        }
-        return null
-    }
-
-    private fun isComment(node: SyntaxNode): Boolean = node.text.trimStart().let { it.startsWith("//") || it.startsWith("/*") }
-
-    private fun declarationHolder(
-        node: SyntaxNode,
-        wrapperKinds: Set<String>,
-    ): SyntaxNode? {
-        var anchor = node
-        var holder = node.parent
-        while (holder != null && holder.kind in wrapperKinds) {
-            anchor = holder
-            holder = anchor.parent
-        }
-        return holder
-    }
-}
-
-private data class DeclarationSource(
-    val source: String,
-    val startNode: SyntaxNode?,
-)
-
-private fun SyntaxNode.rawEmit(source: String): Emit =
-    Emit(
-        intents = setOf(BOOKKEEPING_INTENT),
-        evidence = text.replace("\n", " ").take(160),
-        span = span(),
-        source = source,
-        confidence = 1.0,
-        startByte = startByte,
-        endByte = endByte,
-    )
-
-private fun SyntaxNode.rootKind(): String {
-    var node = this
-    while (true) {
-        node = node.parent ?: return node.kind
-    }
-}
-
-private fun normalizeAnnotation(text: String): String =
-    text
-        .removePrefix("@")
-        .replace(Regex("""^(field|property|get|set|receiver|param|setparam|delegate)\s*:\s*"""), "")
-        .replace(Regex("""\s+"""), "")
-        .removePrefix("[")
-        .removeSuffix("]")
