@@ -1,5 +1,6 @@
 package dev.cint.rulepacks
 
+import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.PropertyFact
@@ -33,6 +34,7 @@ class BookkeepingRulePack(
     private val config: BookkeepingConfig = BookkeepingConfig(),
 ) : RulePack {
     override val id: String = BOOKKEEPING_PACK_ID
+    override val apiVersion: Int = CINT_API_VERSION
     override val languages: Set<String> = setOf("csharp", "javascript", "kotlin", "typescript", "vue")
 
     override fun rules(): List<Rule> = listOf(BookkeepingRule(config))

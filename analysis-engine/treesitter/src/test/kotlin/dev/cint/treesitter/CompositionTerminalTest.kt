@@ -1,6 +1,7 @@
 package dev.cint.treesitter
 
 import dev.cint.api.Annotation
+import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Role
@@ -40,6 +41,7 @@ private class ReplayPack(
     private val entries: List<Rule>,
 ) : RulePack {
     override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION
 
     override fun rules(): List<Rule> = entries
 }

@@ -1,5 +1,6 @@
 package dev.cint.rulepacks.errorhandling
 
+import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.CallFact
 import dev.cint.api.Emit
 import dev.cint.api.Intent
@@ -49,6 +50,8 @@ class ErrorHandlingRulePack(
     val language: String = language.lowercase()
 
     override val id: String = "$PACK_ID-${this.language}"
+
+    override val apiVersion: Int = CINT_API_VERSION
 
     override val languages: Set<String> = setOf(this.language)
 

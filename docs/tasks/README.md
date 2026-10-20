@@ -15,12 +15,12 @@ host and client cutover at the end.
 | 003 | [scheduler stratification and fixpoint](003-scheduler-stratification-and-fixpoint.md) | done | 001, 002 | Rule graph over intent currency, load errors, topological strata, internal fixpoint, terminal composition. |
 | 004 | [capability-scoped view](004-capability-scoped-view.md) | done | 001 | `View` over core facts + derived helpers; `reads`-gated `annotations`/`intentsAt`. |
 | 005 | [thin rule dsl](005-thin-rule-dsl.md) | done | 001, 004 | Kotlin embedded DSL over `View`; infix `eq`/`ne`/`gt`/`lt`/`and`/`or`; lambda predicates. |
-| 006 | [logging rulepack](006-logging-rulepack.md) | todo | 003, 004, 005 | One `logging` rule owning `LOGGING`, with `print`/`logger-interaction`/`logging-state` as internal matchers. |
-| 007 | [error-handling rulepack](007-error-handling-rulepack.md) | todo | 003, 004, 005 | `throw` + configured checks, receiver/qualifier gating, trailing lambdas. |
-| 008 | [bookkeeping rulepack](008-bookkeeping-rulepack.md) | todo | 003, 004, 005 | Declared-once property + write inheritance. |
+| 006 | [logging rulepack](006-logging-rulepack.md) | done | 003, 004, 005 | One `logging` rule owning `LOGGING`, with `print`/`logger-interaction`/`logging-state` as internal matchers. |
+| 007 | [error-handling rulepack](007-error-handling-rulepack.md) | done | 003, 004, 005 | `throw` + configured checks, receiver/qualifier gating, trailing lambdas. |
+| 008 | [bookkeeping rulepack](008-bookkeeping-rulepack.md) | done | 003, 004, 005 | Declared-once property + write inheritance. |
 | 009 | [validation rulepack](009-validation-rulepack.md) | todo | 003, 004, 005, 008 | Early-exit guard certificate; `reads = {BOOKKEEPING}` (stratum 1). |
-| 010 | [core composition terminal](010-core-composition-terminal.md) | todo | 003, 004 | Coverage, scaffolds, derivative use, return category as the terminal graph node. |
-| 011 | [pack loading and degradation](011-pack-loading-and-degradation.md) | todo | 003 | `ServiceLoader` loading, graceful degradation, collision/unknown-dep/cycle load errors, reload = restart. |
+| 010 | [core composition terminal](010-core-composition-terminal.md) | done | 003, 004 | Coverage, scaffolds, derivative use, return category as the terminal graph node. |
+| 011 | [pack loading and degradation](011-pack-loading-and-degradation.md) | done | 003 | `ServiceLoader` loading, graceful degradation, collision/unknown-dep/cycle load errors, reload = restart. |
 | 012 | [typed pack config](012-typed-pack-config.md) | todo | 006 | Per-pack typed `Config` + project file keyed by pack id + `core:` policy section. |
 | 013 | [config migration off intents.yaml](013-config-migration-off-intents-yaml.md) | todo | 006, 007, 012 | Move detection values and language overrides into pack config. |
 | 014 | [delete legacy config and phase](014-delete-legacy-config-and-phase.md) | todo | 010, 013 | Remove `intents.yaml`, the `Phase` enum, and `rules/Blocks.kt`. |
@@ -47,3 +47,6 @@ or internally inconsistent; architecture.md is not rewritten.
 4. **`dsl` module** — folded into `api` initially (§9). Affects 001, 005.
 5. **Cutover** — the legacy `rules/Blocks.kt`, `intents.yaml` and `Phase` are
    deleted in 014, after composition and config land, not at step 3. Affects 014.
+6. **Rulepack discovery** — `META-INF/services` resources are parsed explicitly
+   for deterministic per-entry degradation instead of `ServiceLoader` stream
+   iteration. Affects 011, 015.

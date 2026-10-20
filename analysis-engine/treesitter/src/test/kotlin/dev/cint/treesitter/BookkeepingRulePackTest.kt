@@ -321,7 +321,7 @@ class BookkeepingRulePackTest {
                 NullOracle,
                 loadIntentConfig(null, language),
                 listOf(BookkeepingRulePack()),
-            ).filter { "BOOKKEEPING" in it.intents }
+            ).filter { it.role == Role.SOURCE_INTENT && "BOOKKEEPING" in it.intents }
 
     private fun legacyBookkeeping(
         language: String,

@@ -1,6 +1,6 @@
 ---
 name: bookkeeping rulepack
-status: todo
+status: done
 depends-on: [003, 004, 005]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -31,3 +31,12 @@ current `BookkeepingBlock`.
 ## Notes
 
 - The validation rule depends on this one (`reads = {BOOKKEEPING}`, `§4`).
+
+## Outcome (2026-10-20)
+
+Bundled `bookkeeping` pack owns `BOOKKEEPING` and detects annotation/comment
+declarations plus write inheritance. Declaration ascent uses kind-based wrapper
+nodes rather than a text-suffix heuristic, fixing cross-declaration leakage and
+multi-declarator loss (C#/JS/TS). Reads stay untagged and explicit declarations
+remain the only source. Parity and regression tests cover consecutive
+declarations, control bodies and multi-declarators; both reviewers concur.

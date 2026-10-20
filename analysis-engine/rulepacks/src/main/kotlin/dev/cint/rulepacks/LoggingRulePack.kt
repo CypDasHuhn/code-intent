@@ -1,5 +1,6 @@
 package dev.cint.rulepacks
 
+import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
@@ -107,6 +108,7 @@ class LoggingRulePack(
     private val config: LoggingConfig = LoggingConfig(),
 ) : RulePack {
     override val id: String = "logging"
+    override val apiVersion: Int = CINT_API_VERSION
     override val languages: Set<String> = config.languages.keys.toSet()
 
     override fun rules(): List<Rule> = listOf(LoggingRule(config))

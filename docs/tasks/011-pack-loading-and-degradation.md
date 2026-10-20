@@ -1,6 +1,6 @@
 ---
 name: pack loading and degradation
-status: todo
+status: done
 depends-on: [003]
 reviewers: [correctness, architecture]
 ---
@@ -37,3 +37,16 @@ graceful degradation, reload = daemon restart.
 ## Notes
 
 - `:CintServerRestart` is the transparent reload path (015, 016).
+
+## Outcome (2026-10-20)
+
+`RulePackLoader` provides validated, immutable pack snapshots with explicit
+`RulePack.apiVersion` (pre-construction annotation/method check), unique pack ids
+and `<packId>:` rule ids, and deterministic skip-all handling for scheduler
+conflicts. Discovery enumerates `META-INF/services/dev.cint.api.RulePack`
+explicitly through the configured classloader instead of `java.util.ServiceLoader`
+stream iteration; this approved deviation gives deterministic per-entry
+degradation and is recorded here. Discovery is bounded (256 resources / 4096
+lines), class-loading/linkage/raw-list failures degrade, and `:rulepacks:test`
+is part of `just test-engine`. Host wiring and per-language pack selection remain
+015. Both reviewers concur after the final rounds.

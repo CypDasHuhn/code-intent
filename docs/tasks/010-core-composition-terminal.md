@@ -1,6 +1,6 @@
 ---
 name: core composition terminal
-status: todo
+status: done
 depends-on: [003, 004]
 reviewers: [correctness, architecture]
 ---
@@ -47,3 +47,12 @@ naming no rule or pack.
 - Purity inference (`§10`).
 - Switch/when returns and Kotlin non-local returns stay as-is (`notes.md §20`);
   do not widen scope here unless explicitly approved.
+
+## Outcome (2026-10-20)
+
+Composition now runs in `core` after the strata through the scheduler terminal
+(`TerminalNode.sourceIntents`), producing only `SCAFFOLD`/`DERIVATIVE_USE`.
+Coverage, scaffolds, derivative use and stable return categorization are covered
+by parity/pack-independence tests. The `core:` contributor namespace is reserved
+and enforced by the scheduler; return identity is stable (`core:return-category`)
+independent of loaded packs. Both reviewers concur.

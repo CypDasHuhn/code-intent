@@ -1,6 +1,6 @@
 ---
 name: logging rulepack
-status: todo
+status: done
 depends-on: [003, 004, 005]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -62,3 +62,15 @@ check owned by 011:
 
 External `View` implementations must implement these members; 011's API version
 check is the compatibility gate for packs compiled against the previous surface.
+
+## Outcome (2026-10-20)
+
+Bundled `logging` pack (`LoggingRulePack.kt`) owns `LOGGING` with private
+`print`, `logger-interaction` and `logging-state` matchers and pack-local
+language defaults. `logger-interaction` uses the additive `View.typeAt` oracle
+projection; `View.language`/`guardConditions` were added additively and recorded
+in the contract note above, gated by 011's API version. Parity covers
+`testing-grounds/` under null/resolved-logger/resolved-non-logger oracles,
+including fallback, veto, factory shortcut and Vue script regions. Reviews
+concur after rounds; golden-fixture parity is the unverified manual entry m003.
+Registration/selection is deferred to 011/015.

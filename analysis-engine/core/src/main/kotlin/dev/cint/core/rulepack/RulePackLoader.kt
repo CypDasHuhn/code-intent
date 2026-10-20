@@ -10,6 +10,7 @@ import dev.cint.api.View
 import dev.cint.core.scheduler.DependencyCycle
 import dev.cint.core.scheduler.DuplicateIntentOwner
 import dev.cint.core.scheduler.DuplicateRuleId
+import dev.cint.core.scheduler.ReservedContributorId
 import dev.cint.core.scheduler.ReservedIntentOwner
 import dev.cint.core.scheduler.RuleScheduler
 import dev.cint.core.scheduler.SchedulerError
@@ -27,6 +28,7 @@ enum class RulePackLoadFailureKind {
     DUPLICATE_INTENT_OWNER,
     DUPLICATE_RULE_ID,
     RESERVED_INTENT_OWNER,
+    RESERVED_CONTRIBUTOR_ID,
     UNKNOWN_DEPENDENCY,
     DEPENDENCY_CYCLE,
 }
@@ -614,6 +616,9 @@ class RulePackLoader(
             is ReservedIntentOwner ->
                 identitySet<LoadedRulePack>().apply { owners[error.rule]?.let { add(it) } }
 
+            is ReservedContributorId ->
+                identitySet<LoadedRulePack>().apply { owners[error.rule]?.let { add(it) } }
+
             is UnknownDependency ->
                 identitySet<LoadedRulePack>().apply { owners[error.reader]?.let { add(it) } }
 
@@ -647,6 +652,7 @@ class RulePackLoader(
             SchedulerError.DUPLICATE_INTENT_OWNER -> RulePackLoadFailureKind.DUPLICATE_INTENT_OWNER
             SchedulerError.DUPLICATE_RULE_ID -> RulePackLoadFailureKind.DUPLICATE_RULE_ID
             SchedulerError.RESERVED_INTENT_OWNER -> RulePackLoadFailureKind.RESERVED_INTENT_OWNER
+            SchedulerError.RESERVED_CONTRIBUTOR_ID -> RulePackLoadFailureKind.RESERVED_CONTRIBUTOR_ID
             SchedulerError.UNKNOWN_DEPENDENCY -> RulePackLoadFailureKind.UNKNOWN_DEPENDENCY
             SchedulerError.DEPENDENCY_CYCLE -> RulePackLoadFailureKind.DEPENDENCY_CYCLE
         }
