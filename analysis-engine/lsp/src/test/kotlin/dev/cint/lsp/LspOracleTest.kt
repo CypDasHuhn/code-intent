@@ -22,13 +22,11 @@ class LspOracleTest {
         val connectStart = System.nanoTime()
         val oracle = KotlinLspOracle.connect(root)
         println("connectMs=${(System.nanoTime() - connectStart) / 1_000_000}")
-        try {
+        oracle.use { oracle ->
             val queryStart = System.nanoTime()
             val type = oracle.typeAt(SourceFile(relative, text), offset)
             println("queryMs=${(System.nanoTime() - queryStart) / 1_000_000} type=$type")
             assertNotNull(type)
-        } finally {
-            oracle.close()
         }
         println("totalMs=${(System.nanoTime() - totalStart) / 1_000_000}")
     }

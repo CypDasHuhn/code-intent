@@ -115,11 +115,11 @@ private class ValidationRule(
 
     override fun run(view: View): List<Emit> {
         val result = mutableListOf<Emit>()
-        for (guard in view.ifs()) {
-            val condition = guard.condition ?: continue
-            val body = guard.thenBody ?: continue
+        for ((node, condition1, thenBody) in view.ifs()) {
+            val condition = condition1 ?: continue
+            val body = thenBody ?: continue
 
-            val explicit = hasValidationComment(view, guard.node)
+            val explicit = hasValidationComment(view, node)
             val bookkeeping = hasBookkeeping(view, body)
             val predicate = isValidationPredicate(view, condition)
             val pure = view.isSideEffectFree(condition)

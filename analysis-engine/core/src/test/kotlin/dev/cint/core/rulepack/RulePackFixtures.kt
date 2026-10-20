@@ -1,14 +1,6 @@
 package dev.cint.core.rulepack
 
-import dev.cint.api.CINT_API_VERSION
-import dev.cint.api.ConfigurableRulePack
-import dev.cint.api.Emit
-import dev.cint.api.Intent
-import dev.cint.api.Rule
-import dev.cint.api.RulePack
-import dev.cint.api.RulePackApi
-import dev.cint.api.RulePackConfigException
-import dev.cint.api.View
+import dev.cint.api.*
 
 private class FixtureRule(
     override val id: String,
@@ -288,7 +280,7 @@ class FixtureConfigurablePack(
     override fun configure(values: Map<String, Any?>): RulePack {
         val unknown = values.keys - "calls"
         if (unknown.isNotEmpty()) {
-            throw RulePackConfigException("fixture-configurable.${unknown.sorted().first()}: unknown key")
+            throw RulePackConfigException("fixture-configurable.${unknown.minOf { it }}: unknown key")
         }
         val configured =
             when (val raw = values["calls"]) {

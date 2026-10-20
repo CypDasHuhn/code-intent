@@ -86,8 +86,7 @@ class ValidationRulePackTest {
         assertTrue(UNTAGGED_INTENT !in falseReturn.intents)
         assertTrue(UNTAGGED_INTENT !in bareReturn.intents)
 
-        for (guard in input.syntax.ifs(input.tree)) {
-            val condition = guard.condition
+        for ((node, condition) in input.syntax.ifs(input.tree)) {
             assertNotNull(condition)
             val source =
                 annotations.single {
@@ -102,10 +101,10 @@ class ValidationRulePackTest {
                 annotations.firstOrNull {
                     it.role == Role.SCAFFOLD &&
                         it.rule == CoreContributors.SCAFFOLD &&
-                        it.startByte == guard.node.startByte &&
-                        it.endByte == guard.node.endByte
+                        it.startByte == node.startByte &&
+                        it.endByte == node.endByte
                 }
-            assertNotNull(scaffold, "missing guard scaffold for ${guard.node.text}")
+            assertNotNull(scaffold, "missing guard scaffold for ${node.text}")
             assertEquals(setOf(VALIDATION_INTENT), scaffold.intents)
         }
     }

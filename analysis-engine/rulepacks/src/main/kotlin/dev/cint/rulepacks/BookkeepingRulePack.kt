@@ -170,11 +170,8 @@ private class BookkeepingRule(
         while (node != null) {
             val container = node.children.firstOrNull { it.kind in config.modifierKinds }
             val annotations =
-                if (container != null) {
-                    container.children.filter { it.kind in config.annotationKinds }
-                } else {
-                    node.children.filter { it.kind in config.annotationKinds }
-                }
+                container?.children?.filter { it.kind in config.annotationKinds }
+                    ?: node.children.filter { it.kind in config.annotationKinds }
             if (annotations.any { isAnnotation(it.text) }) return true
             val ascend = node.kind in wrapperKinds || node.kind in config.propertyKinds
             node = if (ascend) node.parent else null

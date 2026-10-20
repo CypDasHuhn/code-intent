@@ -21,7 +21,7 @@ class HostPipeline(
     private val loader: RulePackLoader = RulePackLoader(),
     private val constructedPacks: (String) -> List<RulePack> = { emptyList() },
     private val project: ProjectConfig = ProjectConfig(),
-    private val knownPackIds: Set<String> = emptySet(),
+    knownPackIds: Set<String> = emptySet(),
 ) {
     private val loaded = ProjectConfigLoader(loader).load(project, knownPackIds)
     private val discovered = RulePackLoadResult(loaded.packs, loaded.failures)
@@ -32,9 +32,11 @@ class HostPipeline(
 
     val failures: List<RulePackLoadFailure>
         get() =
-            loaded.failures +
-                extraFailures.values.flatten() +
-                snapshots.values.flatMap { it.failures }
+            buildList {
+                addAll(this@HostPipeline.loaded.failures)
+                addAll(this@HostPipeline.extraFailures.values.flatten())
+                this@HostPipeline.snapshots.values.flatMapTo(this) { it.failures }
+            }
 
     val configIssues get() = loaded.issues
 

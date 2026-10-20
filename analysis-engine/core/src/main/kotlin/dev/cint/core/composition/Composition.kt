@@ -220,12 +220,12 @@ class Composition {
         val result = mutableListOf<Contribution>()
         val references = ctx.references
 
-        for (declaration in ctx.properties) {
-            val name = declaration.name ?: continue
-            val nameNode = declaration.nameNode ?: continue
-            val initializer = declaration.initializer ?: continue
+        for ((node, name1, nameNode1, initializer1) in ctx.properties) {
+            val name = name1 ?: continue
+            val nameNode = nameNode1 ?: continue
+            val initializer = initializer1 ?: continue
 
-            val scope = ctx.syntax.enclosingFunction(declaration.node) ?: ctx.tree.root
+            val scope = ctx.syntax.enclosingFunction(node) ?: ctx.tree.root
             val uses =
                 references[name]
                     .orEmpty()
@@ -246,7 +246,7 @@ class Composition {
             if (intents.none { it != UNTAGGED_INTENT }) continue
 
             result +=
-                declaration.node.raw(
+                node.raw(
                     Role.DERIVATIVE_USE,
                     intents,
                     DERIVATIVE_RULE,
@@ -255,16 +255,16 @@ class Composition {
                 )
         }
 
-        for (declaration in ctx.functions) {
-            val nameNode = declaration.nameNode ?: continue
+        for ((node, _, nameNode1) in ctx.functions) {
+            val nameNode = nameNode1 ?: continue
             val name = nameNode.text
             if (name.isEmpty()) continue
-            if (!ctx.syntax.isAnnotatedPure(declaration.node, pureAnnotations)) continue
+            if (!ctx.syntax.isAnnotatedPure(node, pureAnnotations)) continue
 
             val functionReferences =
                 references[name].orEmpty().filter { reference ->
                     (reference.startByte != nameNode.startByte || reference.endByte != nameNode.endByte) &&
-                        reference.startByte !in declaration.node.startByte until declaration.node.endByte &&
+                        reference.startByte !in node.startByte until node.endByte &&
                         !ctx.syntax.isDeclarationName(reference)
                 }
             if (functionReferences.isEmpty()) continue
@@ -276,7 +276,7 @@ class Composition {
             if (intents.none { it != UNTAGGED_INTENT }) continue
 
             result +=
-                declaration.node.raw(
+                node.raw(
                     Role.DERIVATIVE_USE,
                     intents,
                     DERIVATIVE_RULE,
@@ -402,13 +402,12 @@ class Composition {
 
     private fun tryScaffolds(ctx: RuleContext): List<Contribution> {
         val result = mutableListOf<Contribution>()
-        for (tryFact in ctx.tries) {
-            val catches = tryFact.catches
+        for ((node, _, catches, finallyBlock, start, end) in ctx.tries) {
             if (catches.isEmpty()) continue
 
-            val tryBodyIntents = bodyIntents(ctx, tryFact.node)
+            val tryBodyIntents = bodyIntents(ctx, node)
             val catchIntents = catches.map { bodyIntents(ctx, it) }
-            val finallyIntents = tryFact.finallyBlock?.let { bodyIntents(ctx, it) } ?: emptySet()
+            val finallyIntents = finallyBlock?.let { bodyIntents(ctx, it) } ?: emptySet()
 
             val catchesCovered = catchIntents.all { it.isNotEmpty() && UNTAGGED_INTENT !in it }
             val catchesHaveRealIntent =
@@ -420,14 +419,16 @@ class Composition {
                 tryBodyIntents.isNotEmpty() &&
                     UNTAGGED_INTENT !in tryBodyIntents &&
                     catchesCovered &&
-                    (tryFact.finallyBlock == null || (finallyIntents.isNotEmpty() && UNTAGGED_INTENT !in finallyIntents))
-
-            val start = tryFact.headerStart
-            val end = tryFact.headerEnd
+                    (finallyBlock == null || (finallyIntents.isNotEmpty() && UNTAGGED_INTENT !in finallyIntents))
 
             if (wholeCovered) {
-                val intents = tryBodyIntents + catchIntents.flatten().toSet() + finallyIntents
-                result += tryFact.node.raw(Role.SCAFFOLD, intents, SCAFFOLD_RULE, "treesitter", 0.9)
+                val intents =
+                    buildSet {
+                        addAll(tryBodyIntents)
+                        addAll(catchIntents.flatten().toSet())
+                        addAll(finallyIntents)
+                    }
+                result += node.raw(Role.SCAFFOLD, intents, SCAFFOLD_RULE, "treesitter", 0.9)
             } else if (catchesCovered && catchesHaveRealIntent && start != null && end != null) {
                 val intents = catchIntents.flatten().toSet()
                 result +=

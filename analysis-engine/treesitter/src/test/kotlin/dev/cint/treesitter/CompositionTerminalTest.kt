@@ -81,19 +81,19 @@ private fun replaySource(
     val annotations =
         RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks("kotlin"))
     val emissions = linkedMapOf<String, MutableList<Emit>>()
-    for (annotation in annotations) {
-        if (annotation.role != Role.SOURCE_INTENT) continue
-        for (intent in annotation.intents) {
+    for ((role, intents, evidence, span, source1, confidence, startByte, endByte) in annotations) {
+        if (role != Role.SOURCE_INTENT) continue
+        for (intent in intents) {
             if (intent == UNTAGGED_INTENT) continue
             emissions.getOrPut(intent) { mutableListOf() } +=
                 Emit(
                     intents = setOf(intent),
-                    evidence = annotation.evidence,
-                    span = annotation.span,
-                    source = annotation.source,
-                    confidence = annotation.confidence,
-                    startByte = annotation.startByte,
-                    endByte = annotation.endByte,
+                    evidence = evidence,
+                    span = span,
+                    source = source1,
+                    confidence = confidence,
+                    startByte = startByte,
+                    endByte = endByte,
                 )
         }
     }

@@ -1,25 +1,8 @@
 package dev.cint.core.rulepack
 
-import dev.cint.api.CINT_API_VERSION
-import dev.cint.api.ConfigurableRulePack
-import dev.cint.api.Emit
-import dev.cint.api.Intent
-import dev.cint.api.Rule
-import dev.cint.api.RulePack
-import dev.cint.api.RulePackApi
-import dev.cint.api.RulePackConfigException
-import dev.cint.api.View
-import dev.cint.core.scheduler.DependencyCycle
-import dev.cint.core.scheduler.DuplicateIntentOwner
-import dev.cint.core.scheduler.DuplicateRuleId
-import dev.cint.core.scheduler.ReservedContributorId
-import dev.cint.core.scheduler.ReservedIntentOwner
-import dev.cint.core.scheduler.RuleScheduler
-import dev.cint.core.scheduler.SchedulerError
-import dev.cint.core.scheduler.SchedulerException
-import dev.cint.core.scheduler.UnknownDependency
-import java.util.Collections
-import java.util.IdentityHashMap
+import dev.cint.api.*
+import dev.cint.core.scheduler.*
+import java.util.*
 
 enum class RulePackLoadFailureKind {
     MISSING_PROVIDER,
@@ -142,7 +125,7 @@ class RulePackLoader(
                 )
                 return null
             }
-        if (id.isNullOrBlank()) {
+        if (id.isBlank()) {
             report(
                 RulePackLoadFailure(
                     RulePackLoadFailureKind.CORRUPT_PACK,
@@ -444,7 +427,7 @@ class RulePackLoader(
                 return null
             }
 
-        if (id.isNullOrBlank()) {
+        if (id.isBlank()) {
             state.unidentifiedProviderFailure = true
             report(
                 RulePackLoadFailure(
@@ -572,7 +555,7 @@ class RulePackLoader(
                 return null
             }
 
-        if (id.isNullOrBlank()) {
+        if (id.isBlank()) {
             report(
                 RulePackLoadFailure(
                     RulePackLoadFailureKind.CORRUPT_PACK,
@@ -599,7 +582,7 @@ class RulePackLoader(
                 return null
             }
 
-        if (languages.any { it.isNullOrBlank() }) {
+        if (languages.any { it.isBlank() }) {
             report(
                 RulePackLoadFailure(
                     RulePackLoadFailureKind.CORRUPT_PACK,
@@ -690,11 +673,10 @@ class RulePackLoader(
                 )
                 return null
             }
-            val rule = element
             val metadata =
                 try {
-                    val reads: Set<String>? = rule.reads
-                    RuleMetadata(rule.id, rule.owns, reads?.toSet())
+                    val reads: Set<String> = element.reads
+                    RuleMetadata(element.id, element.owns, reads?.toSet())
                 } catch (error: Throwable) {
                     if (error is VirtualMachineError) throw error
                     report(
@@ -755,7 +737,7 @@ class RulePackLoader(
                 return null
             }
 
-            if (reads.any { it.isNullOrBlank() }) {
+            if (reads.any { it.isBlank() }) {
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.CORRUPT_PACK,
@@ -766,7 +748,7 @@ class RulePackLoader(
                 return null
             }
 
-            loaded += LoadedRule(rule, ruleId, owns, reads)
+            loaded += LoadedRule(element, ruleId, owns, reads)
         }
         return loaded.toList()
     }

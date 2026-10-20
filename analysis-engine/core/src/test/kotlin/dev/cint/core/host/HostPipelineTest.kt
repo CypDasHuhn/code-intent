@@ -54,7 +54,7 @@ private class ConfigurableTestPack(
     override fun configure(values: Map<String, Any?>): RulePack {
         val unknown = values.keys - "calls"
         if (unknown.isNotEmpty()) {
-            throw RulePackConfigException("constructed-configurable.${unknown.sorted().first()}: unknown key")
+            throw RulePackConfigException("constructed-configurable.${unknown.minOf { it }}: unknown key")
         }
         val calls =
             when (val raw = values["calls"]) {

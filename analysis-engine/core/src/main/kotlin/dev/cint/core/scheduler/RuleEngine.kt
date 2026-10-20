@@ -22,13 +22,13 @@ import dev.cint.core.syntax.SyntaxTree
 class NonConvergentRule(
     val ruleId: String,
     val iterations: Long,
-    val reason: String,
+    reason: String,
 ) : IllegalStateException("rule '$ruleId' did not converge after $iterations iterations: $reason")
 
 class NonMonotoneRule(
     val ruleId: String,
     val iterations: Long,
-    val reason: String,
+    reason: String,
 ) : IllegalStateException("rule '$ruleId' is not monotone at iteration $iterations: $reason")
 
 private data class AnnotationIdentity(

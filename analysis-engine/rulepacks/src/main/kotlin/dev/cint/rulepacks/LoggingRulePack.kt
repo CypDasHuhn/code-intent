@@ -244,7 +244,11 @@ class LoggingRule(
 
     override fun run(view: View): List<Emit> {
         val language = config.forLanguage(view.language())
-        return print(view, language) + loggerInteraction(view, language) + loggingState(view, language)
+        return buildList {
+            addAll(this@LoggingRule.print(view, language))
+            addAll(this@LoggingRule.loggerInteraction(view, language))
+            addAll(this@LoggingRule.loggingState(view, language))
+        }
     }
 
     private fun print(

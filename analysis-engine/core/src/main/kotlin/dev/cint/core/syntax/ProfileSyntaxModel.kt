@@ -242,17 +242,17 @@ class ProfileSyntaxModel(
 
     override fun writes(reference: SyntaxNode): SyntaxNode? {
         val parent = reference.parent ?: return null
-        return when {
-            parent.kind in incrementKinds -> {
+        return when (parent.kind) {
+            in incrementKinds -> {
                 if (incrementOperators.any { parent.text.contains(it) }) parent else null
             }
 
-            parent.kind in assignableKinds -> {
+            in assignableKinds -> {
                 val assignment = parent.parent ?: return null
                 if (assignment.kind in assignmentKinds) assignment else null
             }
 
-            parent.kind in assignmentKinds -> {
+            in assignmentKinds -> {
                 val left = parent.childByField("left") ?: parent.children.firstOrNull()
                 if (left != null && (left.startByte == reference.startByte || reference.startByte in left.startByte until left.endByte)) {
                     parent
@@ -261,14 +261,14 @@ class ProfileSyntaxModel(
                 }
             }
 
-            parent.kind in navigationKinds -> {
+            in navigationKinds -> {
                 val operation = parent.parent ?: return null
-                when {
-                    operation.kind in incrementKinds -> {
+                when (operation.kind) {
+                    in incrementKinds -> {
                         if (incrementOperators.any { operation.text.contains(it) }) operation else null
                     }
 
-                    operation.kind in assignmentKinds -> {
+                    in assignmentKinds -> {
                         operation
                     }
 
@@ -289,11 +289,7 @@ class ProfileSyntaxModel(
         while (node != null) {
             val container = node.children.firstOrNull { it.kind in modifierKinds }
             val annotations =
-                if (container != null) {
-                    container.children.filter { it.kind in annotationKinds }
-                } else {
-                    node.children.filter { it.kind in annotationKinds }
-                }
+                container?.children?.filter { it.kind in annotationKinds } ?: node.children.filter { it.kind in annotationKinds }
             if (annotations.isNotEmpty()) return annotations.map { normalizeAnnotation(it.text) }
             val ascend = node.kind in declarationWrapperKinds || node.kind in propertyKinds
             node = if (ascend) node.parent else null

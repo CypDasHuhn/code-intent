@@ -211,18 +211,18 @@ class RulePackLoaderTest {
                 ),
             )
 
-        for (scenario in scenarios) {
-            loadWithProviders(good, *scenario.providers.toTypedArray()) { result ->
-                assertEquals(listOf("fixture-good"), result.loadedPackIds, scenario.providers.toString())
+        for ((providers, skippedPackIds, kind, error) in scenarios) {
+            loadWithProviders(good, *providers.toTypedArray()) { result ->
+                assertEquals(listOf("fixture-good"), result.loadedPackIds, providers.toString())
                 val failures =
                     result.failures.filter {
-                        it.schedulerError != null && it.schedulerError.error == scenario.error
+                        it.schedulerError != null && it.schedulerError.error == error
                     }
                 assertTrue(failures.isNotEmpty())
-                assertTrue(failures.all { it.kind == scenario.kind })
+                assertTrue(failures.all { it.kind == kind })
                 assertTrue(failures.all { it.schedulerError != null })
-                assertEquals(scenario.skippedPackIds, failures.flatMap { it.packIds }.toSet())
-                assertTrue(failures.all { scenario.skippedPackIds.all { id -> id in it.message } })
+                assertEquals(skippedPackIds, failures.flatMap { it.packIds }.toSet())
+                assertTrue(failures.all { skippedPackIds.all { id -> id in it.message } })
                 assertEquals(
                     listOf("fixture-good:logging"),
                     RuleScheduler()
@@ -422,7 +422,12 @@ class RulePackLoaderTest {
 
     @Test
     fun serviceLineLimitAllowsExactly4096Lines() {
-        val lines = listOf(good) + List(4_094) { "" } + "# boundary"
+        val lines =
+            buildList {
+                addAll(listOf(this@RulePackLoaderTest.good))
+                addAll(List(4_094) { "" })
+                add("# boundary")
+            }
 
         loadWithProviders(*lines.toTypedArray()) { result ->
             assertEquals(listOf("fixture-good"), result.loadedPackIds)
@@ -432,7 +437,12 @@ class RulePackLoaderTest {
 
     @Test
     fun serviceLineLimitRejects4097Lines() {
-        val lines = listOf(good) + List(4_095) { "" } + "# boundary"
+        val lines =
+            buildList {
+                addAll(listOf(this@RulePackLoaderTest.good))
+                addAll(List(4_095) { "" })
+                add("# boundary")
+            }
 
         loadWithProviders(*lines.toTypedArray()) { result ->
             assertEquals(listOf("fixture-good"), result.loadedPackIds)
@@ -445,7 +455,12 @@ class RulePackLoaderTest {
     @Test
     fun serviceLineLimitStopsBeforeLaterResources() {
         FixtureCountingConstructorPack.reset()
-        val firstResourceLines = listOf(good) + List(4_095) { "" } + "# boundary"
+        val firstResourceLines =
+            buildList {
+                addAll(listOf(this@RulePackLoaderTest.good))
+                addAll(List(4_095) { "" })
+                add("# boundary")
+            }
 
         loadWithProviders(
             *firstResourceLines.toTypedArray(),
