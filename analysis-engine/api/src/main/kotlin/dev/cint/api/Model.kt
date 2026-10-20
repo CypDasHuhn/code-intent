@@ -5,12 +5,11 @@ typealias Intent = String
 const val UNTAGGED_INTENT: Intent = "UNTAGGED"
 
 /**
- * Pack API v3. Removing `Emit.nodeAnchor`, the DSL/Predicate helpers, and the
- * Scheduler/Schedule types is a breaking change from v2. The loader requires
- * exact version equality, so v2 packs are rejected and must be recompiled.
- * Artifact and live annotation payloads are unchanged.
+ * Pack API v4. Removing annotation `evidence` is a breaking change from v3.
+ * The loader requires exact version equality, so v3 packs are rejected and
+ * must be recompiled.
  */
-const val CINT_API_VERSION: Int = 3
+const val CINT_API_VERSION: Int = 4
 
 enum class Role {
     SOURCE_INTENT,
@@ -38,7 +37,6 @@ data class Contribution(
     val rule: String,
     val role: Role,
     val intents: Set<Intent>,
-    val evidence: String,
     val span: Span,
     val source: String,
     val confidence: Double,
@@ -50,7 +48,6 @@ data class Contribution(
 data class Annotation(
     val role: Role,
     val intents: Set<Intent>,
-    val evidence: String,
     val span: Span,
     val source: String,
     val confidence: Double,

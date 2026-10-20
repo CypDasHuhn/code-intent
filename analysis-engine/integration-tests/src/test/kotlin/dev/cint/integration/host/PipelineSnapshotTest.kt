@@ -17,10 +17,22 @@ import java.security.MessageDigest
 import kotlin.io.path.readText
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 private const val CURRENT_COMMIT = "f22b596"
 private const val CURRENT_NOTE = "post-018 current pipeline; validation intentionally widened from the pre-018 014-tree baseline"
+
+private val EVIDENCE_FIELD = Regex("\"evidence\":(\"(?:\\\\.|[^\"\\\\])*\"),")
+private val FIELDS = Regex("\"fields\":\\[([^\\]]*)\\]")
+
+private fun stripEvidence(json: String): String =
+    json
+        .replace(EVIDENCE_FIELD, "")
+        .replace("\"intents\",\"evidence\",\"span\"", "\"intents\",\"span\"")
+
+private fun snapshotFields(json: String): String? = FIELDS.find(json)?.groupValues?.get(1)
 
 private val PRE_018_SNAPSHOT_DIGESTS =
     mapOf(
@@ -62,7 +74,6 @@ private fun annotationJson(
         append("{\"role\":\"${AnnotationJson.roleName(annotation.role)}\",")
         append("\"intents\":${intentsJson(annotation.intents)},")
         if (includeRule) append("\"rule\":\"${Json.escape(annotation.rule)}\",")
-        append("\"evidence\":\"${Json.escape(annotation.evidence)}\",")
         append("\"span\":{\"startLine\":${annotation.span.startLine},")
         append("\"startCol\":${annotation.span.startCol},")
         append("\"endLine\":${annotation.span.endLine},")
@@ -78,7 +89,6 @@ private fun annotationOrder(): Comparator<Annotation> =
         .thenBy { it.endByte }
         .thenBy { it.role.ordinal }
         .thenBy { it.intents.sorted().joinToString("\u0000") }
-        .thenBy { it.evidence }
         .thenBy { it.source }
         .thenBy { it.confidence }
 
@@ -96,7 +106,7 @@ private fun renderSnapshot(
         append("\"commit\":\"$commit\",")
         append("\"kind\":\"$kind\",")
         if (note != null) append("\"note\":\"${Json.escape(note)}\",")
-        append("\"fields\":[\"role\",\"intents\",\"evidence\",\"span\",\"source\",\"confidence\",\"startByte\",\"endByte\"]")
+        append("\"fields\":[\"role\",\"intents\",\"span\",\"source\",\"confidence\",\"startByte\",\"endByte\"]")
         if (includeRule) append(",\"rule\":true")
         append(",\"fixtures\":")
         append(snapshotFixtures.joinToString(",", "[", "]") { "\"${Json.escape(it.path)}\"" })
@@ -182,6 +192,20 @@ class PipelineSnapshotTest {
     fun pre018SnapshotsMatchTheirFrozenContent() {
         for ((path, expected) in PRE_018_SNAPSHOT_DIGESTS) {
             assertEquals(expected, sha256(resourceBytes(path)), path)
+        }
+    }
+
+    @Test
+    fun historicalSnapshotsCanBeComparedToCurrentShapeAfterStrippingEvidence() {
+        val currentFields = snapshotFields(resource("/snapshots/pipeline-current.json"))
+        assertNotNull(currentFields)
+
+        for (path in PRE_018_SNAPSHOT_DIGESTS.keys) {
+            val historical = resource(path)
+            assertTrue(historical.contains("\"evidence\""), path)
+            val normalized = stripEvidence(historical)
+            assertFalse(normalized.contains("\"evidence\""), path)
+            assertEquals(currentFields, snapshotFields(normalized), path)
         }
     }
 }

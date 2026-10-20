@@ -9,6 +9,7 @@ import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.test.testConfig
 import dev.cint.test.fixtures.testPacks
+import dev.cint.test.fixtures.text
 import dev.cint.treesitter.JavascriptParser
 import dev.cint.treesitter.SyntaxProfiles
 import dev.cint.treesitter.TypescriptParser
@@ -84,8 +85,8 @@ class WebBlockTest {
                 it.rule == "bookkeeping:bookkeeping" && it.intents == setOf("BOOKKEEPING")
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "skipped++" }
-        assertEquals("skipped++", write.evidence)
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.text(text) == "skipped++" }
+        assertEquals("skipped++", write.text(text))
     }
 
     @Test
@@ -99,7 +100,7 @@ class WebBlockTest {
             """.trimIndent()
         val derivative =
             analyze("javascript", text).first {
-                it.role == Role.DERIVATIVE_USE && it.evidence.contains("message")
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("message")
             }
         assertEquals(setOf("LOGGING"), derivative.intents)
     }
@@ -148,7 +149,7 @@ class WebBlockTest {
                 it.rule == "bookkeeping:bookkeeping" && it.intents == setOf("BOOKKEEPING")
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "this.skipped++" }
-        assertEquals("this.skipped++", write.evidence)
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.text(text) == "this.skipped++" }
+        assertEquals("this.skipped++", write.text(text))
     }
 }

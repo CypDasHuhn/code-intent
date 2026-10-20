@@ -8,6 +8,7 @@ import dev.cint.frontend.Frontends
 import dev.cint.host.HostConfig
 import dev.cint.host.HostRuntime
 import dev.cint.rulepacks.BundledRulePackConfigResolver
+import dev.cint.test.fixtures.text
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,15 +17,17 @@ import kotlin.test.assertTrue
 class HostConfigWiringTest {
     @Test
     fun loggingPackConfigDrivesHostDetection() {
+        val text =
+            """
+            fun f() {
+                audit("logged")
+                println("not configured")
+            }
+            """.trimIndent()
         val annotations =
             analyze(
                 "kotlin",
-                """
-                fun f() {
-                    audit("logged")
-                    println("not configured")
-                }
-                """.trimIndent(),
+                text,
                 """
                 logging:
                   kotlin:
@@ -34,19 +37,21 @@ class HostConfigWiringTest {
 
         val logging = annotations.filter { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
         assertEquals(1, logging.size)
-        assertTrue(logging.single().evidence.contains("audit"))
+        assertTrue(logging.single().text(text).contains("audit"))
     }
 
     @Test
     fun errorHandlingConfigUsesTheLanguagePackSection() {
+        val text =
+            """
+            fun f() {
+                fail("boom")
+            }
+            """.trimIndent()
         val annotations =
             analyze(
                 "kotlin",
-                """
-                fun f() {
-                    fail("boom")
-                }
-                """.trimIndent(),
+                text,
                 """
                 error-handling-kotlin:
                   calls: [fail]
@@ -56,7 +61,7 @@ class HostConfigWiringTest {
 
         val errorHandling = annotations.filter { it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents }
         assertEquals(1, errorHandling.size)
-        assertTrue(errorHandling.single().evidence.contains("fail"))
+        assertTrue(errorHandling.single().text(text).contains("fail"))
     }
 
     @Test
@@ -69,53 +74,61 @@ class HostConfigWiringTest {
               throws: not-a-boolean
             """.trimIndent()
 
+        val kotlinText =
+            """
+            fun f() {
+                fail("boom")
+            }
+            """.trimIndent()
         val kotlin =
             analyze(
                 "kotlin",
-                """
-                fun f() {
-                    fail("boom")
-                }
-                """.trimIndent(),
+                kotlinText,
                 config,
             )
+        val javascriptText =
+            """
+            function f(id) {
+                assert(id, "id required");
+            }
+            """.trimIndent()
         val javascript =
             analyze(
                 "javascript",
-                """
-                function f(id) {
-                    assert(id, "id required");
-                }
-                """.trimIndent(),
+                javascriptText,
                 config,
             )
 
         assertTrue(
             kotlin.any {
-                it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents && it.evidence.contains("fail")
+                it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents && it.text(kotlinText).contains("fail")
             },
         )
         assertTrue(
             javascript.any {
-                it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents && it.evidence.contains("assert")
+                it.role == Role.SOURCE_INTENT &&
+                    "ERROR_HANDLING" in it.intents &&
+                    it.text(javascriptText).contains("assert")
             },
         )
     }
 
     @Test
     fun validationPackConfigDrivesDetectionAndReturnCategorization() {
+        val text =
+            """
+            fun ready(): Boolean = true
+            fun f(): Int {
+                if (ready()) {
+                    return 1
+                }
+                return 0
+            }
+            """.trimIndent()
         val annotations =
             analyze(
                 "kotlin",
-                """
-                fun ready(): Boolean = true
-                fun f(): Int {
-                    if (ready()) {
-                        return 1
-                    }
-                    return 0
-                }
-                """.trimIndent(),
+                text,
                 """
                 validation:
                   predicates: [ready]
@@ -125,28 +138,30 @@ class HostConfigWiringTest {
 
         val validation = annotations.filter { it.role == Role.SOURCE_INTENT && "VALIDATION" in it.intents }
         assertEquals(1, validation.size)
-        assertTrue(validation.single().evidence.contains("ready()"))
+        assertTrue(validation.single().text(text).contains("ready()"))
         assertTrue(
             annotations.any {
-                it.role == Role.SCAFFOLD && "VALIDATION" in it.intents && it.evidence.contains("return 1")
+                it.role == Role.SCAFFOLD && "VALIDATION" in it.intents && it.text(text).contains("return 1")
             },
         )
     }
 
     @Test
     fun configuredValidationMagicCommentDrivesRuleAndReturnCategorization() {
+        val text =
+            """
+            fun f(): Int {
+                // cint:verify
+                if (true) {
+                    return 1
+                }
+                return 0
+            }
+            """.trimIndent()
         val annotations =
             analyze(
                 "kotlin",
-                """
-                fun f(): Int {
-                    // cint:verify
-                    if (true) {
-                        return 1
-                    }
-                    return 0
-                }
-                """.trimIndent(),
+                text,
                 """
                 validation:
                   magicComment: verify
@@ -155,10 +170,10 @@ class HostConfigWiringTest {
 
         val validation = annotations.filter { it.role == Role.SOURCE_INTENT && "VALIDATION" in it.intents }
         assertEquals(1, validation.size)
-        assertTrue(validation.single().evidence.contains("true"))
+        assertTrue(validation.single().text(text).contains("true"))
         assertTrue(
             annotations.any {
-                it.role == Role.SCAFFOLD && "VALIDATION" in it.intents && it.evidence.contains("return 1")
+                it.role == Role.SCAFFOLD && "VALIDATION" in it.intents && it.text(text).contains("return 1")
             },
         )
     }

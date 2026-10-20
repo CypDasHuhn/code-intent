@@ -15,14 +15,13 @@ class ArtifactTest {
     fun renderPublishesEveryContributorInProvenance() {
         val span = Span(1, 2, 1, 9)
         val logging =
-            Contribution("logging-state", Role.SOURCE_INTENT, setOf("LOGGING"), "loggingEnabled", span, "treesitter", 0.7, 12, 26)
+            Contribution("logging-state", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", 0.7, 12, 26)
         val validation =
-            Contribution("validation-guard", Role.SOURCE_INTENT, setOf("VALIDATION"), "loggingEnabled", span, "treesitter", 0.5, 12, 26)
+            Contribution("validation-guard", Role.SOURCE_INTENT, setOf("VALIDATION"), span, "treesitter", 0.5, 12, 26)
         val annotation =
             Annotation(
                 role = Role.SOURCE_INTENT,
                 intents = setOf("LOGGING", "VALIDATION"),
-                evidence = "loggingEnabled",
                 span = span,
                 source = "treesitter",
                 confidence = 0.7,
@@ -43,7 +42,8 @@ class ArtifactTest {
         assertTrue(json.contains("\"nodeAnchor\":\"node-1\""))
         assertTrue(json.contains("\"provenance\":[{\"rule\":\"logging-state\""))
         assertTrue(json.indexOf("\"rule\":\"validation-guard\"") > json.indexOf("\"provenance\":["))
-        assertTrue(json.contains("{\"role\":\"source-intent\",\"intents\":[\"LOGGING\",\"VALIDATION\"],\"evidence\""))
+        assertTrue(json.contains("{\"role\":\"source-intent\",\"intents\":[\"LOGGING\",\"VALIDATION\"],\"source\""))
+        assertFalse(json.contains("\"evidence\""))
         assertFalse(json.contains("\"intents\":[\"LOGGING\",\"VALIDATION\"],\"rule\""))
         assertEquals(3, Regex("\"startByte\":12").findAll(json).count())
         assertEquals(3, Regex("\"endByte\":26").findAll(json).count())

@@ -115,10 +115,9 @@ private class ConfigTestPack(
     override fun withConfig(config: TestConfig): SingleIntentPack<TestConfig> = ConfigTestPack(config)
 }
 
-private fun emit(evidence: String): Emit =
+private fun emit(label: String): Emit =
     Emit(
-        intents = setOf("TEST"),
-        evidence = evidence,
+        intents = setOf(label),
         span = Span(0, 0, 0, 0),
         source = "test",
         confidence = 1.0,
@@ -200,7 +199,7 @@ class ConfigSupportTest {
         assertEquals("test:test", rule.id)
         assertEquals("TEST", rule.owns)
         assertEquals(setOf("DEPENDENCY"), rule.reads)
-        assertEquals(listOf("import", "default"), rule.run(TestView(listOf("import"))).map { it.evidence })
+        assertEquals(listOf("import", "default"), rule.run(TestView(listOf("import"))).map { it.intents.single() })
 
         val configured = pack.configure(mapOf("name" to "configured", "flags" to listOf("audit"))) as ConfigTestPack
         assertEquals(
@@ -209,7 +208,7 @@ class ConfigSupportTest {
                 .rules()
                 .single()
                 .run(TestView())
-                .map { it.evidence },
+                .map { it.intents.single() },
         )
         assertEquals("test", configured.id)
     }
@@ -219,10 +218,10 @@ class ConfigSupportTest {
         val first = Matcher { listOf(emit("first")) }
         val second = Matcher { listOf(emit("second")) }
 
-        assertEquals(listOf("first", "second"), (first union second).match(TestView()).map { it.evidence })
+        assertEquals(listOf("first", "second"), (first union second).match(TestView()).map { it.intents.single() })
         assertEquals(
             listOf("first", "second"),
-            matcherUnion(first, second).match(TestView()).map { it.evidence },
+            matcherUnion(first, second).match(TestView()).map { it.intents.single() },
         )
     }
 
@@ -283,8 +282,8 @@ class ConfigSupportTest {
     }
 
     @Test
-    fun supportSurfaceRemainsAdditiveAtVersionThree() {
-        assertEquals(3, CINT_API_VERSION)
+    fun supportSurfaceRemainsAdditiveAtVersionFour() {
+        assertEquals(4, CINT_API_VERSION)
 
         val matcher: Matcher = Matcher { emptyList() }
         val schema: ConfigSchema<TestConfig> = testSchema

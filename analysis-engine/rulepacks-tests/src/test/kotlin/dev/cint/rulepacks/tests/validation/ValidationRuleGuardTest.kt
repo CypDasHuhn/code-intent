@@ -9,6 +9,7 @@ import dev.cint.rulepacks.tests.support.validationPipeline
 import dev.cint.rulepacks.tests.support.validationSources
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
 import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
+import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -67,7 +68,7 @@ class ValidationRuleGuardTest {
         val annotations = validationPipeline(input)
         val derivative =
             annotations.first {
-                it.role == Role.DERIVATIVE_USE && it.evidence.contains("val current")
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val current")
             }
         val guard = input.syntax.ifs(input.tree).single()
         val condition = guard.condition
@@ -130,7 +131,7 @@ class ValidationRuleGuardTest {
             }
         val returnFalse =
             annotations.first {
-                it.rule == CoreContributors.RETURN_CATEGORY && it.evidence.contains("return false")
+                it.rule == CoreContributors.RETURN_CATEGORY && it.text(text).contains("return false")
             }
 
         assertEquals(setOf(VALIDATION_INTENT), source.intents)

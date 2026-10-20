@@ -117,7 +117,6 @@ class CapabilityViewTest {
             rule = rule,
             role = role,
             intents = intents,
-            evidence = rule,
             span = node.span(),
             source = "treesitter",
             confidence = 1.0,
@@ -258,7 +257,6 @@ class CapabilityViewTest {
                 rule = "demo:bookkeeping",
                 role = Role.SOURCE_INTENT,
                 intents = setOf("BOOKKEEPING"),
-                evidence = "bookkeeping",
                 span = Span(0, 0, 0, 1),
                 source = "treesitter",
                 confidence = 1.0,
@@ -269,7 +267,6 @@ class CapabilityViewTest {
             Annotation(
                 role = Role.SOURCE_INTENT,
                 intents = setOf("BOOKKEEPING", "VALIDATION"),
-                evidence = "advertised",
                 span = Span(0, 0, 0, 1),
                 source = "treesitter",
                 confidence = 1.0,

@@ -5,6 +5,7 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.tests.support.PackInput
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parsePackInput
+import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -28,13 +29,13 @@ class BookkeepingRulePackTest {
             """.trimIndent()
 
         val annotations = bookkeeping("kotlin", parse("kotlin", "Sample.kt", text))
-        val declarations = annotations.filter { it.evidence.startsWith("@Bookkeeping") }
+        val declarations = annotations.filter { it.text(text).startsWith("@Bookkeeping") }
         val writes = annotations - declarations.toSet()
 
         assertEquals(1, declarations.size)
-        assertEquals(setOf("skipped++", "skipped += 1", "skipped = 2"), writes.map { it.evidence }.toSet())
+        assertEquals(setOf("skipped++", "skipped += 1", "skipped = 2"), writes.map { it.text(text) }.toSet())
         assertTrue(writes.all { it.intents == setOf("BOOKKEEPING") })
-        assertTrue(annotations.none { it.evidence.contains("val read") })
+        assertTrue(annotations.none { it.text(text).contains("val read") })
     }
 
     @Test
@@ -63,10 +64,10 @@ class BookkeepingRulePackTest {
 
         for (text in cases) {
             val annotations = bookkeeping("kotlin", parse("kotlin", "Sample.kt", text))
-            assertTrue(annotations.any { it.evidence.contains("var a") })
-            assertTrue(annotations.any { it.evidence == "a++" })
-            assertTrue(annotations.none { it.evidence.contains("var x") })
-            assertTrue(annotations.none { it.evidence == "x++" })
+            assertTrue(annotations.any { it.text(text).contains("var a") })
+            assertTrue(annotations.any { it.text(text) == "a++" })
+            assertTrue(annotations.none { it.text(text).contains("var x") })
+            assertTrue(annotations.none { it.text(text) == "x++" })
         }
     }
 
@@ -123,7 +124,7 @@ class BookkeepingRulePackTest {
             assertEquals(4, annotations.size, "$language multi-declarator annotations")
             assertEquals(
                 setOf("a++", "b++"),
-                annotations.mapNotNull { it.evidence.takeIf { evidence -> evidence.endsWith("++") } }.toSet(),
+                annotations.mapNotNull { it.text(text).takeIf { sourceText -> sourceText.endsWith("++") } }.toSet(),
             )
         }
     }
@@ -161,7 +162,8 @@ class BookkeepingRulePackTest {
         assertEquals(2, annotation.span.endLine)
         assertEquals(text.indexOf("// cint:bookkeeping"), annotation.startByte)
         assertEquals(text.indexOf("var rejected = 0") + "var rejected = 0".length, annotation.endByte)
-        assertTrue(annotation.evidence.startsWith("// cint:bookkeeping var rejected = 0"))
+        assertTrue(annotation.text(text).startsWith("// cint:bookkeeping"))
+        assertTrue(annotation.text(text).contains("var rejected = 0"))
     }
 
     @Test
@@ -192,8 +194,8 @@ class BookkeepingRulePackTest {
             """.trimIndent()
 
         val annotations = bookkeeping("kotlin", parse("kotlin", "Sample.kt", text))
-        assertEquals(1, annotations.count { it.evidence == "total++" })
-        assertEquals(1, annotations.count { it.evidence == "size = 0" })
+        assertEquals(1, annotations.count { it.text(text) == "total++" })
+        assertEquals(1, annotations.count { it.text(text) == "size = 0" })
     }
 
     private fun bookkeeping(

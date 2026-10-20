@@ -27,7 +27,6 @@ fun Rule.toContribution(emit: Emit): Contribution =
         rule = id,
         role = Role.SOURCE_INTENT,
         intents = emit.intents,
-        evidence = emit.evidence,
         span = emit.span,
         source = emit.source,
         confidence = emit.confidence,
@@ -108,7 +107,6 @@ interface View {
 
 data class Emit(
     val intents: Set<Intent>,
-    val evidence: String,
     val span: Span,
     val source: String,
     val confidence: Double,
@@ -124,21 +122,18 @@ data class Emit(
             node: SyntaxNode,
             source: String = DEFAULT_SOURCE,
             confidence: Double = 1.0,
-            evidence: String = node.evidence(),
             certifiesReturn: Boolean = false,
-        ): Emit = of(setOf(intent), node, source, confidence, evidence, certifiesReturn)
+        ): Emit = of(setOf(intent), node, source, confidence, certifiesReturn)
 
         fun of(
             intents: Set<Intent>,
             node: SyntaxNode,
             source: String = DEFAULT_SOURCE,
             confidence: Double = 1.0,
-            evidence: String = node.evidence(),
             certifiesReturn: Boolean = false,
         ): Emit =
             Emit(
                 intents = intents,
-                evidence = evidence,
                 span = node.span(),
                 source = source,
                 confidence = confidence,
@@ -153,11 +148,9 @@ data class Emit(
             end: SyntaxNode,
             source: String = DEFAULT_SOURCE,
             confidence: Double = 1.0,
-            evidence: String = "${start.evidence()} ${end.evidence()}".take(160),
         ): Emit =
             Emit(
                 intents = setOf(intent),
-                evidence = evidence,
                 span = Span(start.startLine, start.startCol, end.endLine, end.endCol),
                 source = source,
                 confidence = confidence,
@@ -172,13 +165,12 @@ data class Emit(
             confidence: Double = 1.0,
             includePrecedingComment: Boolean = false,
             magicComment: String? = null,
-            evidence: String = declaration.evidence(includePrecedingComment, magicComment),
         ): Emit {
             val start = declaration.commentFor(includePrecedingComment, magicComment)
             return if (start != null) {
-                range(intent, start.node, declaration.node, source, confidence, evidence)
+                range(intent, start.node, declaration.node, source, confidence)
             } else {
-                of(intent, declaration.node, source, confidence, evidence)
+                of(intent, declaration.node, source, confidence)
             }
         }
 
@@ -198,22 +190,12 @@ data class Emit(
     }
 }
 
-private fun SyntaxNode.evidence(): String = text.replace("\n", " ").take(160)
-
 private fun DeclarationFact.commentFor(
     includePrecedingComment: Boolean,
     name: String?,
 ): CommentFact? =
     name?.let { magicComment(it) }
         ?: if (includePrecedingComment) precedingComment else null
-
-private fun DeclarationFact.evidence(
-    includePrecedingComment: Boolean,
-    magicComment: String?,
-): String {
-    val comment = commentFor(includePrecedingComment, magicComment)
-    return if (comment != null) "${comment.text} ${node.text}".replace("\n", " ").take(160) else node.evidence()
-}
 
 fun DeclarationFact.emit(
     intent: Intent,

@@ -8,6 +8,7 @@ import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.test.testConfig
 import dev.cint.test.fixtures.testPacks
+import dev.cint.test.fixtures.text
 import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.SyntaxProfiles
 import kotlin.test.Test
@@ -100,8 +101,8 @@ class CsharpBlockTest {
                 it.rule == "bookkeeping:bookkeeping" && it.intents == setOf("BOOKKEEPING")
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "skipped++" }
-        assertEquals("skipped++", write.evidence)
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.text(text) == "skipped++" }
+        assertEquals("skipped++", write.text(text))
     }
 
     @Test
@@ -123,7 +124,7 @@ class CsharpBlockTest {
                 it.rule == "bookkeeping:bookkeeping" && it.source == "annotation"
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "this.skipped++" }
-        assertEquals("this.skipped++", write.evidence)
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.text(text) == "this.skipped++" }
+        assertEquals("this.skipped++", write.text(text))
     }
 }

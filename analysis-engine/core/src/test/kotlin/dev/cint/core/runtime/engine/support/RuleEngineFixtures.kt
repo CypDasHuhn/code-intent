@@ -40,7 +40,6 @@ internal fun emitAt(
 ): Emit =
     Emit(
         intents = setOf(intent),
-        evidence = "test",
         span = node.span(),
         source = "treesitter",
         confidence = 1.0,
@@ -54,7 +53,6 @@ internal fun indexedEmit(
 ): Emit =
     Emit(
         intents = setOf(intent),
-        evidence = "test",
         span = Span(index, 0, index, 1),
         source = "treesitter",
         confidence = 1.0,
@@ -65,13 +63,12 @@ internal fun indexedEmit(
 internal fun zeroLengthEmit(
     intent: Intent,
     byte: Int,
-    evidence: String = "test",
+    source: String = "treesitter",
 ): Emit =
     Emit(
         intents = setOf(intent),
-        evidence = evidence,
         span = Span(0, byte, 0, byte),
-        source = "treesitter",
+        source = source,
         confidence = 1.0,
         startByte = byte,
         endByte = byte,
@@ -83,7 +80,6 @@ internal fun emitWithIntents(
 ): Emit =
     Emit(
         intents = intents,
-        evidence = "test",
         span = Span(index, 0, index, 1),
         source = "treesitter",
         confidence = 1.0,

@@ -27,7 +27,7 @@ host and client cutover at the end.
 | 014 | [delete legacy config and phase](014-delete-legacy-config-and-phase.md) | done | 010, 013 | Remove `intents.yaml`, the `Phase` enum, and `rules/Blocks.kt`. |
 | 015 | [host cutover: cli and server](015-host-cutover-cli-and-server.md) | done | 003, 010, 011 | Batch CLI and live daemon publish from the new engine. |
 | 016 | [renderer annotation contract](016-renderer-annotation-contract.md) | done | 002, 011 | Structured provenance, open intent names, reserved node anchor in the live contract. |
-| 017 | [fixpoint metadata convergence](017-fixpoint-metadata-convergence.md) | blocked | 003 | Define bounded convergence for evidence/source/confidence changes at a stable annotation identity. |
+| 017 | [fixpoint metadata convergence](017-fixpoint-metadata-convergence.md) | blocked | 003 | Define bounded convergence for source/confidence changes at a stable annotation identity; evidence removed by 032. |
 | 018 | [return parity for non-direct-exit guards](018-return-parity-non-direct-exit.md) | done | 009, 010 | Restore ReturnBlock parity for nested/else-edge validation returns without direct then-exit guards. |
 
 | 019 | [rulepack semantic foundation](019-rulepack-semantic-foundation.md) | done | — | Profile semantic roles, View facts, emit builders. |
@@ -43,7 +43,7 @@ host and client cutover at the end.
 | 029 | [rulepack registration consistency](029-rulepack-registration-consistency.md) | done | 023 | Uniform pack identity/selection. |
 | 030 | [client-authored annotations](030-client-authored-annotations.md) | todo | — | Experimental: runtime user annotations persisted per project. |
 | 031 | [size hygiene after support refactors](031-size-hygiene-after-support.md) | done |
-| 032 | [remove evidence from annotation contract](032-remove-evidence-from-contract.md) | in-progress | 019, 025 | Drop evidence from API/provenance/output/tests; API v4. | 019, 020, 021, 026, 029 | Split new EXTREME files; reduce new overcrowded dirs. |
+| 032 | [remove evidence from annotation contract](032-remove-evidence-from-contract.md) | done | 019, 025 | Drop evidence from API/provenance/output/tests; API v4. | 019, 020, 021, 026, 029 | Split new EXTREME files; reduce new overcrowded dirs. |
 
 ## Resolved decisions
 

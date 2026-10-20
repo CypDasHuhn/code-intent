@@ -217,19 +217,19 @@ facts. `--no-lsp` disables the LSP oracle on the server.
       "hash": "sha256-hex",
       "spans": [
         {"role":"source-intent","intents":["LOGGING"],
-         "evidence":"log.info(...)","source":"lsp","confidence":0.95,
+         "source":"lsp","confidence":0.95,
          "startLine":10,"startCol":8,"endLine":10,"endCol":22,
          "startByte":240,"endByte":278,"nodeAnchor":null,
          "provenance":[{"rule":"logging:logging","role":"source-intent",
-           "intents":["LOGGING"],"evidence":"log.info(...)","source":"lsp",
+           "intents":["LOGGING"],"source":"lsp",
            "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22,
            "startByte":240,"endByte":278}]},
         {"role":"scaffold","intents":["LOGGING","ERROR_HANDLING"],
-         "evidence":"if (...) { ... }","source":"treesitter","confidence":0.9,
+         "source":"treesitter","confidence":0.9,
          "startLine":12,"startCol":4,"endLine":18,"endCol":5,
          "startByte":310,"endByte":455,"nodeAnchor":null,
          "provenance":[{"rule":"core:scaffold","role":"scaffold",
-           "intents":["LOGGING","ERROR_HANDLING"],"evidence":"if (...) { ... }",
+           "intents":["LOGGING","ERROR_HANDLING"],
            "source":"treesitter","confidence":0.9,"startLine":12,"startCol":4,
            "endLine":18,"endCol":5,"startByte":310,"endByte":455}]}
       ]

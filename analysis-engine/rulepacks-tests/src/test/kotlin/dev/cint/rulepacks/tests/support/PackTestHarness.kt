@@ -18,6 +18,7 @@ import dev.cint.test.fixtures.TestFixtures
 import dev.cint.test.fixtures.defaultFileName
 import dev.cint.test.fixtures.parseFile
 import dev.cint.test.fixtures.syntaxModel
+import dev.cint.test.fixtures.text
 import org.junit.Assume.assumeTrue
 import java.nio.file.Path
 import kotlin.test.assertEquals
@@ -44,7 +45,7 @@ internal data class PackAnalysis(
             .flatMap { it.provenance }
             .filter { intent in it.intents }
 
-    fun evidence(intent: Intent): List<String> = source(intent).map { it.evidence }
+    fun texts(intent: Intent): List<String> = source(intent).map { it.text(input.source.text) }
 
     fun spans(intent: Intent): List<Span> = source(intent).map { it.span }
 
@@ -57,16 +58,16 @@ internal data class PackAnalysis(
     }
 
     fun assertNoSource(intent: Intent): PackAnalysis {
-        assertTrue(source(intent).isEmpty(), "unexpected $intent source annotations: ${evidence(intent)}")
+        assertTrue(source(intent).isEmpty(), "unexpected $intent source annotations: ${texts(intent)}")
         return this
     }
 
-    fun assertSourceEvidence(
+    fun assertSourceText(
         intent: Intent,
         expected: String,
     ): Annotation {
-        val annotation = source(intent).firstOrNull { it.evidence == expected }
-        assertTrue(annotation != null, "missing $intent source annotation '$expected' in ${evidence(intent)}")
+        val annotation = source(intent).firstOrNull { it.text(input.source.text) == expected }
+        assertTrue(annotation != null, "missing $intent source annotation '$expected' in ${texts(intent)}")
         return annotation
     }
 

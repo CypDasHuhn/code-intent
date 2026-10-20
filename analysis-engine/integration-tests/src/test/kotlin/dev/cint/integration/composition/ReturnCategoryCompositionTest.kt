@@ -10,6 +10,7 @@ import dev.cint.integration.composition.support.ReplayPack
 import dev.cint.integration.composition.support.ReplayRule
 import dev.cint.integration.composition.support.analyzePipeline
 import dev.cint.integration.composition.support.emitFor
+import dev.cint.test.fixtures.text
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import kotlin.test.Test
@@ -37,7 +38,6 @@ class ReturnCategoryCompositionTest {
                     listOf(
                         Emit(
                             intents = setOf("VALIDATION"),
-                            evidence = "value < 0",
                             span = Span(1, 7, 1, 16),
                             source = "treesitter",
                             confidence = 1.0,
@@ -61,8 +61,8 @@ class ReturnCategoryCompositionTest {
         assertEquals(Role.SCAFFOLD, validationReturn.role)
         assertEquals(setOf("VALIDATION"), validationReturn.intents)
         assertEquals(setOf(UNTAGGED_INTENT), untaggedReturn.intents)
-        assertTrue(validationReturn.evidence.contains("return 0"))
-        assertTrue(untaggedReturn.evidence.contains("return 1"))
+        assertTrue(validationReturn.text(text).contains("return 0"))
+        assertTrue(untaggedReturn.text(text).contains("return 1"))
     }
 
     @Test
@@ -105,16 +105,16 @@ class ReturnCategoryCompositionTest {
             )
         val returns = annotations.filter { it.rule == CoreContributors.RETURN_CATEGORY }
 
-        val nullReturn = returns.first { it.evidence.contains("return null") }
-        val bareReturn = returns.first { it.evidence.trim() == "return" }
-        val finalReturn = returns.first { it.evidence.contains("return value") }
+        val nullReturn = returns.first { it.text(text).contains("return null") }
+        val bareReturn = returns.first { it.text(text).trim() == "return" }
+        val finalReturn = returns.first { it.text(text).contains("return value") }
 
         assertEquals(setOf("VALIDATION"), nullReturn.intents)
         assertEquals(setOf("VALIDATION"), bareReturn.intents)
         assertEquals(setOf(UNTAGGED_INTENT), finalReturn.intents)
         assertTrue(
             annotations.none {
-                it.rule == CoreContributors.SCAFFOLD && it.evidence.contains("fun finalValue")
+                it.rule == CoreContributors.SCAFFOLD && it.text(text).contains("fun finalValue")
             },
         )
     }
@@ -148,8 +148,8 @@ class ReturnCategoryCompositionTest {
             )
         val functions = annotations.filter { it.rule == CoreContributors.SCAFFOLD }
 
-        val bare = functions.first { it.evidence.contains("fun bare") }
-        val expression = functions.first { it.evidence.contains("fun expression") }
+        val bare = functions.first { it.text(text).contains("fun bare") }
+        val expression = functions.first { it.text(text).contains("fun expression") }
         assertEquals(setOf("ERROR_HANDLING"), bare.intents)
         assertEquals(setOf("ERROR_HANDLING"), expression.intents)
     }

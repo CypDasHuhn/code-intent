@@ -18,14 +18,13 @@ class AnnotationSerializationTest {
     fun publishesEveryContributorInProvenance() {
         val span = Span(1, 2, 1, 9)
         val logging =
-            Contribution("logging-state", Role.SOURCE_INTENT, setOf("LOGGING"), "loggingEnabled", span, "treesitter", 0.7, 12, 26)
+            Contribution("logging-state", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", 0.7, 12, 26)
         val validation =
-            Contribution("validation-guard", Role.SOURCE_INTENT, setOf("VALIDATION"), "loggingEnabled", span, "treesitter", 0.5, 12, 26)
+            Contribution("validation-guard", Role.SOURCE_INTENT, setOf("VALIDATION"), span, "treesitter", 0.5, 12, 26)
         val annotation =
             Annotation(
                 Role.SOURCE_INTENT,
                 setOf("LOGGING", "VALIDATION"),
-                "loggingEnabled",
                 span,
                 "treesitter",
                 0.7,
@@ -38,6 +37,7 @@ class AnnotationSerializationTest {
         val provenance = parsed["provenance"]
 
         assertFalse(parsed.has("rule"))
+        assertFalse(parsed.has("evidence"))
         assertTrue(parsed.has("nodeAnchor"))
         assertTrue(parsed["nodeAnchor"].isNull)
         assertEquals(2, provenance.size())
@@ -52,12 +52,11 @@ class AnnotationSerializationTest {
     fun livePayloadEmbedsTheSharedAnnotationJson() {
         val span = Span(0, 0, 0, 3)
         val contribution =
-            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), "log", span, "treesitter", 1.0, 0, 3)
+            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", 1.0, 0, 3)
         val annotation =
             Annotation(
                 role = Role.SOURCE_INTENT,
                 intents = setOf("LOGGING"),
-                evidence = "log",
                 span = span,
                 source = "treesitter",
                 confidence = 1.0,
@@ -76,18 +75,19 @@ class AnnotationSerializationTest {
         assertEquals(1, parsed["annotations"].size())
         assertEquals("source-intent", parsed["annotations"][0]["role"].asText())
         assertEquals("demo:logging", parsed["annotations"][0]["provenance"][0]["rule"].asText())
+        assertFalse(parsed["annotations"][0].has("evidence"))
+        assertFalse(parsed["annotations"][0]["provenance"][0].has("evidence"))
     }
 
     @Test
     fun nonFiniteConfidenceKeepsTheLivePayloadValidJson() {
         val span = Span(0, 0, 0, 3)
         val contribution =
-            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), "log", span, "treesitter", Double.NaN, 0, 3)
+            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", Double.NaN, 0, 3)
         val annotation =
             Annotation(
                 role = Role.SOURCE_INTENT,
                 intents = setOf("LOGGING"),
-                evidence = "log",
                 span = span,
                 source = "treesitter",
                 confidence = Double.POSITIVE_INFINITY,
@@ -111,12 +111,11 @@ class AnnotationSerializationTest {
     fun publishesReservedNodeAnchorWhenPresent() {
         val span = Span(0, 0, 0, 3)
         val contribution =
-            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), "log", span, "treesitter", 1.0, 0, 3)
+            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", 1.0, 0, 3)
         val annotation =
             Annotation(
                 role = Role.SOURCE_INTENT,
                 intents = setOf("LOGGING"),
-                evidence = "log",
                 span = span,
                 source = "treesitter",
                 confidence = 1.0,

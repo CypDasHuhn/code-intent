@@ -10,6 +10,7 @@ import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parsePackInput
+import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -72,13 +73,12 @@ private data class LoggingHit(
     val endByte: Int,
     val source: String,
     val confidence: Double,
-    val evidence: String,
 )
 
 private fun loggingSpans(annotations: List<Annotation>): List<LoggingHit> =
     annotations
         .filter { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
-        .map { LoggingHit(it.startByte, it.endByte, it.source, it.confidence, it.evidence) }
+        .map { LoggingHit(it.startByte, it.endByte, it.source, it.confidence) }
         .sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.source }))
 
 class LoggingRulePackTest {
@@ -150,9 +150,9 @@ class LoggingRulePackTest {
                 listOf(pack),
             ).annotations
 
-        val logging = loggingSpans(annotations)
+        val logging = annotations.filter { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
         assertEquals(1, logging.size)
-        assertTrue(logging.single().evidence.contains("audit"))
+        assertTrue(logging.single().text(file.text).contains("audit"))
     }
 
     @Test
@@ -314,7 +314,7 @@ class LoggingRulePackTest {
         val annotations = newFor("kotlin", text)
         assertTrue(
             annotations.any {
-                it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents && it.evidence == "loggingEnabled"
+                it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents && it.text(text) == "loggingEnabled"
             },
         )
     }
@@ -331,7 +331,7 @@ class LoggingRulePackTest {
             """.trimIndent()
         assertTrue(
             newFor("javascript", text).any {
-                it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents && it.evidence == "loggingEnabled"
+                it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents && it.text(text) == "loggingEnabled"
             },
         )
     }
@@ -351,7 +351,7 @@ class LoggingRulePackTest {
             newFor("kotlin", text).first {
                 it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents
             }
-        assertTrue(annotation.evidence.contains("detail"))
+        assertTrue(annotation.text(text).contains("detail"))
         assertEquals(2, annotation.span.endLine - annotation.span.startLine)
     }
 }

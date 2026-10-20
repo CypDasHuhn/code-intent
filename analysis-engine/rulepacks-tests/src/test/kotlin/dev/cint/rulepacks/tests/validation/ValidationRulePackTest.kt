@@ -14,6 +14,7 @@ import dev.cint.rulepacks.tests.support.validationPipeline
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
 import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
 import dev.cint.rulepacks.validation.ValidationRulePack
+import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -40,8 +41,8 @@ class ValidationRulePackTest {
         val annotations = validationPipeline(input)
         val returns = annotations.filter { it.rule == CoreContributors.RETURN_CATEGORY }
 
-        val falseReturn = returns.first { it.evidence.contains("return false") }
-        val bareReturn = returns.first { it.evidence.trim() == "return" }
+        val falseReturn = returns.first { it.text(text).contains("return false") }
+        val bareReturn = returns.first { it.text(text).trim() == "return" }
         assertEquals(setOf(VALIDATION_INTENT), falseReturn.intents)
         assertEquals(setOf(VALIDATION_INTENT), bareReturn.intents)
         assertTrue(UNTAGGED_INTENT !in falseReturn.intents)
@@ -95,7 +96,7 @@ class ValidationRulePackTest {
                 source.config,
                 packs,
             ).first {
-                it.rule == CoreContributors.RETURN_CATEGORY && it.evidence.contains("return false")
+                it.rule == CoreContributors.RETURN_CATEGORY && it.text(text).contains("return false")
             }
 
         val withoutValidation = returns(input, listOf(BookkeepingRulePack()))

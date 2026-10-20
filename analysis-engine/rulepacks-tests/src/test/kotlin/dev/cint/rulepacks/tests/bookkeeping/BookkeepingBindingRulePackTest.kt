@@ -5,6 +5,7 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.tests.support.PackInput
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parsePackInput
+import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -47,11 +48,11 @@ class BookkeepingBindingRulePackTest {
 
         val kotlinAnnotations = bookkeeping("kotlin", parse("kotlin", "Sample.kt", kotlin))
         assertEquals(2, kotlinAnnotations.size, "kotlin declarations only")
-        assertTrue(kotlinAnnotations.none { it.evidence == "key = 1" || it.evidence == "value = 2" })
+        assertTrue(kotlinAnnotations.none { it.text(kotlin) == "key = 1" || it.text(kotlin) == "value = 2" })
 
         val csharpAnnotations = bookkeeping("csharp", parse("csharp", "Sample.cs", csharp))
         assertEquals(2, csharpAnnotations.size, "csharp declarations only")
-        assertTrue(csharpAnnotations.none { it.evidence == "pair = default" || it.evidence == "list = new List<int>()" })
+        assertTrue(csharpAnnotations.none { it.text(csharp) == "pair = default" || it.text(csharp) == "list = new List<int>()" })
     }
 
     @Test
@@ -124,8 +125,8 @@ class BookkeepingBindingRulePackTest {
             val annotations = bookkeeping(language, parse(language, "Sample", text))
             assertEquals(writes.size, annotations.size, "$language declarations only")
             assertTrue(
-                annotations.none { it.evidence in writes },
-                "$language destructured write tagged: ${annotations.map { it.evidence }}",
+                annotations.none { it.text(text) in writes },
+                "$language destructured write tagged: ${annotations.map { it.text(text) }}",
             )
         }
     }
@@ -178,8 +179,8 @@ class BookkeepingBindingRulePackTest {
         for ((language, text, bindingWrites) in cases) {
             val annotations = bookkeeping(language, parse(language, "Sample", text))
             assertEquals(3, annotations.size, "$language declarations plus the fallback field write")
-            assertTrue(annotations.any { it.evidence == "fallback = 2" }, "$language fallback field write")
-            assertTrue(annotations.none { it.evidence in bindingWrites }, "$language default/rest binding write tagged")
+            assertTrue(annotations.any { it.text(text) == "fallback = 2" }, "$language fallback field write")
+            assertTrue(annotations.none { it.text(text) in bindingWrites }, "$language default/rest binding write tagged")
         }
     }
 
@@ -224,8 +225,8 @@ class BookkeepingBindingRulePackTest {
         for ((language, text) in cases) {
             val annotations = bookkeeping(language, parse(language, "Sample", text))
             assertEquals(3, annotations.size, "$language declarations plus the computed-key field write")
-            assertTrue(annotations.any { it.evidence == "key = 1" }, "$language computed-key field write")
-            assertTrue(annotations.none { it.evidence == "value = 2" }, "$language pair value write tagged")
+            assertTrue(annotations.any { it.text(text) == "key = 1" }, "$language computed-key field write")
+            assertTrue(annotations.none { it.text(text) == "value = 2" }, "$language pair value write tagged")
         }
     }
 

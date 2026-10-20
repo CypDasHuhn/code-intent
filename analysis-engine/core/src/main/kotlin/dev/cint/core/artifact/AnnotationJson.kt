@@ -11,7 +11,6 @@ object AnnotationJson {
         linkedMapOf(
             "role" to roleName(annotation.role),
             "intents" to annotation.intents.toList(),
-            "evidence" to annotation.evidence,
             "source" to annotation.source,
             "confidence" to annotation.confidence,
             "startLine" to annotation.span.startLine,
@@ -29,7 +28,6 @@ object AnnotationJson {
             "rule" to contribution.rule,
             "role" to roleName(contribution.role),
             "intents" to contribution.intents.toList(),
-            "evidence" to contribution.evidence,
             "source" to contribution.source,
             "confidence" to contribution.confidence,
             "startLine" to contribution.span.startLine,

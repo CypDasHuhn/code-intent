@@ -88,7 +88,7 @@ class ContractTest {
 
     @Test
     fun configurableRulePackIsAdditiveAndVersionPinned() {
-        assertEquals(3, CINT_API_VERSION)
+        assertEquals(4, CINT_API_VERSION)
 
         val original = TestConfigurablePack()
         val configured = original.configure(mapOf("extra" to true))
@@ -144,14 +144,13 @@ class ContractTest {
     fun annotationKeepsReservedAnchorAndStructuredProvenance() {
         val span = Span(1, 2, 1, 8)
         val first =
-            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), "log.warn", span, "treesitter", 1.0, 10, 16)
+            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", 1.0, 10, 16)
         val second =
-            Contribution("demo:error-handling", Role.SOURCE_INTENT, setOf("ERROR_HANDLING"), "throw", span, "lsp", 0.9, 10, 16)
+            Contribution("demo:error-handling", Role.SOURCE_INTENT, setOf("ERROR_HANDLING"), span, "lsp", 0.9, 10, 16)
         val annotation =
             Annotation(
                 role = Role.SCAFFOLD,
                 intents = first.intents + second.intents,
-                evidence = "throw",
                 span = span,
                 source = "mixed",
                 confidence = 1.0,
@@ -177,12 +176,18 @@ class ContractTest {
     }
 
     @Test
+    fun evidenceIsAbsentFromTheAnnotationContract() {
+        assertFalse(Annotation::class.java.declaredFields.any { it.name == "evidence" })
+        assertFalse(Contribution::class.java.declaredFields.any { it.name == "evidence" })
+        assertFalse(Emit::class.java.declaredFields.any { it.name == "evidence" })
+    }
+
+    @Test
     fun annotationRequiresAtLeastOneContributor() {
         assertFailsWith<IllegalArgumentException> {
             Annotation(
                 role = Role.SOURCE_INTENT,
                 intents = setOf("LOGGING"),
-                evidence = "log",
                 span = Span(0, 0, 0, 3),
                 source = "treesitter",
                 confidence = 1.0,
@@ -280,7 +285,6 @@ class ContractTest {
         assertEquals("comment", Emit.declaration("BOOKKEEPING", declaration, source = "comment").source)
         assertEquals(commentEmit.startByte, commentWithTreesitterSource.startByte)
         assertEquals(commentEmit.endByte, commentWithTreesitterSource.endByte)
-        assertEquals(commentEmit.evidence, commentWithTreesitterSource.evidence)
         assertEquals(commentEmit, magicEmit)
         assertEquals(writeNode.span(), writeEmit.span)
         assertEquals(writeEmit, write.emit("BOOKKEEPING"))
@@ -348,7 +352,6 @@ class ContractTest {
         val emit =
             Emit(
                 intents = setOf("LOGGING"),
-                evidence = "log.warn",
                 span = Span(0, 0, 0, 8),
                 source = "treesitter",
                 confidence = 1.0,

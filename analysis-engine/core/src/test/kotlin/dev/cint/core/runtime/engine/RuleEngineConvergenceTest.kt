@@ -57,19 +57,19 @@ class RuleEngineConvergenceTest {
     }
 
     @Test
-    fun evidenceStabilizesAtStableIdentity() {
+    fun sourceMetadataStabilizesAtStableIdentity() {
         val source = SourceFile("Sample.kt", "x")
         val tree = fakeTree(source.text)
         val rule =
-            TestRule("test:evidence", "EVIDENCE", setOf("EVIDENCE")) { view ->
+            TestRule("test:metadata", "METADATA", setOf("METADATA")) { view ->
                 val prior =
                     view
-                        .annotations("EVIDENCE")
+                        .annotations("METADATA")
                         .singleOrNull()
-                        ?.evidence
+                        ?.source
                         .orEmpty()
-                val evidence = if (prior.length < 3) "$prior|" else prior
-                listOf(zeroLengthEmit("EVIDENCE", 0, evidence))
+                val reported = if (prior.length < 3) "$prior|" else prior
+                listOf(zeroLengthEmit("METADATA", 0, reported))
             }
 
         val annotations =
@@ -82,13 +82,13 @@ class RuleEngineConvergenceTest {
                 listOf(TestPack("test", listOf(rule))),
             )
 
-        assertEquals(1, annotations.count { "EVIDENCE" in it.intents })
-        assertEquals("|||", annotations.single { "EVIDENCE" in it.intents }.evidence)
+        assertEquals(1, annotations.count { "METADATA" in it.intents })
+        assertEquals("|||", annotations.single { "METADATA" in it.intents }.source)
         assertEquals(4, rule.runs)
     }
 
     @Test
-    fun evidenceChangeTriggeringNewIdentityIsReached() {
+    fun sourceChangeTriggeringNewIdentityIsReached() {
         val source = SourceFile("Sample.kt", "fun f() {}")
         val tree = fakeTree(source.text)
         val rule =
@@ -102,16 +102,16 @@ class RuleEngineConvergenceTest {
 
                     one != null -> {
                         listOf(
-                            zeroLengthEmit("GROW", 0, zero.evidence),
-                            zeroLengthEmit("GROW", 1, one.evidence),
+                            zeroLengthEmit("GROW", 0, zero.source),
+                            zeroLengthEmit("GROW", 1, one.source),
                         )
                     }
 
-                    zero.evidence == "a" -> {
+                    zero.source == "a" -> {
                         listOf(zeroLengthEmit("GROW", 0, "b"))
                     }
 
-                    zero.evidence == "b" -> {
+                    zero.source == "b" -> {
                         listOf(zeroLengthEmit("GROW", 0, "c"))
                     }
 
@@ -135,8 +135,8 @@ class RuleEngineConvergenceTest {
             )
 
         assertEquals(2, annotations.count { "GROW" in it.intents })
-        assertEquals("c", annotations.single { it.startByte == 0 && it.endByte == 0 }.evidence)
-        assertEquals("new", annotations.single { it.startByte == 1 && it.endByte == 1 }.evidence)
+        assertEquals("c", annotations.single { it.startByte == 0 && it.endByte == 0 }.source)
+        assertEquals("new", annotations.single { it.startByte == 1 && it.endByte == 1 }.source)
     }
 
     @Test

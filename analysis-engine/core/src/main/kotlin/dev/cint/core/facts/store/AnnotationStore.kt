@@ -20,7 +20,6 @@ private val contributionOrder =
         { it.span.startCol },
         { it.span.endLine },
         { it.span.endCol },
-        { it.evidence },
         { it.source },
         { it.confidence },
         { it.certifiesReturn },
@@ -73,7 +72,6 @@ class AnnotationStore {
                     Annotation(
                         role = key.role,
                         intents = provenance.flatMap { it.intents }.sorted().toSet(),
-                        evidence = provenance.maxByOrNull { it.evidence.length }?.evidence.orEmpty(),
                         span = provenance.first().span,
                         source = provenance.map { it.source }.distinct().singleOrNull() ?: "mixed",
                         confidence = provenance.maxOf { it.confidence },

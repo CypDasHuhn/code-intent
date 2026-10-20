@@ -145,7 +145,6 @@ private fun Annotation.restrictedTo(visible: Set<Intent>): Annotation? {
     if (provenance.isEmpty()) return null
     return copy(
         intents = provenance.flatMap { it.intents }.sorted().toSet(),
-        evidence = provenance.maxByOrNull { it.evidence.length }?.evidence.orEmpty(),
         source = provenance.map { it.source }.distinct().singleOrNull() ?: "mixed",
         confidence = provenance.maxOf { it.confidence },
         provenance = provenance,

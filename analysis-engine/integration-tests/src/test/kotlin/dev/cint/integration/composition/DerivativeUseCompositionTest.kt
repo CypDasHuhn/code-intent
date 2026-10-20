@@ -7,6 +7,7 @@ import dev.cint.integration.composition.support.ReplayRule
 import dev.cint.integration.composition.support.analyzePipeline
 import dev.cint.integration.composition.support.emitFor
 import dev.cint.integration.composition.support.replaySource
+import dev.cint.test.fixtures.text
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import kotlin.test.Test
@@ -33,9 +34,9 @@ class DerivativeUseCompositionTest {
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(3, derivatives.size)
         assertTrue(derivatives.all { it.intents == setOf("LOGGING") })
-        assertTrue(derivatives.any { it.evidence.contains("fun make") })
-        assertTrue(derivatives.any { it.evidence.contains("val source") })
-        assertTrue(derivatives.any { it.evidence.contains("val message") })
+        assertTrue(derivatives.any { it.text(text).contains("fun make") })
+        assertTrue(derivatives.any { it.text(text).contains("val source") })
+        assertTrue(derivatives.any { it.text(text).contains("val message") })
     }
 
     @Test
@@ -55,9 +56,9 @@ class DerivativeUseCompositionTest {
             analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
-        assertTrue(derivatives.any { it.evidence.contains("val message") })
-        assertTrue(derivatives.none { it.evidence.contains("val source") })
-        assertTrue(derivatives.none { it.evidence.contains("fun make") })
+        assertTrue(derivatives.any { it.text(text).contains("val message") })
+        assertTrue(derivatives.none { it.text(text).contains("val source") })
+        assertTrue(derivatives.none { it.text(text).contains("fun make") })
     }
 
     @Test
@@ -77,8 +78,8 @@ class DerivativeUseCompositionTest {
             analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
-        assertTrue(derivatives.any { it.evidence.contains("val message") })
-        assertTrue(derivatives.none { it.evidence.contains("fun text") })
+        assertTrue(derivatives.any { it.text(text).contains("val message") })
+        assertTrue(derivatives.none { it.text(text).contains("fun text") })
     }
 
     @Test
@@ -114,7 +115,7 @@ class DerivativeUseCompositionTest {
             )
         val derivative =
             annotations.first {
-                it.role == Role.DERIVATIVE_USE && it.evidence.contains("val message")
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message")
             }
 
         assertEquals(setOf("ERROR_HANDLING"), derivative.intents)

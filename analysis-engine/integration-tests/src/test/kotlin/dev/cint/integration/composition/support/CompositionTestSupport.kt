@@ -17,6 +17,7 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.test.testConfig
 import dev.cint.test.fixtures.testPacks
+import dev.cint.test.fixtures.text
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import dev.cint.integration.fixture as sharedFixture
@@ -43,7 +44,6 @@ internal class ReplayPack(
 internal data class Snapshot(
     val role: Role,
     val intents: Set<String>,
-    val evidence: String,
     val span: Span,
     val source: String,
     val confidence: Double,
@@ -55,7 +55,6 @@ internal fun snapshot(annotation: Annotation): Snapshot =
     Snapshot(
         role = annotation.role,
         intents = annotation.intents,
-        evidence = annotation.evidence,
         span = annotation.span,
         source = annotation.source,
         confidence = annotation.confidence,
@@ -83,12 +82,10 @@ internal fun analyzePipeline(
 internal fun emitFor(
     intent: Intent,
     node: SyntaxNode,
-    evidence: String = node.text,
     certifiesReturn: Boolean = false,
 ): Emit =
     Emit(
         intents = setOf(intent),
-        evidence = evidence,
         span = node.span(),
         source = "treesitter",
         confidence = 1.0,
@@ -106,14 +103,13 @@ internal fun replaySource(
     val annotations =
         RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks())
     val emissions = linkedMapOf<String, MutableList<Emit>>()
-    for ((role, intents, evidence, span, source1, confidence, startByte, endByte) in annotations) {
+    for ((role, intents, span, source1, confidence, startByte, endByte) in annotations) {
         if (role != Role.SOURCE_INTENT) continue
         for (intent in intents) {
             if (intent == UNTAGGED_INTENT) continue
             emissions.getOrPut(intent) { mutableListOf() } +=
                 Emit(
                     intents = setOf(intent),
-                    evidence = evidence,
                     span = span,
                     source = source1,
                     confidence = confidence,
