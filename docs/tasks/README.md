@@ -44,7 +44,7 @@ host and client cutover at the end.
 | 030 | [client-authored annotations](030-client-authored-annotations.md) | todo | — | Experimental: runtime user annotations persisted per project. |
 | 031 | [size hygiene after support refactors](031-size-hygiene-after-support.md) | done |
 | 032 | [remove evidence from annotation contract](032-remove-evidence-from-contract.md) | done |
-| 033 | [renderer package layout](033-renderer-package-layout.md) | in-progress | 028 | Group lua/cint modules into subpackages. |
+| 033 | [renderer package layout](033-renderer-package-layout.md) | done | 028 | Group lua/cint modules into subpackages. |
 | 034 | [engine module layout](034-engine-module-layout.md) | in-progress | 024, 027 | Move Gradle modules under analysis-engine/modules. | 019, 025 | Drop evidence from API/provenance/output/tests; API v4. | 019, 020, 021, 026, 029 | Split new EXTREME files; reduce new overcrowded dirs. |
 
 ## Resolved decisions
