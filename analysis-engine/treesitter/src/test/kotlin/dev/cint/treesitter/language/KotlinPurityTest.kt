@@ -1,9 +1,9 @@
 package dev.cint.treesitter.language
 
 import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.test.testConfig
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
-import dev.cint.treesitter.support.testConfig
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

@@ -28,6 +28,39 @@ class StructuralBoundariesTest {
     }
 
     @Test
+    fun testModulesDoNotDependOnHigherLevelModules() {
+        assertEquals(emptySet(), testProjectDependencies("frontend") intersect setOf(":host", ":rulepacks"))
+        assertEquals(emptySet(), testProjectDependencies("rulepacks") intersect setOf(":host"))
+        assertEquals(emptySet(), testProjectDependencies("treesitter") intersect setOf(":rulepacks"))
+    }
+
+    @Test
+    fun testOnlyModulesAreLeavesAndNotUsedInProduction() {
+        val modules = includedModules()
+        assertTrue(
+            setOf("core", "frontend", "rulepacks", "treesitter", "test-fixtures", "integration-tests")
+                .all { it in modules },
+            "missing modules from settings: $modules",
+        )
+        assertEquals(setOf(":api", ":core"), productionProjectDependencies("host"))
+
+        val testOnly = setOf(":test-fixtures", ":integration-tests", ":rulepacks-tests")
+        for (module in modules) {
+            if (":$module" in testOnly) continue
+            if (!Files.isDirectory(moduleSourceRoot(module).resolve("src/main"))) continue
+            val dependencies = productionProjectDependencies(module)
+            assertTrue(
+                dependencies.none { it in testOnly },
+                "$module production dependencies include test-only modules: ${dependencies intersect testOnly}",
+            )
+        }
+        assertEquals(
+            setOf(":api", ":core", ":frontend", ":rulepacks", ":treesitter"),
+            projectDependencies("test-fixtures"),
+        )
+    }
+
+    @Test
     fun configPackageRemainsDataOnly() {
         val config = moduleSource("core").resolve("dev/cint/core/config")
         assertNoImport(kotlinSources(config), "dev.cint.core.runtime")
@@ -131,8 +164,28 @@ class StructuralBoundariesTest {
 
     private fun projectDependencies(module: String): Set<String> =
         projectDependencyPattern
-            .findAll(moduleSourceRoot(module).resolve("build.gradle.kts").readText())
+            .findAll(buildFile(module).readText())
             .mapTo(sortedSetOf()) { it.groupValues[1] }
+
+    private fun productionProjectDependencies(module: String): Set<String> =
+        productionDependencyPattern
+            .findAll(buildFile(module).readText())
+            .mapTo(sortedSetOf()) { it.groupValues[1] }
+
+    private fun testProjectDependencies(module: String): Set<String> =
+        testDependencyPattern
+            .findAll(buildFile(module).readText())
+            .mapTo(sortedSetOf()) { it.groupValues[1] }
+
+    private fun includedModules(): List<String> =
+        settingsModulePattern
+            .findAll(moduleSourceRoot("core").parent.resolve("settings.gradle.kts").readText())
+            .map { it.groupValues[1].removePrefix(":") }
+            .toList()
+
+    private fun buildFile(module: String): Path =
+        moduleSourceRoot(module)
+            .resolve("build.gradle.kts")
 
     private fun kotlinSources(directory: Path): List<Path> =
         Files.walk(directory).use { paths ->
@@ -160,5 +213,8 @@ class StructuralBoundariesTest {
         val importPattern = Regex("^\\s*import\\s+([\\w.]+?)(?:\\.\\*)?\\s*$", RegexOption.MULTILINE)
         val packagePattern = Regex("^\\s*package\\s+([\\w.]+)", RegexOption.MULTILINE)
         val projectDependencyPattern = Regex("project\\(\"(:[^\"]+)\"\\)")
+        val productionDependencyPattern = Regex("^\\s*(?:implementation|api)\\(.*project\\(\"(:[^\"]+)\"\\)", RegexOption.MULTILINE)
+        val testDependencyPattern = Regex("^\\s*test\\w*\\(.*project\\(\"(:[^\"]+)\"\\)", RegexOption.MULTILINE)
+        val settingsModulePattern = Regex("\"(:[^\"]+)\"")
     }
 }

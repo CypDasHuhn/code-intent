@@ -13,8 +13,12 @@ import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
-import dev.cint.frontend.Frontends
-import java.nio.file.Files
+import dev.cint.core.test.testConfig
+import dev.cint.test.fixtures.TestFixtures
+import dev.cint.test.fixtures.defaultFileName
+import dev.cint.test.fixtures.parseFile
+import dev.cint.test.fixtures.syntaxModel
+import org.junit.Assume.assumeTrue
 import java.nio.file.Path
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -95,9 +99,8 @@ internal fun parsePackInput(
     config: IntentConfig = testConfig(language),
 ): PackInput {
     val source = SourceFile(name, text)
-    val frontend = Frontends.require(language)
-    val tree = frontend.parse(source)
-    return PackInput(source, tree, frontend.syntax(tree), config)
+    val tree = parseFile(language, source)
+    return PackInput(source, tree, syntaxModel(language, tree), config)
 }
 
 internal fun analyzePack(
@@ -125,16 +128,13 @@ internal fun analyzePack(
     name: String = defaultFileName(language),
 ): PackAnalysis = analyzePack(parsePackInput(language, text, name), packs, oracle)
 
-internal fun fixturePath(relative: String): Path {
-    val candidates =
-        listOf(
-            Path.of("..", "..", "testing-grounds", relative),
-            Path.of("..", "testing-grounds", relative),
-            Path.of("testing-grounds", relative),
-        )
-    return candidates.firstOrNull { Files.exists(it) } ?: error("missing fixture $relative")
+internal fun assumeFixtureRoot(): Path {
+    val root = TestFixtures.rootOrNull()
+    assumeTrue(
+        "testing-grounds not found; set -Dcint.testingGrounds=<path> or CINT_TESTING_GROUNDS=<path>",
+        root != null,
+    )
+    return requireNotNull(root)
 }
 
-internal fun fixture(relative: String): String = Files.readString(fixturePath(relative))
-
-internal fun defaultFileName(language: String): String = "Sample${Frontends.require(language).extensions.first()}"
+internal fun fixture(relative: String): String = TestFixtures.read(assumeFixtureRoot(), relative)
