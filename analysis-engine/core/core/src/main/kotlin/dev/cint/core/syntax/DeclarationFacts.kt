@@ -5,7 +5,6 @@ import dev.cint.api.DeclarationFact
 import dev.cint.api.DeclarationKind
 import dev.cint.api.FunctionFact
 import dev.cint.api.PropertyFact
-import dev.cint.api.ScopeFact
 import dev.cint.api.SyntaxNode
 import dev.cint.core.syntax.writes.DeclarationWrites
 import dev.cint.core.syntax.writes.declarationKind

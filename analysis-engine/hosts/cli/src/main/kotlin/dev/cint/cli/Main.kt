@@ -32,7 +32,7 @@ fun main(argv: Array<String>) {
 
     val root = File(args.root)
     require(root.exists()) { "no such path: ${args.root}" }
-    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
+    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver, root.toPath())
 
     val files =
         root
@@ -73,6 +73,7 @@ fun main(argv: Array<String>) {
                                 root.toPath(),
                                 lspOptions,
                                 packs::plan,
+                                packs::userContributionsFor,
                             ) { language -> settings.intentConfig(language) }
                         usedLanguages += languages
                         result

@@ -23,6 +23,7 @@ class Composition {
         oracle: TypeOracle,
         config: IntentConfig,
         sources: List<Contribution>,
+        contextSources: List<Contribution> = emptyList(),
     ): List<Annotation> {
         val source =
             sources.filter { contribution ->
@@ -31,7 +32,8 @@ class Composition {
             }
 
         val store = AnnotationStore()
-        for ((rule, contributions) in source.groupBy { it.rule }) {
+        val contextContributions = source + contextSources.filter { it.role == Role.SOURCE_INTENT }
+        for ((rule, contributions) in contextContributions.groupBy { it.rule }) {
             store.replaceRule("$SOURCE_KEY_PREFIX$rule", contributions)
         }
         val context = AnalysisContext(file, tree, syntax, flow, oracle, config, store)

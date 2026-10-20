@@ -140,6 +140,24 @@ class RuleSchedulerTest {
     }
 
     @Test
+    fun userPrefixedPackRuleRemainsValid() {
+        val rule = TestRule("user:annotations", "LOGGING")
+
+        val plan = RuleScheduler().plan(listOf(TestPack("plugin", listOf(rule))))
+
+        assertEquals(setOf("LOGGING"), plan.terminal.sourceIntents)
+    }
+
+    @Test
+    fun packCanOwnPureIntent() {
+        val rule = TestRule("example:pure", "PURE")
+
+        val plan = RuleScheduler().plan(listOf(TestPack("plugin", listOf(rule))))
+
+        assertEquals(setOf("PURE"), plan.terminal.sourceIntents)
+    }
+
+    @Test
     fun readingReservedUntaggedFailsAsUnknownDependency() {
         val reader = TestRule("example:reader", "OUTPUT", setOf(UNTAGGED_INTENT))
 

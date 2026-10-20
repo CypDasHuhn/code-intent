@@ -20,6 +20,7 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
+import dev.cint.core.user.UserAnnotationResolver
 
 interface RuleContext {
     val file: SourceFile
@@ -62,4 +63,9 @@ interface RuleContext {
         node: SyntaxNode,
         effect: Boolean = true,
     ): Coverage
+
+    fun isUserPure(node: SyntaxNode): Boolean =
+        covering(node).any { annotation ->
+            annotation.provenance.any(UserAnnotationResolver::isUserPure)
+        }
 }

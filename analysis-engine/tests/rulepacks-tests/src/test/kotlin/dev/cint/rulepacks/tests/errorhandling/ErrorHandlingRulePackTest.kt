@@ -5,7 +5,6 @@ import dev.cint.api.Role
 import dev.cint.api.RulePack
 import dev.cint.api.Span
 import dev.cint.rulepacks.errorhandling.ERROR_HANDLING_INTENT
-import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.test.fixtures.text
