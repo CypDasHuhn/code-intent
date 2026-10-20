@@ -1,6 +1,6 @@
 ---
 name: delete legacy config and phase
-status: todo
+status: done
 depends-on: [010, 013]
 reviewers: [correctness, architecture]
 ---
@@ -36,3 +36,15 @@ replaced it (architecture.md §11.6): `intents.yaml`, the `Phase` enum, and
 
 - Confirms README #5: the legacy path is deleted here, after composition and
   config land, rather than immediately at step 3.
+
+## Outcome (2026-10-20)
+
+The legacy path is gone: `intents.yaml`, `rules/Blocks.kt`, `Phase`/`runPhase`,
+`AnalysisEngine`, `IntentBlocks`, `loadIntentConfig`, the legacy `RuleBlock`
+surface and the legacy `SplitAnalyzer` overloads were removed. Production and
+tests no longer reference any of them. `IntentConfig` remains only as a typed,
+config-driven carrier for validation params/purity. Behavior parity is frozen by
+`LegacyParitySnapshotTest` using pre-014 (3f20435) snapshots over all 11 fixtures
+including Vue (`m008`, verified); `m001` remains an unverified CLI-level run.
+README and IntentDefinition dead members were cleaned up. Build, engine tests,
+renderer tests and install are green.
