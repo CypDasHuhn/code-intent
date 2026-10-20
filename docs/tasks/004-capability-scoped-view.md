@@ -1,6 +1,6 @@
 ---
 name: capability-scoped view
-status: todo
+status: done
 depends-on: [001]
 reviewers: [correctness, api-fidelity]
 ---
@@ -41,3 +41,13 @@ than decorative.
 
 - If the fact shapes must move onto the frozen `api` surface, do it here and
   record the decision.
+
+## Outcome (2026-10-20)
+
+`CapabilityView` implements the frozen `View` over existing syntax/CFG facts.
+Annotation reads are capability-gated to the rule's owned intent plus declared
+`reads`; containment is filtered visibility-first so undeclared nested spans
+cannot mask declared intents; restricted annotations rebuild intents from
+surviving provenance; plugin-facing reads expose only `SOURCE_INTENT` roles per
+architecture §1. Round-1 findings from both reviewers fixed and round 2 concurs.
+`just build` and `just test-engine` green.

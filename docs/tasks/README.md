@@ -13,7 +13,7 @@ host and client cutover at the end.
 | 001 | [api module and frozen contract](001-api-module-and-frozen-contract.md) | done | — | New `api` module; `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `Emit`, `Annotation`, scheduler contract; module dependency line. |
 | 002 | [annotation store and provenance](002-annotation-store-and-provenance.md) | done | 001 | Structured per-contributor provenance; per-rule contribution replacement; no removal API. |
 | 003 | [scheduler stratification and fixpoint](003-scheduler-stratification-and-fixpoint.md) | todo | 001, 002 | Rule graph over intent currency, load errors, topological strata, internal fixpoint, terminal composition. |
-| 004 | [capability-scoped view](004-capability-scoped-view.md) | todo | 001 | `View` over core facts + derived helpers; `reads`-gated `annotations`/`intentsAt`. |
+| 004 | [capability-scoped view](004-capability-scoped-view.md) | done | 001 | `View` over core facts + derived helpers; `reads`-gated `annotations`/`intentsAt`. |
 | 005 | [thin rule dsl](005-thin-rule-dsl.md) | todo | 001, 004 | Kotlin embedded DSL over `View`; infix `eq`/`ne`/`gt`/`lt`/`and`/`or`; lambda predicates. |
 | 006 | [logging rulepack](006-logging-rulepack.md) | todo | 003, 004, 005 | One `logging` rule owning `LOGGING`, with `print`/`logger-interaction`/`logging-state` as internal matchers. |
 | 007 | [error-handling rulepack](007-error-handling-rulepack.md) | todo | 003, 004, 005 | `throw` + configured checks, receiver/qualifier gating, trailing lambdas. |

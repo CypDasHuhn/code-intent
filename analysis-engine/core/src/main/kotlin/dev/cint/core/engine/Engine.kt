@@ -6,10 +6,12 @@ import dev.cint.api.Contribution
 import dev.cint.api.Coverage
 import dev.cint.api.FunctionFact
 import dev.cint.api.IfFact
+import dev.cint.api.Intent
 import dev.cint.api.PropertyFact
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
 import dev.cint.api.UNTAGGED_INTENT
+import dev.cint.api.View
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.flow.ControlFlow
 import dev.cint.core.flow.ControlFlowBuilder
@@ -18,6 +20,7 @@ import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.store.AnnotationStore
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
+import dev.cint.core.view.CapabilityView
 import java.util.IdentityHashMap
 
 enum class Phase {
@@ -46,6 +49,7 @@ interface RuleContext {
 
     fun annotations(): List<Annotation>
     fun covering(node: SyntaxNode): List<Annotation>
+    fun containingAnnotations(node: SyntaxNode): List<Annotation>
     fun intentsAt(node: SyntaxNode): Set<String>
     fun coverage(
         node: SyntaxNode,
@@ -181,12 +185,26 @@ class AnalysisContext(
         indexRevision = revision
     }
 
+    fun view(
+        owns: Intent,
+        reads: Set<Intent>,
+        failOnUndeclaredRead: Boolean = false,
+    ): View = CapabilityView(this, owns, reads, config.pureAnnotations, failOnUndeclaredRead)
+
     override fun annotations(): List<Annotation> = store.annotations()
 
     override fun covering(node: SyntaxNode): List<Annotation> {
         refreshIndexes()
         val index = exactIndex ?: annotations().groupBy { spanKey(it.startByte, it.endByte) }.also { exactIndex = it }
         return index[spanKey(node.startByte, node.endByte)].orEmpty()
+    }
+
+    override fun containingAnnotations(node: SyntaxNode): List<Annotation> {
+        refreshIndexes()
+        val index = intervalIndex ?: IntervalIndex(annotations()).also { intervalIndex = it }
+        val result = mutableListOf<Annotation>()
+        index.containing(node.startByte, node.endByte) { result += it }
+        return result
     }
 
     override fun intentsAt(node: SyntaxNode): Set<String> {
