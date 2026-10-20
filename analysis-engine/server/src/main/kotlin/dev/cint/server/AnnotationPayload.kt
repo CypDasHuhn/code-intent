@@ -17,6 +17,7 @@ internal fun annotationJson(annotation: Annotation): Map<String, Any?> =
         "endCol" to annotation.span.endCol,
         "startByte" to annotation.startByte,
         "endByte" to annotation.endByte,
+        "nodeAnchor" to annotation.nodeAnchor?.id,
         "provenance" to annotation.provenance.map(::contributionJson),
     )
 
