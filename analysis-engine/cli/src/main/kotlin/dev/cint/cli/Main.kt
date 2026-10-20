@@ -37,6 +37,7 @@ fun main(argv: Array<String>) {
             constructedPacks = BundledRulePackSelection::constructed,
             project = settings.project,
             knownPackIds = BundledRulePackSelection.packIds,
+            root = root.toPath(),
         )
 
     val files =
@@ -78,6 +79,7 @@ fun main(argv: Array<String>) {
                                 root.toPath(),
                                 lspOptions,
                                 packs::plan,
+                                packs::userContributionsFor,
                             ) { language -> settings.intentConfig(language) }
                         usedLanguages += languages
                         result

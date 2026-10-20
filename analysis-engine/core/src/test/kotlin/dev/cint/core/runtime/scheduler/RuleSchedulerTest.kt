@@ -126,6 +126,20 @@ class RuleSchedulerTest {
     }
 
     @Test
+    fun reservedUserContributorRuleIdFailsWithNamedError() {
+        val rule = TestRule("user:annotations", "LOGGING")
+
+        val error =
+            assertFailsWith<ReservedContributorId> {
+                RuleScheduler().plan(listOf(TestPack("plugin", listOf(rule))))
+            }
+
+        assertEquals(SchedulerError.RESERVED_CONTRIBUTOR_ID, error.error)
+        assertEquals(rule, error.rule)
+        assertEquals("user:", error.prefix)
+    }
+
+    @Test
     fun reservedUntaggedOwnerFailsWithNamedError() {
         val rule = TestRule("example:untagged", UNTAGGED_INTENT)
 

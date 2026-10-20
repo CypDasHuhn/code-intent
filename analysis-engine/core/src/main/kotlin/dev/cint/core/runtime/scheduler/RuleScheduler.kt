@@ -8,6 +8,7 @@ import dev.cint.api.Schedule
 import dev.cint.api.Scheduler
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.CoreContributors
+import dev.cint.core.user.USER_CONTRIBUTOR_PREFIX
 
 enum class SchedulerError {
     DUPLICATE_INTENT_OWNER,
@@ -48,9 +49,10 @@ class ReservedIntentOwner(
 
 class ReservedContributorId(
     val rule: Rule,
+    val prefix: String = CoreContributors.PREFIX,
 ) : SchedulerException(
         SchedulerError.RESERVED_CONTRIBUTOR_ID,
-        "rule '${rule.id}' uses the reserved core contributor prefix '${CoreContributors.PREFIX}'",
+        "rule '${rule.id}' uses the reserved contributor prefix '$prefix'",
     )
 
 class UnknownDependency(
@@ -107,6 +109,9 @@ class RuleScheduler : Scheduler {
         for (rule in rules) {
             if (rule.id.startsWith(CoreContributors.PREFIX)) {
                 throw ReservedContributorId(rule)
+            }
+            if (rule.id.startsWith(USER_CONTRIBUTOR_PREFIX)) {
+                throw ReservedContributorId(rule, USER_CONTRIBUTOR_PREFIX)
             }
             if (previous?.id == rule.id) {
                 throw DuplicateRuleId(rule.id, listOf(previous, rule))

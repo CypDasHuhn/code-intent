@@ -66,6 +66,7 @@ fun main(argv: Array<String>) {
             constructedPacks = BundledRulePackSelection::constructed,
             project = settings.project,
             knownPackIds = BundledRulePackSelection.packIds,
+            root = root,
         )
 
     if (socket != null) {
@@ -84,7 +85,7 @@ fun main(argv: Array<String>) {
         }
         try {
             val request = exchange.requestBody.use { mapper.readValue<AnalyzeRequest>(it) }
-            respond(exchange, 200, analyze(request, useLsp, language, settings, packs))
+            respond(exchange, 200, analyze(request, useLsp, language, settings))
         } catch (error: Exception) {
             respond(exchange, 400, """{"error":"${error.message?.replace("\"", "'")}"}""")
         }
@@ -93,12 +94,11 @@ fun main(argv: Array<String>) {
     System.err.println("cint listening on http://$host:$port")
 }
 
-private fun analyze(
+internal fun analyze(
     request: AnalyzeRequest,
     useLsp: Boolean,
     defaultLanguage: String,
     defaultSettings: HostSettings,
-    defaultPacks: HostPipeline,
 ): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
     val requestedLanguage = request.language ?: defaultLanguage
@@ -106,15 +106,12 @@ private fun analyze(
     val config = settings.intentConfig(requestedLanguage)
     val lspOptions = settings.oracleOptions(useLsp)
     val packs =
-        if (request.config != null) {
-            HostPipeline(
-                constructedPacks = BundledRulePackSelection::constructed,
-                project = settings.project,
-                knownPackIds = BundledRulePackSelection.packIds,
-            )
-        } else {
-            defaultPacks
-        }
+        HostPipeline(
+            constructedPacks = BundledRulePackSelection::constructed,
+            project = settings.project,
+            knownPackIds = BundledRulePackSelection.packIds,
+            root = root,
+        )
     val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
@@ -126,6 +123,7 @@ private fun analyze(
                 root,
                 lspOptions,
                 packs::plan,
+                packs::userContributionsFor,
             ) { language -> settings.intentConfig(language) }
         } else {
             val tree = frontend.parse(source)

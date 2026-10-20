@@ -52,7 +52,7 @@ internal fun derivativeContributions(
         val nameNode = nameNode1 ?: continue
         val name = nameNode.text
         if (name.isEmpty()) continue
-        if (!ctx.syntax.isAnnotatedPure(node, pureAnnotations)) continue
+        if (!ctx.syntax.isAnnotatedPure(node, pureAnnotations) && !ctx.isUserPure(node)) continue
 
         val functionReferences =
             references[name].orEmpty().filter { reference ->
@@ -98,4 +98,15 @@ private fun isPure(
 ): Boolean =
     ctx.syntax.isConstant(initializer) ||
         ctx.syntax.isIdentifier(initializer) ||
-        ctx.syntax.isAnnotatedPureCall(ctx.tree, initializer, pureAnnotations)
+        ctx.syntax.isAnnotatedPureCall(ctx.tree, initializer, pureAnnotations) ||
+        isUserPureCall(ctx, initializer)
+
+private fun isUserPureCall(
+    ctx: RuleContext,
+    call: SyntaxNode,
+): Boolean {
+    if (ctx.syntax.receiverNode(call) != null) return false
+    val callee = ctx.syntax.calleeName(call) ?: return false
+    val function = ctx.syntax.findFunction(ctx.tree, callee) ?: return false
+    return ctx.isUserPure(function)
+}

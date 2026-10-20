@@ -41,7 +41,7 @@ host and client cutover at the end.
 | 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | todo | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |
 | 028 | [renderer structural cleanup](028-renderer-structural-cleanup.md) | done | — | Split Lua monolith; live transport tests; docs config. |
 | 029 | [rulepack registration consistency](029-rulepack-registration-consistency.md) | todo | 023 | Uniform pack identity/selection. |
-| 030 | [client-authored annotations](030-client-authored-annotations.md) | todo | — | Experimental: runtime user annotations persisted per project. |
+| 030 | [client-authored annotations](030-client-authored-annotations.md) | done | — | Experimental: runtime user annotations persisted per project. |
 
 ## Resolved decisions
 

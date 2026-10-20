@@ -18,6 +18,7 @@ import dev.cint.core.runtime.composition.Composition
 import dev.cint.core.runtime.engine.AnalysisContext
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
+import dev.cint.core.user.USER_CONTRIBUTOR_ID
 
 class NonConvergentRule(
     val ruleId: String,
@@ -57,7 +58,8 @@ class RuleEngine(
         oracle: TypeOracle,
         config: IntentConfig,
         packs: List<RulePack>,
-    ): List<Annotation> = analyze(plan(packs), file, tree, syntax, oracle, config)
+        userContributions: List<Contribution> = emptyList(),
+    ): List<Annotation> = analyze(plan(packs), file, tree, syntax, oracle, config, userContributions)
 
     fun analyze(
         plan: ExecutionPlan,
@@ -66,9 +68,13 @@ class RuleEngine(
         syntax: SyntaxModel,
         oracle: TypeOracle,
         config: IntentConfig,
+        userContributions: List<Contribution> = emptyList(),
     ): List<Annotation> {
         val flow = ControlFlowBuilder(tree, syntax).build()
         val settled = linkedMapOf<String, List<Contribution>>()
+        if (userContributions.isNotEmpty()) {
+            settled[USER_CONTRIBUTOR_ID] = userContributions
+        }
 
         for (stratum in plan.strata) {
             val settledStratum = mutableListOf<Pair<String, List<Contribution>>>()
@@ -100,6 +106,7 @@ class RuleEngine(
                 oracle,
                 config,
                 sources,
+                userContributions,
             )
         return (store.annotations() + composed).sortedWith(
             compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),

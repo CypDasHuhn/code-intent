@@ -1,3 +1,4 @@
+local annotations = require("cint.annotations")
 local api = require("cint.api")
 local config = require("cint.config")
 local live_ops = require("cint.live_ops")
@@ -86,6 +87,15 @@ expose(profile_ops, {
   "info",
 })
 expose(api, { "annotations_at", "provenance_at" })
+expose(annotations, {
+  "annotate",
+  "annotate_range",
+  "unannotate",
+  "unannotate_range",
+  "annotations",
+  "file_path",
+})
+alias(annotations, "annotations_reload", "reload")
 expose(setup, { "setup_keymaps" })
 
 setmetatable(M, {

@@ -1,6 +1,6 @@
 ---
 name: client-authored annotations
-status: todo
+status: done
 depends-on: []
 reviewers: [correctness, api-fidelity]
 ---
@@ -49,3 +49,17 @@ merging.
 - Start on `experiment/client-authored-annotations`; decide the stable-anchor
   format before merging.
 - Keep the design compatible with the reserved `nodeAnchor` in the API.
+
+## Outcome (2026-10-20) — experimental branch only
+
+Prototype landed on `experiment/client-authored-annotations`: versioned
+`.cint/user-annotations.json` persistence with symbol/content-hash/range
+anchors, nvim annotate/unannotate/list/reload commands, a separate user
+contribution layer (`user:annotations`) merged by the host, PURE participation
+in derivative composition, split-language threading, HTTP request-root loading,
+renderer source-tier marking, and reserved `user:` rule namespace. Coverage
+includes persistence round-trip, merge/delete, stale anchors, range fallback,
+unknown intents, pure promotion, split analysis, HTTP root, and renderer
+provenance. Not merged to main: anchor schema migration, column-precise visual
+ranges, nested split coordinate mapping, file locking/watcher, and full
+Nvim↔daemon E2E remain.
