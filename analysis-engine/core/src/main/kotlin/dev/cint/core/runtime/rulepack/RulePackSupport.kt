@@ -38,6 +38,8 @@ data class RulePackLoadResult(
     val loadedPackIds: List<String> get() = packs.map { it.id }
 }
 
+typealias RulePackConfigResolver = dev.cint.api.RulePackConfigResolver
+
 internal val SERVICE_RESOURCE: String = "META-INF/services/${RulePack::class.java.name}"
 internal const val MAX_SERVICE_RESOURCES = 256
 internal const val MAX_SERVICE_LINES = 4096

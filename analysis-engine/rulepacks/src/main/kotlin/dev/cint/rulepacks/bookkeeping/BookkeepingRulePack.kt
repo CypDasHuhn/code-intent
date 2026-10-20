@@ -44,7 +44,7 @@ class BookkeepingRulePack(
 ) : SingleIntentPack<BookkeepingConfig>(
         id = BOOKKEEPING_PACK_ID,
         intent = BOOKKEEPING_INTENT,
-        languages = setOf("csharp", "javascript", "kotlin", "typescript", "vue"),
+        languages = setOf("csharp", "javascript", "kotlin", "typescript"),
         config = config,
         schema = BookkeepingConfig.SCHEMA,
         ruleId = BOOKKEEPING_RULE_ID,

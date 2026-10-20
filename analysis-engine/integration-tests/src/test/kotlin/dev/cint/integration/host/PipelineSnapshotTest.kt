@@ -10,9 +10,8 @@ import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.frontend.VueFrontend
 import dev.cint.host.HostConfig
-import dev.cint.host.HostPipeline
+import dev.cint.host.HostRuntime
 import dev.cint.integration.assumeFixtureRoot
-import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.io.path.readText
@@ -130,12 +129,7 @@ class PipelineSnapshotTest {
     ): Pair<List<String>, List<Annotation>> {
         val source = SourceFile(fixture.path, root.resolve(fixture.path).readText())
         val settings = HostConfig.load(null)
-        val pipeline =
-            HostPipeline(
-                constructedPacks = BundledRulePackSelection::constructed,
-                project = settings.project,
-                knownPackIds = BundledRulePackSelection.packIds,
-            )
+        val pipeline = HostRuntime.pipeline(settings)
         val options = OracleOptions(enabled = false, timeoutMs = 1_000)
         return if (fixture.language == "vue") {
             val annotations =

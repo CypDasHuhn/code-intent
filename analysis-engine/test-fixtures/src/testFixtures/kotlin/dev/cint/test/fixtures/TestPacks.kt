@@ -6,10 +6,10 @@ import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
 import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.validation.ValidationRulePack
 
-fun testPacks(language: String): List<RulePack> =
+fun testPacks(): List<RulePack> =
     listOf(
         LoggingRulePack(),
-        ErrorHandlingRulePack.forLanguage(language),
+        ErrorHandlingRulePack(),
         BookkeepingRulePack(),
         ValidationRulePack(),
     )

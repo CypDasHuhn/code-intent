@@ -10,8 +10,8 @@ import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.host.HostConfig
-import dev.cint.host.HostPipeline
-import dev.cint.rulepacks.support.BundledRulePackSelection
+import dev.cint.host.HostRuntime
+import dev.cint.rulepacks.BundledRulePackConfigResolver
 import java.io.File
 
 private data class Args(
@@ -32,12 +32,7 @@ fun main(argv: Array<String>) {
 
     val root = File(args.root)
     require(root.exists()) { "no such path: ${args.root}" }
-    val packs =
-        HostPipeline(
-            constructedPacks = BundledRulePackSelection::constructed,
-            project = settings.project,
-            knownPackIds = BundledRulePackSelection.packIds,
-        )
+    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
 
     val files =
         root

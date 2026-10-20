@@ -1,6 +1,7 @@
 package dev.cint.host
 
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigResolver
 import dev.cint.core.config.CorePolicy
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.runtime.rulepack.RulePackLoadFailure
@@ -17,9 +18,9 @@ internal class PackConfigLoader(
 ) {
     fun load(
         config: ProjectConfig,
-        knownPackIds: Set<String> = emptySet(),
+        configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
     ): LoadedPackConfig {
-        val result = loader.load(config.packs, knownPackIds)
+        val result = loader.load(config.packs, configResolver)
         return LoadedPackConfig(result.packs, config.core, result.failures)
     }
 }

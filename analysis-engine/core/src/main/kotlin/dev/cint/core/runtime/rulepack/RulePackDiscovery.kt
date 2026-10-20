@@ -6,16 +6,55 @@ internal fun discoverRulePacks(
     classLoader: ClassLoader,
     expectedApiVersion: Int,
     config: Map<String, Map<String, Any?>>,
+    configResolver: RulePackConfigResolver,
     state: DiscoveryState,
     report: (RulePackLoadFailure) -> Unit,
-): List<LoadedRulePack> {
-    val loaded = mutableListOf<LoadedRulePack>()
+): Pair<List<LoadedRulePack>, Map<String, Map<String, Any?>>> {
+    val discovered = mutableListOf<DiscoveredRulePack>()
     for (name in providerNames(classLoader, state, report)) {
-        discoverProvider(classLoader, expectedApiVersion, name, config, state, report)?.let { loaded += it }
+        discoverProvider(classLoader, expectedApiVersion, name, state, report)?.let { discovered += it }
     }
-    return rejectDuplicatePackIds(loaded, report)
-        .sortedWith(compareBy({ it.id }, { it.sourceClassName }))
+    val configIssues = mutableListOf<RulePackConfigIssue>()
+    val resolvedConfig =
+        try {
+            configResolver.resolve(config, state.seenPackIds, configIssues)
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError) throw error
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                    emptySet(),
+                    "rulepack config resolver failed: ${error.message ?: error.javaClass.name}",
+                    error,
+                ),
+            )
+            config
+        }
+    for (issue in configIssues) {
+        report(
+            RulePackLoadFailure(
+                RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                setOf(issue.packId),
+                issue.message,
+            ),
+        )
+    }
+    val loaded = mutableListOf<LoadedRulePack>()
+    for (provider in discovered) {
+        val configured = configureRulePack(provider.pack, provider.id, resolvedConfig, report) ?: continue
+        validateRulePack(configured, provider.sourceClassName, expectedApiVersion, report)?.let { loaded += it }
+    }
+    val packs =
+        rejectDuplicatePackIds(loaded, report)
+            .sortedWith(compareBy({ it.id }, { it.sourceClassName }))
+    return packs to resolvedConfig
 }
+
+private data class DiscoveredRulePack(
+    val pack: RulePack,
+    val id: String,
+    val sourceClassName: String,
+)
 
 private fun providerNames(
     classLoader: ClassLoader,
@@ -169,10 +208,9 @@ private fun discoverProvider(
     classLoader: ClassLoader,
     expectedApiVersion: Int,
     name: String,
-    config: Map<String, Map<String, Any?>>,
     state: DiscoveryState,
     report: (RulePackLoadFailure) -> Unit,
-): LoadedRulePack? {
+): DiscoveredRulePack? {
     var className: String? = name
     return try {
         val type = Class.forName(name, false, classLoader)
@@ -242,8 +280,7 @@ private fun discoverProvider(
             return null
         }
         val id = preflightRulePack(pack, expectedApiVersion, state, report) ?: return null
-        val configured = configureRulePack(pack, id, config, report) ?: return null
-        validateRulePack(configured, className, expectedApiVersion, report)
+        DiscoveredRulePack(pack, id, className)
     } catch (error: ClassNotFoundException) {
         state.unidentifiedProviderFailure = true
         report(providerFailure(className, error, missingProvider = true))
