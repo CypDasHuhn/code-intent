@@ -136,7 +136,7 @@ not in one global file; the engine never branches on language.
 ## 5. Detection as implemented (current rulepacks)
 
 Detection is data-driven over `View` facts; rulepacks do not walk grammar node
-kinds directly. The bundled packs live in `analysis-engine/rulepacks`:
+kinds directly. The bundled packs live in `analysis-engine/modules/core/rulepacks`:
 
 - `logging:logging` — one `LOGGING` rule with print, logger-interaction, and
   logging-state matchers. It recognizes configured print calls/qualifiers,
@@ -418,17 +418,17 @@ Authoritative for resuming. Older sections are historical where they conflict.
   they share one intent name; service descriptors cover the single-instance
   logging, bookkeeping, and validation packs.
 - Syntax is data: `SyntaxModel`/`ProfileSyntaxModel` plus
-  `treesitter/src/main/resources/syntax/*.yaml` for Kotlin, JavaScript,
+  `modules/languages/treesitter/src/main/resources/syntax/*.yaml` for Kotlin, JavaScript,
   TypeScript, Vue, and C#. `LanguageFrontend` lives in core; `frontend` registers
   the language frontends and handles Vue split regions.
 - LSP: spec-driven `LspOracle`; Kotlin only. JS/TS/Vue/C# use `NullOracle`.
 - Split handlers: `SplitHandler`/`SplitRegion` + `SplitAnalyzer`. Vue extracts
   `<script>` / `<script setup lang="ts">`, analyzes as JS/TS, shifts spans.
-- CFG: `core/facts/flow/ControlFlow.kt`, built before rule evaluation.
+- CFG: `modules/core/core/facts/flow/ControlFlow.kt`, built before rule evaluation.
   `ReturnComposition` classifies returns from certified guard annotations:
   validation guard returns inherit `VALIDATION`; normal returns are `UNTAGGED`
   and block whole-function scaffolds.
-- Composition lives in `core/runtime/composition`: classes named `core:scaffold`,
+- Composition lives in `modules/core/core/runtime/composition`: classes named `core:scaffold`,
   `core:derivative-use`, `core:return-category`.
 - Purity is explicit only: literal/local reads or annotated pure calls;
   function promotion requires `@Pure`. No purity engine yet.
@@ -460,7 +460,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
 
 ### Snapshots
 
-- `integration-tests/src/test/resources/snapshots/legacy-3f20435.json` and
+- `modules/tests/integration-tests/src/test/resources/snapshots/legacy-3f20435.json` and
   `pipeline-3f20435.json` are the pre-018 (014-tree) snapshot resources restored
   from commit `739dff7`. Both are `HostPipeline` renderings over the 11
   fixtures: the legacy-shaped file omits rule ids, the pipeline file includes
@@ -489,7 +489,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
   are treated as lambda-local; guard polarity is approximate.
 - Vue LSP is not wired (NullOracle); TSX is unsupported by the binding.
 - No independent purity engine; no incremental analysis.
-- `integration-tests/.../CompositionTestSupport.kt` still constructs Kotlin
+- `modules/tests/integration-tests/.../CompositionTestSupport.kt` still constructs Kotlin
   parser/syntax directly rather than through `Frontends`.
 - `test-fixtures` rebuilds the bundled pack selection; a parity check against
   `BundledRulePackSelection` would remove drift.

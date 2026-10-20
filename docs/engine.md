@@ -8,6 +8,9 @@ The engine emits only semantic facts; clients resolve intent sets into meanings
 and visuals. Built-in frontends cover Kotlin, JavaScript, TypeScript, Vue, and
 C#.
 
+Module paths below are relative to the repository root. Command snippets that
+use `./gradlew` or `build/install` run from `analysis-engine/`.
+
 ## Modules
 
 | module | responsibility |
@@ -25,7 +28,10 @@ C#.
 | `test-fixtures` | shared `java-test-fixtures` parser, pack, and fixture helpers |
 | `integration-tests` | composition, host, frontend-pipeline, and snapshot integration tests |
 
-`core` has no tree-sitter, LSP, or editor dependency. `frontend` is the composition
+Modules are grouped under `analysis-engine/modules/core/`,
+`analysis-engine/modules/languages/`, `analysis-engine/modules/hosts/`, and
+`analysis-engine/modules/tests/`; Gradle project names remain `:api`, `:core`,
+and so on. `core` has no tree-sitter, LSP, or editor dependency. `frontend` is the composition
 root that binds a language id to its parser, syntax profile, and oracle. `host`
 owns the pipeline that assembles discovered and constructed packs, applies
 project config, and is reused by every host.
@@ -41,7 +47,7 @@ Rules, the engine, and intents are shared. A new language adds data and a small
 frontend binding, not new analysis code:
 
 1. Add the grammar dependency and a parser under `treesitter`.
-2. Add `treesitter/src/main/resources/syntax/<language>.yaml`. It maps the
+2. Add `analysis-engine/modules/languages/treesitter/src/main/resources/syntax/<language>.yaml`. It maps the
    canonical `SyntaxGroups` names to that grammar's node kinds.
 3. Register a `LanguageFrontend` under `frontend`. It supplies `parse`, `syntax`,
    and `oracle`.
@@ -49,8 +55,8 @@ frontend binding, not new analysis code:
    owning rulepack's typed config defaults.
 
 Kotlin, JavaScript, TypeScript, Vue, and C# are built in. Profiles live under
-`treesitter/src/main/resources/syntax/`, and frontends are registered in
-`frontend/`.
+`analysis-engine/modules/languages/treesitter/src/main/resources/syntax/`, and
+frontends are registered in `analysis-engine/modules/languages/frontend/`.
 
 ### Split handlers
 

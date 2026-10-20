@@ -1,6 +1,6 @@
 ---
 name: engine module layout
-status: in-progress
+status: done
 depends-on: [024, 027]
 reviewers: [correctness, architecture]
 ---
@@ -15,3 +15,12 @@ Reduce `analysis-engine` root to <=8 entries by moving Gradle modules under
 - `analysis-engine` root has <=8 entries under dir-size rules.
 - `./gradlew` task names unchanged; build/install/test/lint/nvim pass.
 - All path references (justfile, docs, README, CI) updated.
+
+## Outcome (2026-10-20)
+
+Gradle modules moved under `analysis-engine/modules/{core,languages,hosts,tests}`
+with project names/tasks unchanged and settings.gradle.kts authoritative.
+Engine root is 7 entries; no analysis-engine dir is OVERCROWDED. Structural test
+derives module roots from settings and enforces `modules/<group>/<name>`. Engine
+README moved to `docs/engine.md` with corrected paths. Reviewer concurs;
+build/test-engine/lint/test-nvim/install pass.

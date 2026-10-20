@@ -28,7 +28,7 @@ Index of the written contract for CodeIntent.
 ## Repository
 
 - [../README.md](../README.md) — project overview, components, flow, quick start.
-- [../analysis-engine/README.md](../analysis-engine/README.md) — engine modules,
+- [../docs/engine.md](../docs/engine.md) — engine modules,
   languages, detection, config, LSP, hosts, artifacts, and tests.
 - [../nvim-renderer/README.md](../nvim-renderer/README.md) — renderer setup,
   commands, profiles, shards, handlers, and protocol.
