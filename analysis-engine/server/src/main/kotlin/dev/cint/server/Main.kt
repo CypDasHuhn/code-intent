@@ -18,8 +18,9 @@ import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.host.HostConfig
 import dev.cint.host.HostPipeline
+import dev.cint.host.HostRuntime
 import dev.cint.host.HostSettings
-import dev.cint.rulepacks.support.BundledRulePackSelection
+import dev.cint.rulepacks.BundledRulePackConfigResolver
 import java.net.InetSocketAddress
 import java.nio.file.Path
 
@@ -61,12 +62,7 @@ fun main(argv: Array<String>) {
 
     val settings = HostConfig.load(configPath, language)
 
-    val packs =
-        HostPipeline(
-            constructedPacks = BundledRulePackSelection::constructed,
-            project = settings.project,
-            knownPackIds = BundledRulePackSelection.packIds,
-        )
+    val packs = HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
 
     if (socket != null) {
         LiveServer(root, Path.of(socket), useLsp, language, packs, settings).run()
@@ -107,11 +103,7 @@ private fun analyze(
     val lspOptions = settings.oracleOptions(useLsp)
     val packs =
         if (request.config != null) {
-            HostPipeline(
-                constructedPacks = BundledRulePackSelection::constructed,
-                project = settings.project,
-                knownPackIds = BundledRulePackSelection.packIds,
-            )
+            HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
         } else {
             defaultPacks
         }

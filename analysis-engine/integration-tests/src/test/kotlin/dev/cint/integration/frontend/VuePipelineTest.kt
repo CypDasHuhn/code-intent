@@ -6,8 +6,7 @@ import dev.cint.core.facts.frontend.OracleOptions
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.frontend.VueFrontend
-import dev.cint.host.HostPipeline
-import dev.cint.rulepacks.support.BundledRulePackSelection
+import dev.cint.host.HostRuntime
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +30,7 @@ class VuePipelineTest {
             </script>
             """.trimIndent()
         val source = SourceFile("Sample.vue", text)
-        val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+        val pipeline = HostRuntime.pipeline()
         val annotations =
             SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
                 IntentConfig(language, emptyMap(), emptyList())
@@ -70,7 +69,7 @@ class VuePipelineTest {
             </script>
             """.trimIndent()
         val source = SourceFile("Sample.vue", text)
-        val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+        val pipeline = HostRuntime.pipeline()
 
         val annotations =
             SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
@@ -87,7 +86,7 @@ class VuePipelineTest {
 
         val throwStart = text.substring(0, text.indexOf("throw new Error")).toByteArray(Charsets.UTF_8).size
         assertEquals(throwStart, errorHandling.startByte)
-        assertTrue(errorHandling.provenance.all { it.rule == "error-handling-typescript:error-handling" })
+        assertTrue(errorHandling.provenance.all { it.rule == "error-handling:error-handling" })
     }
 
     @Test
@@ -107,7 +106,7 @@ class VuePipelineTest {
             </script>
             """.trimIndent()
         val source = SourceFile("Sample.vue", text)
-        val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+        val pipeline = HostRuntime.pipeline()
         val annotations =
             SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
                 IntentConfig(language, emptyMap(), emptyList())

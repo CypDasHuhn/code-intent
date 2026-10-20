@@ -6,8 +6,8 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.frontend.Frontends
 import dev.cint.host.HostConfig
-import dev.cint.host.HostPipeline
-import dev.cint.rulepacks.support.BundledRulePackSelection
+import dev.cint.host.HostRuntime
+import dev.cint.rulepacks.BundledRulePackConfigResolver
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,6 +57,49 @@ class HostConfigWiringTest {
         val errorHandling = annotations.filter { it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents }
         assertEquals(1, errorHandling.size)
         assertTrue(errorHandling.single().evidence.contains("fail"))
+    }
+
+    @Test
+    fun invalidLegacyLanguageOverrideDoesNotDisableOtherErrorHandlingLanguages() {
+        val config =
+            """
+            error-handling-kotlin:
+              calls: [fail]
+            error-handling-javascript:
+              throws: not-a-boolean
+            """.trimIndent()
+
+        val kotlin =
+            analyze(
+                "kotlin",
+                """
+                fun f() {
+                    fail("boom")
+                }
+                """.trimIndent(),
+                config,
+            )
+        val javascript =
+            analyze(
+                "javascript",
+                """
+                function f(id) {
+                    assert(id, "id required");
+                }
+                """.trimIndent(),
+                config,
+            )
+
+        assertTrue(
+            kotlin.any {
+                it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents && it.evidence.contains("fail")
+            },
+        )
+        assertTrue(
+            javascript.any {
+                it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents && it.evidence.contains("assert")
+            },
+        )
     }
 
     @Test
@@ -129,12 +172,7 @@ class HostConfigWiringTest {
         Files.writeString(configFile, configText)
         try {
             val settings = HostConfig.load(configFile.toString(), language)
-            val pipeline =
-                HostPipeline(
-                    constructedPacks = BundledRulePackSelection::constructed,
-                    project = settings.project,
-                    knownPackIds = BundledRulePackSelection.packIds,
-                )
+            val pipeline = HostRuntime.pipeline(settings, BundledRulePackConfigResolver)
             val frontend = Frontends.require(language)
             val source = SourceFile("Sample.kt", text)
             val tree = frontend.parse(source)

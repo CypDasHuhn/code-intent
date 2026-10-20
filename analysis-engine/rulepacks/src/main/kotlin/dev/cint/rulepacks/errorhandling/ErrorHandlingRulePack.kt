@@ -7,14 +7,15 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.LanguageConfig
 import dev.cint.api.Matcher
-import dev.cint.api.RulePack
 import dev.cint.api.SingleIntentPack
 import dev.cint.api.View
 import dev.cint.api.emit
 
 const val ERROR_HANDLING_INTENT: Intent = "ERROR_HANDLING"
+const val ERROR_HANDLING_PACK_ID: String = "error-handling"
+const val ERROR_HANDLING_RULE_ID: String = "$ERROR_HANDLING_PACK_ID:error-handling"
 
-data class ErrorHandlingConfig(
+data class ErrorHandlingLanguageConfig(
     val calls: Set<String> = KOTLIN_CALLS,
     val qualifiers: Set<String> = emptySet(),
     val detectThrows: Boolean = true,
@@ -32,7 +33,7 @@ data class ErrorHandlingConfig(
     fun withOverrides(
         values: Map<String, Any?>,
         language: String,
-    ): ErrorHandlingConfig = SCHEMA.decode(this, values, "${ErrorHandlingRulePack.PACK_ID}-${language.lowercase()}")
+    ): ErrorHandlingLanguageConfig = SCHEMA.decode(this, values, "$ERROR_HANDLING_PACK_ID.${language.lowercase()}")
 
     companion object {
         val KOTLIN_CALLS: Set<String> =
@@ -41,78 +42,81 @@ data class ErrorHandlingConfig(
         val CSHARP_CALLS: Set<String> = setOf("Assert")
         val CSHARP_QUALIFIERS: Set<String> = setOf("Debug", "Trace", "Contract")
 
-        private val LANGUAGE_DEFAULTS: Map<String, ErrorHandlingConfig> =
+        private val LANGUAGE_DEFAULTS: Map<String, ErrorHandlingLanguageConfig> =
             linkedMapOf(
-                "kotlin" to ErrorHandlingConfig(),
-                "javascript" to ErrorHandlingConfig(calls = JAVASCRIPT_CALLS),
-                "typescript" to ErrorHandlingConfig(calls = JAVASCRIPT_CALLS),
-                "csharp" to ErrorHandlingConfig(calls = CSHARP_CALLS, qualifiers = CSHARP_QUALIFIERS),
+                "kotlin" to ErrorHandlingLanguageConfig(),
+                "javascript" to ErrorHandlingLanguageConfig(calls = JAVASCRIPT_CALLS),
+                "typescript" to ErrorHandlingLanguageConfig(calls = JAVASCRIPT_CALLS),
+                "csharp" to ErrorHandlingLanguageConfig(calls = CSHARP_CALLS, qualifiers = CSHARP_QUALIFIERS),
             )
 
         internal val SCHEMA =
             ConfigSchema.of(
-                ConfigField.strings<ErrorHandlingConfig>("calls", { it.calls }, { config, value -> config.copy(calls = value) }),
-                ConfigField.strings<ErrorHandlingConfig>(
+                ConfigField.strings<ErrorHandlingLanguageConfig>(
+                    "calls",
+                    { it.calls },
+                    { config, value -> config.copy(calls = value) },
+                ),
+                ConfigField.strings<ErrorHandlingLanguageConfig>(
                     "qualifiers",
                     { it.qualifiers },
                     { config, value -> config.copy(qualifiers = value) },
                 ),
-                ConfigField.boolean<ErrorHandlingConfig>(
+                ConfigField.boolean<ErrorHandlingLanguageConfig>(
                     "throws",
                     { it.detectThrows },
                     { config, value -> config.copy(detectThrows = value) },
                 ),
-                ConfigField.boolean<ErrorHandlingConfig>(
+                ConfigField.boolean<ErrorHandlingLanguageConfig>(
                     "detectThrows",
                     { it.detectThrows },
                     { config, value -> config.copy(detectThrows = value) },
                 ),
             )
 
-        val languages: List<String> = LANGUAGE_DEFAULTS.keys.toList()
+        fun defaults(): Map<String, ErrorHandlingLanguageConfig> = LANGUAGE_DEFAULTS
+    }
+}
 
-        fun forLanguage(language: String): ErrorHandlingConfig =
-            LanguageConfig(LANGUAGE_DEFAULTS).forLanguage(language) ?: ErrorHandlingConfig()
+data class ErrorHandlingConfig(
+    val languages: Map<String, ErrorHandlingLanguageConfig> = ErrorHandlingLanguageConfig.defaults(),
+) {
+    fun forLanguage(language: String): ErrorHandlingLanguageConfig =
+        LanguageConfig(languages).forLanguage(language, "kotlin") ?: ErrorHandlingLanguageConfig()
 
-        fun from(
-            values: Map<String, Any?>,
-            language: String,
-        ): ErrorHandlingConfig = forLanguage(language).withOverrides(values, language)
+    fun withOverrides(values: Map<String, Any?>): ErrorHandlingConfig = SCHEMA.decode(this, values, ERROR_HANDLING_PACK_ID)
+
+    companion object {
+        internal val SCHEMA =
+            LanguageConfig.schema<ErrorHandlingLanguageConfig, ErrorHandlingConfig>(
+                languageSchema = ErrorHandlingLanguageConfig.SCHEMA,
+                get = { it.languages },
+                set = { config, languages -> config.copy(languages = languages) },
+            )
+
+        val languages: Set<String> = ErrorHandlingLanguageConfig.defaults().keys
+
+        fun from(values: Map<String, Any?>): ErrorHandlingConfig = ErrorHandlingConfig().withOverrides(values)
     }
 }
 
 class ErrorHandlingRulePack(
-    language: String = "kotlin",
-    config: ErrorHandlingConfig = ErrorHandlingConfig.forLanguage(language),
+    config: ErrorHandlingConfig = ErrorHandlingConfig(),
 ) : SingleIntentPack<ErrorHandlingConfig>(
-        id = "$PACK_ID-${language.lowercase()}",
+        id = ERROR_HANDLING_PACK_ID,
         intent = ERROR_HANDLING_INTENT,
-        languages = setOf(language.lowercase()),
+        languages = config.languages.keys,
         config = config,
         schema = ErrorHandlingConfig.SCHEMA,
-        ruleId = "$PACK_ID-${language.lowercase()}:error-handling",
+        ruleId = ERROR_HANDLING_RULE_ID,
     ) {
-    val language: String = language.lowercase()
+    override val matchers: List<Matcher> = listOf(Matcher { view -> ErrorHandlingRule(config.forLanguage(view.language())).match(view) })
 
-    override val matchers: List<Matcher> = listOf(Matcher { view -> ErrorHandlingRule(config).match(view) })
-
-    override fun withConfig(config: ErrorHandlingConfig): SingleIntentPack<ErrorHandlingConfig> = ErrorHandlingRulePack(language, config)
-
-    companion object {
-        const val PACK_ID: String = "error-handling"
-
-        val languages: List<String> = ErrorHandlingConfig.languages
-
-        fun forLanguage(language: String): ErrorHandlingRulePack = ErrorHandlingRulePack(language)
-
-        fun selection(language: String): List<RulePack> = listOf(forLanguage(language))
-
-        fun all(): List<ErrorHandlingRulePack> = languages.map(::forLanguage)
-    }
+    override fun withConfig(config: ErrorHandlingConfig): SingleIntentPack<ErrorHandlingConfig> = ErrorHandlingRulePack(config)
 }
 
 private class ErrorHandlingRule(
-    private val config: ErrorHandlingConfig,
+    private val config: ErrorHandlingLanguageConfig,
 ) : Matcher {
     override fun match(view: View): List<Emit> {
         val calls = view.calls().filter(config::accepts).map { it.emit(ERROR_HANDLING_INTENT) }

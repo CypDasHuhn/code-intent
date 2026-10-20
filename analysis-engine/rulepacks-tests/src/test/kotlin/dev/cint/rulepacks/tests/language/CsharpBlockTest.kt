@@ -19,7 +19,7 @@ class CsharpBlockTest {
         val source = SourceFile("Sample.cs", text)
         val tree = CsharpParser().parse(source)
         val model = ProfileSyntaxModel(SyntaxProfiles.load("csharp"))
-        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig("csharp"), testPacks("csharp"))
+        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig("csharp"), testPacks())
     }
 
     @Test
@@ -41,7 +41,7 @@ class CsharpBlockTest {
         val annotations = analyze("""class C { void F() { throw new Exception("x"); } }""")
         assertTrue(
             annotations.any {
-                it.rule == "error-handling-csharp:error-handling" && it.intents == setOf("ERROR_HANDLING")
+                it.rule == "error-handling:error-handling" && it.intents == setOf("ERROR_HANDLING")
             },
         )
     }
@@ -51,7 +51,7 @@ class CsharpBlockTest {
         val annotations = analyze("""class C { void F(string id) { Debug.Assert(!string.IsNullOrEmpty(id)); } }""")
         assertTrue(
             annotations.any {
-                it.rule == "error-handling-csharp:error-handling" && it.intents == setOf("ERROR_HANDLING")
+                it.rule == "error-handling:error-handling" && it.intents == setOf("ERROR_HANDLING")
             },
         )
     }
@@ -59,7 +59,7 @@ class CsharpBlockTest {
     @Test
     fun assertOnUnqualifiedReceiverIsNotErrorHandling() {
         val annotations = analyze("""class C { void F(Checker c) { c.Assert(true); } }""")
-        assertTrue(annotations.none { it.rule == "error-handling-csharp:error-handling" })
+        assertTrue(annotations.none { it.rule == "error-handling:error-handling" })
     }
 
     @Test

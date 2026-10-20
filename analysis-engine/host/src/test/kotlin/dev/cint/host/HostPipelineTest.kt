@@ -7,6 +7,7 @@ import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
 import dev.cint.api.RulePackConfigException
+import dev.cint.api.RulePackConfigResolver
 import dev.cint.api.View
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.runtime.rulepack.RulePackLoadFailureKind
@@ -26,17 +27,24 @@ private class TestRule(
     override fun run(view: View): List<Emit> = emptyList()
 }
 
-private class TestPack(
-    override val id: String,
-    override val languages: Set<String>,
-    override val apiVersion: Int = CINT_API_VERSION,
-    private val entries: List<Rule>,
-) : RulePack {
-    override fun rules(): List<Rule> = entries
+class AlphaPack : RulePack {
+    override val id: String = "alpha"
+    override val languages: Set<String> = setOf("alpha")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun rules(): List<Rule> = listOf(TestRule("alpha:alpha", "ALPHA"))
 }
 
-private class ConfigurableTestPack(
-    val calls: Set<String> = setOf("default"),
+class BetaPack : RulePack {
+    override val id: String = "beta"
+    override val languages: Set<String> = setOf("beta")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun rules(): List<Rule> = listOf(TestRule("beta:beta", "BETA"))
+}
+
+class ConfigurableTestPack(
+    private val calls: Set<String> = setOf("default"),
 ) : ConfigurableRulePack {
     companion object {
         var lastCalls: Set<String>? = null
@@ -85,7 +93,7 @@ private class ConfigurableTestPack(
     override fun rules(): List<Rule> = listOf(TestRule("constructed-configurable:configurable", "CONFIGURABLE"))
 }
 
-private class ConfigurableMismatchTestPack : ConfigurableRulePack {
+class ConfigurableMismatchTestPack : ConfigurableRulePack {
     companion object {
         var configureCalls: Int = 0
             private set
@@ -116,216 +124,139 @@ class ServiceValidationPack : RulePack {
 }
 
 class HostPipelineTest {
-    private fun pipeline(
-        language: String,
-        packs: List<RulePack>,
-    ): HostPipeline =
-        HostPipeline(
-            loader = RulePackLoader(onFailure = {}),
-            constructedPacks = { if (it == language) packs else emptyList() },
-        )
-
     @Test
-    fun constructedPacksAreValidatedAndDriveTheIntentVocabulary() {
-        val pack =
-            TestPack(
-                "constructed-validation",
-                setOf("testlang"),
-                entries = listOf(TestRule("constructed-validation:validation", "VALIDATION")),
-            )
-        val pipeline = pipeline("testlang", listOf(pack))
+    fun discoveredPacksAreSelectedByLanguageAndDriveTheIntentVocabulary() {
+        val pipeline = HostPipeline(loader = RulePackLoader(onFailure = {}))
 
-        assertEquals(
-            listOf("constructed-validation"),
-            pipeline.packs("testlang").map { it.id },
-        )
-        assertEquals(
-            listOf("UNTAGGED", "VALIDATION"),
-            pipeline.intents(listOf("testlang")),
-        )
-    }
-
-    @Test
-    fun invalidConstructedPacksAreRejectedByTheLoader() {
-        val pack =
-            TestPack(
-                "constructed-mismatch",
-                setOf("testlang"),
-                apiVersion = CINT_API_VERSION + 1,
-                entries = listOf(TestRule("constructed-mismatch:validation", "VALIDATION")),
-            )
-        val pipeline = pipeline("testlang", listOf(pack))
-
-        assertTrue(pipeline.packs("testlang").isEmpty())
-        assertTrue(pipeline.plan("testlang").strata.isEmpty())
-        assertEquals(listOf("UNTAGGED"), pipeline.intents(listOf("testlang")))
-    }
-
-    @Test
-    fun constructedPacksMayDependOnDiscoveredPacks() {
-        val pack =
-            TestPack(
-                "constructed-dependent",
-                setOf("kotlin"),
-                entries = listOf(TestRule("constructed-dependent:reader", "DEPENDENT", setOf("LOGGING"))),
-            )
-        val pipeline = pipeline("kotlin", listOf(pack))
-
-        val ruleIds =
-            pipeline
-                .plan("kotlin")
-                .strata
-                .flatten()
-                .map { it.id }
-        assertTrue("fixture-good:logging" in ruleIds)
-        assertTrue("constructed-dependent:reader" in ruleIds)
-    }
-
-    @Test
-    fun constructedPacksDoNotDisplaceADiscoveredOwner() {
-        val pack =
-            TestPack(
-                "constructed-logging",
-                setOf("kotlin"),
-                entries = listOf(TestRule("constructed-logging:logging", "LOGGING")),
-            )
-        val pipeline = pipeline("kotlin", listOf(pack))
-
-        val ids = pipeline.packs("kotlin").map { it.id }
-        assertTrue("fixture-good" in ids)
-        assertFalse("constructed-logging" in ids)
+        assertEquals(listOf("fixture-good"), pipeline.packs("kotlin").map { it.id })
+        assertTrue(pipeline.packs("typescript").isEmpty())
         assertEquals(listOf("LOGGING", "UNTAGGED"), pipeline.intents(listOf("kotlin")))
     }
 
     @Test
+    fun invalidDiscoveredPacksAreRejectedByTheLoader() {
+        ConfigurableMismatchTestPack.reset()
+        withService(ConfigurableMismatchTestPack::class.java) { pipeline ->
+            assertTrue(pipeline.packs("testlang").isEmpty())
+            assertEquals(0, ConfigurableMismatchTestPack.configureCalls)
+            assertTrue(
+                pipeline.failures.any {
+                    it.kind == RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION &&
+                        it.packId == "constructed-configurable-mismatch"
+                },
+            )
+        }
+    }
+
+    @Test
+    fun discoveredPackConfigFailureIsReported() {
+        ConfigurableTestPack.reset()
+        val project =
+            ProjectConfig(
+                packs = mapOf("constructed-configurable" to mapOf("bogus" to true)),
+            )
+        withService(ConfigurableTestPack::class.java, project = project) { pipeline ->
+            assertTrue(pipeline.packs("testlang").isEmpty())
+            assertTrue(
+                pipeline.failures.any {
+                    it.kind == RulePackLoadFailureKind.INVALID_PACK_CONFIG &&
+                        it.packId == "constructed-configurable"
+                },
+            )
+            assertEquals(listOf("UNTAGGED"), pipeline.intents(listOf("testlang")))
+        }
+    }
+
+    @Test
     fun serviceValidationPackJoinsSelectionAndVocabulary() {
-        val directory = Files.createTempDirectory("cint-service-validation")
+        withService(ServiceValidationPack::class.java) { pipeline ->
+            assertEquals(listOf("service-validation"), pipeline.packs("servicelang").map { it.id })
+            assertEquals(listOf("UNTAGGED", "VALIDATION"), pipeline.intents(listOf("servicelang")))
+        }
+    }
+
+    @Test
+    fun projectConfigIsAppliedToDiscoveredPacks() {
+        ConfigurableTestPack.reset()
+        val project =
+            ProjectConfig(
+                packs = mapOf("constructed-configurable" to mapOf("calls" to listOf("audit"))),
+            )
+        withService(ConfigurableTestPack::class.java, project = project) { pipeline ->
+            assertEquals(listOf("constructed-configurable"), pipeline.packs("testlang").map { it.id })
+            assertEquals(setOf("audit"), ConfigurableTestPack.lastCalls)
+            assertEquals(listOf("CONFIGURABLE", "UNTAGGED"), pipeline.intents(listOf("testlang")))
+            assertTrue(pipeline.failures.isEmpty())
+        }
+    }
+
+    @Test
+    fun configResolverSeesDiscoveredIdsAndCanRewriteConfig() {
+        ConfigurableTestPack.reset()
+        val project =
+            ProjectConfig(
+                packs = mapOf("legacy-configurable" to mapOf("calls" to listOf("audit"))),
+            )
+        var discoveredIds: Set<String>? = null
+        val resolver =
+            RulePackConfigResolver { config, ids, _ ->
+                discoveredIds = ids
+                val values = config["legacy-configurable"] ?: return@RulePackConfigResolver config
+                config - "legacy-configurable" + ("constructed-configurable" to values)
+            }
+
+        withService(ConfigurableTestPack::class.java, project = project, configResolver = resolver) { pipeline ->
+            assertTrue("constructed-configurable" in discoveredIds.orEmpty())
+            assertEquals(setOf("audit"), ConfigurableTestPack.lastCalls)
+            assertEquals(listOf("constructed-configurable"), pipeline.packs("testlang").map { it.id })
+            assertTrue(pipeline.failures.isEmpty())
+        }
+    }
+
+    @Test
+    fun configResolverFailuresAreReportedAsInvalidConfig() {
+        val resolver = RulePackConfigResolver { _, _, _ -> error("resolver boom") }
+
+        withService(ConfigurableTestPack::class.java, configResolver = resolver) { pipeline ->
+            assertTrue(
+                pipeline.failures.any {
+                    it.kind == RulePackLoadFailureKind.INVALID_PACK_CONFIG &&
+                        it.message.contains("resolver boom")
+                },
+            )
+            assertEquals(listOf("constructed-configurable"), pipeline.packs("testlang").map { it.id })
+        }
+    }
+
+    @Test
+    fun vocabularyIsTheUnionOfSelectedPlans() {
+        withService(AlphaPack::class.java, BetaPack::class.java) { pipeline ->
+            assertEquals(listOf("alpha"), pipeline.packs("alpha").map { it.id })
+            assertEquals(listOf("beta"), pipeline.packs("beta").map { it.id })
+            assertEquals(listOf("ALPHA", "BETA", "UNTAGGED"), pipeline.intents(listOf("alpha", "beta")))
+            assertFalse("LOGGING" in pipeline.intents(listOf("alpha", "beta")))
+        }
+    }
+
+    private fun withService(
+        vararg providers: Class<out RulePack>,
+        project: ProjectConfig = ProjectConfig(),
+        configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
+        block: (HostPipeline) -> Unit,
+    ) {
+        val directory = Files.createTempDirectory("cint-host-pipeline")
         val service = directory.resolve("META-INF/services/${RulePack::class.java.name}")
         Files.createDirectories(service.parent)
-        Files.writeString(service, ServiceValidationPack::class.java.name)
-
+        Files.writeString(service, providers.joinToString("\n") { it.name })
         try {
             val classLoader =
                 URLClassLoader(
                     arrayOf(directory.toUri().toURL()),
                     HostPipelineTest::class.java.classLoader,
                 )
-            val pipeline = HostPipeline(loader = RulePackLoader(classLoader, onFailure = {}))
-
-            assertEquals(listOf("service-validation"), pipeline.packs("servicelang").map { it.id })
-            assertEquals(listOf("UNTAGGED", "VALIDATION"), pipeline.intents(listOf("servicelang")))
+            block(HostPipeline(RulePackLoader(classLoader, onFailure = {}), project, configResolver))
         } finally {
             directory.toFile().deleteRecursively()
         }
-    }
-
-    @Test
-    fun projectConfigIsAppliedToConstructedPacks() {
-        ConfigurableTestPack.reset()
-        val project =
-            ProjectConfig(
-                packs = mapOf("constructed-configurable" to mapOf("calls" to listOf("audit"))),
-            )
-        val pipeline =
-            HostPipeline(
-                loader = RulePackLoader(onFailure = {}),
-                constructedPacks = { language ->
-                    if (language == "testlang") listOf(ConfigurableTestPack()) else emptyList()
-                },
-                project = project,
-                knownPackIds = setOf("constructed-configurable"),
-            )
-
-        assertEquals(listOf("constructed-configurable"), pipeline.packs("testlang").map { it.id })
-        assertEquals(setOf("audit"), ConfigurableTestPack.lastCalls)
-        assertEquals(listOf("CONFIGURABLE", "UNTAGGED"), pipeline.intents(listOf("testlang")))
-        assertTrue(pipeline.failures.isEmpty())
-    }
-
-    @Test
-    fun constructedPackApiVersionIsCheckedBeforeConfiguration() {
-        ConfigurableMismatchTestPack.reset()
-        val project =
-            ProjectConfig(
-                packs =
-                    mapOf(
-                        "constructed-configurable-mismatch" to
-                            mapOf("calls" to listOf("audit")),
-                    ),
-            )
-        val pipeline =
-            HostPipeline(
-                loader = RulePackLoader(onFailure = {}),
-                constructedPacks = { language ->
-                    if (language == "testlang") listOf(ConfigurableMismatchTestPack()) else emptyList()
-                },
-                project = project,
-                knownPackIds = setOf("constructed-configurable-mismatch"),
-            )
-
-        assertTrue(pipeline.packs("testlang").isEmpty())
-        assertEquals(0, ConfigurableMismatchTestPack.configureCalls)
-        assertTrue(
-            pipeline.failures.any {
-                it.kind == RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION &&
-                    it.packId == "constructed-configurable-mismatch"
-            },
-        )
-    }
-
-    @Test
-    fun constructedPackConfigFailureIsReported() {
-        ConfigurableTestPack.reset()
-        val project =
-            ProjectConfig(
-                packs = mapOf("constructed-configurable" to mapOf("bogus" to true)),
-            )
-        val pipeline =
-            HostPipeline(
-                loader = RulePackLoader(onFailure = {}),
-                constructedPacks = { language ->
-                    if (language == "testlang") listOf(ConfigurableTestPack()) else emptyList()
-                },
-                project = project,
-                knownPackIds = setOf("constructed-configurable"),
-            )
-
-        assertTrue(pipeline.packs("testlang").isEmpty())
-        assertTrue(
-            pipeline.failures.any {
-                it.kind == RulePackLoadFailureKind.INVALID_PACK_CONFIG &&
-                    it.packId == "constructed-configurable"
-            },
-        )
-        assertEquals(listOf("UNTAGGED"), pipeline.intents(listOf("testlang")))
-    }
-
-    @Test
-    fun vocabularyIsTheUnionOfSelectedPlans() {
-        val alpha =
-            TestPack(
-                "constructed-alpha",
-                setOf("alpha"),
-                entries = listOf(TestRule("constructed-alpha:alpha", "ALPHA")),
-            )
-        val beta =
-            TestPack(
-                "constructed-beta",
-                setOf("beta"),
-                entries = listOf(TestRule("constructed-beta:beta", "BETA")),
-            )
-        val pipeline =
-            HostPipeline(
-                loader = RulePackLoader(onFailure = {}),
-                constructedPacks = { language ->
-                    when (language) {
-                        "alpha" -> listOf(alpha)
-                        "beta" -> listOf(beta)
-                        else -> emptyList()
-                    }
-                },
-            )
-
-        assertEquals(listOf("ALPHA", "BETA", "UNTAGGED"), pipeline.intents(listOf("alpha", "beta")))
     }
 }

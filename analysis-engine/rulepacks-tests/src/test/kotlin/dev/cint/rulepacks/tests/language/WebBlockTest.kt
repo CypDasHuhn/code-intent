@@ -30,7 +30,7 @@ class WebBlockTest {
                 TypescriptParser().parse(source)
             }
         val model = ProfileSyntaxModel(SyntaxProfiles.load(language))
-        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig(language), testPacks(language))
+        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig(language), testPacks())
     }
 
     @Test
@@ -46,7 +46,7 @@ class WebBlockTest {
         val annotations = analyze("javascript", """function f() { throw new Error("x") }""")
         assertTrue(
             annotations.any {
-                it.rule == "error-handling-javascript:error-handling" && it.intents == setOf("ERROR_HANDLING")
+                it.rule == "error-handling:error-handling" && it.intents == setOf("ERROR_HANDLING")
             },
         )
     }

@@ -1,6 +1,7 @@
 package dev.cint.host
 
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigResolver
 import dev.cint.core.config.CorePolicy
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.config.ProjectConfigIssue
@@ -22,18 +23,18 @@ class ProjectConfigLoader(
 ) {
     fun load(
         path: String?,
-        knownPackIds: Set<String> = emptySet(),
+        configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
     ): LoadedProjectConfig {
         val parsed = parseProjectConfig(path)
-        val loaded = load(parsed.config, knownPackIds)
+        val loaded = load(parsed.config, configResolver)
         return loaded.copy(issues = parsed.issues)
     }
 
     fun load(
         config: ProjectConfig,
-        knownPackIds: Set<String> = emptySet(),
+        configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
     ): LoadedProjectConfig {
-        val result = loader.load(config.packs, knownPackIds)
+        val result = loader.load(config.packs, configResolver)
         return LoadedProjectConfig(result.packs, config.core, result.failures, emptyList())
     }
 }

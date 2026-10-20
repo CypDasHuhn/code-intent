@@ -40,6 +40,8 @@ data class RulePackLoadResult(
     val isDegraded: Boolean get() = failures.isNotEmpty()
 }
 
+typealias RulePackConfigResolver = dev.cint.api.RulePackConfigResolver
+
 internal val SERVICE_RESOURCE: String = "META-INF/services/${RulePack::class.java.name}"
 internal const val MAX_SERVICE_RESOURCES = 256
 internal const val MAX_SERVICE_LINES = 4096

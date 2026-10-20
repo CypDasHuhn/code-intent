@@ -18,25 +18,27 @@ class PackConfigMigrationTest {
     fun errorHandlingDefaultsMatchTheLanguageProfiles() {
         assertEquals(
             setOf("require", "requireNotNull", "check", "checkNotNull", "error", "TODO", "assert"),
-            ErrorHandlingConfig.forLanguage("kotlin").calls,
+            ErrorHandlingConfig().forLanguage("kotlin").calls,
         )
-        assertEquals(setOf("assert", "invariant"), ErrorHandlingConfig.forLanguage("typescript").calls)
-        assertEquals(setOf("Assert"), ErrorHandlingConfig.forLanguage("csharp").calls)
-        assertEquals(setOf("Debug", "Trace", "Contract"), ErrorHandlingConfig.forLanguage("csharp").qualifiers)
-        assertTrue(ErrorHandlingConfig.forLanguage("kotlin").detectThrows)
+        assertEquals(setOf("assert", "invariant"), ErrorHandlingConfig().forLanguage("typescript").calls)
+        assertEquals(setOf("Assert"), ErrorHandlingConfig().forLanguage("csharp").calls)
+        assertEquals(setOf("Debug", "Trace", "Contract"), ErrorHandlingConfig().forLanguage("csharp").qualifiers)
+        assertTrue(ErrorHandlingConfig().forLanguage("kotlin").detectThrows)
     }
 
     @Test
     fun errorHandlingConfigReplacesOnlyNamedValues() {
         val config =
-            ErrorHandlingConfig.from(
-                mapOf(
-                    "calls" to listOf("fail"),
-                    "qualifiers" to listOf("Checks"),
-                    "throws" to false,
-                ),
-                "csharp",
-            )
+            ErrorHandlingConfig()
+                .forLanguage("csharp")
+                .withOverrides(
+                    mapOf(
+                        "calls" to listOf("fail"),
+                        "qualifiers" to listOf("Checks"),
+                        "throws" to false,
+                    ),
+                    "csharp",
+                )
 
         assertEquals(setOf("fail"), config.calls)
         assertEquals(setOf("Checks"), config.qualifiers)
@@ -47,20 +49,20 @@ class PackConfigMigrationTest {
     fun errorHandlingRejectsUnknownKeysAndBadValues() {
         val unknown =
             assertFailsWith<RulePackConfigException> {
-                ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("bogus" to true))
+                ErrorHandlingRulePack().configure(mapOf("kotlin" to mapOf("bogus" to true)))
             }
-        assertTrue(unknown.message.orEmpty().contains("error-handling-kotlin.bogus: unknown key"))
+        assertTrue(unknown.message.orEmpty().contains("error-handling.kotlin.bogus: unknown key"))
 
         val badValue =
             assertFailsWith<RulePackConfigException> {
-                ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("throws" to "yes"))
+                ErrorHandlingRulePack().configure(mapOf("kotlin" to mapOf("throws" to "yes")))
             }
-        assertTrue(badValue.message.orEmpty().contains("error-handling-kotlin.throws: expected a boolean"))
+        assertTrue(badValue.message.orEmpty().contains("error-handling.kotlin.throws: expected a boolean"))
     }
 
     @Test
     fun errorHandlingAcceptsDetectThrowsAlias() {
-        val config = ErrorHandlingConfig.from(mapOf("detectThrows" to false), "kotlin")
+        val config = ErrorHandlingConfig().forLanguage("kotlin").withOverrides(mapOf("detectThrows" to false), "kotlin")
 
         assertEquals(false, config.detectThrows)
     }
@@ -117,8 +119,8 @@ class PackConfigMigrationTest {
     @Test
     fun configuredPacksKeepTheirDistributionIdentity() {
         assertIs<ErrorHandlingRulePack>(
-            ErrorHandlingRulePack.forLanguage("javascript").configure(mapOf("calls" to listOf("audit"))),
-        ).let { assertEquals("error-handling-javascript", it.id) }
+            ErrorHandlingRulePack().configure(mapOf("javascript" to mapOf("calls" to listOf("audit")))),
+        ).let { assertEquals("error-handling", it.id) }
         assertIs<BookkeepingRulePack>(
             BookkeepingRulePack().configure(mapOf("annotation" to "Tracked")),
         ).let { assertEquals("bookkeeping", it.id) }

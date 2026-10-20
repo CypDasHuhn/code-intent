@@ -4,15 +4,12 @@ import dev.cint.api.Annotation
 import dev.cint.api.Role
 import dev.cint.api.RulePack
 import dev.cint.api.Span
-import dev.cint.core.runtime.scheduler.DuplicateIntentOwner
-import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.rulepacks.errorhandling.ERROR_HANDLING_INTENT
 import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 private data class ErrorHandlingHit(
@@ -39,42 +36,11 @@ class ErrorHandlingRulePackTest {
         val pack = ErrorHandlingRulePack()
         val rule = pack.rules().single()
 
-        assertEquals("error-handling-kotlin", pack.id)
-        assertEquals("kotlin", pack.language)
-        assertEquals(setOf("kotlin"), pack.languages)
-        assertEquals("error-handling-kotlin:error-handling", rule.id)
+        assertEquals("error-handling", pack.id)
+        assertEquals(setOf("kotlin", "javascript", "typescript", "csharp"), pack.languages)
+        assertEquals("error-handling:error-handling", rule.id)
         assertEquals(ERROR_HANDLING_INTENT, rule.owns)
         assertTrue(rule.reads.isEmpty())
-    }
-
-    @Test
-    fun packProvidesOneInstancePerSupportedLanguageWithUniqueIds() {
-        val packs = ErrorHandlingRulePack.all()
-
-        assertEquals(
-            listOf("kotlin", "javascript", "typescript", "csharp"),
-            packs.map { it.language },
-        )
-        assertEquals(packs.size, packs.map { it.id }.distinct().size)
-        assertEquals(packs.size, packs.map { it.rules().single().id }.distinct().size)
-    }
-
-    @Test
-    fun languageSelectionSchedulesAndExecutesSuccessfully() {
-        for (language in ErrorHandlingRulePack.languages) {
-            val pack = ErrorHandlingRulePack.forLanguage(language)
-            val plan = RuleEngine().plan(ErrorHandlingRulePack.selection(language))
-
-            assertEquals(1, plan.strata.size)
-            assertEquals(listOf(pack.rules().single().id), plan.strata.single().map { it.id })
-        }
-    }
-
-    @Test
-    fun mixedLanguageCoLoadFailsAsDuplicateIntentOwner() {
-        val error = assertFailsWith<DuplicateIntentOwner> { RuleEngine().plan(ErrorHandlingRulePack.all()) }
-
-        assertTrue(error.message.orEmpty().contains(ERROR_HANDLING_INTENT))
     }
 
     @Test
@@ -164,7 +130,7 @@ class ErrorHandlingRulePackTest {
     @Test
     fun disabledThrowsConfigSkipsThrows() {
         val text = """fun f() { throw Exception("x") }"""
-        val pack = ErrorHandlingRulePack("kotlin", ErrorHandlingConfig(detectThrows = false))
+        val pack = ErrorHandlingRulePack().configure(mapOf("kotlin" to mapOf("detectThrows" to false)))
 
         assertTrue(newHits("kotlin", text).isNotEmpty())
         assertTrue(newHits("kotlin", text, pack).isEmpty())
@@ -173,7 +139,7 @@ class ErrorHandlingRulePackTest {
     @Test
     fun detectThrowsAliasControlsThrowEmission() {
         val text = """fun f() { throw Exception("x") }"""
-        val pack = ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("detectThrows" to false))
+        val pack = ErrorHandlingRulePack().configure(mapOf("kotlin" to mapOf("detectThrows" to false)))
 
         assertTrue(newHits("kotlin", text).isNotEmpty())
         assertTrue(newHits("kotlin", text, pack).isEmpty())
@@ -182,7 +148,7 @@ class ErrorHandlingRulePackTest {
     private fun newHits(
         language: String,
         text: String,
-    ): List<ErrorHandlingHit> = newHits(language, text, ErrorHandlingRulePack.forLanguage(language))
+    ): List<ErrorHandlingHit> = newHits(language, text, ErrorHandlingRulePack())
 
     private fun newHits(
         language: String,

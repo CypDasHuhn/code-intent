@@ -104,7 +104,7 @@ internal fun replaySource(
     val source = SourceFile("Sample.kt", text)
     val tree = KotlinParser().parse(source)
     val annotations =
-        RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks("kotlin"))
+        RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks())
     val emissions = linkedMapOf<String, MutableList<Emit>>()
     for ((role, intents, evidence, span, source1, confidence, startByte, endByte) in annotations) {
         if (role != Role.SOURCE_INTENT) continue
