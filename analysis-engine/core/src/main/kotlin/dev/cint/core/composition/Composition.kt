@@ -97,7 +97,7 @@ class Composition {
         }
         val context = AnalysisContext(file, tree, syntax, flow, oracle, config, store)
 
-        val returns = returnContributions(context)
+        val returns = returnContributions(context, config)
         store.replaceRule(RETURN_KEY, returns)
         val derivatives = settle(store, DERIVATIVE_KEY) {
             derivativeContributions(context, config.pureAnnotations)
@@ -128,10 +128,13 @@ class Composition {
         }
     }
 
-    private fun returnContributions(ctx: RuleContext): List<Contribution> =
+    private fun returnContributions(
+        ctx: RuleContext,
+        config: IntentConfig,
+    ): List<Contribution> =
         ctx.flow.returns
             .map { site ->
-                val validation = isValidationReturn(ctx, site)
+                val validation = isValidationReturn(ctx, site, config)
                 val intents = setOf(if (validation) VALIDATION_INTENT else UNTAGGED_INTENT)
                 site.node.raw(
                     Role.SCAFFOLD,
@@ -145,8 +148,9 @@ class Composition {
     private fun isValidationReturn(
         ctx: RuleContext,
         site: ReturnSite,
+        config: IntentConfig,
     ): Boolean {
-        val guard = site.guards.lastOrNull { isValidationGuard(ctx, it) } ?: return false
+        val guard = site.guards.lastOrNull { isValidationGuard(ctx, it, config) } ?: return false
         if (guard.onTrue) return true
         return isRejection(site)
     }
@@ -154,8 +158,46 @@ class Composition {
     private fun isValidationGuard(
         ctx: RuleContext,
         guard: Guard,
-    ): Boolean =
-        ctx.containingAnnotations(guard.condition).any { VALIDATION_INTENT in it.intents }
+        config: IntentConfig,
+    ): Boolean {
+        val certified =
+            ctx.containingAnnotations(guard.condition).any { VALIDATION_INTENT in it.intents } ||
+                ctx.containingAnnotations(guard.node).any { VALIDATION_INTENT in it.intents }
+        if (!certified) return false
+        val explicit = hasValidationComment(ctx, guard.node)
+        val predicate = isValidationPredicate(ctx, guard.condition, config)
+        val pure = ctx.syntax.isSideEffectFree(guard.condition)
+        if (ctx.syntax.isConstant(guard.condition) && !explicit) return false
+        return explicit || predicate || pure
+    }
+
+    private fun isValidationPredicate(
+        ctx: RuleContext,
+        condition: SyntaxNode,
+        config: IntentConfig,
+    ): Boolean {
+        val definition = config.intents[VALIDATION_INTENT] ?: return false
+        val predicates = definition.list("predicates").toSet()
+        val prefixes = definition.list("predicatePrefixes")
+        return ctx.syntax.callsIn(condition).any { call ->
+            val name = call.callee ?: return@any false
+            name in predicates || prefixes.any { name.startsWith(it) }
+        }
+    }
+
+    private fun hasValidationComment(
+        ctx: RuleContext,
+        ifNode: SyntaxNode,
+    ): Boolean {
+        val scope =
+            ctx.syntax
+                .enclosingFunction(ifNode)
+                ?.let { ctx.syntax.bodyOf(it) }
+                ?: ctx.tree.root
+        val comment = ctx.syntax.closestCommentBefore(scope, ifNode) ?: return false
+        if (ifNode.startLine - comment.endLine > 1) return false
+        return Regex("""cint\s*:\s*validation""").containsMatchIn(comment.text.lowercase())
+    }
 
     private fun isRejection(site: ReturnSite): Boolean {
         val expression = site.expression ?: return true
@@ -310,24 +352,28 @@ class Composition {
                 }
 
                 val result = mutableListOf<Contribution>()
-                result +=
-                    tagRange(
-                        guard.node,
-                        thenBody,
-                        thenIntents,
-                        SCAFFOLD_RULE,
-                        "treesitter",
-                        0.9,
-                    )
-                result +=
-                    tagRange(
-                        guard.elseKeyword ?: elseBody,
-                        elseBody,
-                        elseIntents,
-                        SCAFFOLD_RULE,
-                        "treesitter",
-                        0.9,
-                    )
+                if (thenIntents.isNotEmpty()) {
+                    result +=
+                        tagRange(
+                            guard.node,
+                            thenBody,
+                            thenIntents,
+                            SCAFFOLD_RULE,
+                            "treesitter",
+                            0.9,
+                        )
+                }
+                if (elseIntents.isNotEmpty()) {
+                    result +=
+                        tagRange(
+                            guard.elseKeyword ?: elseBody,
+                            elseBody,
+                            elseIntents,
+                            SCAFFOLD_RULE,
+                            "treesitter",
+                            0.9,
+                        )
+                }
                 result
             }.toList()
 
@@ -454,6 +500,7 @@ class Composition {
                 return covered.intents
             }
             val expression = ctx.syntax.exitExpression(node) ?: return emptySet()
+            if (expression.text.trim() == "false") return emptySet()
             if (ctx.syntax.isConstant(expression) || ctx.syntax.isSideEffectFree(expression)) {
                 return setOf(UNTAGGED_INTENT)
             }

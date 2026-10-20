@@ -52,6 +52,10 @@ interface View {
     fun enclosingDeclaration(node: SyntaxNode): SyntaxNode?
     fun writes(reference: SyntaxNode): SyntaxNode?
     fun isAnnotatedPure(node: SyntaxNode): Boolean
+    fun isConstant(node: SyntaxNode): Boolean
+    fun isSideEffectFree(node: SyntaxNode): Boolean
+    fun statements(container: SyntaxNode): List<SyntaxNode>?
+    fun isExit(node: SyntaxNode): Boolean
 
     fun annotations(intent: Intent): List<Annotation>
     fun intentsAt(node: SyntaxNode): Set<Intent>

@@ -61,6 +61,14 @@ class CapabilityView(
 
     override fun isAnnotatedPure(node: SyntaxNode): Boolean = context.syntax.isAnnotatedPure(node, pureAnnotations)
 
+    override fun isConstant(node: SyntaxNode): Boolean = context.syntax.isConstant(node)
+
+    override fun isSideEffectFree(node: SyntaxNode): Boolean = context.syntax.isSideEffectFree(node)
+
+    override fun statements(container: SyntaxNode): List<SyntaxNode>? = context.syntax.statements(container)
+
+    override fun isExit(node: SyntaxNode): Boolean = context.syntax.isExit(node)
+
     override fun annotations(intent: Intent): List<Annotation> {
         if (intent !in visible) {
             if (failOnUndeclaredRead) {
