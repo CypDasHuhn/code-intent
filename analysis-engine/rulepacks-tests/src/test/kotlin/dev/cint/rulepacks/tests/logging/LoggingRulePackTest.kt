@@ -8,9 +8,9 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.oracle.SymbolFact
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
-import dev.cint.core.runtime.scheduler.RuleEngine
-import dev.cint.frontend.Frontends
 import dev.cint.rulepacks.logging.LoggingRulePack
+import dev.cint.rulepacks.tests.support.analyzePack
+import dev.cint.rulepacks.tests.support.parsePackInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -47,17 +47,6 @@ private class FixedOracle(
     ): SymbolFact? = null
 }
 
-private fun newAnnotations(
-    file: SourceFile,
-    language: String,
-    oracle: TypeOracle = NullOracle,
-): List<Annotation> {
-    val config = IntentConfig(language, emptyMap(), emptyList())
-    val frontend = Frontends.require(language)
-    val tree = frontend.parse(file)
-    return RuleEngine().analyze(file, tree, frontend.syntax(tree), oracle, config, listOf(LoggingRulePack()))
-}
-
 private fun sourceFor(
     language: String,
     text: String,
@@ -77,7 +66,17 @@ private fun newFor(
     language: String,
     text: String,
     oracle: TypeOracle = NullOracle,
-): List<Annotation> = newAnnotations(sourceFor(language, text), language, oracle)
+): List<Annotation> =
+    analyzePack(
+        parsePackInput(
+            language,
+            text,
+            sourceFor(language, text).path,
+            IntentConfig(language, emptyMap(), emptyList()),
+        ),
+        listOf(LoggingRulePack()),
+        oracle,
+    ).annotations
 
 private data class LoggingHit(
     val startByte: Int,
@@ -156,18 +155,11 @@ class LoggingRulePackTest {
                 }
                 """.trimIndent(),
             )
-        val config = IntentConfig("kotlin", emptyMap(), emptyList())
-        val frontend = Frontends.require("kotlin")
-        val tree = frontend.parse(file)
         val annotations =
-            RuleEngine().analyze(
-                file,
-                tree,
-                frontend.syntax(tree),
-                NullOracle,
-                config,
+            analyzePack(
+                parsePackInput("kotlin", file.text, file.path, IntentConfig("kotlin", emptyMap(), emptyList())),
                 listOf(pack),
-            )
+            ).annotations
 
         val logging = loggingSpans(annotations)
         assertEquals(1, logging.size)

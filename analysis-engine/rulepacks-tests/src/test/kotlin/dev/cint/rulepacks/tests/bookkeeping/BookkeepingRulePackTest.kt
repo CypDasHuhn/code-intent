@@ -1,32 +1,15 @@
 package dev.cint.rulepacks.tests.bookkeeping
 
 import dev.cint.api.Annotation
-import dev.cint.api.Role
-import dev.cint.core.facts.model.SourceFile
-import dev.cint.core.facts.oracle.NullOracle
-import dev.cint.core.runtime.scheduler.RuleEngine
-import dev.cint.core.syntax.ProfileSyntaxModel
-import dev.cint.core.syntax.SyntaxModel
-import dev.cint.core.syntax.SyntaxProfiles
-import dev.cint.core.syntax.SyntaxTree
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
-import dev.cint.rulepacks.tests.support.testConfig
-import dev.cint.treesitter.CsharpParser
-import dev.cint.treesitter.JavascriptParser
-import dev.cint.treesitter.KotlinParser
-import dev.cint.treesitter.KotlinSyntaxModel
-import dev.cint.treesitter.TypescriptParser
+import dev.cint.rulepacks.tests.support.PackInput
+import dev.cint.rulepacks.tests.support.analyzePack
+import dev.cint.rulepacks.tests.support.parsePackInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class BookkeepingRulePackTest {
-    private data class Input(
-        val source: SourceFile,
-        val tree: SyntaxTree,
-        val syntax: SyntaxModel,
-    )
-
     @Test
     fun writesInheritBookkeepingAndReadsDoNot() {
         val text =
@@ -183,30 +166,12 @@ class BookkeepingRulePackTest {
 
     private fun bookkeeping(
         language: String,
-        input: Input,
-    ): List<Annotation> =
-        RuleEngine()
-            .analyze(
-                input.source,
-                input.tree,
-                input.syntax,
-                NullOracle,
-                testConfig(language),
-                listOf(BookkeepingRulePack()),
-            ).filter { it.role == Role.SOURCE_INTENT && "BOOKKEEPING" in it.intents }
+        input: PackInput,
+    ): List<Annotation> = analyzePack(input, listOf(BookkeepingRulePack())).source("BOOKKEEPING")
 
     private fun parse(
         language: String,
         name: String,
         text: String,
-    ): Input {
-        val source = SourceFile(name, text)
-        return when (language) {
-            "kotlin" -> Input(source, KotlinParser().parse(source), KotlinSyntaxModel)
-            "javascript" -> Input(source, JavascriptParser().parse(source), ProfileSyntaxModel(SyntaxProfiles.load(language)))
-            "typescript" -> Input(source, TypescriptParser().parse(source), ProfileSyntaxModel(SyntaxProfiles.load(language)))
-            "csharp" -> Input(source, CsharpParser().parse(source), ProfileSyntaxModel(SyntaxProfiles.load(language)))
-            else -> error("unsupported language: $language")
-        }
-    }
+    ): PackInput = parsePackInput(language, text, name)
 }

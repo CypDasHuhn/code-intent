@@ -1,19 +1,15 @@
 package dev.cint.rulepacks.bookkeeping
 
-import dev.cint.api.CINT_API_VERSION
-import dev.cint.api.ConfigurableRulePack
+import dev.cint.api.ConfigField
+import dev.cint.api.ConfigSchema
 import dev.cint.api.Emit
 import dev.cint.api.Intent
+import dev.cint.api.Matcher
 import dev.cint.api.PropertyFact
-import dev.cint.api.Rule
-import dev.cint.api.RulePack
-import dev.cint.api.RulePackConfigException
+import dev.cint.api.SingleIntentPack
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.support.configString
-import dev.cint.rulepacks.support.configStringSets
-import dev.cint.rulepacks.support.configStrings
 
 const val BOOKKEEPING_INTENT: Intent = "BOOKKEEPING"
 const val BOOKKEEPING_PACK_ID: String = "bookkeeping"
@@ -34,81 +30,70 @@ data class BookkeepingConfig(
                 setOf("variable_declaration", "local_declaration_statement", "field_declaration"),
         ),
 ) {
-    fun withOverrides(values: Map<String, Any?>): BookkeepingConfig {
-        val errors = mutableListOf<String>()
-        var updated = this
-        for ((rawKey, rawValue) in values) {
-            val path = "$BOOKKEEPING_PACK_ID.$rawKey"
-            updated =
-                when (rawKey) {
-                    "annotation" -> {
-                        updated.copy(annotation = configString(rawValue, path, errors) ?: updated.annotation)
-                    }
-
-                    "magicComment" -> {
-                        updated.copy(magicComment = configString(rawValue, path, errors) ?: updated.magicComment)
-                    }
-
-                    "annotationKinds" -> {
-                        updated.copy(
-                            annotationKinds = configStrings(rawValue, path, errors) ?: updated.annotationKinds,
-                        )
-                    }
-
-                    "modifierKinds" -> {
-                        updated.copy(modifierKinds = configStrings(rawValue, path, errors) ?: updated.modifierKinds)
-                    }
-
-                    "propertyKinds" -> {
-                        updated.copy(propertyKinds = configStrings(rawValue, path, errors) ?: updated.propertyKinds)
-                    }
-
-                    "declarationWrappersByRoot" -> {
-                        updated.copy(
-                            declarationWrappersByRoot =
-                                configStringSets(rawValue, path, errors) ?: updated.declarationWrappersByRoot,
-                        )
-                    }
-
-                    else -> {
-                        errors += "$path: unknown key"
-                        updated
-                    }
-                }
-        }
-        if (errors.isNotEmpty()) throw RulePackConfigException(errors.joinToString("; "))
-        return updated
-    }
+    fun withOverrides(values: Map<String, Any?>): BookkeepingConfig = SCHEMA.decode(this, values, BOOKKEEPING_PACK_ID)
 
     companion object {
+        internal val SCHEMA =
+            ConfigSchema.of(
+                ConfigField.string<BookkeepingConfig>(
+                    "annotation",
+                    { it.annotation },
+                    { config, value -> config.copy(annotation = value) },
+                ),
+                ConfigField.string<BookkeepingConfig>(
+                    "magicComment",
+                    { it.magicComment },
+                    { config, value -> config.copy(magicComment = value) },
+                ),
+                ConfigField.strings<BookkeepingConfig>(
+                    "annotationKinds",
+                    { it.annotationKinds },
+                    { config, value -> config.copy(annotationKinds = value) },
+                ),
+                ConfigField.strings<BookkeepingConfig>(
+                    "modifierKinds",
+                    { it.modifierKinds },
+                    { config, value -> config.copy(modifierKinds = value) },
+                ),
+                ConfigField.strings<BookkeepingConfig>(
+                    "propertyKinds",
+                    { it.propertyKinds },
+                    { config, value -> config.copy(propertyKinds = value) },
+                ),
+                ConfigField.stringSets<BookkeepingConfig>(
+                    "declarationWrappersByRoot",
+                    { it.declarationWrappersByRoot },
+                    { config, value -> config.copy(declarationWrappersByRoot = value) },
+                ),
+            )
+
         fun from(values: Map<String, Any?>): BookkeepingConfig = BookkeepingConfig().withOverrides(values)
     }
 }
 
 class BookkeepingRulePack(
-    private val config: BookkeepingConfig = BookkeepingConfig(),
-) : ConfigurableRulePack {
-    override val id: String = BOOKKEEPING_PACK_ID
-    override val apiVersion: Int = CINT_API_VERSION
-    override val languages: Set<String> = setOf("csharp", "javascript", "kotlin", "typescript", "vue")
+    config: BookkeepingConfig = BookkeepingConfig(),
+) : SingleIntentPack<BookkeepingConfig>(
+        id = BOOKKEEPING_PACK_ID,
+        intent = BOOKKEEPING_INTENT,
+        languages = setOf("csharp", "javascript", "kotlin", "typescript", "vue"),
+        config = config,
+        schema = BookkeepingConfig.SCHEMA,
+        ruleId = BOOKKEEPING_RULE_ID,
+    ) {
+    override val matchers: List<Matcher> = listOf(Matcher { view -> BookkeepingRule(config).match(view) })
 
-    override fun configure(values: Map<String, Any?>): RulePack = BookkeepingRulePack(config.withOverrides(values))
-
-    override fun rules(): List<Rule> = listOf(BookkeepingRule(config))
+    override fun withConfig(config: BookkeepingConfig): SingleIntentPack<BookkeepingConfig> = BookkeepingRulePack(config)
 }
 
 private class BookkeepingRule(
     private val config: BookkeepingConfig,
-) : Rule {
-    override val id: String = BOOKKEEPING_RULE_ID
-    override val owns: Intent = BOOKKEEPING_INTENT
-    override val reads: Set<Intent> = emptySet()
-
+) : Matcher {
     private val annotationPattern = Regex("""\.${Regex.escape(config.annotation)}$""")
     private val magicCommentPattern =
         Regex("""cint\s*:\s*${Regex.escape(config.magicComment)}""", RegexOption.IGNORE_CASE)
 
-    override fun run(view: View): List<Emit> {
+    override fun match(view: View): List<Emit> {
         val references = view.references()
         val properties = view.properties()
         val wrapperKinds =

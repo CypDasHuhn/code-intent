@@ -31,7 +31,7 @@ host and client cutover at the end.
 | 018 | [return parity for non-direct-exit guards](018-return-parity-non-direct-exit.md) | done | 009, 010 | Restore ReturnBlock parity for nested/else-edge validation returns without direct then-exit guards. |
 
 | 019 | [rulepack semantic foundation](019-rulepack-semantic-foundation.md) | done | — | Profile semantic roles, View facts, emit builders. |
-| 020 | [rulepack skeleton and config support](020-rulepack-skeleton-and-config.md) | todo | 019 | Single-intent skeleton, typed config decoding, shared test harness. |
+| 020 | [rulepack skeleton and config support](020-rulepack-skeleton-and-config.md) | done | 019 | Single-intent skeleton, typed config decoding, shared test harness. |
 | 021 | [simplify bookkeeping pack](021-simplify-bookkeeping-pack.md) | todo | 020 | Pilot semantic-fact rewrite; target <80 lines. |
 | 022 | [simplify error and validation packs](022-simplify-error-and-validation-packs.md) | todo | 020 | Call/guard facts; remove traversal/config boilerplate. |
 | 023 | [simplify logging pack](023-simplify-logging-pack.md) | todo | 020 | Call/type/config predicates; remove call extraction. |

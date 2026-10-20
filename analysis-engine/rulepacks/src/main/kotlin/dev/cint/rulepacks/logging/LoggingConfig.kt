@@ -1,6 +1,8 @@
 package dev.cint.rulepacks.logging
 
-import dev.cint.api.RulePackConfigException
+import dev.cint.api.ConfigField
+import dev.cint.api.ConfigSchema
+import dev.cint.api.LanguageConfig
 
 data class LoggingLanguageConfig(
     val printCalls: Set<String> = emptySet(),
@@ -18,128 +20,57 @@ data class LoggingConfig(
     val languages: Map<String, LoggingLanguageConfig> = defaults(),
 ) {
     fun forLanguage(language: String): LoggingLanguageConfig =
-        languages[language]
-            ?: languages[language.lowercase()]
-            ?: languages["kotlin"]
+        LanguageConfig(languages).forLanguage(language, "kotlin")
             ?: LoggingLanguageConfig()
 
-    fun withOverrides(values: Map<String, Any?>): LoggingConfig {
-        val errors = mutableListOf<String>()
-        val updated = languages.toMutableMap()
-        for ((language, raw) in values) {
-            val key = languages.keys.firstOrNull { it.equals(language, ignoreCase = true) }
-            if (key == null) {
-                errors += "logging.$language: unknown language"
-                continue
-            }
-            if (raw !is Map<*, *>) {
-                errors += "logging.$language: expected a map"
-                continue
-            }
-            var languageConfig = updated.getValue(key)
-            for ((rawKey, rawValue) in raw) {
-                val path = "logging.$language.$rawKey"
-                if (rawKey !is String) {
-                    errors += "$path: config keys must be strings"
-                    continue
-                }
-                languageConfig =
-                    when (rawKey) {
-                        "printCalls" -> {
-                            languageConfig.copy(
-                                printCalls = strings(rawValue, path, errors) ?: languageConfig.printCalls,
-                            )
-                        }
-
-                        "printQualifiers" -> {
-                            languageConfig.copy(
-                                printQualifiers = strings(rawValue, path, errors) ?: languageConfig.printQualifiers,
-                            )
-                        }
-
-                        "methods" -> {
-                            languageConfig.copy(
-                                methods = strings(rawValue, path, errors) ?: languageConfig.methods,
-                            )
-                        }
-
-                        "types" -> {
-                            languageConfig.copy(
-                                types = strings(rawValue, path, errors) ?: languageConfig.types,
-                            )
-                        }
-
-                        "factories" -> {
-                            languageConfig.copy(
-                                factories = strings(rawValue, path, errors) ?: languageConfig.factories,
-                            )
-                        }
-
-                        "receiverNames" -> {
-                            languageConfig.copy(
-                                receiverNames = strings(rawValue, path, errors) ?: languageConfig.receiverNames,
-                            )
-                        }
-
-                        "qualifiers" -> {
-                            languageConfig.copy(
-                                qualifiers = strings(rawValue, path, errors) ?: languageConfig.qualifiers,
-                            )
-                        }
-
-                        "guardNames" -> {
-                            languageConfig.copy(
-                                guardNames = strings(rawValue, path, errors) ?: languageConfig.guardNames,
-                            )
-                        }
-
-                        "imports" -> {
-                            languageConfig.copy(
-                                imports = strings(rawValue, path, errors) ?: languageConfig.imports,
-                            )
-                        }
-
-                        else -> {
-                            errors += "$path: unknown key"
-                            languageConfig
-                        }
-                    }
-            }
-            updated[key] = languageConfig
-        }
-        if (errors.isNotEmpty()) {
-            throw RulePackConfigException(errors.joinToString("; "))
-        }
-        return LoggingConfig(updated)
-    }
+    fun withOverrides(values: Map<String, Any?>): LoggingConfig = SCHEMA.decode(this, values, "logging")
 
     companion object {
+        private val LANGUAGE_SCHEMA =
+            ConfigSchema.of(
+                ConfigField.strings<LoggingLanguageConfig>(
+                    "printCalls",
+                    { it.printCalls },
+                    { config, value -> config.copy(printCalls = value) },
+                ),
+                ConfigField.strings<LoggingLanguageConfig>(
+                    "printQualifiers",
+                    { it.printQualifiers },
+                    { config, value -> config.copy(printQualifiers = value) },
+                ),
+                ConfigField.strings<LoggingLanguageConfig>("methods", { it.methods }, { config, value -> config.copy(methods = value) }),
+                ConfigField.strings<LoggingLanguageConfig>("types", { it.types }, { config, value -> config.copy(types = value) }),
+                ConfigField.strings<LoggingLanguageConfig>(
+                    "factories",
+                    { it.factories },
+                    { config, value -> config.copy(factories = value) },
+                ),
+                ConfigField.strings<LoggingLanguageConfig>(
+                    "receiverNames",
+                    { it.receiverNames },
+                    { config, value -> config.copy(receiverNames = value) },
+                ),
+                ConfigField.strings<LoggingLanguageConfig>(
+                    "qualifiers",
+                    { it.qualifiers },
+                    { config, value -> config.copy(qualifiers = value) },
+                ),
+                ConfigField.strings<LoggingLanguageConfig>(
+                    "guardNames",
+                    { it.guardNames },
+                    { config, value -> config.copy(guardNames = value) },
+                ),
+                ConfigField.strings<LoggingLanguageConfig>("imports", { it.imports }, { config, value -> config.copy(imports = value) }),
+            )
+
+        internal val SCHEMA =
+            LanguageConfig.schema<LoggingLanguageConfig, LoggingConfig>(
+                languageSchema = LANGUAGE_SCHEMA,
+                get = { it.languages },
+                set = { config, languages -> config.copy(languages = languages) },
+            )
+
         fun from(values: Map<String, Any?>): LoggingConfig = LoggingConfig().withOverrides(values)
-
-        private fun strings(
-            value: Any?,
-            path: String,
-            errors: MutableList<String>,
-        ): Set<String>? =
-            when (value) {
-                is String -> {
-                    setOf(value)
-                }
-
-                is List<*> -> {
-                    if (value.all { it is String }) {
-                        value.map { it as String }.toSet()
-                    } else {
-                        errors += "$path: expected a string or list of strings"
-                        null
-                    }
-                }
-
-                else -> {
-                    errors += "$path: expected a string or list of strings"
-                    null
-                }
-            }
 
         fun defaults(): Map<String, LoggingLanguageConfig> =
             mapOf(

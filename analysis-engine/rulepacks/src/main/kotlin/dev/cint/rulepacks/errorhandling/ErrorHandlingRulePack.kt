@@ -1,17 +1,16 @@
 package dev.cint.rulepacks.errorhandling
 
-import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.CallFact
-import dev.cint.api.ConfigurableRulePack
+import dev.cint.api.ConfigField
+import dev.cint.api.ConfigSchema
 import dev.cint.api.Emit
 import dev.cint.api.Intent
-import dev.cint.api.Rule
+import dev.cint.api.LanguageConfig
+import dev.cint.api.Matcher
 import dev.cint.api.RulePack
-import dev.cint.api.RulePackConfigException
+import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.support.configBoolean
-import dev.cint.rulepacks.support.configStrings
 
 const val ERROR_HANDLING_INTENT: Intent = "ERROR_HANDLING"
 
@@ -32,35 +31,7 @@ data class ErrorHandlingConfig(
     fun withOverrides(
         values: Map<String, Any?>,
         language: String,
-    ): ErrorHandlingConfig {
-        val errors = mutableListOf<String>()
-        val path = "${ErrorHandlingRulePack.PACK_ID}-${language.lowercase()}"
-        var updated = this
-        for ((rawKey, rawValue) in values) {
-            val key = "$path.$rawKey"
-            updated =
-                when (rawKey) {
-                    "calls" -> {
-                        updated.copy(calls = configStrings(rawValue, key, errors) ?: updated.calls)
-                    }
-
-                    "qualifiers" -> {
-                        updated.copy(qualifiers = configStrings(rawValue, key, errors) ?: updated.qualifiers)
-                    }
-
-                    "throws", "detectThrows" -> {
-                        updated.copy(detectThrows = configBoolean(rawValue, key, errors) ?: updated.detectThrows)
-                    }
-
-                    else -> {
-                        errors += "$key: unknown key"
-                        updated
-                    }
-                }
-        }
-        if (errors.isNotEmpty()) throw RulePackConfigException(errors.joinToString("; "))
-        return updated
-    }
+    ): ErrorHandlingConfig = SCHEMA.decode(this, values, "${ErrorHandlingRulePack.PACK_ID}-${language.lowercase()}")
 
     companion object {
         val KOTLIN_CALLS: Set<String> =
@@ -69,14 +40,38 @@ data class ErrorHandlingConfig(
         val CSHARP_CALLS: Set<String> = setOf("Assert")
         val CSHARP_QUALIFIERS: Set<String> = setOf("Debug", "Trace", "Contract")
 
-        val languages: List<String> = listOf("kotlin", "javascript", "typescript", "csharp")
+        private val LANGUAGE_DEFAULTS: Map<String, ErrorHandlingConfig> =
+            linkedMapOf(
+                "kotlin" to ErrorHandlingConfig(),
+                "javascript" to ErrorHandlingConfig(calls = JAVASCRIPT_CALLS),
+                "typescript" to ErrorHandlingConfig(calls = JAVASCRIPT_CALLS),
+                "csharp" to ErrorHandlingConfig(calls = CSHARP_CALLS, qualifiers = CSHARP_QUALIFIERS),
+            )
+
+        internal val SCHEMA =
+            ConfigSchema.of(
+                ConfigField.strings<ErrorHandlingConfig>("calls", { it.calls }, { config, value -> config.copy(calls = value) }),
+                ConfigField.strings<ErrorHandlingConfig>(
+                    "qualifiers",
+                    { it.qualifiers },
+                    { config, value -> config.copy(qualifiers = value) },
+                ),
+                ConfigField.boolean<ErrorHandlingConfig>(
+                    "throws",
+                    { it.detectThrows },
+                    { config, value -> config.copy(detectThrows = value) },
+                ),
+                ConfigField.boolean<ErrorHandlingConfig>(
+                    "detectThrows",
+                    { it.detectThrows },
+                    { config, value -> config.copy(detectThrows = value) },
+                ),
+            )
+
+        val languages: List<String> = LANGUAGE_DEFAULTS.keys.toList()
 
         fun forLanguage(language: String): ErrorHandlingConfig =
-            when (language.lowercase()) {
-                "javascript", "typescript" -> ErrorHandlingConfig(calls = JAVASCRIPT_CALLS)
-                "csharp" -> ErrorHandlingConfig(calls = CSHARP_CALLS, qualifiers = CSHARP_QUALIFIERS)
-                else -> ErrorHandlingConfig()
-            }
+            LanguageConfig(LANGUAGE_DEFAULTS).forLanguage(language) ?: ErrorHandlingConfig()
 
         fun from(
             values: Map<String, Any?>,
@@ -87,19 +82,20 @@ data class ErrorHandlingConfig(
 
 class ErrorHandlingRulePack(
     language: String = "kotlin",
-    private val config: ErrorHandlingConfig = ErrorHandlingConfig.forLanguage(language),
-) : ConfigurableRulePack {
+    config: ErrorHandlingConfig = ErrorHandlingConfig.forLanguage(language),
+) : SingleIntentPack<ErrorHandlingConfig>(
+        id = "$PACK_ID-${language.lowercase()}",
+        intent = ERROR_HANDLING_INTENT,
+        languages = setOf(language.lowercase()),
+        config = config,
+        schema = ErrorHandlingConfig.SCHEMA,
+        ruleId = "$PACK_ID-${language.lowercase()}:error-handling",
+    ) {
     val language: String = language.lowercase()
 
-    override val id: String = "$PACK_ID-${this.language}"
+    override val matchers: List<Matcher> = listOf(Matcher { view -> ErrorHandlingRule(config).match(view) })
 
-    override val apiVersion: Int = CINT_API_VERSION
-
-    override val languages: Set<String> = setOf(this.language)
-
-    override fun configure(values: Map<String, Any?>): RulePack = ErrorHandlingRulePack(language, config.withOverrides(values, language))
-
-    override fun rules(): List<Rule> = listOf(ErrorHandlingRule(config, "$id:error-handling"))
+    override fun withConfig(config: ErrorHandlingConfig): SingleIntentPack<ErrorHandlingConfig> = ErrorHandlingRulePack(language, config)
 
     companion object {
         const val PACK_ID: String = "error-handling"
@@ -116,26 +112,12 @@ class ErrorHandlingRulePack(
 
 private class ErrorHandlingRule(
     private val config: ErrorHandlingConfig,
-    override val id: String,
-) : Rule {
-    override val owns: Intent = ERROR_HANDLING_INTENT
-
-    override val reads: Set<Intent> = emptySet()
-
-    override fun run(view: View): List<Emit> {
+) : Matcher {
+    override fun match(view: View): List<Emit> {
         val calls = view.calls().filter(config::accepts).map { emit(it.site) }
         val throws = if (config.detectThrows) view.throws().map(::emit) else emptyList()
         return calls + throws
     }
 
-    private fun emit(node: SyntaxNode): Emit =
-        Emit(
-            intents = setOf(owns),
-            evidence = node.text.replace("\n", " ").take(160),
-            span = node.span(),
-            source = "treesitter",
-            confidence = 1.0,
-            startByte = node.startByte,
-            endByte = node.endByte,
-        )
+    private fun emit(node: SyntaxNode): Emit = Emit.of(ERROR_HANDLING_INTENT, node)
 }

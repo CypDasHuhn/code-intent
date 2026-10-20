@@ -1,18 +1,14 @@
 package dev.cint.rulepacks.validation
 
-import dev.cint.api.CINT_API_VERSION
-import dev.cint.api.ConfigurableRulePack
+import dev.cint.api.ConfigField
+import dev.cint.api.ConfigSchema
 import dev.cint.api.Emit
 import dev.cint.api.Intent
-import dev.cint.api.Rule
-import dev.cint.api.RulePack
-import dev.cint.api.RulePackConfigException
+import dev.cint.api.Matcher
+import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
-import dev.cint.rulepacks.support.configString
-import dev.cint.rulepacks.support.configStringList
-import dev.cint.rulepacks.support.configStrings
 
 const val VALIDATION_INTENT: Intent = "VALIDATION"
 const val VALIDATION_PACK_ID: String = "validation"
@@ -24,41 +20,7 @@ data class ValidationConfig(
     val magicComment: String = "validation",
     val commentKinds: Set<String> = setOf("comment", "line_comment", "multiline_comment"),
 ) {
-    fun withOverrides(values: Map<String, Any?>): ValidationConfig {
-        val errors = mutableListOf<String>()
-        var updated = this
-        for ((rawKey, rawValue) in values) {
-            val path = "$VALIDATION_PACK_ID.$rawKey"
-            updated =
-                when (rawKey) {
-                    "predicates" -> {
-                        updated.copy(predicates = configStrings(rawValue, path, errors) ?: updated.predicates)
-                    }
-
-                    "predicatePrefixes" -> {
-                        updated.copy(
-                            predicatePrefixes =
-                                configStringList(rawValue, path, errors) ?: updated.predicatePrefixes,
-                        )
-                    }
-
-                    "magicComment" -> {
-                        updated.copy(magicComment = configString(rawValue, path, errors) ?: updated.magicComment)
-                    }
-
-                    "commentKinds" -> {
-                        updated.copy(commentKinds = configStrings(rawValue, path, errors) ?: updated.commentKinds)
-                    }
-
-                    else -> {
-                        errors += "$path: unknown key"
-                        updated
-                    }
-                }
-        }
-        if (errors.isNotEmpty()) throw RulePackConfigException(errors.joinToString("; "))
-        return updated
-    }
+    fun withOverrides(values: Map<String, Any?>): ValidationConfig = SCHEMA.decode(this, values, VALIDATION_PACK_ID)
 
     companion object {
         val DEFAULT_PREDICATES: Set<String> =
@@ -81,33 +43,58 @@ data class ValidationConfig(
             )
         val DEFAULT_PREDICATE_PREFIXES: List<String> = listOf("is", "has", "Is", "Has")
 
+        internal val SCHEMA =
+            ConfigSchema.of(
+                ConfigField.strings<ValidationConfig>(
+                    "predicates",
+                    { it.predicates },
+                    { config, value -> config.copy(predicates = value) },
+                ),
+                ConfigField.stringList<ValidationConfig>(
+                    "predicatePrefixes",
+                    { it.predicatePrefixes },
+                    { config, value -> config.copy(predicatePrefixes = value) },
+                ),
+                ConfigField.string<ValidationConfig>(
+                    "magicComment",
+                    { it.magicComment },
+                    { config, value -> config.copy(magicComment = value) },
+                ),
+                ConfigField.strings<ValidationConfig>(
+                    "commentKinds",
+                    { it.commentKinds },
+                    { config, value -> config.copy(commentKinds = value) },
+                ),
+            )
+
         fun from(values: Map<String, Any?>): ValidationConfig = ValidationConfig().withOverrides(values)
     }
 }
 
 class ValidationRulePack(
-    private val config: ValidationConfig = ValidationConfig(),
-) : ConfigurableRulePack {
-    override val id: String = VALIDATION_PACK_ID
-    override val apiVersion: Int = CINT_API_VERSION
-    override val languages: Set<String> = setOf("csharp", "javascript", "kotlin", "typescript")
+    config: ValidationConfig = ValidationConfig(),
+) : SingleIntentPack<ValidationConfig>(
+        id = VALIDATION_PACK_ID,
+        intent = VALIDATION_INTENT,
+        languages = setOf("csharp", "javascript", "kotlin", "typescript"),
+        config = config,
+        schema = ValidationConfig.SCHEMA,
+        ruleId = VALIDATION_RULE_ID,
+    ) {
+    override val reads: Set<Intent> = setOf(BOOKKEEPING_INTENT)
 
-    override fun configure(values: Map<String, Any?>): RulePack = ValidationRulePack(config.withOverrides(values))
+    override val matchers: List<Matcher> = listOf(Matcher { view -> ValidationRule(config).match(view) })
 
-    override fun rules(): List<Rule> = listOf(ValidationRule(config))
+    override fun withConfig(config: ValidationConfig): SingleIntentPack<ValidationConfig> = ValidationRulePack(config)
 }
 
 private class ValidationRule(
     private val config: ValidationConfig,
-) : Rule {
-    override val id: String = VALIDATION_RULE_ID
-    override val owns: Intent = VALIDATION_INTENT
-    override val reads: Set<Intent> = setOf(BOOKKEEPING_INTENT)
-
+) : Matcher {
     private val commentPattern =
         Regex("""cint\s*:\s*${Regex.escape(config.magicComment)}""", RegexOption.IGNORE_CASE)
 
-    override fun run(view: View): List<Emit> {
+    override fun match(view: View): List<Emit> {
         val result = mutableListOf<Emit>()
         for ((node, condition1, thenBody) in view.ifs()) {
             val condition = condition1 ?: continue
@@ -198,7 +185,7 @@ private class ValidationRule(
         confidence: Double,
     ): Emit =
         Emit(
-            intents = setOf(owns),
+            intents = setOf(VALIDATION_INTENT),
             evidence = node.text.replace("\n", " ").take(160),
             span = node.span(),
             source = source,

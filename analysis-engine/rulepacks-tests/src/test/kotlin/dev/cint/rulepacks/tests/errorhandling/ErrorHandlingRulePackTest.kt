@@ -4,23 +4,12 @@ import dev.cint.api.Annotation
 import dev.cint.api.Role
 import dev.cint.api.RulePack
 import dev.cint.api.Span
-import dev.cint.core.facts.model.SourceFile
-import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.DuplicateIntentOwner
 import dev.cint.core.runtime.scheduler.RuleEngine
-import dev.cint.core.syntax.ProfileSyntaxModel
-import dev.cint.core.syntax.SyntaxModel
-import dev.cint.core.syntax.SyntaxProfiles
-import dev.cint.core.syntax.SyntaxTree
 import dev.cint.rulepacks.errorhandling.ERROR_HANDLING_INTENT
 import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
-import dev.cint.rulepacks.tests.support.testConfig
-import dev.cint.treesitter.CsharpParser
-import dev.cint.treesitter.JavascriptParser
-import dev.cint.treesitter.KotlinParser
-import dev.cint.treesitter.KotlinSyntaxModel
-import dev.cint.treesitter.TypescriptParser
+import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -190,21 +179,7 @@ class ErrorHandlingRulePackTest {
         language: String,
         text: String,
         pack: RulePack,
-    ): List<ErrorHandlingHit> {
-        val source = SourceFile(fileName(language), text)
-        val tree = parse(language, source)
-        val annotations =
-            RuleEngine()
-                .analyze(
-                    source,
-                    tree,
-                    syntax(language),
-                    NullOracle,
-                    testConfig(language),
-                    listOf(pack),
-                )
-        return hits(annotations)
-    }
+    ): List<ErrorHandlingHit> = hits(analyzePack(language, text, listOf(pack)).annotations)
 
     private fun hits(annotations: List<Annotation>): List<ErrorHandlingHit> =
         annotations
@@ -224,32 +199,4 @@ class ErrorHandlingRulePackTest {
                 )
             }.sortedWith(errorHandlingHitOrder)
             .toList()
-
-    private fun parse(
-        language: String,
-        source: SourceFile,
-    ): SyntaxTree =
-        when (language) {
-            "kotlin" -> KotlinParser().parse(source)
-            "javascript" -> JavascriptParser().parse(source)
-            "typescript" -> TypescriptParser().parse(source)
-            "csharp" -> CsharpParser().parse(source)
-            else -> error("unsupported fixture language: $language")
-        }
-
-    private fun syntax(language: String): SyntaxModel =
-        if (language == "kotlin") {
-            KotlinSyntaxModel
-        } else {
-            ProfileSyntaxModel(SyntaxProfiles.load(language))
-        }
-
-    private fun fileName(language: String): String =
-        when (language) {
-            "kotlin" -> "Sample.kt"
-            "javascript" -> "Sample.js"
-            "typescript" -> "Sample.ts"
-            "csharp" -> "Sample.cs"
-            else -> error("unsupported fixture language: $language")
-        }
 }

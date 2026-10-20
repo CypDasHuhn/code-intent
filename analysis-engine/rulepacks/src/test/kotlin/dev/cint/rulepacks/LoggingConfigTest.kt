@@ -70,6 +70,27 @@ class LoggingConfigTest {
     }
 
     @Test
+    fun packConfigureRejectsUnknownLanguageAndNestedKeys() {
+        val unknownLanguage =
+            assertFailsWith<RulePackConfigException> {
+                LoggingRulePack().configure(mapOf("vue" to mapOf("printCalls" to listOf("log"))))
+            }
+        assertTrue(unknownLanguage.message.orEmpty().contains("logging.vue: unknown language"))
+
+        val unknownKey =
+            assertFailsWith<RulePackConfigException> {
+                LoggingRulePack().configure(mapOf("kotlin" to mapOf("bogus" to listOf("x"))))
+            }
+        assertTrue(unknownKey.message.orEmpty().contains("logging.kotlin.bogus: unknown key"))
+
+        val invalidValue =
+            assertFailsWith<RulePackConfigException> {
+                LoggingRulePack().configure(mapOf("kotlin" to mapOf("printCalls" to mapOf("nested" to true))))
+            }
+        assertTrue(invalidValue.message.orEmpty().contains("logging.kotlin.printCalls"))
+    }
+
+    @Test
     fun packConfigureReturnsTheTypedOverride() {
         val pack = LoggingRulePack().configure(mapOf("kotlin" to mapOf("printCalls" to listOf("audit"))))
 

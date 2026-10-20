@@ -1,23 +1,25 @@
 package dev.cint.rulepacks.logging
 
-import dev.cint.api.CINT_API_VERSION
-import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
+import dev.cint.api.Matcher
 import dev.cint.api.Rule
-import dev.cint.api.RulePack
+import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
 
 class LoggingRulePack(
-    private val config: LoggingConfig = LoggingConfig(),
-) : ConfigurableRulePack {
-    override val id: String = "logging"
-    override val apiVersion: Int = CINT_API_VERSION
-    override val languages: Set<String> = config.languages.keys.toSet()
+    config: LoggingConfig = LoggingConfig(),
+) : SingleIntentPack<LoggingConfig>(
+        id = "logging",
+        intent = "LOGGING",
+        languages = config.languages.keys.toSet(),
+        config = config,
+        schema = LoggingConfig.SCHEMA,
+        ruleId = "logging:logging",
+    ) {
+    override val matchers: List<Matcher> = listOf(Matcher { view -> LoggingRule(config).run(view) })
 
-    override fun configure(values: Map<String, Any?>): RulePack = LoggingRulePack(config.withOverrides(values))
-
-    override fun rules(): List<Rule> = listOf(LoggingRule(config))
+    override fun withConfig(config: LoggingConfig): SingleIntentPack<LoggingConfig> = LoggingRulePack(config)
 }
 
 class LoggingRule(
