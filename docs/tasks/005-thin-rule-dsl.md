@@ -1,6 +1,6 @@
 ---
 name: thin rule dsl
-status: todo
+status: done
 depends-on: [001, 004]
 reviewers: [correctness, api-fidelity]
 ---
@@ -38,3 +38,13 @@ comparisons/logic as infix functions.
 
 - `§9` allows folding `dsl` into `api` initially; confirm the placement chosen
   in 001.
+
+## Outcome (2026-10-20)
+
+Thin DSL lives in `:api` (`Dsl.kt`): infix `eq`/`ne`/`gt`/`lt`/`and`/`or` on an
+invariant `DslValue<T>` projection so least-upper-bound widening cannot occur,
+plus a `Predicate` lambda-over-`View` layer with infix composition. Concrete
+`Condition` leaves are internal, keeping the IR replaceable. `where` and the
+`predicate(...)` factory were removed as unrequested frozen-API surface.
+Representative rule and negative `ne`/null cases covered. Both reviewers concur
+in round 2. `just build` and `just test-engine` green.

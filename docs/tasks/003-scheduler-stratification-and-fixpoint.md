@@ -1,6 +1,6 @@
 ---
 name: scheduler stratification and fixpoint
-status: todo
+status: done
 depends-on: [001, 002]
 reviewers: [correctness]
 ---
@@ -49,3 +49,20 @@ unknown dependencies and cycles, and core composition as the terminal node
 - Logging ownership is resolved (README #1): `print`/`logger-interaction`/
   `logging-state` are matchers inside one `logging` rule owning `LOGGING`, so
   stratum 0 holds a single logging node.
+
+## Outcome (2026-10-20)
+
+`RuleScheduler` resolves `reads` after collecting all packs, sorts deterministically,
+reports named duplicate-owner, duplicate-rule-id, reserved-`UNTAGGED`,
+unknown-dependency and cycle errors, and produces Kahn strata plus a
+`TerminalNode(sourceIntents)` that names no rule or pack. `RuleEngine` runs each
+stratum against settled earlier output, builds each rule's `View` from
+`owns + reads`, enforces emits are exactly the owned intent, and runs self-reading
+rules under a fixpoint with monotone identity growth and named non-convergence/
+non-monotone errors. The fixpoint cap is derived from the inclusive byte-interval
+universe. `just build` and `just test-engine` green.
+
+Reviews: findings F1-F6 fixed and concurred. F7 (metadata-only evidence
+stability can consume the derived cap before a later identity appears) is
+unbounded under the current evidence contract and is deferred to [017](017-fixpoint-metadata-convergence.md);
+003 owns the finite intent-identity lattice, not arbitrary evidence strings.
