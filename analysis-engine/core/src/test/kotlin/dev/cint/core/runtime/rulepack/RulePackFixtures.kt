@@ -94,6 +94,15 @@ class FixtureCorruptPack : RulePack {
     override fun rules(): List<Rule> = error("corrupt fixture pack")
 }
 
+@RulePackApi(CINT_API_VERSION - 1)
+class FixtureOlderVersionPack : RulePack {
+    override val id: String = "fixture-older"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION - 1
+
+    override fun rules(): List<Rule> = listOf(FixtureRule("fixture-older:logging", "OLDER_LOGGING"))
+}
+
 class FixtureMismatchedPack : RulePack {
     override val id: String = "zzz-mismatched"
     override val languages: Set<String> = setOf("kotlin")

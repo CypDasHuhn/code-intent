@@ -41,11 +41,33 @@ interface View {
 
     fun typeAt(node: SyntaxNode): TypeRef?
 
+    fun receiverType(call: CallFact): TypeRef?
+
     fun calls(): List<CallFact>
 
     fun properties(): List<PropertyFact>
 
     fun functions(): List<FunctionFact>
+
+    fun declarations(): List<DeclarationFact>
+
+    fun writes(): List<WriteFact>
+
+    fun comments(): List<CommentFact>
+
+    fun commentBefore(node: SyntaxNode): CommentFact?
+
+    fun scopes(): List<ScopeFact>
+
+    fun enclosingScope(node: SyntaxNode): ScopeFact?
+
+    fun enclosingBlock(node: SyntaxNode): SyntaxNode?
+
+    fun guards(): List<GuardFact>
+
+    fun returnSites(): List<ReturnFact>
+
+    fun returns(): List<ReturnFact> = returnSites()
 
     fun ifs(): List<IfFact>
 
@@ -94,7 +116,125 @@ data class Emit(
     val endByte: Int,
     val nodeAnchor: NodeAnchor? = null,
     val certifiesReturn: Boolean = false,
-)
+) {
+    companion object {
+        const val DEFAULT_SOURCE: String = "treesitter"
+
+        fun of(
+            intent: Intent,
+            node: SyntaxNode,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 1.0,
+            evidence: String = node.evidence(),
+            certifiesReturn: Boolean = false,
+        ): Emit = of(setOf(intent), node, source, confidence, evidence, certifiesReturn)
+
+        fun of(
+            intents: Set<Intent>,
+            node: SyntaxNode,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 1.0,
+            evidence: String = node.evidence(),
+            certifiesReturn: Boolean = false,
+        ): Emit =
+            Emit(
+                intents = intents,
+                evidence = evidence,
+                span = node.span(),
+                source = source,
+                confidence = confidence,
+                startByte = node.startByte,
+                endByte = node.endByte,
+                certifiesReturn = certifiesReturn,
+            )
+
+        fun range(
+            intent: Intent,
+            start: SyntaxNode,
+            end: SyntaxNode,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 1.0,
+            evidence: String = "${start.evidence()} ${end.evidence()}".take(160),
+        ): Emit =
+            Emit(
+                intents = setOf(intent),
+                evidence = evidence,
+                span = Span(start.startLine, start.startCol, end.endLine, end.endCol),
+                source = source,
+                confidence = confidence,
+                startByte = start.startByte,
+                endByte = end.endByte,
+            )
+
+        fun declaration(
+            intent: Intent,
+            declaration: DeclarationFact,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 1.0,
+            includePrecedingComment: Boolean = false,
+            magicComment: String? = null,
+            evidence: String = declaration.evidence(includePrecedingComment, magicComment),
+        ): Emit {
+            val start = declaration.commentFor(includePrecedingComment, magicComment)
+            return if (start != null) {
+                range(intent, start.node, declaration.node, source, confidence, evidence)
+            } else {
+                of(intent, declaration.node, source, confidence, evidence)
+            }
+        }
+
+        fun write(
+            intent: Intent,
+            write: WriteFact,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 1.0,
+        ): Emit = of(intent, write.node, source, confidence)
+
+        fun call(
+            intent: Intent,
+            call: CallFact,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 1.0,
+        ): Emit = of(intent, call.site, source, confidence)
+    }
+}
+
+private fun SyntaxNode.evidence(): String = text.replace("\n", " ").take(160)
+
+private fun DeclarationFact.commentFor(
+    includePrecedingComment: Boolean,
+    name: String?,
+): CommentFact? =
+    name?.let { magicComment(it) }
+        ?: if (includePrecedingComment) precedingComment else null
+
+private fun DeclarationFact.evidence(
+    includePrecedingComment: Boolean,
+    magicComment: String?,
+): String {
+    val comment = commentFor(includePrecedingComment, magicComment)
+    return if (comment != null) "${comment.text} ${node.text}".replace("\n", " ").take(160) else node.evidence()
+}
+
+fun DeclarationFact.emit(
+    intent: Intent,
+    source: String = Emit.DEFAULT_SOURCE,
+    confidence: Double = 1.0,
+    includePrecedingComment: Boolean = false,
+    magicComment: String? = null,
+): Emit = Emit.declaration(intent, this, source, confidence, includePrecedingComment, magicComment)
+
+fun WriteFact.emit(
+    intent: Intent,
+    source: String = Emit.DEFAULT_SOURCE,
+    confidence: Double = 1.0,
+): Emit = Emit.write(intent, this, source, confidence)
+
+fun CallFact.emit(
+    intent: Intent,
+    source: String = Emit.DEFAULT_SOURCE,
+    confidence: Double = 1.0,
+): Emit = Emit.call(intent, this, source, confidence)
 
 data class Relation(
     val reader: Rule,

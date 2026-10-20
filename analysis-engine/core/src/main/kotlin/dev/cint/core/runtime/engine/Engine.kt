@@ -2,15 +2,23 @@ package dev.cint.core.runtime.engine
 
 import dev.cint.api.Annotation
 import dev.cint.api.CallFact
+import dev.cint.api.CommentFact
 import dev.cint.api.Coverage
+import dev.cint.api.DeclarationFact
 import dev.cint.api.FunctionFact
+import dev.cint.api.GuardFact
 import dev.cint.api.IfFact
 import dev.cint.api.Intent
 import dev.cint.api.PropertyFact
+import dev.cint.api.ReturnFact
+import dev.cint.api.ReturnGuardFact
+import dev.cint.api.ScopeFact
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
+import dev.cint.api.TypeRef
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.api.View
+import dev.cint.api.WriteFact
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.flow.ControlFlow
 import dev.cint.core.facts.model.SourceFile
@@ -31,6 +39,12 @@ interface RuleContext {
     val calls: List<CallFact>
     val properties: List<PropertyFact>
     val functions: List<FunctionFact>
+    val declarations: List<DeclarationFact>
+    val writes: List<WriteFact>
+    val comments: List<CommentFact>
+    val scopes: List<ScopeFact>
+    val guards: List<GuardFact>
+    val returnSites: List<ReturnFact>
     val ifs: List<IfFact>
     val tries: List<TryFact>
     val catches: List<SyntaxNode>
@@ -38,6 +52,10 @@ interface RuleContext {
     val imports: List<String>
     val references: Map<String, List<SyntaxNode>>
     val throws: List<SyntaxNode>
+
+    fun receiverType(call: CallFact): TypeRef?
+
+    fun commentBefore(node: SyntaxNode): CommentFact?
 
     fun annotations(): List<Annotation>
 
@@ -57,6 +75,11 @@ private fun spanKey(
     startByte: Int,
     endByte: Int,
 ): Long = (startByte.toLong() shl 32) or (endByte.toLong() and 0xffffffffL)
+
+private fun sameNode(
+    first: SyntaxNode,
+    second: SyntaxNode,
+): Boolean = first.startByte == second.startByte && first.endByte == second.endByte
 
 private class IntervalIndex(
     annotations: List<Annotation>,
@@ -153,6 +176,25 @@ class AnalysisContext(
     override val calls: List<CallFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.calls(tree).toList() }
     override val properties: List<PropertyFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.properties(tree).toList() }
     override val functions: List<FunctionFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.functions(tree).toList() }
+    override val declarations: List<DeclarationFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.declarations(tree).toList() }
+    override val writes: List<WriteFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.writes(tree).toList() }
+    override val comments: List<CommentFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.comments(tree).toList() }
+    override val scopes: List<ScopeFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.scopes(tree).toList() }
+    override val returnSites: List<ReturnFact> by lazy(LazyThreadSafetyMode.NONE) {
+        flow.returns.map { site ->
+            ReturnFact(
+                node = site.node,
+                expression = site.expression,
+                guards = site.guards.map { ReturnGuardFact(it.condition, it.node, it.onTrue) },
+                loop = site.loop,
+                handler = site.handler,
+                scope = syntax.enclosingScope(site.node),
+            )
+        }
+    }
+    override val guards: List<GuardFact> by lazy(LazyThreadSafetyMode.NONE) {
+        syntax.guards(tree).map { guard -> guard.copy(exits = guardExits(guard.node)) }.toList()
+    }
     override val ifs: List<IfFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.ifs(tree).toList() }
     override val tries: List<TryFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.tries(tree).toList() }
     override val catches: List<SyntaxNode> by lazy(LazyThreadSafetyMode.NONE) { syntax.catches(tree).toList() }
@@ -165,6 +207,22 @@ class AnalysisContext(
             .filter { syntax.isThrow(it) }
             .toList()
     }
+
+    override fun receiverType(call: CallFact): TypeRef? =
+        call.receiver?.let { receiver ->
+            oracle
+                .typeAt(file, syntax.receiverOffset(receiver))
+                ?.let { TypeRef(it.fqName, it.source, it.confidence) }
+        }
+
+    override fun commentBefore(node: SyntaxNode): CommentFact? = syntax.commentBefore(node)
+
+    private fun guardExits(guard: SyntaxNode): List<SyntaxNode> =
+        returnSites
+            .filter { site ->
+                site.guards.any { sameNode(it.guard, guard) } ||
+                    (site.loop?.let { sameNode(it, guard) } == true)
+            }.map { it.node }
 
     private fun refreshIndexes() {
         val revision = store.revision()

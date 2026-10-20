@@ -21,3 +21,9 @@ Rewrite Bookkeeping as the pilot for the semantic-fact model.
 
 - No raw node-kind strings or AST traversal in the pack.
 - Parity tests green; `just test-engine`, `just lint` green.
+
+## Notes
+
+Also resolve the write-attribution edge cases deferred from 019: loop binding
+names, C#/Kotlin binding-name extraction, Kotlin for-condition resolution, and
+object/companion body ownership.

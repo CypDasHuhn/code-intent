@@ -90,6 +90,16 @@ class RulePackLoaderConfigTest {
     }
 
     @Test
+    fun olderApiVersionsAreRejected() {
+        loadWithProviders(good, FixtureOlderVersionPack::class.java.name) { result ->
+            assertEquals(listOf("fixture-good"), result.loadedPackIds)
+            val failure = result.failures.single()
+            assertEquals(RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION, failure.kind)
+            assertTrue(failure.message.contains("api version"))
+        }
+    }
+
+    @Test
     fun apiVersionGateRunsBeforePackConfiguration() {
         FixtureConfigurableMismatchPack.reset()
 
