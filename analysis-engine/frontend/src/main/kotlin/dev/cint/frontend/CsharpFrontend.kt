@@ -7,9 +7,9 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxModel
-import dev.cint.core.syntax.SyntaxProfiles
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.treesitter.CsharpParser
+import dev.cint.treesitter.SyntaxProfiles
 import java.nio.file.Path
 
 object CsharpFrontend : LanguageFrontend {

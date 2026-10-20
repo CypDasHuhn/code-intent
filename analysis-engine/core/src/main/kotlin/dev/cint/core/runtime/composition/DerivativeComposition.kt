@@ -4,7 +4,7 @@ import dev.cint.api.Contribution
 import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
-import dev.cint.core.runtime.engine.RuleContext
+import dev.cint.core.runtime.context.RuleContext
 
 internal fun derivativeContributions(
     ctx: RuleContext,

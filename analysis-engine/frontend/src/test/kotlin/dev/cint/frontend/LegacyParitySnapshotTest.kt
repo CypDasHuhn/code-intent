@@ -6,8 +6,8 @@ import dev.cint.core.artifact.Json
 import dev.cint.core.facts.frontend.OracleOptions
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
-import dev.cint.core.runtime.host.HostConfig
-import dev.cint.core.runtime.host.HostPipeline
+import dev.cint.host.HostConfig
+import dev.cint.host.HostPipeline
 import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.nio.file.Files
 import java.nio.file.Path

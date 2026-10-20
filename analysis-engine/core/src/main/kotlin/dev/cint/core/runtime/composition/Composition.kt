@@ -2,6 +2,7 @@ package dev.cint.core.runtime.composition
 
 import dev.cint.api.Annotation
 import dev.cint.api.Contribution
+import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.flow.ControlFlow
@@ -9,13 +10,12 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.facts.store.AnnotationStore
 import dev.cint.core.runtime.engine.AnalysisContext
-import dev.cint.core.runtime.scheduler.TerminalNode
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 
 class Composition {
     fun compose(
-        terminal: TerminalNode,
+        sourceIntents: Set<Intent>,
         file: SourceFile,
         tree: SyntaxTree,
         syntax: SyntaxModel,
@@ -27,7 +27,7 @@ class Composition {
         val source =
             sources.filter { contribution ->
                 contribution.role == Role.SOURCE_INTENT &&
-                    contribution.intents.any { it in terminal.sourceIntents }
+                    contribution.intents.any { it in sourceIntents }
             }
 
         val store = AnnotationStore()

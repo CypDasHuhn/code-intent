@@ -7,8 +7,8 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
-import dev.cint.core.syntax.SyntaxProfiles
 import dev.cint.treesitter.JavascriptParser
+import dev.cint.treesitter.SyntaxProfiles
 import dev.cint.treesitter.TypescriptParser
 import dev.cint.treesitter.support.testConfig
 import dev.cint.treesitter.support.testPacks

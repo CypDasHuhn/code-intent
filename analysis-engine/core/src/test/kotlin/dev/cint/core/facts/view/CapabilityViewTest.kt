@@ -21,7 +21,7 @@ import dev.cint.api.WriteFact
 import dev.cint.core.facts.flow.ControlFlow
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
-import dev.cint.core.runtime.engine.RuleContext
+import dev.cint.core.runtime.context.RuleContext
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import kotlin.test.Test

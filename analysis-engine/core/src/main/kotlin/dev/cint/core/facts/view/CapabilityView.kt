@@ -19,7 +19,7 @@ import dev.cint.api.TryFact
 import dev.cint.api.TypeRef
 import dev.cint.api.View
 import dev.cint.api.WriteFact
-import dev.cint.core.runtime.engine.RuleContext
+import dev.cint.core.runtime.context.RuleContext
 
 class CapabilityView(
     private val context: RuleContext,

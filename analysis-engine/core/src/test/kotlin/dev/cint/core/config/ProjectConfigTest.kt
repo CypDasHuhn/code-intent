@@ -1,6 +1,5 @@
 package dev.cint.core.config
 
-import dev.cint.core.facts.frontend.OracleOptions
 import java.nio.file.Files
 import kotlin.io.path.deleteIfExists
 import kotlin.test.Test
@@ -140,10 +139,11 @@ class ProjectConfigTest {
     }
 
     @Test
-    fun frameworkReadsLspPolicy() {
+    fun frameworkCarriesLspPolicyAsConfigData() {
         val policy = CorePolicy(lsp = LspPolicy(enabled = false, timeoutMs = 900))
 
-        assertEquals(OracleOptions(false, 900), policy.oracleOptions())
+        assertEquals(false, policy.lsp.enabled)
+        assertEquals(900, policy.lsp.timeoutMs)
     }
 
     private fun parse(text: String): ParsedProjectConfig {

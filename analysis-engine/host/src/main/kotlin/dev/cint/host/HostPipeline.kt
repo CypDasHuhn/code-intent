@@ -1,11 +1,10 @@
-package dev.cint.core.runtime.host
+package dev.cint.host
 
 import dev.cint.api.Intent
 import dev.cint.api.RulePack
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.ProjectConfig
-import dev.cint.core.config.ProjectConfigLoader
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.runtime.rulepack.RulePackLoadFailure
@@ -18,7 +17,7 @@ import dev.cint.core.syntax.SyntaxTree
 import java.util.concurrent.ConcurrentHashMap
 
 class HostPipeline(
-    private val loader: RulePackLoader = RulePackLoader(),
+    private val loader: RulePackLoader = defaultLoader(),
     private val constructedPacks: (String) -> List<RulePack> = { emptyList() },
     private val project: ProjectConfig = ProjectConfig(),
     knownPackIds: Set<String> = emptySet(),
@@ -141,3 +140,8 @@ class HostPipeline(
 
     private fun normalize(language: String): String = language.lowercase()
 }
+
+private fun defaultLoader(): RulePackLoader =
+    RulePackLoader(
+        onFailure = { System.err.println("cint rulepack: ${it.message}") },
+    )

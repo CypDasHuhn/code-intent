@@ -1,6 +1,5 @@
 package dev.cint.core.config
 
-import dev.cint.core.facts.frontend.OracleOptions
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.math.BigInteger
@@ -94,8 +93,6 @@ fun parseProjectConfig(path: String?): ParsedProjectConfig {
 }
 
 fun IntentConfig.withCorePolicy(policy: CorePolicy): IntentConfig = copy(pureAnnotations = policy.purityAnnotations)
-
-fun CorePolicy.oracleOptions(): OracleOptions = OracleOptions(lsp.enabled, lsp.timeoutMs)
 
 private fun overridesLspTimeout(value: Any?): Boolean {
     if (value !is Map<*, *>) return false

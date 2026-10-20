@@ -1,10 +1,10 @@
 package dev.cint.server
 
 import dev.cint.core.facts.frontend.OracleOptions
-import dev.cint.core.runtime.host.HostConfig
-import dev.cint.core.runtime.host.HostPipeline
-import dev.cint.core.runtime.host.HostSettings
 import dev.cint.core.runtime.rulepack.RulePackLoader
+import dev.cint.host.HostConfig
+import dev.cint.host.HostPipeline
+import dev.cint.host.HostSettings
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test

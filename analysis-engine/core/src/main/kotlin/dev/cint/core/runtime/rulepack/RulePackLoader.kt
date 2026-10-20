@@ -5,9 +5,7 @@ import dev.cint.api.*
 class RulePackLoader(
     private val classLoader: ClassLoader = defaultClassLoader(),
     private val expectedApiVersion: Int = CINT_API_VERSION,
-    private val onFailure: (RulePackLoadFailure) -> Unit = {
-        System.err.println("cint rulepack: ${it.message}")
-    },
+    private val onFailure: (RulePackLoadFailure) -> Unit,
 ) {
     fun load(
         config: Map<String, Map<String, Any?>> = emptyMap(),

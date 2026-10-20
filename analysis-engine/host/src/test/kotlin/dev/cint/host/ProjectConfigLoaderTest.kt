@@ -1,7 +1,5 @@
-package dev.cint.core.config
+package dev.cint.host
 
-import dev.cint.core.runtime.rulepack.FixtureConfigurablePack
-import dev.cint.core.runtime.rulepack.FixtureGoodPack
 import dev.cint.core.runtime.rulepack.RulePackLoadFailureKind
 import dev.cint.core.runtime.rulepack.RulePackLoader
 import java.net.URL
@@ -119,7 +117,7 @@ class ProjectConfigLoaderTest {
             service,
             listOf(
                 FixtureConfigurablePack::class.java.name,
-                FixtureGoodPack::class.java.name,
+                HostFixtureGoodPack::class.java.name,
             ).joinToString("\n"),
         )
         val config = directory.resolve("project.yaml")

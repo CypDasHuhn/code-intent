@@ -7,7 +7,6 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxModel
-import dev.cint.core.syntax.SyntaxProfiles
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.tests.support.testConfig
@@ -15,6 +14,7 @@ import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.JavascriptParser
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
+import dev.cint.treesitter.SyntaxProfiles
 import dev.cint.treesitter.TypescriptParser
 import kotlin.test.Test
 import kotlin.test.assertEquals
