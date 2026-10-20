@@ -12,7 +12,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class RuleEngineSchedulerErrorTest {
-    private val config = IntentConfig("kotlin", emptyMap(), emptyList())
+    private val config = IntentConfig("kotlin", emptyList())
 
     @Test
     fun shrinkingSelfReadingRuleFailsWithNamedNonMonotoneError() {

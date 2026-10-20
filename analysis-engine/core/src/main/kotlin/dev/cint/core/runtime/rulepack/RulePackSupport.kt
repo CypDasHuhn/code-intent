@@ -36,8 +36,6 @@ data class RulePackLoadResult(
     val failures: List<RulePackLoadFailure>,
 ) {
     val loadedPackIds: List<String> get() = packs.map { it.id }
-
-    val isDegraded: Boolean get() = failures.isNotEmpty()
 }
 
 internal val SERVICE_RESOURCE: String = "META-INF/services/${RulePack::class.java.name}"

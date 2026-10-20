@@ -59,7 +59,7 @@ fun main(argv: Array<String>) {
         i++
     }
 
-    val settings = HostConfig.load(configPath, language)
+    val settings = HostConfig.load(configPath)
 
     val packs =
         HostPipeline(
@@ -102,7 +102,7 @@ private fun analyze(
 ): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
     val requestedLanguage = request.language ?: defaultLanguage
-    val settings = request.config?.let { HostConfig.load(it, requestedLanguage) } ?: defaultSettings
+    val settings = request.config?.let { HostConfig.load(it) } ?: defaultSettings
     val config = settings.intentConfig(requestedLanguage)
     val lspOptions = settings.oracleOptions(useLsp)
     val packs =

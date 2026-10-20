@@ -36,7 +36,7 @@ host and client cutover at the end.
 | 022 | [simplify error and validation packs](022-simplify-error-and-validation-packs.md) | done | 020 | Call/guard facts; remove traversal/config boilerplate. |
 | 023 | [simplify logging pack](023-simplify-logging-pack.md) | done | 020 | Call/type/config predicates; remove call extraction. |
 | 024 | [core structural boundaries](024-core-structural-boundaries.md) | done | — | Resource ownership, package cycles, host boundary guard. |
-| 025 | [config api and output cleanup](025-config-api-and-output-cleanup.md) | todo | 019, 024 | Dead API/config removal; one serializer and config path. |
+| 025 | [config api and output cleanup](025-config-api-and-output-cleanup.md) | done | 019, 024 | Dead API/config removal; one serializer and config path. |
 | 026 | [test topology and hermetic tests](026-test-topology-and-hermetic-tests.md) | done | 020 | Tests by ownership; hermetic fixtures/LSP. |
 | 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | todo | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |
 | 028 | [renderer structural cleanup](028-renderer-structural-cleanup.md) | done | — | Split Lua monolith; live transport tests; docs config. |

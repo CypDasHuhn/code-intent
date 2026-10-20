@@ -6,9 +6,10 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RuleEngineConvergenceTest {
-    private val config = IntentConfig("kotlin", emptyMap(), emptyList())
+    private val config = IntentConfig("kotlin", emptyList())
 
     @Test
     fun selfReadingRuleConvergesUnderInternalFixpoint() {
@@ -32,6 +33,26 @@ class RuleEngineConvergenceTest {
 
         assertEquals(4, chain.runs)
         assertEquals(3, annotations.count { "CHAIN" in it.intents })
+    }
+
+    @Test
+    fun engineNeverPopulatesReservedNodeAnchor() {
+        val source = SourceFile("Sample.kt", "fun f() {}")
+        val tree = fakeTree(source.text)
+        val rule = TestRule("test:anchor", "ANCHOR") { listOf(emitAt("ANCHOR", tree.root)) }
+
+        val annotations =
+            RuleEngine().analyze(
+                source,
+                tree,
+                fakeSyntax(),
+                NullOracle,
+                config,
+                listOf(TestPack("test", listOf(rule))),
+            )
+
+        assertTrue(annotations.isNotEmpty())
+        assertTrue(annotations.all { it.nodeAnchor == null })
     }
 
     @Test

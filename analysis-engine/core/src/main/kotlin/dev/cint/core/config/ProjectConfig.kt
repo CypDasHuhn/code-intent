@@ -37,7 +37,7 @@ data class ParsedProjectConfig(
     val lspTimeoutConfigured: Boolean = false,
 )
 
-fun parseProjectConfig(path: String?): ParsedProjectConfig {
+fun parseProjectConfigTolerant(path: String?): ParsedProjectConfig {
     if (path == null) return ParsedProjectConfig(ProjectConfig(), emptyList())
 
     val file = File(path)
@@ -91,8 +91,6 @@ fun parseProjectConfig(path: String?): ParsedProjectConfig {
 
     return ParsedProjectConfig(ProjectConfig(core, packs), issues, lspTimeoutConfigured)
 }
-
-fun IntentConfig.withCorePolicy(policy: CorePolicy): IntentConfig = copy(pureAnnotations = policy.purityAnnotations)
 
 private fun overridesLspTimeout(value: Any?): Boolean {
     if (value !is Map<*, *>) return false

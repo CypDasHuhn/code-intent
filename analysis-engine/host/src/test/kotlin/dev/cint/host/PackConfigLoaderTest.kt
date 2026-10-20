@@ -1,5 +1,6 @@
 package dev.cint.host
 
+import dev.cint.core.config.ProjectConfig
 import dev.cint.core.runtime.rulepack.RulePackLoadFailureKind
 import dev.cint.core.runtime.rulepack.RulePackLoader
 import java.net.URL
@@ -22,7 +23,7 @@ private class IsolatedConfigClassLoader(
         if (name == SERVICE_RESOURCE) findResources(name) else super.getResources(name)
 }
 
-class ProjectConfigLoaderTest {
+class PackConfigLoaderTest {
     @Test
     fun packOverridesAndCorePolicyLoadTogether() {
         FixtureConfigurablePack.reset()
@@ -36,9 +37,8 @@ class ProjectConfigLoaderTest {
               calls: [audit]
             """.trimIndent(),
         ) { path ->
-            val loaded = loader().load(path.toString())
+            val loaded = loader().load(HostConfig.load(path.toString()).project)
 
-            assertTrue(loaded.issues.isEmpty())
             assertTrue(loaded.failures.isEmpty())
             assertEquals(setOf("CoreOnly"), loaded.core.purityAnnotations.toSet())
             assertEquals(setOf("audit"), FixtureConfigurablePack.lastCalls)
@@ -53,10 +53,9 @@ class ProjectConfigLoaderTest {
     fun noFileLoadsPackDefaults() {
         FixtureConfigurablePack.reset()
 
-        withConfigFile("{}") { _ ->
-            val loaded = loader().load(null)
+        withConfigFile("{}") {
+            val loaded = loader().load(ProjectConfig())
 
-            assertTrue(loaded.issues.isEmpty())
             assertTrue(loaded.failures.isEmpty())
             assertNull(FixtureConfigurablePack.lastCalls)
             assertEquals(
@@ -76,7 +75,7 @@ class ProjectConfigLoaderTest {
               unknown: true
             """.trimIndent(),
         ) { path ->
-            val loaded = loader().load(path.toString())
+            val loaded = loader().load(HostConfig.load(path.toString()).project)
 
             assertEquals(
                 setOf(
@@ -92,12 +91,12 @@ class ProjectConfigLoaderTest {
         }
     }
 
-    private fun loader(): ProjectConfigLoader =
-        ProjectConfigLoader(
+    private fun loader(): PackConfigLoader =
+        PackConfigLoader(
             RulePackLoader(
                 IsolatedConfigClassLoader(
                     arrayOf(serviceDirectory.toUri().toURL()),
-                    ProjectConfigLoaderTest::class.java.classLoader,
+                    PackConfigLoaderTest::class.java.classLoader,
                 ),
                 onFailure = {},
             ),

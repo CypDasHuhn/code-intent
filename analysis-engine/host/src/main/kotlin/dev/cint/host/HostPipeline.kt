@@ -22,7 +22,7 @@ class HostPipeline(
     private val project: ProjectConfig = ProjectConfig(),
     knownPackIds: Set<String> = emptySet(),
 ) {
-    private val loaded = ProjectConfigLoader(loader).load(project, knownPackIds)
+    private val loaded = PackConfigLoader(loader).load(project, knownPackIds)
     private val discovered = RulePackLoadResult(loaded.packs, loaded.failures)
     private val engine = RuleEngine()
     private val snapshots = ConcurrentHashMap<String, RulePackLoadResult>()
@@ -36,8 +36,6 @@ class HostPipeline(
                 addAll(this@HostPipeline.extraFailures.values.flatten())
                 this@HostPipeline.snapshots.values.flatMapTo(this) { it.failures }
             }
-
-    val configIssues get() = loaded.issues
 
     fun packs(language: String): List<RulePack> = snapshot(language).packs
 

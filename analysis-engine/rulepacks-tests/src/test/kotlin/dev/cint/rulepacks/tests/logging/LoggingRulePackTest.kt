@@ -5,7 +5,6 @@ import dev.cint.api.Role
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
-import dev.cint.core.facts.oracle.SymbolFact
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.rulepacks.logging.LoggingRulePack
@@ -26,11 +25,6 @@ private class CountingOracle : TypeOracle {
         calls++
         return null
     }
-
-    override fun definitionAt(
-        file: SourceFile,
-        byteOffset: Int,
-    ): SymbolFact? = null
 }
 
 private class FixedOracle(
@@ -40,11 +34,6 @@ private class FixedOracle(
         file: SourceFile,
         byteOffset: Int,
     ): TypeFact? = fact
-
-    override fun definitionAt(
-        file: SourceFile,
-        byteOffset: Int,
-    ): SymbolFact? = null
 }
 
 private fun sourceFor(
@@ -72,7 +61,7 @@ private fun newFor(
             language,
             text,
             sourceFor(language, text).path,
-            IntentConfig(language, emptyMap(), emptyList()),
+            IntentConfig(language, emptyList()),
         ),
         listOf(LoggingRulePack()),
         oracle,
@@ -157,7 +146,7 @@ class LoggingRulePackTest {
             )
         val annotations =
             analyzePack(
-                parsePackInput("kotlin", file.text, file.path, IntentConfig("kotlin", emptyMap(), emptyList())),
+                parsePackInput("kotlin", file.text, file.path, IntentConfig("kotlin", emptyList())),
                 listOf(pack),
             ).annotations
 

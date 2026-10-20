@@ -128,7 +128,7 @@ class HostConfigWiringTest {
         val configFile = Files.createTempFile("cint-host-config", ".yaml")
         Files.writeString(configFile, configText)
         try {
-            val settings = HostConfig.load(configFile.toString(), language)
+            val settings = HostConfig.load(configFile.toString())
             val pipeline =
                 HostPipeline(
                     constructedPacks = BundledRulePackSelection::constructed,

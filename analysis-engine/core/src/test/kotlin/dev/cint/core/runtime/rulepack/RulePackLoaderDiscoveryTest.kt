@@ -280,7 +280,7 @@ class RulePackLoaderLimitsTest {
         BrokenResourceClassLoader(RulePackLoader::class.java.classLoader).use { classLoader ->
             val result = RulePackLoader(classLoader, onFailure = {}).load()
 
-            assertTrue(result.isDegraded)
+            assertTrue(result.failures.isNotEmpty())
             assertTrue(result.packs.isEmpty())
             assertTrue(result.failures.isNotEmpty())
             assertTrue(result.failures.all { it.kind == RulePackLoadFailureKind.CORRUPT_PACK })

@@ -171,7 +171,16 @@ class ErrorHandlingRulePackTest {
     }
 
     @Test
-    fun detectThrowsAliasControlsThrowEmission() {
+    fun throwsConfigControlsThrowEmission() {
+        val text = """fun f() { throw Exception("x") }"""
+        val pack = ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("throws" to false))
+
+        assertTrue(newHits("kotlin", text).isNotEmpty())
+        assertTrue(newHits("kotlin", text, pack).isEmpty())
+    }
+
+    @Test
+    fun detectThrowsAliasKeepsExistingConfigsWorking() {
         val text = """fun f() { throw Exception("x") }"""
         val pack = ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("detectThrows" to false))
 

@@ -2,8 +2,10 @@ package dev.cint.server
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.util.RawValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.Annotation
+import dev.cint.core.artifact.AnnotationJson
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.frontend.LanguageFrontend
 import dev.cint.core.facts.frontend.OracleOptions
@@ -192,7 +194,7 @@ class LiveServer(
                 "uri" to doc.uri,
                 "version" to doc.version,
                 "hash" to contentHash(doc.text),
-                "annotations" to analysis.map(::annotationJson),
+                "annotations" to analysis.map { RawValue(AnnotationJson.render(it)) },
             )
         write(
             writer,

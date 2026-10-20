@@ -1,8 +1,6 @@
 package dev.cint.core.artifact
 
 import dev.cint.api.Annotation
-import dev.cint.api.Contribution
-import dev.cint.api.Role
 
 data class FileEntry(
     val path: String,
@@ -29,22 +27,8 @@ object Artifact {
                 append("      \"hash\": \"${Json.escape(entry.hash)}\",\n")
                 append("      \"spans\": [\n")
                 entry.annotations.forEachIndexed { j, annotation ->
-                    append("        {\"role\":\"${roleName(annotation.role)}\",")
-                    append("\"intents\":[")
-                    append(annotation.intents.joinToString(",") { "\"${Json.escape(it)}\"" })
-                    append("],")
-                    append("\"evidence\":\"${Json.escape(annotation.evidence)}\",")
-                    append("\"source\":\"${Json.escape(annotation.source)}\",")
-                    append("\"confidence\":${annotation.confidence},")
-                    append("\"startLine\":${annotation.span.startLine},\"startCol\":${annotation.span.startCol},")
-                    append("\"endLine\":${annotation.span.endLine},\"endCol\":${annotation.span.endCol},")
-                    append("\"startByte\":${annotation.startByte},\"endByte\":${annotation.endByte},")
-                    append("\"nodeAnchor\":")
-                    append(annotation.nodeAnchor?.let { "\"${Json.escape(it.id)}\"" } ?: "null")
-                    append(",")
-                    append("\"provenance\":[")
-                    append(annotation.provenance.joinToString(",") { contributionJson(it) })
-                    append("]}")
+                    append("        ")
+                    append(AnnotationJson.render(annotation))
                     if (j < entry.annotations.size - 1) append(",")
                     append("\n")
                 }
@@ -53,27 +37,5 @@ object Artifact {
                 append("\n")
             }
             append("  ]\n}\n")
-        }
-
-    private fun contributionJson(contribution: Contribution): String =
-        buildString {
-            append("{\"rule\":\"${Json.escape(contribution.rule)}\",")
-            append("\"role\":\"${roleName(contribution.role)}\",")
-            append("\"intents\":[")
-            append(contribution.intents.joinToString(",") { "\"${Json.escape(it)}\"" })
-            append("],")
-            append("\"evidence\":\"${Json.escape(contribution.evidence)}\",")
-            append("\"source\":\"${Json.escape(contribution.source)}\",")
-            append("\"confidence\":${contribution.confidence},")
-            append("\"startLine\":${contribution.span.startLine},\"startCol\":${contribution.span.startCol},")
-            append("\"endLine\":${contribution.span.endLine},\"endCol\":${contribution.span.endCol},")
-            append("\"startByte\":${contribution.startByte},\"endByte\":${contribution.endByte}}")
-        }
-
-    private fun roleName(role: Role): String =
-        when (role) {
-            Role.SOURCE_INTENT -> "source-intent"
-            Role.DERIVATIVE_USE -> "derivative-use"
-            Role.SCAFFOLD -> "scaffold"
         }
 }

@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class RuleEngineStratificationTest {
-    private val config = IntentConfig("kotlin", emptyMap(), emptyList())
+    private val config = IntentConfig("kotlin", emptyList())
 
     @Test
     fun nonSelfReadingRulesRunOnceAndSeeSettledUpstream() {

@@ -14,7 +14,7 @@ class CompositionTerminalTest {
             analyzePipeline(
                 text,
                 emptyList(),
-                config = IntentConfig("kotlin", emptyMap(), emptyList()),
+                config = IntentConfig("kotlin", emptyList()),
             )
 
         assertEquals(1, annotations.size)

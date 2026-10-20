@@ -1,7 +1,6 @@
 package dev.cint.lsp
 
 import dev.cint.core.facts.model.SourceFile
-import dev.cint.core.facts.oracle.SymbolFact
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import org.eclipse.lsp4j.*
@@ -75,11 +74,6 @@ class LspOracle private constructor(
         val type = hoverText(hover)?.let { extractType(it, spec) } ?: return null
         return TypeFact(type, "lsp", 0.95)
     }
-
-    override fun definitionAt(
-        file: SourceFile,
-        byteOffset: Int,
-    ): SymbolFact? = null
 
     private fun uriFor(file: SourceFile): String {
         val path = Path.of(file.path)

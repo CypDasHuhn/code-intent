@@ -26,9 +26,8 @@ class HostConfigTest {
         )
 
         try {
-            val settings = HostConfig.load(file.toString(), "kotlin")
+            val settings = HostConfig.load(file.toString())
 
-            assertTrue(settings.issues.isEmpty())
             assertEquals(setOf("logging", "error-handling-kotlin"), settings.project.packs.keys)
             assertEquals(
                 listOf("CustomPure"),
@@ -56,7 +55,7 @@ class HostConfigTest {
         )
 
         try {
-            val settings = HostConfig.load(file.toString(), "kotlin")
+            val settings = HostConfig.load(file.toString())
 
             assertEquals(OracleOptions(enabled = false, timeoutMs = 900), settings.oracleOptions())
             assertEquals(OracleOptions(enabled = false, timeoutMs = 900), settings.oracleOptions(useLsp = false))
@@ -75,7 +74,7 @@ class HostConfigTest {
                     timeoutMs: 1234
                 """.trimIndent(),
             )
-            val enabled = HostConfig.load(file.toString(), "kotlin")
+            val enabled = HostConfig.load(file.toString())
 
             assertEquals(OracleOptions(enabled = true, timeoutMs = 1234), enabled.oracleOptions())
             assertEquals(OracleOptions(enabled = false, timeoutMs = 1234), enabled.oracleOptions(useLsp = false))
@@ -86,9 +85,8 @@ class HostConfigTest {
 
     @Test
     fun noCustomConfigUsesEmptyProjectDefaults() {
-        val settings = HostConfig.load(null, "kotlin")
+        val settings = HostConfig.load(null)
 
-        assertTrue(settings.issues.isEmpty())
         assertTrue(settings.project.packs.isEmpty())
         assertTrue(
             settings.project.core.purityAnnotations
@@ -103,7 +101,7 @@ class HostConfigTest {
         val file = Files.createTempDirectory("cint-config-missing").resolve("absent.yaml")
 
         assertFailsWith<IllegalArgumentException> {
-            HostConfig.load(file.toString(), "kotlin")
+            HostConfig.load(file.toString())
         }
     }
 
@@ -112,8 +110,8 @@ class HostConfigTest {
         val file = Files.createTempFile("cint-config-invalid", ".yaml")
         Files.writeString(file, "core: [")
         try {
-            assertFailsWith<IllegalStateException> {
-                HostConfig.load(file.toString(), "kotlin")
+            assertFailsWith<IllegalArgumentException> {
+                HostConfig.load(file.toString())
             }
         } finally {
             Files.deleteIfExists(file)

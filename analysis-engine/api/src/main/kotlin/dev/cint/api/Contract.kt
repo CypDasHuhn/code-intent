@@ -114,7 +114,6 @@ data class Emit(
     val confidence: Double,
     val startByte: Int,
     val endByte: Int,
-    val nodeAnchor: NodeAnchor? = null,
     val certifiesReturn: Boolean = false,
 ) {
     companion object {
@@ -241,12 +240,3 @@ data class Relation(
     val intent: Intent,
     val owner: Rule,
 )
-
-data class Schedule(
-    val strata: List<List<Rule>>,
-    val relations: List<Relation>,
-)
-
-interface Scheduler {
-    fun schedule(packs: List<RulePack>): Schedule
-}

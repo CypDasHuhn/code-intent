@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 class ProjectConfigTest {
     @Test
     fun defaultsApplyWithoutAConfigFile() {
-        val parsed = parseProjectConfig(null)
+        val parsed = parseProjectConfigTolerant(null)
 
         assertTrue(parsed.issues.isEmpty())
         assertTrue(parsed.config.packs.isEmpty())
@@ -122,20 +122,11 @@ class ProjectConfigTest {
         val path = Files.createTempFile("cint-project-config", ".yaml")
         path.deleteIfExists()
 
-        val parsed = parseProjectConfig(path.toString())
+        val parsed = parseProjectConfigTolerant(path.toString())
 
         assertEquals(path.toString(), parsed.issues.single().path)
         assertTrue(parsed.config.packs.isEmpty())
         assertEquals(DEFAULT_PURITY_ANNOTATIONS, parsed.config.core.purityAnnotations)
-    }
-
-    @Test
-    fun frameworkAppliesCorePolicyToIntentConfig() {
-        val policy = CorePolicy(purityAnnotations = listOf("CustomPure"))
-
-        val config = IntentConfig("kotlin", emptyMap(), DEFAULT_PURITY_ANNOTATIONS).withCorePolicy(policy)
-
-        assertEquals(listOf("CustomPure"), config.pureAnnotations)
     }
 
     @Test
@@ -150,7 +141,7 @@ class ProjectConfigTest {
         val path = Files.createTempFile("cint-project-config", ".yaml")
         return try {
             Files.writeString(path, text)
-            parseProjectConfig(path.toString())
+            parseProjectConfigTolerant(path.toString())
         } finally {
             path.deleteIfExists()
         }

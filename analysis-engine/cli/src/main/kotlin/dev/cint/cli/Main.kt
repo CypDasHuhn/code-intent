@@ -25,7 +25,7 @@ private data class Args(
 
 fun main(argv: Array<String>) {
     val args = parseArgs(argv)
-    val settings = HostConfig.load(args.config, args.language)
+    val settings = HostConfig.load(args.config)
     val config = settings.intentConfig(args.language)
     val lspOptions = settings.oracleOptions(!args.noLsp)
     val frontend = Frontends.require(config.language)

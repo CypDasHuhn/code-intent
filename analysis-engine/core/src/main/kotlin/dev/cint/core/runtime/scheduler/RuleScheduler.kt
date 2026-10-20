@@ -4,8 +4,6 @@ import dev.cint.api.Intent
 import dev.cint.api.Relation
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
-import dev.cint.api.Schedule
-import dev.cint.api.Scheduler
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.CoreContributors
 
@@ -73,13 +71,10 @@ data class TerminalNode(
 )
 
 data class ExecutionPlan(
-    val schedule: Schedule,
+    val strata: List<List<Rule>>,
+    val relations: List<Relation>,
     val terminal: TerminalNode,
-) {
-    val strata: List<List<Rule>> get() = schedule.strata
-
-    val relations: List<Relation> get() = schedule.relations
-}
+)
 
 private val ruleOrder =
     compareBy<Rule>(
@@ -88,15 +83,14 @@ private val ruleOrder =
         { it.reads.sorted().joinToString("\u0000") },
     )
 
-class RuleScheduler : Scheduler {
-    override fun schedule(packs: List<RulePack>): Schedule = plan(packs).schedule
-
+class RuleScheduler {
     fun plan(packs: List<RulePack>): ExecutionPlan {
         val rules = rulesOf(packs)
         val owners = ownersOf(rules)
         val relations = relationsOf(rules, owners)
         return ExecutionPlan(
-            schedule = Schedule(strataOf(rules, relations), relations),
+            strata = strataOf(rules, relations),
+            relations = relations,
             terminal = TerminalNode(owners.keys.toSortedSet()),
         )
     }

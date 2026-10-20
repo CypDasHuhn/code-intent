@@ -88,7 +88,7 @@ class ContractTest {
 
     @Test
     fun configurableRulePackIsAdditiveAndVersionPinned() {
-        assertEquals(2, CINT_API_VERSION)
+        assertEquals(3, CINT_API_VERSION)
 
         val original = TestConfigurablePack()
         val configured = original.configure(mapOf("extra" to true))
@@ -165,6 +165,15 @@ class ContractTest {
         assertEquals(listOf(first, second), annotation.provenance)
         assertEquals("demo:logging", annotation.rule)
         assertFalse(annotation.rule.contains("+"))
+    }
+
+    @Test
+    fun nodeAnchorIsReservedOnAnnotationsAndAbsentFromEmits() {
+        val annotationFields = Annotation::class.java.declaredFields.map { it.name }
+        val emitFields = Emit::class.java.declaredFields.map { it.name }
+
+        assertTrue("nodeAnchor" in annotationFields)
+        assertFalse("nodeAnchor" in emitFields)
     }
 
     @Test
@@ -351,6 +360,5 @@ class ContractTest {
         assertEquals("demo:bookkeeping", contribution.rule)
         assertEquals(Role.SOURCE_INTENT, contribution.role)
         assertEquals(setOf("LOGGING"), contribution.intents)
-        assertNull(emit.nodeAnchor)
     }
 }

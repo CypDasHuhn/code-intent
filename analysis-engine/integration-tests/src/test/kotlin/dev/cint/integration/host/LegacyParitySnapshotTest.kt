@@ -1,7 +1,7 @@
 package dev.cint.integration.host
 
 import dev.cint.api.Annotation
-import dev.cint.api.Role
+import dev.cint.core.artifact.AnnotationJson
 import dev.cint.core.artifact.Json
 import dev.cint.core.facts.frontend.OracleOptions
 import dev.cint.core.facts.model.SourceFile
@@ -43,13 +43,6 @@ private val snapshotFixtures =
 
 private fun snapshotRoot(): Path = assumeFixtureRoot()
 
-private fun roleName(role: Role): String =
-    when (role) {
-        Role.SOURCE_INTENT -> "source-intent"
-        Role.DERIVATIVE_USE -> "derivative-use"
-        Role.SCAFFOLD -> "scaffold"
-    }
-
 private fun intentsJson(intents: Set<String>): String = intents.sorted().joinToString(",", "[", "]") { "\"${Json.escape(it)}\"" }
 
 private fun annotationJson(
@@ -57,7 +50,7 @@ private fun annotationJson(
     includeRule: Boolean,
 ): String =
     buildString {
-        append("{\"role\":\"${roleName(annotation.role)}\",")
+        append("{\"role\":\"${AnnotationJson.roleName(annotation.role)}\",")
         append("\"intents\":${intentsJson(annotation.intents)},")
         if (includeRule) append("\"rule\":\"${Json.escape(annotation.rule)}\",")
         append("\"evidence\":\"${Json.escape(annotation.evidence)}\",")
@@ -123,7 +116,7 @@ class LegacyParitySnapshotTest {
         root: Path,
     ): Pair<List<String>, List<Annotation>> {
         val source = SourceFile(fixture.path, root.resolve(fixture.path).readText())
-        val settings = HostConfig.load(null, fixture.language)
+        val settings = HostConfig.load(null)
         val pipeline =
             HostPipeline(
                 constructedPacks = BundledRulePackSelection::constructed,

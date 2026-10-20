@@ -36,7 +36,6 @@ private fun normalize(contributions: List<Contribution>): List<Contribution> =
 class AnnotationStore {
     private val contributionsByRule = LinkedHashMap<String, List<Contribution>>()
     private var cached: List<Annotation>? = null
-    private var dirty = false
     private var revision = 0L
 
     fun replaceRule(
@@ -51,16 +50,9 @@ class AnnotationStore {
             contributionsByRule[rule] = normalized
         }
         cached = null
-        dirty = true
         revision++
         return true
     }
-
-    fun clearDirty() {
-        dirty = false
-    }
-
-    fun isDirty(): Boolean = dirty
 
     fun revision(): Long = revision
 

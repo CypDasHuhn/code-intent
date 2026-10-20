@@ -103,6 +103,15 @@ class FixtureOlderVersionPack : RulePack {
     override fun rules(): List<Rule> = listOf(FixtureRule("fixture-older:logging", "OLDER_LOGGING"))
 }
 
+@RulePackApi(2)
+class FixtureVersionTwoPack : RulePack {
+    override val id: String = "fixture-v2"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = 2
+
+    override fun rules(): List<Rule> = listOf(FixtureRule("fixture-v2:logging", "V2_LOGGING"))
+}
+
 class FixtureMismatchedPack : RulePack {
     override val id: String = "zzz-mismatched"
     override val languages: Set<String> = setOf("kotlin")

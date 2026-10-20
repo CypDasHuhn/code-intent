@@ -283,8 +283,8 @@ class ConfigSupportTest {
     }
 
     @Test
-    fun supportSurfaceRemainsAdditiveAtVersionTwo() {
-        assertEquals(2, CINT_API_VERSION)
+    fun supportSurfaceRemainsAdditiveAtVersionThree() {
+        assertEquals(3, CINT_API_VERSION)
 
         val matcher: Matcher = Matcher { emptyList() }
         val schema: ConfigSchema<TestConfig> = testSchema

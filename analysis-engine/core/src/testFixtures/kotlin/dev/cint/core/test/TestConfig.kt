@@ -6,6 +6,5 @@ import dev.cint.core.config.IntentConfig
 fun testConfig(language: String): IntentConfig =
     IntentConfig(
         language = language,
-        intents = emptyMap(),
         pureAnnotations = DEFAULT_PURITY_ANNOTATIONS,
     )

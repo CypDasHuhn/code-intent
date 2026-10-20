@@ -19,7 +19,7 @@ class RulePackLoaderSchedulerTest {
             "dev.cint.core.runtime.rulepack.DoesNotExist",
         ) { result ->
             assertEquals(listOf("fixture-good"), result.loadedPackIds)
-            assertTrue(result.isDegraded)
+            assertTrue(result.failures.isNotEmpty())
             assertEquals(
                 setOf(
                     RulePackLoadFailureKind.CORRUPT_PACK,

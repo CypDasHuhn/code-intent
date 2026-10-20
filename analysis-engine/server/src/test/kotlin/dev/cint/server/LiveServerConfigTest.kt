@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 class LiveServerConfigTest {
     @Test
     fun liveOracleKeepsItsDefaultTimeoutWithoutExplicitConfig() {
-        val settings = HostConfig.load(null, "kotlin")
+        val settings = HostConfig.load(null)
         val server = server(settings)
 
         assertEquals(OracleOptions(enabled = true, timeoutMs = LIVE_LSP_TIMEOUT_MS), server.oracleOptions())
@@ -32,7 +32,7 @@ class LiveServerConfigTest {
             """.trimIndent(),
         )
         try {
-            val server = server(HostConfig.load(file.toString(), "kotlin"))
+            val server = server(HostConfig.load(file.toString()))
 
             assertEquals(OracleOptions(enabled = true, timeoutMs = 900), server.oracleOptions())
             assertEquals(OracleOptions(enabled = false, timeoutMs = 900), server.oracleOptions(false))

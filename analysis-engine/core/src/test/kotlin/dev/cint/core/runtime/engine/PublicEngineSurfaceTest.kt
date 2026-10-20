@@ -16,7 +16,6 @@ class PublicEngineSurfaceTest {
             )
         val signatures = surfaces.flatMap { it.methods.toList() }.flatMap(::signatureTypes)
 
-        assertTrue(signatures.none { it.contains("RawAnnotation") })
         assertTrue(signatures.any { it.contains("dev.cint.api.Annotation") })
     }
 

@@ -39,6 +39,7 @@ class ArtifactTest {
                 listOf(FileEntry("Sample.vue", "hash", listOf(annotation))),
             )
 
+        assertTrue(json.contains(AnnotationJson.render(annotation)))
         assertTrue(json.contains("\"nodeAnchor\":\"node-1\""))
         assertTrue(json.contains("\"provenance\":[{\"rule\":\"logging-state\""))
         assertTrue(json.indexOf("\"rule\":\"validation-guard\"") > json.indexOf("\"provenance\":["))

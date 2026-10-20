@@ -7,7 +7,6 @@ import dev.cint.api.ScopeKind
 import dev.cint.api.WriteKind
 import dev.cint.core.facts.flow.ControlFlowBuilder
 import dev.cint.core.facts.model.SourceFile
-import dev.cint.core.facts.oracle.SymbolFact
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.facts.store.AnnotationStore
@@ -41,11 +40,6 @@ private class FixedTypeOracle : TypeOracle {
         file: SourceFile,
         byteOffset: Int,
     ): TypeFact = TypeFact("org.slf4j.Logger", "lsp", 0.9)
-
-    override fun definitionAt(
-        file: SourceFile,
-        byteOffset: Int,
-    ): SymbolFact? = null
 }
 
 class SemanticFactsTest {

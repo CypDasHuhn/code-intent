@@ -34,7 +34,7 @@ class VuePipelineTest {
         val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
         val annotations =
             SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
-                IntentConfig(language, emptyMap(), emptyList())
+                IntentConfig(language, emptyList())
             }
         val print = annotations.first { it.rule == "logging:logging" }
         val expectedLine = text.lines().indexOfFirst { it.contains("console.log") }
@@ -74,7 +74,7 @@ class VuePipelineTest {
 
         val annotations =
             SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
-                IntentConfig(language, emptyMap(), emptyList())
+                IntentConfig(language, emptyList())
             }
         val logging = annotations.first { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
         val errorHandling = annotations.first { it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents }
@@ -110,7 +110,7 @@ class VuePipelineTest {
         val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
         val annotations =
             SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
-                IntentConfig(language, emptyMap(), emptyList())
+                IntentConfig(language, emptyList())
             }
         val merged =
             annotations.first {
