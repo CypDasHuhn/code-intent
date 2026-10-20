@@ -7,7 +7,6 @@ import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.tests.support.parseValidationInput
-import dev.cint.rulepacks.tests.support.validationPipeline
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
 import dev.cint.rulepacks.validation.ValidationRulePack
 import kotlin.test.Test
