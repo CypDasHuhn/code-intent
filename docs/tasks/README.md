@@ -18,15 +18,16 @@ host and client cutover at the end.
 | 006 | [logging rulepack](006-logging-rulepack.md) | done | 003, 004, 005 | One `logging` rule owning `LOGGING`, with `print`/`logger-interaction`/`logging-state` as internal matchers. |
 | 007 | [error-handling rulepack](007-error-handling-rulepack.md) | done | 003, 004, 005 | `throw` + configured checks, receiver/qualifier gating, trailing lambdas. |
 | 008 | [bookkeeping rulepack](008-bookkeeping-rulepack.md) | done | 003, 004, 005 | Declared-once property + write inheritance. |
-| 009 | [validation rulepack](009-validation-rulepack.md) | todo | 003, 004, 005, 008 | Early-exit guard certificate; `reads = {BOOKKEEPING}` (stratum 1). |
+| 009 | [validation rulepack](009-validation-rulepack.md) | done | 003, 004, 005, 008 | Early-exit guard certificate; `reads = {BOOKKEEPING}` (stratum 1). |
 | 010 | [core composition terminal](010-core-composition-terminal.md) | done | 003, 004 | Coverage, scaffolds, derivative use, return category as the terminal graph node. |
 | 011 | [pack loading and degradation](011-pack-loading-and-degradation.md) | done | 003 | `ServiceLoader` loading, graceful degradation, collision/unknown-dep/cycle load errors, reload = restart. |
-| 012 | [typed pack config](012-typed-pack-config.md) | todo | 006 | Per-pack typed `Config` + project file keyed by pack id + `core:` policy section. |
+| 012 | [typed pack config](012-typed-pack-config.md) | done | 006 | Per-pack typed `Config` + project file keyed by pack id + `core:` policy section. |
 | 013 | [config migration off intents.yaml](013-config-migration-off-intents-yaml.md) | todo | 006, 007, 012 | Move detection values and language overrides into pack config. |
 | 014 | [delete legacy config and phase](014-delete-legacy-config-and-phase.md) | todo | 010, 013 | Remove `intents.yaml`, the `Phase` enum, and `rules/Blocks.kt`. |
-| 015 | [host cutover: cli and server](015-host-cutover-cli-and-server.md) | todo | 003, 010, 011 | Batch CLI and live daemon publish from the new engine. |
-| 016 | [renderer annotation contract](016-renderer-annotation-contract.md) | todo | 002, 011 | Structured provenance, open intent names, reserved node anchor in the live contract. |
+| 015 | [host cutover: cli and server](015-host-cutover-cli-and-server.md) | done | 003, 010, 011 | Batch CLI and live daemon publish from the new engine. |
+| 016 | [renderer annotation contract](016-renderer-annotation-contract.md) | done | 002, 011 | Structured provenance, open intent names, reserved node anchor in the live contract. |
 | 017 | [fixpoint metadata convergence](017-fixpoint-metadata-convergence.md) | blocked | 003 | Define bounded convergence for evidence/source/confidence changes at a stable annotation identity. |
+| 018 | [return parity for non-direct-exit guards](018-return-parity-non-direct-exit.md) | blocked | 009, 010 | Restore ReturnBlock parity for nested/else-edge validation returns without direct then-exit guards. |
 
 ## Resolved decisions
 

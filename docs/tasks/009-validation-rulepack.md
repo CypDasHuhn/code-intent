@@ -1,6 +1,6 @@
 ---
 name: validation rulepack
-status: todo
+status: done
 depends-on: [003, 004, 005, 008]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -55,3 +55,20 @@ gated by 011's `CINT_API_VERSION = 1` compatibility check:
 
 External `View` implementations must implement these members. No removal or
 behavioral change to existing members is involved.
+
+## Outcome (2026-10-20)
+
+Bundled `validation` pack owns `VALIDATION`, `reads = {BOOKKEEPING}`, and runs
+in stratum 1. It reproduces ValidationBlock guard detection (direct return/
+continue/break, bookkeeping writes, validation predicates, side-effect-free
+conditions, `// cint:validation`) and emits source VALIDATION spans only; 010
+composition derives scaffolds, derivative use and return categories. Return
+categorization now requires actual emitted validation annotations and is
+pack-presence independent; bare return/`return false` are neutral for scaffold
+union while `null`/`0` retain legacy behavior. Four additive generic View facts
+are recorded in the contract note above.
+
+Approved narrowing: nested/else-edge returns without a direct then-exit guard are
+not certified as VALIDATION; full ReturnBlock parity for those shapes is deferred
+to [018](018-return-parity-non-direct-exit.md). Golden/fixture parity for tagged
+guards is automated; validation config migration is 013.

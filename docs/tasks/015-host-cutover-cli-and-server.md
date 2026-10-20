@@ -1,6 +1,6 @@
 ---
 name: host cutover: cli and server
-status: todo
+status: done
 depends-on: [003, 010, 011]
 reviewers: [correctness, architecture]
 ---
@@ -36,3 +36,16 @@ the scheduler/composition pipeline (architecture.md §1 publishing, §9 cli/serv
 
 - Split handlers (Vue `<script>` regions) must keep working through the new
   pipeline.
+
+## Outcome (2026-10-20)
+
+CLI and server now run through `HostPipeline` over `RulePackLoader` + `RuleEngine`
++ composition, with language-scoped pack selection (service packs plus the
+language-specific ErrorHandling constructor), plan-derived intent vocabulary,
+and validated constructed packs. Batch, HTTP and live socket paths publish
+structured provenance and versioned annotations without the legacy Phase path;
+per-file CLI failures no longer abort a batch. Custom config is validated: valid
+files warn that detection config is not wired yet, missing/invalid files fail.
+`just install`, `just test-engine` and `just test-nvim` pass; live socket/restart
+is recorded as verified m004. Validation registration is wired through the same
+service/selection path after 009. Legacy split overload removal is 014.

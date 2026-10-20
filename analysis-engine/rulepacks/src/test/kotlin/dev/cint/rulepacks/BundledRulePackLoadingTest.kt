@@ -35,11 +35,11 @@ class BundledRulePackLoadingTest {
     fun bundledPackUsesTheSharedLoader() {
         val result = RulePackLoader(TestBundledPack::class.java.classLoader, onFailure = {}).load()
 
-        assertEquals(listOf("bookkeeping", "bundled-test", "logging"), result.loadedPackIds)
+        assertEquals(listOf("bookkeeping", "bundled-test", "logging", "validation"), result.loadedPackIds)
         assertTrue(result.failures.isEmpty())
         val plan = RuleScheduler().plan(result.packs)
         assertEquals(
-            setOf("bookkeeping:bookkeeping", "bundled-test:logging", "logging:logging"),
+            setOf("bookkeeping:bookkeeping", "bundled-test:logging", "logging:logging", "validation:validation"),
             plan.strata.flatten().map { it.id }.toSet(),
         )
     }

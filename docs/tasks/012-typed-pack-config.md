@@ -1,6 +1,6 @@
 ---
 name: typed pack config
-status: todo
+status: done
 depends-on: [006]
 reviewers: [correctness, api-fidelity]
 ---
@@ -34,3 +34,14 @@ plus a single project config file (architecture.md §8).
 ## Notes
 
 - `intents.yaml` is retired; rule structure never lives in config again (`§8`).
+
+## Outcome (2026-10-20)
+
+Typed pack config is wired through `ConfigurableRulePack` and
+`ProjectConfig`/`ProjectConfigLoader`: per-pack sections keyed by pack id plus a
+framework-owned `core:` policy section. Defaults apply without a file, partial
+language overrides replace only supplied fields, and unknown/unverified pack keys
+and invalid values are reported. The API addition is additive/opt-in at
+`CINT_API_VERSION = 1` and pinned by a contract test. Logging is fully migrated;
+error-handling, bookkeeping and validation values move in 013. Both reviewers
+concur.
