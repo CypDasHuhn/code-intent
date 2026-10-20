@@ -312,11 +312,12 @@ A function-local CFG is built from tree-sitter facts before rule evaluation.
 - the enclosing loop,
 - the enclosing catch/finally.
 
-`ReturnBlock` then classifies returns without reading other blocks' output:
+`core` `ReturnComposition` then classifies returns using certified guard
+annotations, without knowing the validation pack's identity:
 
-- a return on the true edge of a validation guard is `VALIDATION`,
+- a return on the true edge of a certified validation guard is `VALIDATION`,
 - a rejection return (`null`, `false`, `0`, bare return, ...) on the other edge
-  of a validation guard is also `VALIDATION`,
+  of a certified guard is also `VALIDATION`,
 - everything else is `UNTAGGED`, including normal final returns.
 
 `UNTAGGED` returns block whole-function scaffolds, so a function ending in a
@@ -357,9 +358,9 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
   daemon; `:CintServerRestart` stops and respawns.
 - `:CintLiveTags` shows versions, profile, shards, annotations, extmarks,
   and pending state.
-- The daemon holds in-memory docs and loaded engine config; changes to
-  `intents.yaml`, `server_cmd`, LSP flags, or a rebuilt binary require a
-  daemon restart.
+- The daemon holds in-memory docs and loaded engine config; changes to the
+  project detection config passed with `--config`, `server_cmd`, LSP flags, or a
+  rebuilt binary require a daemon restart.
 - Profiles/shards are client-side and only re-render cached annotations.
 - Live keeps old marks while a new version is pending; reveal-on-cursor reveals
   all annotations contained in the active scaffold/vertical block.
@@ -387,36 +388,38 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 
 Key engine files:
 
-- `analysis-engine/core/.../rules/Blocks.kt` — source blocks, derivative use,
-  scaffolds, Bookkeeping, Validation.
-- `analysis-engine/core/.../syntax/SyntaxModel.kt` — language-neutral syntax
-  facts and canonical groups.
-- `analysis-engine/core/.../syntax/ProfileSyntaxModel.kt` — generic model
-  driven by a syntax profile.
-- `analysis-engine/core/.../engine/Engine.kt` — coverage and containing-intent
-  resolution.
-- `analysis-engine/core/src/main/resources/intents.yaml` — intent config.
-- `analysis-engine/treesitter/src/main/resources/syntax/kotlin.yaml` — Kotlin
-  node-kind profile.
-- `analysis-engine/treesitter/src/main/resources/syntax/javascript.yaml` and
-  `typescript.yaml` — JavaScript and TypeScript profiles.
-- `analysis-engine/core/.../frontend/LanguageFrontend.kt` and
-  `analysis-engine/frontend/.../KotlinFrontend.kt` — language registry and
-  wiring.
-- `analysis-engine/core/.../flow/ControlFlow.kt` — function-local CFG and
+- `analysis-engine/api/.../Model.kt` and `Contract.kt` — intents, roles,
+  annotations, rules, packs, views, emits, and the scheduler contract.
+- `analysis-engine/api/.../Dsl.kt` — the thin `View` DSL.
+- `analysis-engine/core/.../facts/view/CapabilityView.kt` — the scope-gated
+  view rules consume.
+- `analysis-engine/core/.../facts/store/AnnotationStore.kt` — per-rule
+  contribution replacement and provenance.
+- `analysis-engine/core/.../runtime/scheduler/RuleEngine.kt` and
+  `RuleScheduler.kt` — stratification and fixpoint.
+- `analysis-engine/core/.../runtime/composition/` — `ScaffoldComposition`,
+  `DerivativeComposition`, `ReturnComposition`, and the terminal composition.
+- `analysis-engine/core/.../facts/flow/ControlFlow.kt` — function-local CFG and
   return sites.
-- `analysis-engine/core/.../rules/Blocks.kt` — `ReturnBlock` and the other rule
-  blocks.
-- `analysis-engine/core/.../frontend/Split.kt` and
-  `analysis-engine/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
+- `analysis-engine/core/.../syntax/Syntax.kt` and `ProfileSyntaxModel.kt` —
+  language-neutral syntax facts and profile-driven node kinds.
+- `analysis-engine/core/.../runtime/rulepack/` — explicit
+  `META-INF/services` discovery, validation, and per-provider degradation.
+- `analysis-engine/host/.../HostPipeline.kt`, `HostConfig.kt`, and
+  `ProjectConfigLoader.kt` — production pack selection and project config.
+- `analysis-engine/rulepacks/.../logging|errorhandling|bookkeeping|validation/`
+  — bundled detection packs; `support/BundledRulePackSelection.kt` supplies the
+  per-language error-handling packs.
+- `analysis-engine/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
+  JavaScript, TypeScript, Vue, and C# node-kind profiles.
+- `analysis-engine/frontend/.../KotlinFrontend.kt` — `Frontends` registry and
+  per-language bindings.
+- `analysis-engine/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
   with coordinate shifting; Vue uses it for `<script>` blocks.
-- `analysis-engine/treesitter/src/main/resources/syntax/csharp.yaml` — C#
-  profile.
 
 Key client files:
 
-- `nvim-renderer/lua/cint/init.lua` — live pipeline, profiles,
-  shards, reveal.
+- `nvim-renderer/lua/cint/init.lua` — live pipeline, profiles, shards, reveal.
 - `nvim-renderer/lua/cint/render.lua` — extmarks/concealment.
 - `nvim-renderer/lua/cint/live.lua` — daemon transport.
 - `nvim-renderer/plugin/cint.lua` — commands/autocmds.
@@ -429,18 +432,17 @@ Fixtures:
 - `testing-grounds/kotlin/Catches.kt` — try/catch spans.
 - `testing-grounds/kotlin/LoggerInteractions.kt` — typed/heuristic sources.
 
-Tests:
+Tests and tooling:
 
-- `just test-engine`
-- `just test-nvim`
-- `just test-lsp`
+- `just build` — assemble all modules without tests.
+- `just test-engine` — deterministic engine/host/server/integration suites.
+- `just test-nvim` — headless renderer suite.
+- `just test-lsp` — opt-in shared-LSP oracle test.
+- `just lint` — ktlint over Kotlin sources.
 
-Recent git history (at time of writing):
+Snapshots:
 
-```text
-ecb3ee2 fix(engine): give validation guards ambient intent context
-6d4ccdc style: run ktlint
-1dcbc28 chore: drop hardcoded tag palette defaults
-35391e5 feat(engine): add validation guards and unify intent names
-2000c5f feat(engine): add bookkeeping sources and classified-use promotion
-```
+- `analysis-engine/integration-tests/src/test/resources/snapshots/` holds the
+  pre-018 (014-tree) `HostPipeline` snapshots restored from `739dff7`
+  (legacy-shape and pipeline-shape; compared against `3f20435` in ticket 014)
+  and the post-018 current pipeline baseline.

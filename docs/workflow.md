@@ -59,9 +59,17 @@ demands it — never all by default. The dimensions in use:
   reproduces it.
 
 Engine commands here are `just build`, `just test-engine`, `just test-lsp`,
-`just test-nvim`, and `just install`. There is no wired ktlint task, so the
-implementor keeps Kotlin formatting consistent with the surrounding module and
-the reviewer checks consistency rather than running a formatter.
+`just test-nvim`, `just lint`, and `just install`. `just build` assembles the
+engine without running tests; `test-engine` covers the deterministic suites
+(including `host`, `server`, `rulepacks-tests`, `test-fixtures`, and
+`integration-tests`). `test-lsp` is opt-in via `CINT_LSP_ROOT` and a running
+`kotlin-lsp`.
+
+Lint scope is Kotlin only: `just lint`/`just lint-fix` run ktlint over
+`analysis-engine/**/src/**/*.kt`. The Lua renderer has no formatter gate; its
+behavior is covered by `just test-nvim`. CI runs `just build`, `just
+test-engine`, `just lint`, and `just test-nvim` with an explicit
+`CINT_TESTING_GROUNDS`.
 
 ## Ticket format
 
@@ -111,7 +119,8 @@ name the ticket.
 
 ## Reference docs
 
-[architecture.md](architecture.md) is the specification for the restructure and
-supersedes `intent-model.md` §6/§10 where they conflict.
-[notes.md](notes.md) §20 is the resuming snapshot of the pre-restructure engine.
-Both stay as historical reference; tickets rewrite the engine, not these docs.
+[architecture.md](architecture.md) describes the implemented module boundaries
+and pipeline. [intent-model.md](intent-model.md) describes the intent model and
+[notes.md](notes.md) §20 is the current post-restructure state; earlier notes
+sections are historical. [manual-test.md](manual-test.md) records non-automated
+acceptance checks, and [README.md](README.md) is the documentation index.

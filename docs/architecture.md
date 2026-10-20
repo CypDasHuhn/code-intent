@@ -1,8 +1,8 @@
 # CodeIntent — Architecture
 
-Target design for the rule/engine restructure. This is the intended shape of the
-system, not a description of the current code. Where it conflicts with
-`intent-model.md` §6/§10 it supersedes them.
+The implemented engine shape after the rule/engine restructure. It describes
+the current module boundaries and pipeline; `intent-model.md` covers the intent
+model and `notes.md` retains the pre-restructure history.
 
 ## Goal
 
@@ -45,7 +45,7 @@ hide, or reclassify anything.
 The built-in detectors (logging, error handling, bookkeeping, validation) are
 **bundled rulepacks that use the same API as any third-party pack.** Core
 contains no hardcoded intent detection. This is what keeps the hull from
-decaying back into the current `rules/Blocks.kt` shape.
+decaying back into a monolithic block implementation.
 
 ## 2. Intents, rules, ownership
 
@@ -112,10 +112,10 @@ free-for-all.
 Worked example of strata:
 
 ```
-stratum 0:  print, logger-interaction, logging-state, error-handling,
-            bookkeeping        (no dependencies)
+stratum 0:  logging, error-handling-<language>, bookkeeping
+            (no dependencies)
 stratum 1:  validation         (reads BOOKKEEPING)
-terminal:   core composition    (scaffolds, derivative use, return category)
+terminal:   core composition    (scaffold, derivative-use, return-category)
 ```
 
 **Termination invariant:** monotone rules + acyclic rule-level dependencies +
@@ -198,7 +198,7 @@ author's perspective; the framework handles the diff.
 
 ## 8. Configuration
 
-`intents.yaml` is retired. Rule *structure* never lives in config again.
+Legacy intent config is retired. Rule *structure* never lives in config again.
 
 - Each rulepack owns a **typed `Config`** with defaults.
 - A single project config file supplies values, keyed by pack id, plus a `core:`
@@ -212,21 +212,28 @@ author's perspective; the framework handles the diff.
 
 | module | responsibility |
 |---|---|
-| `api` | frozen contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `Emit`, `Annotation`, scheduler contract |
-| `dsl` | optional convenience layer over `api` (may fold into `api` initially) |
-| `core` | engine, scheduler, composition, bundled rulepacks |
+| `api` | frozen contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `Emit`, `Annotation`, scheduler contract, DSL |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
+| `core` | syntax facts, config, annotation store, CFG, scheduler, composition, artifact writer |
+| `host` | host pipeline and project config loading shared by all hosts |
 | `treesitter` | parsers and per-language syntax profiles |
 | `lsp` | spec-driven LSP oracle |
 | `frontend` | language registry wiring parser, syntax model, oracle |
 | `cli` | batch host |
-| `server` | HTTP + per-project Unix-socket daemon |
-| plugins | third-party and bundled rulepacks, depending only on `api` |
+| `server` | HTTP host and per-project Unix-socket daemon |
+| `rulepacks-tests` | bundled-pack integration tests over real parsers |
+| `test-fixtures` | shared test fixtures for parsers, packs, and `testing-grounds` |
+| `integration-tests` | composition, host, frontend-pipeline, and snapshot tests |
 
-- `api` (and `dsl`, if separate) is the frozen public surface. Plugins compile
-  against it; it changes only deliberately and with versioning.
-- `core` and below churn freely.
-- Loading is JVM **`ServiceLoader`** (`META-INF/services`). No runtime Kotlin
-  compiler, no classloader leaks, strongest type safety.
+- `api` is the frozen public surface. Plugins compile against it; it changes
+  only deliberately and with versioning. The DSL lives in `api`.
+- `core` has no tree-sitter, LSP, host, or editor dependency. The `host` module
+  assembles the production pack selection and applies project config; CLI,
+  HTTP, and live server reuse it.
+- Loading reads `META-INF/services/dev.cint.api.RulePack` explicitly rather
+  than iterating `ServiceLoader`. That keeps per-provider failure isolation,
+  API-version checks, and deterministic ordering; there is no runtime Kotlin
+  compiler or classloader swapping.
 - **Graceful degradation:** a missing, corrupt, or version-mismatched pack is
   reported and skipped; the engine keeps analyzing with what loaded.
 - **Reload is daemon restart.** A pack change is a dev-time action, never a
@@ -255,9 +262,15 @@ Explicitly out of scope, none of which constrains the API:
    internal fixpoint, provenance store.
 3. Re-express existing detection as bundled rulepacks on the new API.
 4. Move composition (scaffolds, derivative use, return category) into `core`.
-5. Config migration off `intents.yaml` to typed pack config.
-6. Delete `intents.yaml` and the `Phase` enum.
+5. Migrate config to typed pack config and delete the legacy config/phase path.
+6. Cut CLI and server over to the shared `host` pipeline.
+7. Split renderer transport and tests; consolidate test ownership and fixtures.
+8. Reconcile docs, snapshots, CI, and tooling (tickets 019-030).
 
 There is no legacy compatibility layer; this is a clean rewrite. Golden
 `tags.json` fixtures remain useful as a development check on detection
-behavior, not as a compatibility contract.
+behavior, not as a compatibility contract. The restored pre-018 snapshots are
+014-tree `HostPipeline` renderings whose legacy shape was compared at
+`3f20435`; they are not a direct capture of the deleted legacy implementation.
+The current pipeline snapshot is a separate post-018 baseline because validation
+spans were intentionally widened.

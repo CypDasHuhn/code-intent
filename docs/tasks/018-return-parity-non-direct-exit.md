@@ -51,4 +51,7 @@ the unused validation intent-params compatibility helpers. Validation tags widen
 to non-direct-exit guards, which is the intentional tradeoff for a pack-driven
 certificate. Rulepack detection tests moved to `:rulepacks-tests`; per-pack
 packages were normalized to logging/errorhandling/bookkeeping/validation/support.
-`just build`, `just test-engine`, and `just lint` pass.
+The parity snapshots were updated to the widened output while still carrying the
+`3f20435` provenance label; ticket 027 restored the pre-018 (014-tree)
+`HostPipeline` files from `739dff7` and added a separate post-018 current
+baseline. `just build`, `just test-engine`, and `just lint` pass.

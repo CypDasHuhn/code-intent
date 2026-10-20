@@ -6,6 +6,10 @@ over polish. Not maintained for humans.
 
 Repo: `~/repos/code-intent` (monorepo). Tagline: **Code to Intent.**
 
+This dump is partly historical. Sections 7-19 describe the pre-restructure PoC;
+§20 is the current post-restructure state as of ticket 027. Sections 3-6 are
+kept current enough to describe the artifact, config, detection, and renderer.
+
 ---
 
 ## 1. The idea (thesis)
@@ -52,22 +56,38 @@ never reads it. Shape:
 
 ```json
 {
-  "feature": "logging",
-  "tag": "LOGGING",
   "language": "kotlin",
+  "intents": ["LOGGING", "ERROR_HANDLING", "VALIDATION", "UNTAGGED"],
   "files": [
     {
       "path": "relative/from/scanned/root.kt",
       "hash": "sha256-hex",
       "spans": [
         {
-          "tag": "LOGGING",
-          "rule": "call-on-logger-symbol",
+          "role": "source-intent",
+          "intents": ["LOGGING"],
           "evidence": "log.info(...)",
+          "source": "heuristic",
+          "confidence": 0.8,
           "startLine": 10,
           "startCol": 12,
           "endLine": 10,
-          "endCol": 44
+          "endCol": 44,
+          "startByte": 240,
+          "endByte": 278,
+          "nodeAnchor": null,
+          "provenance": [
+            {
+              "rule": "logging:logging",
+              "role": "source-intent",
+              "intents": ["LOGGING"],
+              "evidence": "log.info(...)",
+              "source": "heuristic",
+              "confidence": 0.8,
+              "startByte": 240,
+              "endByte": 278
+            }
+          ]
         }
       ]
     }
@@ -75,88 +95,90 @@ never reads it. Shape:
 }
 ```
 
-- Lines **0-based**, columns **0-based** (LSP/Neovim friendly).
+- Lines **0-based**, columns **0-based**; byte offsets are included.
 - `hash` = SHA-256 of canonical content: CRLF->LF, strip one trailing `\n`.
-  Renderer recomputes buffer hash; mismatch => refuse to paint + warn (stale).
-- `rule` = provenance (which generic rule fired). `evidence` = source snippet.
-- Missing but planned: `source` (tier) and `confidence` per span — see tiering.
+  The live client compares buffer hashes/versions and rejects stale publishes.
+- `role` is `source-intent`, `derivative-use`, or `scaffold`; `intents` is a set.
+- `provenance` keeps per-contributor rule/evidence/source/confidence/span data.
+- `nodeAnchor` is reserved and currently null.
 
 ## 4. The config contract
 
-`analysis-engine/core/src/main/resources/logging.yaml`, keyed **feature ->
-language -> params**:
+Detection config is owned by rulepacks and passed to the hosts with `--config`.
+The file is keyed by pack id, plus a `core:` section for framework policy:
 
 ```yaml
-features:
-  logging:
-    tag: LOGGING
-    languages:
-      kotlin:
-        methods: [info, debug, warn, error, trace, log, verbose, fatal]
-        factories:
-          [
-            LoggerFactory.getLogger,
-            KotlinLogging.logger,
-            LogManager.getLogger,
-            Logger.getLogger,
-          ]
-        receiverNames: [log, logger, LOG, LOGGER, Logger]
-        qualifiers: [System.out, System.err]
-        imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
+core:
+  purity:
+    annotations: [Pure, "Contract(pure = true)"]
+  lsp:
+    enabled: true
+    timeoutMs: 750
+
+logging:
+  kotlin:
+    printCalls: [println, print]
+    printQualifiers: [System.out, System.err]
+
+error-handling-kotlin:
+  calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
+  throws: true
+
+validation:
+  predicates: [none, any, all, isEmpty, isBlank, contains, matches]
+  predicatePrefixes: [is, has]
 ```
 
-Bundled into the jar as a resource (`config/` is a resources srcDir); `--config`
-overrides. Engine NEVER branches on language — only config values are specific.
+Missing values use the owning pack's defaults. Unknown packs and keys are
+reported. Language-specific detection values live in the owning pack's config,
+not in one global file; the engine never branches on language.
 
-## 5. Detection as implemented (Logging only)
+## 5. Detection as implemented (current rulepacks)
 
-Frontend facts (`KotlinFrontend`, PSI, NO type resolution):
+Detection is data-driven over `View` facts; rulepacks do not walk grammar node
+kinds directly. The bundled packs live in `analysis-engine/rulepacks`:
 
-- `imports` — FQNs
-- `declarations` — property name + initializer call-path (e.g.
-  `LoggerFactory.getLogger`)
-- `calls` — calleeName, receiverText, callPath, args, offsets, `inCatch`
-- `receiverText` = text left of `.` in a dot-qualified selector call.
-- `callPath` for initializers = `Receiver.callee`.
+- `logging:logging` — one `LOGGING` rule with print, logger-interaction, and
+  logging-state matchers. It recognizes configured print calls/qualifiers,
+  factory-initialized logger properties, logger receiver names/types/imports,
+  and logging-state guards. Weak receiver/import heuristics consult the LSP type
+  oracle when available; a resolved non-logger type vetoes them, an unresolved
+  type falls back. Live hover time is capped.
+- `error-handling-<language>:error-handling` — throw and configured checks
+  (`require`, `assert`, ...), with per-language config and qualifiers.
+- `bookkeeping:bookkeeping` — `@Bookkeeping` or `// cint:bookkeeping` declares a
+  property; the declaration and writes are tagged, reads are not.
+- `validation:validation` — certifies guards by a bookkeeping write, a validity
+  predicate, a side-effect-free condition, or `// cint:validation`; the guard
+  annotation also carries the return-certificate flag used by core composition.
 
-Generic rules (`IntentQuery`, first match wins). Call tagged `Logging` if:
-
-1. `call-on-logger-symbol` — receiver is a symbol declared via a `factories`
-   initializer. (Strong rule; name-independent.)
-2. `receiver-name` — receiver simple-name case-insensitive in `receiverNames`
-   AND callee in `methods`.
-3. `qualified-static` — receiver in `qualifiers` AND callee in `methods`.
-4. `name-import-gated` — callee in `methods` AND file imports a `imports`
-   module.
-5. `print` — callee is `println`/`print` (unqualified, or on `System.out`/
-   `System.err`). Builtin, not config.
-
-Design choice: rules 2–4 require a **receiver** — this is what suppresses Kotlin
-stdlib `error()`/`require()`/`check()` false positives (unqualified).
-`has(factories, x)` matches exact OR suffix (`…KotlinLogging.logger`).
-
-Limits (deliberate PoC scope): no type resolution, no cross-file symbol
-resolution, no dataflow, no context sanitization. A non-logger receiver named
-`logger` with a log-ish method would still false-positive.
+Core composition adds `core:scaffold`, `core:derivative-use`, and
+`core:return-category`; it consumes intent sets without knowing pack identity.
+Limits still include approximate guard polarity and no whole-program purity
+inference.
 
 ## 6. Renderer (nvim) as implemented
 
-- Per-tag **handler** registry (`lua/cint/handlers/`):
-  - `color` — bg tint + gutter sign. opts `{bg,sign,icon}`. Falls back to
-    builtin palette per tag name (`colors.lua`), else `fallback`.
+- **Socket-only.** It starts or attaches to a per-project `cint-server`, sends
+  `didOpen`/`didChange`/`didClose` with versions, and renders published
+  annotations. There is no artifact/offline path.
+- Per-intent **meaning** resolution: `tags[intent].meaning`, `resolve.precedence`,
+  `resolve.default`, then `rules[meaning]` chooses the handler.
+- Handler registry (`lua/cint/handlers/`):
+  - `color` — bg tint + gutter sign. opts `{bg,sign,icon}`; palette fallback.
   - `conceal` — `{char="…"}` inline replace; `{lines=true}` **vertical** hide.
-- Config: `tags[tag][handlerName] = opts`; presence enables; `true`=defaults,
-  `false`=disabled; tags with no entry use global `handlers` list.
+  - `highlight` — background only; `ignore` — dim foreground.
+- Profiles are partial presentation configs in `<root>/.cint/profiles.lua`
+  (project scope) or `stdpath("config")/cint/profiles.lua` (global). Shards are
+  one-shot patches folded over the profile.
 - Vertical conceal uses nvim extmark `conceal_lines=""` (needs conceallevel>0;
-  handler auto-sets to 2). VERIFIED it reduces `nvim_win_text_height`.
-- `expand_on_cursor` (default true): cursor inside a vertical block reveals the
-  WHOLE block; leaving re-conceals. Implemented via `render_buffer` `reveal`
-  hook + `init.reveal_block()` + `CursorMoved`/`CursorMovedI`. Re-renders only
-  when the active block changes.
-- Staleness guard in `init.render`: buffer hash != artifact hash => clear +
-  notify + return 0. (Warns, does not self-heal.)
-- Commands: `:CintRender|Clear|Toggle|Refresh|Info`. Headless test:
-  `nvim-renderer/tests/run.sh`.
+  the handler auto-sets 2). `expand_on_cursor` reveals the whole active block.
+- Live publishes carry version and content hash; stale versions are discarded
+  while the previous marks stay visible. Re-analysis is debounced; writes and
+  `:CintAnalyze` force a run.
+- Commands include `:CintRender|Clear|Toggle|Refresh|Info|Profile|Shard|Analyze|`
+  `LiveTags|ServerStatus|ServerDisconnect|ServerStop|ServerRestart`. Headless
+  tests: `just test-nvim` / `nvim-renderer/tests/run.sh`.
 
 Important: for THIS tool, stale data is worse than for a linter — a stale linter
 shows wrong squiggles; a stale painter **hides the wrong lines**.
@@ -233,7 +255,7 @@ interpreter) collides with the short handle, but the repo name disambiguates.
 ## 12. PoC state / artifacts
 
 - `a726212` initial Kotlin CLI (PSI facts, config query, JSON emit).
-- `9102056` move CLI into `analysis-cli/` (monorepo).
+- `9102056` move the CLI into its own module (monorepo).
 - `743aca1` nvim plugin skeleton (full).
 - `f9cd703` bundle config as resource (runs from any CWD).
 - `4fb4838` per-tag handlers (color, conceal).
@@ -360,98 +382,116 @@ detected.
   annotations. There is no artifact/offline renderer path; live mode uses
   exact-version byte ranges.
 
-## 20. Current state (2026-10-19)
+## 20. Current state (2026-10-20, post-restructure)
 
 Authoritative for resuming. Older sections are historical where they conflict.
 
 ### Naming / paths
 
-- Repo: `~/repos/code-intent`; GitHub remote intended as `code-intent` (no local
-  `origin` configured yet).
+- Repo: `~/repos/code-intent`; worktrees under `~/repos/code-intent-worktrees/`.
 - Product: **CodeIntent**. CLI: `cint`. Server: `cint-server`.
 - Kotlin package: `dev.cint.*`. Lua module: `require("cint")`.
 - Commands: `:CintRender|Clear|Toggle|Refresh|Info|Profile|ProfileEdit|`
   `ProfileReload|Shard|ShardUndo|ShardReset|ShardHistory|Analyze|LiveTags|`
   `ServerStatus|ServerDisconnect|ServerStop|ServerRestart`.
-- Project config: `<root>/.cint/profiles.lua`. Global config:
-  `stdpath("config")/cint/profiles.lua` (currently
-  `~/.config/nvim/cint/profiles.lua`, symlinked from dotfiles).
+- Project presentation config: `<root>/.cint/profiles.lua`. Global config:
+  `stdpath("config")/cint/profiles.lua`.
+- Detection config is a project YAML file passed with `--config`; it is keyed by
+  pack id with a `core:` policy section. It is not auto-discovered.
 - Socket dir: `cint-<uid>`. Log: `stdpath("log")/cint-live.log`.
 - JSON-RPC: `cint/publishTags`, `cint/analyze`, `cint/error`.
-- Magic comments: `// cint:bookkeeping`, `// cint:validation` (planned
-  `cint:user-feedback`).
+- Magic comments: `// cint:bookkeeping`, `// cint:validation`.
 
 ### Engine
 
-- Modules: `core`, `treesitter`, `lsp`, `frontend`, `cli`, `server`. Rules live
-  in `core/rules`; `core` has no tree-sitter/LSP dependency.
-- `SyntaxModel` + per-language profiles in
-  `treesitter/src/main/resources/syntax/*.yaml`; generic `ProfileSyntaxModel`.
-- `LanguageFrontend` in core; `frontend` registry: Kotlin, JavaScript,
-  TypeScript, Vue, C#.
-- `ErrorHandlingBlock` accepts a configured call with a receiver only when the
-  receiver text is in the intent's `qualifiers`. C# config sets
-  `qualifiers: [Debug, Trace, Contract]`, so those `Assert` calls tag as
-  `ERROR_HANDLING` while an arbitrary `receiver.Assert(...)` stays untagged.
+- Gradle modules: `api`, `rulepacks`, `core`, `host`, `treesitter`, `lsp`,
+  `frontend`, `cli`, `server`; test-only `rulepacks-tests`, `test-fixtures`,
+  `integration-tests`.
+- Dependency line: `core` depends on `api` only. `host` depends on `api` and
+  `core`. `frontend` binds parser/syntax/oracle. CLI, HTTP, and live server use
+  `host`'s `HostPipeline`; `rulepacks` supplies bundled detection.
+- `api` holds the frozen contract (`Intent`, `Rule`, `RulePack`, `View`, `Emit`,
+  `Annotation`, DSL). Rules own one intent; composition roles are core-only.
+- Rulepack loading reads `META-INF/services/dev.cint.api.RulePack` explicitly,
+  validates API version/ownership, and degrades per provider. The per-language
+  error-handling packs are constructed by `BundledRulePackSelection` because
+  they share one intent name; service descriptors cover the single-instance
+  logging, bookkeeping, and validation packs.
+- Syntax is data: `SyntaxModel`/`ProfileSyntaxModel` plus
+  `treesitter/src/main/resources/syntax/*.yaml` for Kotlin, JavaScript,
+  TypeScript, Vue, and C#. `LanguageFrontend` lives in core; `frontend` registers
+  the language frontends and handles Vue split regions.
 - LSP: spec-driven `LspOracle`; Kotlin only. JS/TS/Vue/C# use `NullOracle`.
 - Split handlers: `SplitHandler`/`SplitRegion` + `SplitAnalyzer`. Vue extracts
   `<script>` / `<script setup lang="ts">`, analyzes as JS/TS, shifts spans.
-- CFG: `core/flow/ControlFlow.kt`, built before blocks.
-- `ReturnBlock` (SOURCE):
-  - return on a validation guard's true edge -> `VALIDATION`;
-  - rejection sentinel (`null`, `false`, `0`, bare return, ...) on the other
-    edge -> `VALIDATION`;
-  - normal/final return -> `UNTAGGED`.
-  - Normal returns block whole-function scaffolds, so a function ending in a
-    business return is not painted as one intent.
-- Purity is explicit only. Derivative-use requires a literal, local read, or
-  annotated pure call; function promotion requires `@Pure`. Unannotated calls
-  and operators are assumed to have side effects. No purity engine yet.
+- CFG: `core/facts/flow/ControlFlow.kt`, built before rule evaluation.
+  `ReturnComposition` classifies returns from certified guard annotations:
+  validation guard returns inherit `VALIDATION`; normal returns are `UNTAGGED`
+  and block whole-function scaffolds.
+- Composition lives in `core/runtime/composition`: classes named `core:scaffold`,
+  `core:derivative-use`, `core:return-category`.
+- Purity is explicit only: literal/local reads or annotated pure calls;
+  function promotion requires `@Pure`. No purity engine yet.
 - Analysis caches: per-context syntax facts; annotation list + exact-span map +
-  interval index; `RuleBlock.readsAnnotations` avoids rerunning non-readers.
+  interval index; rules that do not read annotations are not rerun.
 
 ### Renderer
 
-- Socket-only; the artifact/offline path is gone.
+- Socket-only; no artifact/offline path.
 - `scope = "project" | "global"` controls profile file and selection.
-- `languages` list maps Neovim filetypes/extensions to engine language ids.
+- `languages` maps Neovim filetypes/extensions to engine language ids.
 - Perf: cached render plan per `(spans, config, changedtick)`, style cache,
-  line-length cache, config cache, incremental reveal (updates only affected
-  extmarks).
+  line-length cache, config cache, incremental reveal.
 - Defaults: `SHOW = false` (no-op), `HIGHLIGHT` paints, `CONCEAL` hides,
   `IGNORE` dims. Multi-intent scaffolds skip color/highlight; `IGNORE`/`CONCEAL`
   still apply.
-- Bench (1,500 spans / 4,000 lines): full render ~5 ms, reveal same block ~0.002
-  ms, reveal changing block ~0.37 ms.
-- Dotfiles: `lua/plugins/visual/codeintent.lua` has `lazy = false`,
-  `scope = "global"`, `server_cmd` -> `build/install/cint-server/...`,
-  `SHOW = false`, `<leader>pr` -> `CintServerRestart`.
 - Shard syntax:
-  `shards = { NAME = { tags = { LOGGING = { meaning = "IGNORE" } } } }`. The
-  `tags` nesting is required; shards are config patches.
+  `shards = { NAME = { tags = { LOGGING = { meaning = "IGNORE" } } } }`; shards
+  are config patches.
+- Tests: `nvim-renderer/tests/live_spec.lua` drives an in-process fake daemon;
+  `render_spec.lua` covers extmarks, profiles, and language mapping.
 
 ### Daemon latency / Rust
 
-- Cold start ~150 ms. Warm `didChange` (no LSP): ~5 ms/10 lines, ~30 ms/90, ~80
-  ms/270, ~310 ms/1080 (before CFG; CFG adds ~10–18%, ~367 ms at 1080).
-- Analysis dominates; serialization ~11 ms. Bottleneck is passes/allocation, not
-  JSON/socket. Rust would help cold start/constants, not linear scaling;
-  optimize algorithms first.
+- Cold start ~150 ms. Warm `didChange` (no LSP): ~5 ms/10 lines, ~30 ms/90,
+  ~80 ms/270, ~310 ms/1080 (before CFG; CFG adds ~10-18%).
+- Analysis dominates; serialization ~11 ms. Rust would help cold start/constants,
+  not linear scaling; optimize algorithms first.
+
+### Snapshots
+
+- `integration-tests/src/test/resources/snapshots/legacy-3f20435.json` and
+  `pipeline-3f20435.json` are the pre-018 (014-tree) snapshot resources restored
+  from commit `739dff7`. Both are `HostPipeline` renderings over the 11
+  fixtures: the legacy-shaped file omits rule ids, the pipeline file includes
+  them. Ticket 014 compared that shape against the legacy path at `3f20435`;
+  the filenames retain that comparison commit. They are not a direct capture of
+  the deleted legacy implementation and were not regenerated from a `3f20435`
+  run.
+- `pipeline-current.json` is the post-018 current-pipeline baseline. Ticket 018
+  intentionally widened validation spans, so current output differs from the
+  pre-018 files.
+
+### Tooling
+
+- `just build` assembles every module without running tests.
+- `just test-engine` runs deterministic tests including host, server,
+  rulepacks-tests, test-fixtures, and integration-tests.
+- `just test-lsp` is opt-in via `CINT_LSP_ROOT`; `just test-nvim` runs the
+  headless renderer suite.
+- `just lint`/`lint-fix` run ktlint over Kotlin sources only.
+- CI runs build, engine tests, lint, and renderer tests with
+  `CINT_TESTING_GROUNDS` set explicitly.
 
 ### Known gaps / next
 
 - CFG does not collect `switch`/`when` returns; Kotlin inline non-local returns
-  are treated as lambda-local; guard polarity is approximate (pure guard + any
-  value on true edge = validation).
+  are treated as lambda-local; guard polarity is approximate.
 - Vue LSP is not wired (NullOracle); TSX is unsupported by the binding.
 - No independent purity engine; no incremental analysis.
+- `integration-tests/.../CompositionTestSupport.kt` still constructs Kotlin
+  parser/syntax directly rather than through `Frontends`.
+- `test-fixtures` rebuilds the bundled pack selection; a parity check against
+  `BundledRulePackSelection` would remove drift.
 - Next candidates: switch/when facts; real Volar oracle; dogfood on a real
   project; switch/polarity tests; CFG performance.
-
-### Recent commits
-
-`3150e00` rename project; `3efc102` code-intent paths; `bf9ac56` renderer perf;
-`c831898` engine cache/index; `7c9532f` CFG return categorization; `fb32564`
-explicit purity; `039f978` multi-intent scaffold color; `4534f17` SHOW no-op;
-`5e68ecc` current-state notes; `bcf34fc` GPLv3 + README note; `9c1eb8c`
-qualified error-handling calls.
