@@ -58,23 +58,31 @@ private class ConfigurableTestPack(
         }
         val calls =
             when (val raw = values["calls"]) {
-                null -> this.calls
-                is String -> setOf(raw)
-                is List<*> ->
+                null -> {
+                    this.calls
+                }
+
+                is String -> {
+                    setOf(raw)
+                }
+
+                is List<*> -> {
                     if (raw.all { it is String }) {
                         raw.map { it as String }.toSet()
                     } else {
                         throw RulePackConfigException("constructed-configurable.calls: expected strings")
                     }
+                }
 
-                else -> throw RulePackConfigException("constructed-configurable.calls: expected a string or list")
+                else -> {
+                    throw RulePackConfigException("constructed-configurable.calls: expected a string or list")
+                }
             }
         lastCalls = calls
         return ConfigurableTestPack(calls)
     }
 
-    override fun rules(): List<Rule> =
-        listOf(TestRule("constructed-configurable:configurable", "CONFIGURABLE"))
+    override fun rules(): List<Rule> = listOf(TestRule("constructed-configurable:configurable", "CONFIGURABLE"))
 }
 
 private class ConfigurableMismatchTestPack : ConfigurableRulePack {
@@ -96,8 +104,7 @@ private class ConfigurableMismatchTestPack : ConfigurableRulePack {
         return this
     }
 
-    override fun rules(): List<Rule> =
-        listOf(TestRule("constructed-configurable-mismatch:configurable", "MISMATCH"))
+    override fun rules(): List<Rule> = listOf(TestRule("constructed-configurable-mismatch:configurable", "MISMATCH"))
 }
 
 class ServiceValidationPack : RulePack {
@@ -105,8 +112,7 @@ class ServiceValidationPack : RulePack {
     override val languages: Set<String> = setOf("servicelang")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(TestRule("service-validation:validation", "VALIDATION"))
+    override fun rules(): List<Rule> = listOf(TestRule("service-validation:validation", "VALIDATION"))
 }
 
 class HostPipelineTest {
@@ -165,7 +171,12 @@ class HostPipelineTest {
             )
         val pipeline = pipeline("kotlin", listOf(pack))
 
-        val ruleIds = pipeline.plan("kotlin").strata.flatten().map { it.id }
+        val ruleIds =
+            pipeline
+                .plan("kotlin")
+                .strata
+                .flatten()
+                .map { it.id }
         assertTrue("fixture-good:logging" in ruleIds)
         assertTrue("constructed-dependent:reader" in ruleIds)
     }

@@ -90,7 +90,10 @@ class HostConfigTest {
 
         assertTrue(settings.issues.isEmpty())
         assertTrue(settings.project.packs.isEmpty())
-        assertTrue(settings.project.core.purityAnnotations.contains("Pure"))
+        assertTrue(
+            settings.project.core.purityAnnotations
+                .contains("Pure"),
+        )
         assertEquals(OracleOptions(enabled = true, timeoutMs = 5_000), settings.oracleOptions())
         assertEquals(OracleOptions(enabled = true, timeoutMs = 750), settings.oracleOptions(defaultTimeoutMs = 750))
     }

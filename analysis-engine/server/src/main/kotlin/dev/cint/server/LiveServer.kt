@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.Annotation
-import dev.cint.core.model.SourceFile
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
@@ -12,6 +11,7 @@ import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
 import dev.cint.core.host.HostPipeline
 import dev.cint.core.host.HostSettings
+import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.frontend.Frontends
@@ -210,8 +210,7 @@ class LiveServer(
             settings.intentConfig(it, validationParams)
         }
 
-    internal fun oracleOptions(useLsp: Boolean = this.useLsp): OracleOptions =
-        settings.oracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS)
+    internal fun oracleOptions(useLsp: Boolean = this.useLsp): OracleOptions = settings.oracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS)
 
     private fun oracleFor(frontend: LanguageFrontend): TypeOracle {
         val options = oracleOptions()

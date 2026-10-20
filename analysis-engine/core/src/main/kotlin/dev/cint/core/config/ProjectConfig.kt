@@ -93,11 +93,9 @@ fun parseProjectConfig(path: String?): ParsedProjectConfig {
     return ParsedProjectConfig(ProjectConfig(core, packs), issues, lspTimeoutConfigured)
 }
 
-fun IntentConfig.withCorePolicy(policy: CorePolicy): IntentConfig =
-    copy(pureAnnotations = policy.purityAnnotations)
+fun IntentConfig.withCorePolicy(policy: CorePolicy): IntentConfig = copy(pureAnnotations = policy.purityAnnotations)
 
-fun CorePolicy.oracleOptions(): OracleOptions =
-    OracleOptions(lsp.enabled, lsp.timeoutMs)
+fun CorePolicy.oracleOptions(): OracleOptions = OracleOptions(lsp.enabled, lsp.timeoutMs)
 
 private fun overridesLspTimeout(value: Any?): Boolean {
     if (value !is Map<*, *>) return false
@@ -164,12 +162,13 @@ private fun parseLsp(
     var timeoutMs = LspPolicy().timeoutMs
     for ((rawKey, rawValue) in value) {
         when (rawKey) {
-            "enabled" ->
+            "enabled" -> {
                 if (rawValue is Boolean) {
                     enabled = rawValue
                 } else {
                     issues += ProjectConfigIssue("$CORE_SECTION.lsp.enabled", "expected a boolean")
                 }
+            }
 
             "timeoutMs" -> {
                 val timeout = positiveLong(rawValue)
@@ -180,7 +179,9 @@ private fun parseLsp(
                 }
             }
 
-            else -> issues += ProjectConfigIssue("$CORE_SECTION.lsp.$rawKey", "unknown core config key")
+            else -> {
+                issues += ProjectConfigIssue("$CORE_SECTION.lsp.$rawKey", "unknown core config key")
+            }
         }
     }
     return LspPolicy(enabled, timeoutMs)
@@ -188,18 +189,33 @@ private fun parseLsp(
 
 private fun positiveLong(value: Any?): Long? =
     when (value) {
-        is Byte -> value.toLong().takeIf { it > 0 }
-        is Short -> value.toLong().takeIf { it > 0 }
-        is Int -> value.toLong().takeIf { it > 0 }
-        is Long -> value.takeIf { it > 0 }
-        is BigInteger ->
+        is Byte -> {
+            value.toLong().takeIf { it > 0 }
+        }
+
+        is Short -> {
+            value.toLong().takeIf { it > 0 }
+        }
+
+        is Int -> {
+            value.toLong().takeIf { it > 0 }
+        }
+
+        is Long -> {
+            value.takeIf { it > 0 }
+        }
+
+        is BigInteger -> {
             if (value.signum() > 0 && value <= MAX_LONG) {
                 value.toLong()
             } else {
                 null
             }
+        }
 
-        else -> null
+        else -> {
+            null
+        }
     }
 
 private fun stringList(

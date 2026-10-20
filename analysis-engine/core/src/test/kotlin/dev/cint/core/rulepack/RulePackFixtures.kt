@@ -6,8 +6,8 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
-import dev.cint.api.RulePackConfigException
 import dev.cint.api.RulePackApi
+import dev.cint.api.RulePackConfigException
 import dev.cint.api.View
 
 private class FixtureRule(
@@ -31,8 +31,7 @@ class FixtureDuplicateOwnerPackA : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("aaa-duplicate-owner:conflict", "DUPLICATE_OWNER"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("aaa-duplicate-owner:conflict", "DUPLICATE_OWNER"))
 }
 
 class FixtureDuplicateOwnerPackB : RulePack {
@@ -40,8 +39,7 @@ class FixtureDuplicateOwnerPackB : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("zzz-duplicate-owner:conflict", "DUPLICATE_OWNER"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("zzz-duplicate-owner:conflict", "DUPLICATE_OWNER"))
 }
 
 class FixtureDuplicateRuleIdPack : RulePack {
@@ -69,8 +67,7 @@ class FixtureUnknownDependencyPack : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("zzz-unknown:reader", "UNKNOWN_OUTPUT", setOf("MISSING")))
+    override fun rules(): List<Rule> = listOf(FixtureRule("zzz-unknown:reader", "UNKNOWN_OUTPUT", setOf("MISSING")))
 }
 
 class FixtureCyclePack : RulePack {
@@ -132,8 +129,7 @@ class FixtureAnnotatedMismatchPack : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("zzz-annotated-mismatch:logging", "ANNOTATED_MISMATCH"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("zzz-annotated-mismatch:logging", "ANNOTATED_MISMATCH"))
 }
 
 class FixtureThrowingLanguagesPack : RulePack {
@@ -185,8 +181,7 @@ class FixtureDuplicatePackIdOne : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("duplicate-pack:one", "DUPLICATE_PACK_ONE"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("duplicate-pack:one", "DUPLICATE_PACK_ONE"))
 }
 
 class FixtureDuplicatePackIdTwo : RulePack {
@@ -194,8 +189,7 @@ class FixtureDuplicatePackIdTwo : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("duplicate-pack:two", "DUPLICATE_PACK_TWO"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("duplicate-pack:two", "DUPLICATE_PACK_TWO"))
 }
 
 class FixtureStatefulRulesPack : RulePack {
@@ -230,8 +224,7 @@ class FixtureCountingConstructorPack : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("fixture-counting:logging", "COUNTING_LOGGING"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("fixture-counting:logging", "COUNTING_LOGGING"))
 }
 
 class FixtureLinkageFailurePack : RulePack {
@@ -251,10 +244,8 @@ class FixtureÜnicodePack : RulePack {
     override val languages: Set<String> = setOf("kotlin")
     override val apiVersion: Int = CINT_API_VERSION
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("fixture-unicode:logging", "UNICODE_LOGGING"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("fixture-unicode:logging", "UNICODE_LOGGING"))
 }
-
 
 class FixtureConfigurableMismatchPack : ConfigurableRulePack {
     companion object {
@@ -275,8 +266,7 @@ class FixtureConfigurableMismatchPack : ConfigurableRulePack {
         return this
     }
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("zzz-configurable-mismatch:logging", "CONFIGURABLE_MISMATCH"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("zzz-configurable-mismatch:logging", "CONFIGURABLE_MISMATCH"))
 }
 
 class FixtureConfigurablePack(
@@ -302,21 +292,29 @@ class FixtureConfigurablePack(
         }
         val configured =
             when (val raw = values["calls"]) {
-                null -> calls
-                is String -> setOf(raw)
-                is List<*> ->
+                null -> {
+                    calls
+                }
+
+                is String -> {
+                    setOf(raw)
+                }
+
+                is List<*> -> {
                     if (raw.all { it is String }) {
                         raw.map { it as String }.toSet()
                     } else {
                         throw RulePackConfigException("fixture-configurable.calls: expected strings")
                     }
+                }
 
-                else -> throw RulePackConfigException("fixture-configurable.calls: expected a string or list")
+                else -> {
+                    throw RulePackConfigException("fixture-configurable.calls: expected a string or list")
+                }
             }
         lastCalls = configured
         return FixtureConfigurablePack(configured)
     }
 
-    override fun rules(): List<Rule> =
-        listOf(FixtureRule("fixture-configurable:logging", "CONFIGURABLE_LOGGING"))
+    override fun rules(): List<Rule> = listOf(FixtureRule("fixture-configurable:logging", "CONFIGURABLE_LOGGING"))
 }

@@ -1,11 +1,11 @@
 package dev.cint.frontend
 
-import dev.cint.core.model.SourceFile
 import dev.cint.api.SyntaxNode
 import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.frontend.SplitRegion
+import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.syntax.ProfileSyntaxModel

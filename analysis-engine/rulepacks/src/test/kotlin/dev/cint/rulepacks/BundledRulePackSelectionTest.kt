@@ -31,11 +31,23 @@ class BundledRulePackSelectionTest {
                 constructedPacks = BundledRulePackSelection::constructed,
             )
 
-        val ruleIds = pipeline.plan("kotlin").strata.flatten().map { it.id }
+        val ruleIds =
+            pipeline
+                .plan("kotlin")
+                .strata
+                .flatten()
+                .map { it.id }
         assertTrue("logging:logging" in ruleIds)
         assertTrue("bookkeeping:bookkeeping" in ruleIds)
         assertTrue("error-handling-kotlin:error-handling" in ruleIds)
         assertTrue("ERROR_HANDLING" in pipeline.intents(listOf("kotlin")))
-        assertTrue("error-handling-typescript:error-handling" !in pipeline.plan("kotlin").strata.flatten().map { it.id })
+        assertTrue(
+            "error-handling-typescript:error-handling" !in
+                pipeline
+                    .plan("kotlin")
+                    .strata
+                    .flatten()
+                    .map { it.id },
+        )
     }
 }

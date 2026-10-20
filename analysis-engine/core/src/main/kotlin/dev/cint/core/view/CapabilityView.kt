@@ -76,7 +76,8 @@ class CapabilityView(
             }
             return emptyList()
         }
-        return context.annotations()
+        return context
+            .annotations()
             .asSequence()
             .filter { it.role == Role.SOURCE_INTENT }
             .mapNotNull { it.restrictedTo(visible) }

@@ -6,14 +6,18 @@ internal fun configStrings(
     errors: MutableList<String>,
 ): Set<String>? =
     when (value) {
-        is String -> setOf(value)
-        is List<*> ->
+        is String -> {
+            setOf(value)
+        }
+
+        is List<*> -> {
             if (value.all { it is String }) {
                 value.map { it as String }.toSet()
             } else {
                 errors += "$path: expected a string or list of strings"
                 null
             }
+        }
 
         else -> {
             errors += "$path: expected a string or list of strings"
@@ -27,14 +31,18 @@ internal fun configStringList(
     errors: MutableList<String>,
 ): List<String>? =
     when (value) {
-        is String -> listOf(value)
-        is List<*> ->
+        is String -> {
+            listOf(value)
+        }
+
+        is List<*> -> {
             if (value.all { it is String }) {
                 value.map { it as String }
             } else {
                 errors += "$path: expected a string or list of strings"
                 null
             }
+        }
 
         else -> {
             errors += "$path: expected a string or list of strings"

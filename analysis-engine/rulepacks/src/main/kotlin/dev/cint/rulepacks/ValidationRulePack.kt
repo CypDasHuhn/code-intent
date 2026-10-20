@@ -30,17 +30,25 @@ data class ValidationConfig(
             val path = "$VALIDATION_PACK_ID.$rawKey"
             updated =
                 when (rawKey) {
-                    "predicates" ->
+                    "predicates" -> {
                         updated.copy(predicates = configStrings(rawValue, path, errors) ?: updated.predicates)
-                    "predicatePrefixes" ->
+                    }
+
+                    "predicatePrefixes" -> {
                         updated.copy(
                             predicatePrefixes =
                                 configStringList(rawValue, path, errors) ?: updated.predicatePrefixes,
                         )
-                    "magicComment" ->
+                    }
+
+                    "magicComment" -> {
                         updated.copy(magicComment = configString(rawValue, path, errors) ?: updated.magicComment)
-                    "commentKinds" ->
+                    }
+
+                    "commentKinds" -> {
                         updated.copy(commentKinds = configStrings(rawValue, path, errors) ?: updated.commentKinds)
+                    }
+
                     else -> {
                         errors += "$path: unknown key"
                         updated
@@ -155,7 +163,8 @@ private class ValidationRule(
         view: View,
         condition: SyntaxNode,
     ): Boolean =
-        view.calls()
+        view
+            .calls()
             .filter {
                 it.node.startByte >= condition.startByte &&
                     it.node.endByte <= condition.endByte
@@ -184,7 +193,8 @@ private class ValidationRule(
         val function = view.enclosingFunction(guard)
         if (function != null) {
             val body =
-                view.functions()
+                view
+                    .functions()
                     .firstOrNull {
                         it.node.startByte == function.startByte &&
                             it.node.endByte == function.endByte

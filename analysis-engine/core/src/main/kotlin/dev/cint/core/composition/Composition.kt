@@ -99,12 +99,14 @@ class Composition {
 
         val returns = returnContributions(context, config)
         store.replaceRule(RETURN_KEY, returns)
-        val derivatives = settle(store, DERIVATIVE_KEY) {
-            derivativeContributions(context, config.pureAnnotations)
-        }
-        val scaffolds = settle(store, SCAFFOLD_KEY) {
-            scaffoldContributions(context)
-        }
+        val derivatives =
+            settle(store, DERIVATIVE_KEY) {
+                derivativeContributions(context, config.pureAnnotations)
+            }
+        val scaffolds =
+            settle(store, SCAFFOLD_KEY) {
+                scaffoldContributions(context)
+            }
 
         val output = AnnotationStore()
         listOf(RETURN_KEY to returns, DERIVATIVE_KEY to derivatives, SCAFFOLD_KEY to scaffolds)

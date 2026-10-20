@@ -3,6 +3,8 @@ package dev.cint.server
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpServer
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
 import dev.cint.core.frontend.SplitHandler
@@ -18,8 +20,6 @@ import dev.cint.core.oracle.TypeOracle
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.rulepacks.BundledRulePackSelection
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.nio.file.Path
 
@@ -158,7 +158,11 @@ private fun analyze(
         }
     val languages =
         if (frontend is SplitHandler) {
-            frontend.regions(source).map { it.language }.toSet().ifEmpty { setOf(config.language) }
+            frontend
+                .regions(source)
+                .map { it.language }
+                .toSet()
+                .ifEmpty { setOf(config.language) }
         } else {
             setOf(config.language)
         }

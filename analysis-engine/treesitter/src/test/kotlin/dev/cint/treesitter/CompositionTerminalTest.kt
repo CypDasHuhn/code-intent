@@ -18,11 +18,11 @@ import dev.cint.core.scheduler.ReservedContributorId
 import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxProfiles
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import java.io.File
 
 private class ReplayRule(
     override val id: String,

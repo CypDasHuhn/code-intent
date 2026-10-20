@@ -40,10 +40,17 @@ class ProjectConfigTest {
         assertEquals(listOf("CustomPure"), parsed.config.core.purityAnnotations)
         assertEquals(LspPolicy(enabled = false, timeoutMs = 900), parsed.config.core.lsp)
         assertEquals(setOf("logging"), parsed.config.packs.keys)
-        assertEquals(setOf("kotlin"), parsed.config.packs.getValue("logging").keys)
+        assertEquals(
+            setOf("kotlin"),
+            parsed.config.packs
+                .getValue("logging")
+                .keys,
+        )
         assertEquals(
             mapOf("printCalls" to listOf("audit")),
-            parsed.config.packs.getValue("logging").getValue("kotlin"),
+            parsed.config.packs
+                .getValue("logging")
+                .getValue("kotlin"),
         )
     }
 
@@ -63,7 +70,11 @@ class ProjectConfigTest {
         val issue = parsed.issues.single()
         assertEquals("core.unknownPolicy", issue.path)
         assertEquals(setOf("logging"), parsed.config.packs.keys)
-        assertFalse(parsed.config.packs.getValue("logging").containsKey("unknownPolicy"))
+        assertFalse(
+            parsed.config.packs
+                .getValue("logging")
+                .containsKey("unknownPolicy"),
+        )
     }
 
     @Test

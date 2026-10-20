@@ -214,7 +214,12 @@ class RuleEngineTest {
         val tree = KotlinParser().parse(source)
         val rule =
             TestRule("test:evidence", "EVIDENCE", setOf("EVIDENCE")) { view ->
-                val prior = view.annotations("EVIDENCE").singleOrNull()?.evidence.orEmpty()
+                val prior =
+                    view
+                        .annotations("EVIDENCE")
+                        .singleOrNull()
+                        ?.evidence
+                        .orEmpty()
                 val evidence = if (prior.length < 3) "$prior|" else prior
                 listOf(
                     Emit(
@@ -253,19 +258,31 @@ class RuleEngineTest {
                 val zero = view.annotations("GROW").firstOrNull { it.startByte == 0 && it.endByte == 0 }
                 val one = view.annotations("GROW").firstOrNull { it.startByte == 1 && it.endByte == 1 }
                 when {
-                    zero == null -> listOf(zeroLengthEmit("GROW", 0, "a"))
-                    one != null ->
+                    zero == null -> {
+                        listOf(zeroLengthEmit("GROW", 0, "a"))
+                    }
+
+                    one != null -> {
                         listOf(
                             zeroLengthEmit("GROW", 0, zero.evidence),
                             zeroLengthEmit("GROW", 1, one.evidence),
                         )
-                    zero.evidence == "a" -> listOf(zeroLengthEmit("GROW", 0, "b"))
-                    zero.evidence == "b" -> listOf(zeroLengthEmit("GROW", 0, "c"))
-                    else ->
+                    }
+
+                    zero.evidence == "a" -> {
+                        listOf(zeroLengthEmit("GROW", 0, "b"))
+                    }
+
+                    zero.evidence == "b" -> {
+                        listOf(zeroLengthEmit("GROW", 0, "c"))
+                    }
+
+                    else -> {
                         listOf(
                             zeroLengthEmit("GROW", 0, "c"),
                             zeroLengthEmit("GROW", 1, "new"),
                         )
+                    }
                 }
             }
 

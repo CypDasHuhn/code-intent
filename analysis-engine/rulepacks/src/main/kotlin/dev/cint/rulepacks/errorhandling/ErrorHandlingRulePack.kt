@@ -1,8 +1,8 @@
 package dev.cint.rulepacks.errorhandling
 
 import dev.cint.api.CINT_API_VERSION
-import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.CallFact
+import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
@@ -40,11 +40,18 @@ data class ErrorHandlingConfig(
             val key = "$path.$rawKey"
             updated =
                 when (rawKey) {
-                    "calls" -> updated.copy(calls = configStrings(rawValue, key, errors) ?: updated.calls)
-                    "qualifiers" ->
+                    "calls" -> {
+                        updated.copy(calls = configStrings(rawValue, key, errors) ?: updated.calls)
+                    }
+
+                    "qualifiers" -> {
                         updated.copy(qualifiers = configStrings(rawValue, key, errors) ?: updated.qualifiers)
-                    "throws", "detectThrows" ->
+                    }
+
+                    "throws", "detectThrows" -> {
                         updated.copy(detectThrows = configBoolean(rawValue, key, errors) ?: updated.detectThrows)
+                    }
+
                     else -> {
                         errors += "$key: unknown key"
                         updated
@@ -90,8 +97,7 @@ class ErrorHandlingRulePack(
 
     override val languages: Set<String> = setOf(this.language)
 
-    override fun configure(values: Map<String, Any?>): RulePack =
-        ErrorHandlingRulePack(language, config.withOverrides(values, language))
+    override fun configure(values: Map<String, Any?>): RulePack = ErrorHandlingRulePack(language, config.withOverrides(values, language))
 
     override fun rules(): List<Rule> = listOf(ErrorHandlingRule(config, "$id:error-handling"))
 

@@ -2,7 +2,9 @@ package dev.cint.api
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class RulePackApi(val version: Int)
+annotation class RulePackApi(
+    val version: Int,
+)
 
 interface RulePack {
     val id: String
@@ -35,29 +37,49 @@ fun Rule.toContribution(emit: Emit): Contribution =
 
 interface View {
     fun language(): String
+
     fun typeAt(node: SyntaxNode): TypeRef?
+
     fun calls(): List<CallFact>
+
     fun properties(): List<PropertyFact>
+
     fun functions(): List<FunctionFact>
+
     fun ifs(): List<IfFact>
+
     fun guardConditions(): List<SyntaxNode>
+
     fun tries(): List<TryFact>
+
     fun catches(): List<SyntaxNode>
+
     fun imports(): List<String>
+
     fun references(): Map<String, List<SyntaxNode>>
+
     fun throws(): List<SyntaxNode>
 
     fun coverage(node: SyntaxNode): Coverage
+
     fun enclosingFunction(node: SyntaxNode): SyntaxNode?
+
     fun enclosingDeclaration(node: SyntaxNode): SyntaxNode?
+
     fun writes(reference: SyntaxNode): SyntaxNode?
+
     fun isAnnotatedPure(node: SyntaxNode): Boolean
+
     fun isConstant(node: SyntaxNode): Boolean
+
     fun isSideEffectFree(node: SyntaxNode): Boolean
+
     fun statements(container: SyntaxNode): List<SyntaxNode>?
+
     fun isExit(node: SyntaxNode): Boolean
 
     fun annotations(intent: Intent): List<Annotation>
+
     fun intentsAt(node: SyntaxNode): Set<Intent>
 }
 

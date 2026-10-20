@@ -318,10 +318,12 @@ class RulePackLoader(
                     if (expectingStart) return false
                     expectingStart = true
                 }
+
                 expectingStart -> {
                     if (!Character.isJavaIdentifierStart(codePoint) && codePoint != '$'.code) return false
                     expectingStart = false
                 }
+
                 else -> {
                     if (!Character.isJavaIdentifierPart(codePoint) && codePoint != '$'.code) return false
                 }
@@ -855,33 +857,39 @@ class RulePackLoader(
         }
 
         return when (error) {
-            is DuplicateIntentOwner ->
+            is DuplicateIntentOwner -> {
                 identitySet<LoadedRulePack>().apply {
                     for (pack in remaining) {
                         if (pack.rules().any { it.owns == error.intent }) add(pack)
                     }
                 }
+            }
 
-            is DuplicateRuleId ->
+            is DuplicateRuleId -> {
                 identitySet<LoadedRulePack>().apply {
                     for (pack in remaining) {
                         if (pack.rules().any { it.id == error.ruleId }) add(pack)
                     }
                 }
+            }
 
-            is ReservedIntentOwner ->
+            is ReservedIntentOwner -> {
                 identitySet<LoadedRulePack>().apply { owners[error.rule]?.let { add(it) } }
+            }
 
-            is ReservedContributorId ->
+            is ReservedContributorId -> {
                 identitySet<LoadedRulePack>().apply { owners[error.rule]?.let { add(it) } }
+            }
 
-            is UnknownDependency ->
+            is UnknownDependency -> {
                 identitySet<LoadedRulePack>().apply { owners[error.reader]?.let { add(it) } }
+            }
 
-            is DependencyCycle ->
+            is DependencyCycle -> {
                 identitySet<LoadedRulePack>().apply {
                     for (rule in error.rules) owners[rule]?.let { add(it) }
                 }
+            }
         }
     }
 
@@ -948,12 +956,10 @@ class RulePackLoader(
         const val MAX_SERVICE_RESOURCES = 256
         const val MAX_SERVICE_LINES = 4096
 
-        fun defaultClassLoader(): ClassLoader =
-            Thread.currentThread().contextClassLoader ?: RulePack::class.java.classLoader
+        fun defaultClassLoader(): ClassLoader = Thread.currentThread().contextClassLoader ?: RulePack::class.java.classLoader
 
         fun <K, V> identityMap(): MutableMap<K, V> = IdentityHashMap()
 
-        fun <T> identitySet(): MutableSet<T> =
-            Collections.newSetFromMap(IdentityHashMap<T, Boolean>())
+        fun <T> identitySet(): MutableSet<T> = Collections.newSetFromMap(IdentityHashMap<T, Boolean>())
     }
 }

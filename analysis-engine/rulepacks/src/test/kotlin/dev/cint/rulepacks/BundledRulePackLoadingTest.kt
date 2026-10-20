@@ -40,7 +40,10 @@ class BundledRulePackLoadingTest {
         val plan = RuleScheduler().plan(result.packs)
         assertEquals(
             setOf("bookkeeping:bookkeeping", "bundled-test:logging", "logging:logging", "validation:validation"),
-            plan.strata.flatten().map { it.id }.toSet(),
+            plan.strata
+                .flatten()
+                .map { it.id }
+                .toSet(),
         )
     }
 }

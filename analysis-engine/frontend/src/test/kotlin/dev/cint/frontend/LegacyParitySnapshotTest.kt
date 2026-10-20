@@ -50,8 +50,7 @@ private fun roleName(role: Role): String =
         Role.SCAFFOLD -> "scaffold"
     }
 
-private fun intentsJson(intents: Set<String>): String =
-    intents.sorted().joinToString(",", "[", "]") { "\"${Json.escape(it)}\"" }
+private fun intentsJson(intents: Set<String>): String = intents.sorted().joinToString(",", "[", "]") { "\"${Json.escape(it)}\"" }
 
 private fun annotationJson(
     annotation: Annotation,
@@ -154,7 +153,8 @@ class LegacyParitySnapshotTest {
     }
 
     private fun resource(path: String): String =
-        LegacyParitySnapshotTest::class.java.getResourceAsStream(path)
+        LegacyParitySnapshotTest::class.java
+            .getResourceAsStream(path)
             ?.bufferedReader()
             ?.use { it.readText() }
             ?: error("missing snapshot resource $path")

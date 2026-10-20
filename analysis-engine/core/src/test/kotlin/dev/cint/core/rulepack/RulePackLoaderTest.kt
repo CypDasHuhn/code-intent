@@ -152,7 +152,14 @@ class RulePackLoaderTest {
             val mismatch = result.failures.single { it.kind == RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION }
             assertEquals(setOf("zzz-mismatched"), mismatch.packIds)
             assertTrue(mismatch.message.contains("expected"))
-            assertEquals(1, RuleScheduler().plan(result.packs).strata.flatten().size)
+            assertEquals(
+                1,
+                RuleScheduler()
+                    .plan(result.packs)
+                    .strata
+                    .flatten()
+                    .size,
+            )
         }
     }
 
@@ -218,7 +225,11 @@ class RulePackLoaderTest {
                 assertTrue(failures.all { scenario.skippedPackIds.all { id -> id in it.message } })
                 assertEquals(
                     listOf("fixture-good:logging"),
-                    RuleScheduler().plan(result.packs).strata.flatten().map { it.id },
+                    RuleScheduler()
+                        .plan(result.packs)
+                        .strata
+                        .flatten()
+                        .map { it.id },
                 )
             }
         }
@@ -238,10 +249,21 @@ class RulePackLoaderTest {
             )
 
             val plan = RuleScheduler().plan(result.packs)
-            assertEquals(first.toSet(), plan.strata.flatten().map { it.id }.toSet())
             assertEquals(
                 first.toSet(),
-                RuleScheduler().plan(result.packs).strata.flatten().map { it.id }.toSet(),
+                plan.strata
+                    .flatten()
+                    .map { it.id }
+                    .toSet(),
+            )
+            assertEquals(
+                first.toSet(),
+                RuleScheduler()
+                    .plan(result.packs)
+                    .strata
+                    .flatten()
+                    .map { it.id }
+                    .toSet(),
             )
         }
     }
@@ -266,7 +288,14 @@ class RulePackLoaderTest {
                 ),
                 corrupt.flatMap { it.packIds }.toSet(),
             )
-            assertEquals(listOf("fixture-good:logging"), RuleScheduler().plan(result.packs).strata.flatten().map { it.id })
+            assertEquals(
+                listOf("fixture-good:logging"),
+                RuleScheduler()
+                    .plan(result.packs)
+                    .strata
+                    .flatten()
+                    .map { it.id },
+            )
         }
     }
 
@@ -373,7 +402,12 @@ class RulePackLoaderTest {
         loadWithProviders(
             good,
             loaderFactory = { urls, parent ->
-                val resource = urls.single().toURI().resolve(SERVICE_RESOURCE).toURL()
+                val resource =
+                    urls
+                        .single()
+                        .toURI()
+                        .resolve(SERVICE_RESOURCE)
+                        .toURL()
                 InfiniteResourceClassLoader(resource, parent)
             },
         ) { result ->
@@ -416,10 +450,17 @@ class RulePackLoaderTest {
         loadWithProviders(
             *firstResourceLines.toTypedArray(),
             loaderFactory = { urls, parent ->
-                val directory = java.nio.file.Path.of(urls.single().toURI())
+                val directory =
+                    java.nio.file.Path
+                        .of(urls.single().toURI())
                 val second = directory.resolve("second-service")
                 Files.writeString(second, FixtureCountingConstructorPack::class.java.name)
-                val first = urls.single().toURI().resolve(SERVICE_RESOURCE).toURL()
+                val first =
+                    urls
+                        .single()
+                        .toURI()
+                        .resolve(SERVICE_RESOURCE)
+                        .toURL()
                 ServiceResourcesClassLoader(listOf(first, second.toUri().toURL()), parent)
             },
         ) { result ->
@@ -460,8 +501,16 @@ class RulePackLoaderTest {
             good,
             loaderFactory = { urls, parent ->
                 val missing =
-                    java.nio.file.Path.of("/cint-missing-service-${System.nanoTime()}").toUri().toURL()
-                val valid = urls.single().toURI().resolve(SERVICE_RESOURCE).toURL()
+                    java.nio.file.Path
+                        .of("/cint-missing-service-${System.nanoTime()}")
+                        .toUri()
+                        .toURL()
+                val valid =
+                    urls
+                        .single()
+                        .toURI()
+                        .resolve(SERVICE_RESOURCE)
+                        .toURL()
                 ServiceResourcesClassLoader(listOf(missing, valid), parent)
             },
         ) { result ->
@@ -482,7 +531,12 @@ class RulePackLoaderTest {
                             .toUri()
                             .toURL()
                     }
-                val valid = urls.single().toURI().resolve(SERVICE_RESOURCE).toURL()
+                val valid =
+                    urls
+                        .single()
+                        .toURI()
+                        .resolve(SERVICE_RESOURCE)
+                        .toURL()
                 ServiceResourcesClassLoader(missing + valid, parent)
             },
         ) { result ->

@@ -41,23 +41,35 @@ data class BookkeepingConfig(
             val path = "$BOOKKEEPING_PACK_ID.$rawKey"
             updated =
                 when (rawKey) {
-                    "annotation" ->
+                    "annotation" -> {
                         updated.copy(annotation = configString(rawValue, path, errors) ?: updated.annotation)
-                    "magicComment" ->
+                    }
+
+                    "magicComment" -> {
                         updated.copy(magicComment = configString(rawValue, path, errors) ?: updated.magicComment)
-                    "annotationKinds" ->
+                    }
+
+                    "annotationKinds" -> {
                         updated.copy(
                             annotationKinds = configStrings(rawValue, path, errors) ?: updated.annotationKinds,
                         )
-                    "modifierKinds" ->
+                    }
+
+                    "modifierKinds" -> {
                         updated.copy(modifierKinds = configStrings(rawValue, path, errors) ?: updated.modifierKinds)
-                    "propertyKinds" ->
+                    }
+
+                    "propertyKinds" -> {
                         updated.copy(propertyKinds = configStrings(rawValue, path, errors) ?: updated.propertyKinds)
-                    "declarationWrappersByRoot" ->
+                    }
+
+                    "declarationWrappersByRoot" -> {
                         updated.copy(
                             declarationWrappersByRoot =
                                 configStringSets(rawValue, path, errors) ?: updated.declarationWrappersByRoot,
                         )
+                    }
+
                     else -> {
                         errors += "$path: unknown key"
                         updated
@@ -193,9 +205,10 @@ private class BookkeepingRule(
         parent: SyntaxNode,
         anchor: SyntaxNode,
     ): SyntaxNode? {
-        val index = parent.children.indexOfFirst {
-            it.startByte == anchor.startByte && it.endByte == anchor.endByte
-        }
+        val index =
+            parent.children.indexOfFirst {
+                it.startByte == anchor.startByte && it.endByte == anchor.endByte
+            }
         if (index <= 0) return null
         var current = index - 1
         while (current >= 0) {
@@ -207,8 +220,7 @@ private class BookkeepingRule(
         return null
     }
 
-    private fun isComment(node: SyntaxNode): Boolean =
-        node.text.trimStart().let { it.startsWith("//") || it.startsWith("/*") }
+    private fun isComment(node: SyntaxNode): Boolean = node.text.trimStart().let { it.startsWith("//") || it.startsWith("/*") }
 
     private fun declarationHolder(
         node: SyntaxNode,

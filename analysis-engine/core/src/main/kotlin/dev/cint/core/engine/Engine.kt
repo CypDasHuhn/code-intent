@@ -40,9 +40,13 @@ interface RuleContext {
     val throws: List<SyntaxNode>
 
     fun annotations(): List<Annotation>
+
     fun covering(node: SyntaxNode): List<Annotation>
+
     fun containingAnnotations(node: SyntaxNode): List<Annotation>
+
     fun intentsAt(node: SyntaxNode): Set<String>
+
     fun coverage(
         node: SyntaxNode,
         effect: Boolean = true,

@@ -154,7 +154,11 @@ class RuleEngine(
         }
 
     private fun fixpointLimit(file: SourceFile): Long {
-        val length = file.text.toByteArray(Charsets.UTF_8).size.toLong()
+        val length =
+            file.text
+                .toByteArray(Charsets.UTF_8)
+                .size
+                .toLong()
         return (length + 1L) * (length + 2L) / 2L + 1L
     }
 

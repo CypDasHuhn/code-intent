@@ -35,8 +35,7 @@ private class TestConfigurablePack(
         listOf(TestRule("demo-config:base", "CONFIG_BASE")) +
             if (extra) listOf(TestRule("demo-config:extra", "CONFIG_EXTRA")) else emptyList()
 
-    override fun configure(values: Map<String, Any?>): RulePack =
-        TestConfigurablePack(values["extra"] == true)
+    override fun configure(values: Map<String, Any?>): RulePack = TestConfigurablePack(values["extra"] == true)
 }
 
 @RulePackApi(CINT_API_VERSION + 1)
@@ -172,7 +171,10 @@ class ContractTest {
 
     @Test
     fun viewExposesValidationSyntaxFacts() {
-        val methods = View::class.java.methods.map { it.name }.toSet()
+        val methods =
+            View::class.java.methods
+                .map { it.name }
+                .toSet()
 
         assertTrue(methods.containsAll(setOf("isConstant", "isSideEffectFree", "statements", "isExit")))
     }

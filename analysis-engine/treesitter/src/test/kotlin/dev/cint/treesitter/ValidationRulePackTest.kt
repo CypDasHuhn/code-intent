@@ -122,11 +122,12 @@ class ValidationRulePackTest {
             }
             """.trimIndent()
         val input = parse("kotlin", "Sample.kt", text)
+
         fun returns(
             source: Input,
             packs: List<RulePack>,
-        ) =
-            RuleEngine().analyze(
+        ) = RuleEngine()
+            .analyze(
                 source.source,
                 source.tree,
                 source.syntax,
@@ -369,7 +370,10 @@ class ValidationRulePackTest {
             text: String,
             intent: String,
         ): Boolean {
-            val node = input.tree.root.descendants().first { it.text.trim() == text }
+            val node =
+                input.tree.root
+                    .descendants()
+                    .first { it.text.trim() == text }
             return annotations.any {
                 it.role == Role.SCAFFOLD &&
                     it.rule == CoreContributors.SCAFFOLD &&
@@ -404,17 +408,18 @@ class ValidationRulePackTest {
 
     @Test
     fun ruleIsPureAndDoesNotMutateTheStore() {
-        val input = parse(
-            "kotlin",
-            "Sample.kt",
-            """
-            fun f(values: List<String>) {
-                if (values.isEmpty()) {
-                    return
+        val input =
+            parse(
+                "kotlin",
+                "Sample.kt",
+                """
+                fun f(values: List<String>) {
+                    if (values.isEmpty()) {
+                        return
+                    }
                 }
-            }
-            """.trimIndent(),
-        )
+                """.trimIndent(),
+            )
         val store = AnnotationStore()
         val flow = ControlFlowBuilder(input.tree, input.syntax).build()
         val context =
@@ -459,29 +464,40 @@ class ValidationRulePackTest {
         val source = SourceFile(name, text)
         val config = testConfig(language)
         return when (language) {
-            "kotlin" -> Input(source, KotlinParser().parse(source), KotlinSyntaxModel, config)
-            "javascript" ->
+            "kotlin" -> {
+                Input(source, KotlinParser().parse(source), KotlinSyntaxModel, config)
+            }
+
+            "javascript" -> {
                 Input(
                     source,
                     JavascriptParser().parse(source),
                     ProfileSyntaxModel(SyntaxProfiles.load(language)),
                     config,
                 )
-            "typescript" ->
+            }
+
+            "typescript" -> {
                 Input(
                     source,
                     TypescriptParser().parse(source),
                     ProfileSyntaxModel(SyntaxProfiles.load(language)),
                     config,
                 )
-            "csharp" ->
+            }
+
+            "csharp" -> {
                 Input(
                     source,
                     CsharpParser().parse(source),
                     ProfileSyntaxModel(SyntaxProfiles.load(language)),
                     config,
                 )
-            else -> error("unsupported language: $language")
+            }
+
+            else -> {
+                error("unsupported language: $language")
+            }
         }
     }
 

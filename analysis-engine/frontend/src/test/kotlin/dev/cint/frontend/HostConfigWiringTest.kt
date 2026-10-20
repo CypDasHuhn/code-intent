@@ -89,7 +89,6 @@ class HostConfigWiringTest {
         )
     }
 
-
     @Test
     fun configuredValidationMagicCommentDrivesRuleAndReturnCategorization() {
         val annotations =

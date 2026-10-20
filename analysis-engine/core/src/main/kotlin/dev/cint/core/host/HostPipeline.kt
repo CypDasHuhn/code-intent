@@ -65,6 +65,7 @@ class HostPipeline(
     private fun snapshot(language: String): RulePackLoadResult =
         snapshots.computeIfAbsent(normalize(language)) { normalized ->
             val failures = mutableListOf<RulePackLoadFailure>()
+
             fun observe(failure: RulePackLoadFailure) {
                 failures += failure
             }

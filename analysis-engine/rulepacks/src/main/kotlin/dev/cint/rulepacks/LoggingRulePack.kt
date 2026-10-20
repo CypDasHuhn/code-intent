@@ -52,42 +52,60 @@ data class LoggingConfig(
                 }
                 languageConfig =
                     when (rawKey) {
-                        "printCalls" ->
+                        "printCalls" -> {
                             languageConfig.copy(
                                 printCalls = strings(rawValue, path, errors) ?: languageConfig.printCalls,
                             )
-                        "printQualifiers" ->
+                        }
+
+                        "printQualifiers" -> {
                             languageConfig.copy(
                                 printQualifiers = strings(rawValue, path, errors) ?: languageConfig.printQualifiers,
                             )
-                        "methods" ->
+                        }
+
+                        "methods" -> {
                             languageConfig.copy(
                                 methods = strings(rawValue, path, errors) ?: languageConfig.methods,
                             )
-                        "types" ->
+                        }
+
+                        "types" -> {
                             languageConfig.copy(
                                 types = strings(rawValue, path, errors) ?: languageConfig.types,
                             )
-                        "factories" ->
+                        }
+
+                        "factories" -> {
                             languageConfig.copy(
                                 factories = strings(rawValue, path, errors) ?: languageConfig.factories,
                             )
-                        "receiverNames" ->
+                        }
+
+                        "receiverNames" -> {
                             languageConfig.copy(
                                 receiverNames = strings(rawValue, path, errors) ?: languageConfig.receiverNames,
                             )
-                        "qualifiers" ->
+                        }
+
+                        "qualifiers" -> {
                             languageConfig.copy(
                                 qualifiers = strings(rawValue, path, errors) ?: languageConfig.qualifiers,
                             )
-                        "guardNames" ->
+                        }
+
+                        "guardNames" -> {
                             languageConfig.copy(
                                 guardNames = strings(rawValue, path, errors) ?: languageConfig.guardNames,
                             )
-                        "imports" ->
+                        }
+
+                        "imports" -> {
                             languageConfig.copy(
                                 imports = strings(rawValue, path, errors) ?: languageConfig.imports,
                             )
+                        }
+
                         else -> {
                             errors += "$path: unknown key"
                             languageConfig
@@ -111,14 +129,18 @@ data class LoggingConfig(
             errors: MutableList<String>,
         ): Set<String>? =
             when (value) {
-                is String -> setOf(value)
-                is List<*> ->
+                is String -> {
+                    setOf(value)
+                }
+
+                is List<*> -> {
                     if (value.all { it is String }) {
                         value.map { it as String }.toSet()
                     } else {
                         errors += "$path: expected a string or list of strings"
                         null
                     }
+                }
 
                 else -> {
                     errors += "$path: expected a string or list of strings"
@@ -208,8 +230,7 @@ class LoggingRulePack(
     override val apiVersion: Int = CINT_API_VERSION
     override val languages: Set<String> = config.languages.keys.toSet()
 
-    override fun configure(values: Map<String, Any?>): RulePack =
-        LoggingRulePack(config.withOverrides(values))
+    override fun configure(values: Map<String, Any?>): RulePack = LoggingRulePack(config.withOverrides(values))
 
     override fun rules(): List<Rule> = listOf(LoggingRule(config))
 }
@@ -264,26 +285,42 @@ class LoggingRule(
 
             val heuristic =
                 when {
-                    receiverName in loggerSymbols ->
+                    receiverName in loggerSymbols -> {
                         Match("call-on-logger-symbol", "heuristic", 0.8)
-                    language.receiverNames.any { it.equals(receiverName, ignoreCase = true) } ->
+                    }
+
+                    language.receiverNames.any { it.equals(receiverName, ignoreCase = true) } -> {
                         Match("receiver-name", "heuristic", 0.6)
-                    language.qualifiers.any { receiver.text == it || receiver.text.endsWith(".$it") } ->
+                    }
+
+                    language.qualifiers.any { receiver.text == it || receiver.text.endsWith(".$it") } -> {
                         Match("qualified-static", "heuristic", 0.8)
-                    importsMatch ->
+                    }
+
+                    importsMatch -> {
                         Match("name-import-gated", "heuristic", 0.5)
-                    else ->
+                    }
+
+                    else -> {
                         null
+                    }
                 }
 
             val match =
                 if (heuristic == null || heuristic.rule == "receiver-name" || heuristic.rule == "name-import-gated") {
                     val type = view.typeAt(receiver)
                     when {
-                        type == null -> heuristic
-                        typeMatches(type.fqName, language.types) ->
+                        type == null -> {
+                            heuristic
+                        }
+
+                        typeMatches(type.fqName, language.types) -> {
                             Match("typed-receiver", type.source, type.confidence)
-                        else -> null
+                        }
+
+                        else -> {
+                            null
+                        }
                     }
                 } else {
                     heuristic

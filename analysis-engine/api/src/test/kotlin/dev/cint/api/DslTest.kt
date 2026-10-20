@@ -94,7 +94,8 @@ private class ConsoleLoggingRule(
 
     override fun run(view: View): List<Emit> {
         if (!consoleContext.test(view)) return emptyList()
-        return view.calls()
+        return view
+            .calls()
             .filter { call ->
                 (
                     (DslValue(call.callee) eq "log") or
@@ -105,8 +106,7 @@ private class ConsoleLoggingRule(
                                 (DslValue(call.node.endByte) lt maxOffset)
                         )
                 ).test()
-            }
-            .map { call ->
+            }.map { call ->
                 Emit(
                     intents = setOf(owns),
                     evidence = call.node.text,
