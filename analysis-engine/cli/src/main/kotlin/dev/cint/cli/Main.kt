@@ -1,19 +1,18 @@
 package dev.cint.cli
 
-import dev.cint.core.model.SourceFile
-import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
+import dev.cint.core.host.HostConfig
+import dev.cint.core.host.HostPipeline
+import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
+import dev.cint.rulepacks.BundledRulePackSelection
 import java.io.File
 
 private const val DEFAULT_LSP_TIMEOUT_MS = 5_000L
@@ -29,11 +28,12 @@ private data class Args(
 
 fun main(argv: Array<String>) {
     val args = parseArgs(argv)
-    val config = loadIntentConfig(args.config, args.language)
+    val config = HostConfig.load(args.config, args.language)
     val frontend = Frontends.require(config.language)
 
     val root = File(args.root)
     require(root.exists()) { "no such path: ${args.root}" }
+    val packs = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
 
     val files =
         root
@@ -46,8 +46,9 @@ fun main(argv: Array<String>) {
             }.sortedBy { it.path }
             .toList()
 
-    val blocks = IntentBlocks.build(config)
     val entries = mutableListOf<FileEntry>()
+    val usedLanguages = linkedSetOf<String>()
+    if (frontend !is SplitHandler) usedLanguages += config.language
     val oracle: TypeOracle =
         if (args.noLsp || frontend is SplitHandler) {
             NullOracle
@@ -65,13 +66,18 @@ fun main(argv: Array<String>) {
             val annotations =
                 if (frontend is SplitHandler) {
                     runCatching {
-                        SplitAnalyzer.analyze(
-                            source,
-                            frontend,
-                            root.toPath(),
-                            args.config,
-                            OracleOptions(!args.noLsp, DEFAULT_LSP_TIMEOUT_MS),
-                        )
+                        val languages = frontend.regions(source).map { it.language }
+                        val result =
+                            SplitAnalyzer.analyze(
+                                source,
+                                frontend,
+                                root.toPath(),
+                                null,
+                                OracleOptions(!args.noLsp, DEFAULT_LSP_TIMEOUT_MS),
+                                packs::plan,
+                            )
+                        usedLanguages += languages
+                        result
                     }.onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
                         .getOrNull() ?: continue
                 } else {
@@ -79,8 +85,9 @@ fun main(argv: Array<String>) {
                         runCatching { frontend.parse(source) }
                             .onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
                             .getOrNull() ?: continue
-                    val syntax = frontend.syntax(tree)
-                    AnalysisEngine(blocks).analyze(source, tree, syntax, oracle, config)
+                    runCatching { packs.analyze(source, tree, frontend.syntax(tree), oracle, config) }
+                        .onFailure { System.err.println("analysis failed: ${file.path}: ${it.message}") }
+                        .getOrNull() ?: continue
                 }
             if (annotations.isNotEmpty() || args.all) {
                 entries.add(FileEntry(relative, contentHash(text), annotations))
@@ -90,12 +97,8 @@ fun main(argv: Array<String>) {
         (oracle as? AutoCloseable)?.close()
     }
 
-    val result =
-        Artifact.render(
-            config.language,
-            config.intents.keys.toList() + UNTAGGED_INTENT,
-            entries,
-        )
+    if (usedLanguages.isEmpty()) usedLanguages += config.language
+    val result = Artifact.render(config.language, packs.intents(usedLanguages), entries)
     if (args.out != null) File(args.out).writeText(result) else print(result)
     System.err.println("scanned ${files.size} file(s), tagged ${entries.size} file(s)")
 }

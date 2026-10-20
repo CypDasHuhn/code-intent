@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":api"))
     implementation(project(":core"))
     implementation(project(":frontend"))
+    implementation(project(":rulepacks"))
 }
 
 application {

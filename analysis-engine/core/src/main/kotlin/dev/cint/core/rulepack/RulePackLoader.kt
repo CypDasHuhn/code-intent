@@ -97,6 +97,24 @@ class RulePackLoader(
         return RulePackLoadResult(loaded, failures.toList())
     }
 
+    fun validate(packs: List<RulePack>): RulePackLoadResult {
+        val failures = mutableListOf<RulePackLoadFailure>()
+
+        fun report(failure: RulePackLoadFailure) {
+            failures += failure
+            onFailure(failure)
+        }
+
+        val loaded =
+            packs.mapNotNull { pack ->
+                validate(pack, pack.javaClass.name, ::report)
+            }
+        val accepted =
+            rejectDuplicatePackIds(loaded, ::report)
+                .sortedWith(compareBy({ it.id }, { it.sourceClassName }))
+        return RulePackLoadResult(settle(accepted, ::report), failures.toList())
+    }
+
     private fun discover(
         config: Map<String, Map<String, Any?>>,
         state: DiscoveryState,

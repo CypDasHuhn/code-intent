@@ -2,7 +2,9 @@ package dev.cint.frontend
 
 import dev.cint.api.Role
 import dev.cint.core.frontend.OracleOptions
+import dev.cint.core.host.HostPipeline
 import dev.cint.core.model.SourceFile
+import dev.cint.rulepacks.BundledRulePackSelection
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -70,6 +72,39 @@ class VueSplitTest {
         assertEquals(print.span, contributor.span)
         assertEquals(print.startByte, contributor.startByte)
         assertEquals(print.endByte, contributor.endByte)
+    }
+
+    @Test
+    fun scriptAnnotationsUseTheRulePipelineInHostCoordinates() {
+        val text =
+            """
+            <template>
+              <div>{{ message }}</div>
+            </template>
+
+            <script setup lang="ts">
+            function work() {
+              console.log("done")
+              throw new Error("boom")
+            }
+            </script>
+            """.trimIndent()
+        val source = SourceFile("Sample.vue", text)
+        val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+
+        val annotations = SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), null, options, pipeline::plan)
+        val logging = annotations.first { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
+        val errorHandling = annotations.first { it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents }
+
+        val expectedStart = text.substring(0, text.indexOf("console.log")).toByteArray(Charsets.UTF_8).size
+        val expectedLine = text.lines().indexOfFirst { it.contains("console.log") }
+        assertEquals(expectedStart, logging.startByte)
+        assertEquals(expectedLine, logging.span.startLine)
+        assertTrue(logging.provenance.all { it.rule == "logging:logging" })
+
+        val throwStart = text.substring(0, text.indexOf("throw new Error")).toByteArray(Charsets.UTF_8).size
+        assertEquals(throwStart, errorHandling.startByte)
+        assertTrue(errorHandling.provenance.all { it.rule == "error-handling-typescript:error-handling" })
     }
 
     @Test
