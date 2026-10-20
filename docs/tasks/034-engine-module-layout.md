@@ -24,3 +24,9 @@ Engine root is 7 entries; no analysis-engine dir is OVERCROWDED. Structural test
 derives module roots from settings and enforces `modules/<group>/<name>`. Engine
 README moved to `docs/engine.md` with corrected paths. Reviewer concurs;
 build/test-engine/lint/test-nvim/install pass.
+
+## Update (2026-10-21)
+
+The intermediate `analysis-engine/modules/` layer was removed. Groups now live at
+`analysis-engine/{core,languages,hosts,tests}`. The engine root intentionally has
+10 entries and is accepted as `OVERCROWDED` under the current threshold.

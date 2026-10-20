@@ -388,33 +388,33 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 
 Key engine files:
 
-- `analysis-engine/modules/core/api/.../Model.kt` and `Contract.kt` — intents, roles,
+- `analysis-engine/core/api/.../Model.kt` and `Contract.kt` — intents, roles,
   annotations, rules, packs, views, emits, and the scheduler contract.
-- `analysis-engine/modules/core/api/.../Dsl.kt` — the thin `View` DSL.
-- `analysis-engine/modules/core/core/.../facts/view/CapabilityView.kt` — the scope-gated
+- `analysis-engine/core/api/.../Dsl.kt` — the thin `View` DSL.
+- `analysis-engine/core/core/.../facts/view/CapabilityView.kt` — the scope-gated
   view rules consume.
-- `analysis-engine/modules/core/core/.../facts/store/AnnotationStore.kt` — per-rule
+- `analysis-engine/core/core/.../facts/store/AnnotationStore.kt` — per-rule
   contribution replacement and provenance.
-- `analysis-engine/modules/core/core/.../runtime/scheduler/RuleEngine.kt` and
+- `analysis-engine/core/core/.../runtime/scheduler/RuleEngine.kt` and
   `RuleScheduler.kt` — stratification and fixpoint.
-- `analysis-engine/modules/core/core/.../runtime/composition/` — `ScaffoldComposition`,
+- `analysis-engine/core/core/.../runtime/composition/` — `ScaffoldComposition`,
   `DerivativeComposition`, `ReturnComposition`, and the terminal composition.
-- `analysis-engine/modules/core/core/.../facts/flow/ControlFlow.kt` — function-local CFG and
+- `analysis-engine/core/core/.../facts/flow/ControlFlow.kt` — function-local CFG and
   return sites.
-- `analysis-engine/modules/core/core/.../syntax/Syntax.kt` and `ProfileSyntaxModel.kt` —
+- `analysis-engine/core/core/.../syntax/Syntax.kt` and `ProfileSyntaxModel.kt` —
   language-neutral syntax facts and profile-driven node kinds.
-- `analysis-engine/modules/core/core/.../runtime/rulepack/` — explicit
+- `analysis-engine/core/core/.../runtime/rulepack/` — explicit
   `META-INF/services` discovery, validation, and per-provider degradation.
-- `analysis-engine/modules/core/host/.../HostPipeline.kt`, `HostConfig.kt`, and
+- `analysis-engine/core/host/.../HostPipeline.kt`, `HostConfig.kt`, and
   `ProjectConfigLoader.kt` — production pack selection and project config.
-- `analysis-engine/modules/core/rulepacks/.../logging|errorhandling|bookkeeping|validation/`
+- `analysis-engine/core/rulepacks/.../logging|errorhandling|bookkeeping|validation/`
   — bundled detection packs; `support/BundledRulePackSelection.kt` supplies the
   per-language error-handling packs.
-- `analysis-engine/modules/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
+- `analysis-engine/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
   JavaScript, TypeScript, Vue, and C# node-kind profiles.
-- `analysis-engine/modules/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and
+- `analysis-engine/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and
   per-language bindings.
-- `analysis-engine/modules/languages/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
+- `analysis-engine/languages/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
   with coordinate shifting; Vue uses it for `<script>` blocks.
 
 Key client files:
@@ -442,7 +442,7 @@ Tests and tooling:
 
 Snapshots:
 
-- `analysis-engine/modules/tests/integration-tests/src/test/resources/snapshots/` holds the
+- `analysis-engine/tests/integration-tests/src/test/resources/snapshots/` holds the
   pre-018 (014-tree) `HostPipeline` snapshots restored from `739dff7`
   (legacy-shape and pipeline-shape; compared against `3f20435` in ticket 014)
   and the post-018 current pipeline baseline.

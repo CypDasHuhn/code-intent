@@ -28,9 +28,9 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | `test-fixtures` | shared `java-test-fixtures` parser, pack, and fixture helpers |
 | `integration-tests` | composition, host, frontend-pipeline, and snapshot integration tests |
 
-Modules are grouped under `analysis-engine/modules/core/`,
-`analysis-engine/modules/languages/`, `analysis-engine/modules/hosts/`, and
-`analysis-engine/modules/tests/`; Gradle project names remain `:api`, `:core`,
+Modules are grouped under `analysis-engine/core/`,
+`analysis-engine/languages/`, `analysis-engine/hosts/`, and
+`analysis-engine/tests/`; Gradle project names remain `:api`, `:core`,
 and so on. `core` has no tree-sitter, LSP, or editor dependency. `frontend` is the composition
 root that binds a language id to its parser, syntax profile, and oracle. `host`
 owns the pipeline that assembles discovered and constructed packs, applies
@@ -47,7 +47,7 @@ Rules, the engine, and intents are shared. A new language adds data and a small
 frontend binding, not new analysis code:
 
 1. Add the grammar dependency and a parser under `treesitter`.
-2. Add `analysis-engine/modules/languages/treesitter/src/main/resources/syntax/<language>.yaml`. It maps the
+2. Add `analysis-engine/languages/treesitter/src/main/resources/syntax/<language>.yaml`. It maps the
    canonical `SyntaxGroups` names to that grammar's node kinds.
 3. Register a `LanguageFrontend` under `frontend`. It supplies `parse`, `syntax`,
    and `oracle`.
@@ -55,8 +55,8 @@ frontend binding, not new analysis code:
    owning rulepack's typed config defaults.
 
 Kotlin, JavaScript, TypeScript, Vue, and C# are built in. Profiles live under
-`analysis-engine/modules/languages/treesitter/src/main/resources/syntax/`, and
-frontends are registered in `analysis-engine/modules/languages/frontend/`.
+`analysis-engine/languages/treesitter/src/main/resources/syntax/`, and
+frontends are registered in `analysis-engine/languages/frontend/`.
 
 ### Split handlers
 

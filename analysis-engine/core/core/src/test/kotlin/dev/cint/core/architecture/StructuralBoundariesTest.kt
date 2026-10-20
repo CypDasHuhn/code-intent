@@ -35,10 +35,9 @@ class StructuralBoundariesTest {
         val engine = engineRoot()
         for ((module, root) in roots) {
             val segments = engine.relativize(root).map { it.toString() }
-            assertEquals(3, segments.size, "module '$module' must live under modules/<group>/$module: $root")
-            assertEquals("modules", segments[0], "module '$module' must live under modules/: $root")
-            assertTrue(segments[1].isNotBlank(), "module '$module' must have a group directory: $root")
-            assertEquals(module, segments[2], "module directory must match project name '$module': $root")
+            assertEquals(2, segments.size, "module '$module' must live under <group>/$module: $root")
+            assertTrue(segments[0].isNotBlank(), "module '$module' must have a group directory: $root")
+            assertEquals(module, segments[1], "module directory must match project name '$module': $root")
             assertTrue(root.resolve("src").isDirectory(), "module root missing src/: $root")
         }
     }
@@ -209,7 +208,7 @@ class StructuralBoundariesTest {
                 val group = match.groupValues[2]
                 val directory = match.groupValues[3]
                 assertEquals(projectName, directory, "projectDir for '$projectName' must end in its project name")
-                projectName to engine.resolve("modules/$group/$directory")
+                projectName to engine.resolve("$group/$directory")
             }
     }
 
@@ -247,7 +246,7 @@ class StructuralBoundariesTest {
 
     private companion object {
         val projectDirPattern =
-            Regex("""project\("(:[^"]+)"\)\.projectDir\s*=\s*file\("modules/([^/"]+)/([^/"]+)"\)""")
+            Regex("""project\("(:[^"]+)"\)\.projectDir\s*=\s*file\("([^/"]+)/([^/"]+)"\)""")
         val importPattern = Regex("^\\s*import\\s+([\\w.]+?)(?:\\.\\*)?\\s*$", RegexOption.MULTILINE)
         val packagePattern = Regex("^\\s*package\\s+([\\w.]+)", RegexOption.MULTILINE)
         val projectDependencyPattern = Regex("project\\(\"(:[^\"]+)\"\\)")
