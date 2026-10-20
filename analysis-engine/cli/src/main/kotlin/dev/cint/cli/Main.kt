@@ -2,13 +2,13 @@ package dev.cint.cli
 
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
-import dev.cint.core.frontend.SplitHandler
-import dev.cint.core.hashing.contentHash
-import dev.cint.core.host.HostConfig
-import dev.cint.core.host.HostPipeline
-import dev.cint.core.model.SourceFile
-import dev.cint.core.oracle.NullOracle
-import dev.cint.core.oracle.TypeOracle
+import dev.cint.core.facts.frontend.SplitHandler
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.NullOracle
+import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.core.runtime.host.HostConfig
+import dev.cint.core.runtime.host.HostPipeline
+import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.rulepacks.BundledRulePackSelection

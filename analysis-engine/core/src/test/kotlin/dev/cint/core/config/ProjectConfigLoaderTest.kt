@@ -1,9 +1,9 @@
 package dev.cint.core.config
 
-import dev.cint.core.rulepack.FixtureConfigurablePack
-import dev.cint.core.rulepack.FixtureGoodPack
-import dev.cint.core.rulepack.RulePackLoadFailureKind
-import dev.cint.core.rulepack.RulePackLoader
+import dev.cint.core.runtime.rulepack.FixtureConfigurablePack
+import dev.cint.core.runtime.rulepack.FixtureGoodPack
+import dev.cint.core.runtime.rulepack.RulePackLoadFailureKind
+import dev.cint.core.runtime.rulepack.RulePackLoader
 import java.net.URL
 import java.net.URLClassLoader
 import java.nio.file.Files

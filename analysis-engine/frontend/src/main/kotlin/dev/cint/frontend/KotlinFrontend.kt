@@ -1,10 +1,10 @@
 package dev.cint.frontend
 
-import dev.cint.core.frontend.LanguageFrontend
-import dev.cint.core.frontend.OracleOptions
-import dev.cint.core.model.SourceFile
-import dev.cint.core.oracle.NullOracle
-import dev.cint.core.oracle.TypeOracle
+import dev.cint.core.facts.frontend.LanguageFrontend
+import dev.cint.core.facts.frontend.OracleOptions
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.NullOracle
+import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.lsp.KotlinLspOracle

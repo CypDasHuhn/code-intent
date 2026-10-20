@@ -1,6 +1,6 @@
 package dev.cint.core.config
 
-import dev.cint.core.frontend.OracleOptions
+import dev.cint.core.facts.frontend.OracleOptions
 import java.nio.file.Files
 import kotlin.io.path.deleteIfExists
 import kotlin.test.Test

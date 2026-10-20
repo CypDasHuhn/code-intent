@@ -1,9 +1,9 @@
 package dev.cint.lsp
 
-import dev.cint.core.model.SourceFile
-import dev.cint.core.oracle.SymbolFact
-import dev.cint.core.oracle.TypeFact
-import dev.cint.core.oracle.TypeOracle
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.SymbolFact
+import dev.cint.core.facts.oracle.TypeFact
+import dev.cint.core.facts.oracle.TypeOracle
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import org.eclipse.lsp4j.services.LanguageClient

@@ -1,7 +1,7 @@
 package dev.cint.rulepacks
 
-import dev.cint.core.host.HostPipeline
-import dev.cint.core.rulepack.RulePackLoader
+import dev.cint.core.runtime.host.HostPipeline
+import dev.cint.core.runtime.rulepack.RulePackLoader
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals

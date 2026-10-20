@@ -2,10 +2,10 @@ package dev.cint.frontend
 
 import dev.cint.api.Annotation
 import dev.cint.api.Role
-import dev.cint.core.host.HostConfig
-import dev.cint.core.host.HostPipeline
-import dev.cint.core.model.SourceFile
-import dev.cint.core.oracle.NullOracle
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.NullOracle
+import dev.cint.core.runtime.host.HostConfig
+import dev.cint.core.runtime.host.HostPipeline
 import dev.cint.rulepacks.BundledRulePackSelection
 import java.nio.file.Files
 import kotlin.test.Test

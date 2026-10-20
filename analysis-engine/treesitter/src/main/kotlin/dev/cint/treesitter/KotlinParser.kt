@@ -1,7 +1,7 @@
 package dev.cint.treesitter
 
 import dev.cint.api.SyntaxNode
-import dev.cint.core.model.SourceFile
+import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.syntax.SyntaxTree
 import org.treesitter.TSLanguage
 import org.treesitter.TSNode

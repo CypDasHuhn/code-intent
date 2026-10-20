@@ -1,8 +1,8 @@
 package dev.cint.core.config
 
 import dev.cint.api.RulePack
-import dev.cint.core.rulepack.RulePackLoadFailure
-import dev.cint.core.rulepack.RulePackLoader
+import dev.cint.core.runtime.rulepack.RulePackLoadFailure
+import dev.cint.core.runtime.rulepack.RulePackLoader
 
 data class LoadedProjectConfig(
     val packs: List<RulePack>,

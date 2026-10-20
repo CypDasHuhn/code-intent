@@ -1,6 +1,6 @@
 package dev.cint.core.config
 
-import dev.cint.core.frontend.OracleOptions
+import dev.cint.core.facts.frontend.OracleOptions
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.math.BigInteger

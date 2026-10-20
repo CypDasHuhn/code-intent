@@ -44,6 +44,10 @@ lsp-fix root=engine max="25":
 size root=engine:
     ./scripts/classify-kotlin-size.nu {{quote(root)}}
 
+# Report directories with one file or more than five files.
+dir-size root=engine:
+    ./scripts/classify-directory-size.nu {{quote(root)}}
+
 # Build the CLI and live server distributions.
 install:
     cd {{engine}} && ./gradlew :cli:installDist :server:installDist

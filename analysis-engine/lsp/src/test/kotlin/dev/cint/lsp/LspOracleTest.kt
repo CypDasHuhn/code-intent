@@ -1,6 +1,6 @@
 package dev.cint.lsp
 
-import dev.cint.core.model.SourceFile
+import dev.cint.core.facts.model.SourceFile
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertNotNull

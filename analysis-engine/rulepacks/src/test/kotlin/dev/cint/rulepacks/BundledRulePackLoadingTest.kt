@@ -7,8 +7,8 @@ import dev.cint.api.Rule
 import dev.cint.api.RulePack
 import dev.cint.api.RulePackApi
 import dev.cint.api.View
-import dev.cint.core.rulepack.RulePackLoader
-import dev.cint.core.scheduler.RuleScheduler
+import dev.cint.core.runtime.rulepack.RulePackLoader
+import dev.cint.core.runtime.scheduler.RuleScheduler
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

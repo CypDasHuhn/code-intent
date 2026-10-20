@@ -2,9 +2,9 @@ package dev.cint.frontend
 
 import dev.cint.api.Role
 import dev.cint.core.config.IntentConfig
-import dev.cint.core.frontend.OracleOptions
-import dev.cint.core.host.HostPipeline
-import dev.cint.core.model.SourceFile
+import dev.cint.core.facts.frontend.OracleOptions
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.runtime.host.HostPipeline
 import dev.cint.rulepacks.BundledRulePackSelection
 import java.nio.file.Path
 import kotlin.test.Test
