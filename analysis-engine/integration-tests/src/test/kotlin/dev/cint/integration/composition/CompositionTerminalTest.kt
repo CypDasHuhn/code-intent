@@ -3,6 +3,7 @@ package dev.cint.integration.composition
 import dev.cint.api.Role
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.config.IntentConfig
+import dev.cint.integration.composition.support.analyzePipeline
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

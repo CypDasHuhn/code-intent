@@ -1,4 +1,4 @@
-package dev.cint.integration.composition
+package dev.cint.integration.composition.support
 
 import dev.cint.api.Annotation
 import dev.cint.api.CINT_API_VERSION

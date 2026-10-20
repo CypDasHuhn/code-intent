@@ -6,6 +6,10 @@ import dev.cint.api.Span
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.CoreContributors
 import dev.cint.core.facts.model.SourceFile
+import dev.cint.integration.composition.support.ReplayPack
+import dev.cint.integration.composition.support.ReplayRule
+import dev.cint.integration.composition.support.analyzePipeline
+import dev.cint.integration.composition.support.emitFor
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import kotlin.test.Test

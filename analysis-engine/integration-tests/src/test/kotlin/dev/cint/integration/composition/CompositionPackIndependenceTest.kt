@@ -2,6 +2,14 @@ package dev.cint.integration.composition
 
 import dev.cint.api.RulePack
 import dev.cint.core.facts.model.SourceFile
+import dev.cint.integration.composition.support.ReplayPack
+import dev.cint.integration.composition.support.ReplayRule
+import dev.cint.integration.composition.support.Snapshot
+import dev.cint.integration.composition.support.analyzePipeline
+import dev.cint.integration.composition.support.compositionSnapshots
+import dev.cint.integration.composition.support.emitFor
+import dev.cint.integration.composition.support.fixture
+import dev.cint.integration.composition.support.replaySource
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import kotlin.test.Test

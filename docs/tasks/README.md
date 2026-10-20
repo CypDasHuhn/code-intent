@@ -42,7 +42,7 @@ host and client cutover at the end.
 | 028 | [renderer structural cleanup](028-renderer-structural-cleanup.md) | done | — | Split Lua monolith; live transport tests; docs config. |
 | 029 | [rulepack registration consistency](029-rulepack-registration-consistency.md) | done | 023 | Uniform pack identity/selection. |
 | 030 | [client-authored annotations](030-client-authored-annotations.md) | todo | — | Experimental: runtime user annotations persisted per project. |
-| 031 | [size hygiene after support refactors](031-size-hygiene-after-support.md) | in-progress | 019, 020, 021, 026, 029 | Split new EXTREME files; reduce new overcrowded dirs. |
+| 031 | [size hygiene after support refactors](031-size-hygiene-after-support.md) | done | 019, 020, 021, 026, 029 | Split new EXTREME files; reduce new overcrowded dirs. |
 
 ## Resolved decisions
 

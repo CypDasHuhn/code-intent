@@ -3,6 +3,10 @@ package dev.cint.integration.composition
 import dev.cint.api.Role
 import dev.cint.core.CoreContributors
 import dev.cint.core.runtime.scheduler.ReservedContributorId
+import dev.cint.integration.composition.support.ReplayPack
+import dev.cint.integration.composition.support.ReplayRule
+import dev.cint.integration.composition.support.analyzePipeline
+import dev.cint.integration.composition.support.replaySource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
