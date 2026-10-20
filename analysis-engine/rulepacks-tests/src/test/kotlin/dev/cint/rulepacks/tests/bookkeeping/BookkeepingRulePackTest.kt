@@ -1,4 +1,4 @@
-package dev.cint.treesitter.rulepacks
+package dev.cint.rulepacks.tests.bookkeeping
 
 import dev.cint.api.Annotation
 import dev.cint.api.Role
@@ -9,13 +9,13 @@ import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxProfiles
 import dev.cint.core.syntax.SyntaxTree
-import dev.cint.rulepacks.BookkeepingRulePack
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.tests.support.testConfig
 import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.JavascriptParser
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import dev.cint.treesitter.TypescriptParser
-import dev.cint.treesitter.support.testConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

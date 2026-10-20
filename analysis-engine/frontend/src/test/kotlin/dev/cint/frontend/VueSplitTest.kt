@@ -5,7 +5,7 @@ import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.frontend.OracleOptions
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.runtime.host.HostPipeline
-import dev.cint.rulepacks.BundledRulePackSelection
+import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals

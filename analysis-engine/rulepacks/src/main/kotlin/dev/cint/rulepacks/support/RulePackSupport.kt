@@ -1,4 +1,4 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.support
 
 import dev.cint.api.RulePack
 import dev.cint.api.RulePackConfigException
@@ -111,11 +111,4 @@ object BundledRulePackSelection {
         if (normalized !in ErrorHandlingRulePack.languages) return emptyList()
         return listOf(ErrorHandlingRulePack.forLanguage(normalized))
     }
-
-    fun validationIntentParams(projectPacks: Map<String, Map<String, Any?>>): Map<String, List<String>> =
-        try {
-            ValidationConfig.from(projectPacks[VALIDATION_PACK_ID].orEmpty()).definitionParams()
-        } catch (_: RulePackConfigException) {
-            ValidationConfig().definitionParams()
-        }
 }

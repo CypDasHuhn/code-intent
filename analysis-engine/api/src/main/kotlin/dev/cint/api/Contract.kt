@@ -33,6 +33,7 @@ fun Rule.toContribution(emit: Emit): Contribution =
         confidence = emit.confidence,
         startByte = emit.startByte,
         endByte = emit.endByte,
+        certifiesReturn = emit.certifiesReturn,
     )
 
 interface View {
@@ -92,6 +93,7 @@ data class Emit(
     val startByte: Int,
     val endByte: Int,
     val nodeAnchor: NodeAnchor? = null,
+    val certifiesReturn: Boolean = false,
 )
 
 data class Relation(

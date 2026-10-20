@@ -27,7 +27,7 @@ host and client cutover at the end.
 | 015 | [host cutover: cli and server](015-host-cutover-cli-and-server.md) | done | 003, 010, 011 | Batch CLI and live daemon publish from the new engine. |
 | 016 | [renderer annotation contract](016-renderer-annotation-contract.md) | done | 002, 011 | Structured provenance, open intent names, reserved node anchor in the live contract. |
 | 017 | [fixpoint metadata convergence](017-fixpoint-metadata-convergence.md) | blocked | 003 | Define bounded convergence for evidence/source/confidence changes at a stable annotation identity. |
-| 018 | [return parity for non-direct-exit guards](018-return-parity-non-direct-exit.md) | blocked | 009, 010 | Restore ReturnBlock parity for nested/else-edge validation returns without direct then-exit guards. |
+| 018 | [return parity for non-direct-exit guards](018-return-parity-non-direct-exit.md) | done | 009, 010 | Restore ReturnBlock parity for nested/else-edge validation returns without direct then-exit guards. |
 
 ## Resolved decisions
 

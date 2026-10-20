@@ -46,7 +46,6 @@ class LiveServer(
     private val defaultLanguage: String,
     private val packs: HostPipeline,
     private val settings: HostSettings,
-    private val validationParams: Map<String, List<String>>,
 ) {
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val configs = ConcurrentHashMap<String, IntentConfig>()
@@ -207,7 +206,7 @@ class LiveServer(
 
     private fun configFor(language: String): IntentConfig =
         configs.computeIfAbsent(language) {
-            settings.intentConfig(it, validationParams)
+            settings.intentConfig(it)
         }
 
     internal fun oracleOptions(useLsp: Boolean = this.useLsp): OracleOptions = settings.oracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS)
@@ -237,7 +236,7 @@ class LiveServer(
                 root,
                 oracleOptions(),
                 packs::plan,
-            ) { language -> settings.intentConfig(language, validationParams) }
+            ) { language -> settings.intentConfig(language) }
         }
         val tree = frontend.parse(source)
         val syntax = frontend.syntax(tree)
@@ -256,7 +255,7 @@ class LiveServer(
                 root,
                 oracleOptions(false),
                 packs::plan,
-            ) { language -> settings.intentConfig(language, validationParams) }
+            ) { language -> settings.intentConfig(language) }
         }
         val tree = frontend.parse(source)
         val syntax = frontend.syntax(tree)

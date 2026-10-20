@@ -6,7 +6,7 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.host.HostConfig
 import dev.cint.core.runtime.host.HostPipeline
-import dev.cint.rulepacks.BundledRulePackSelection
+import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -128,7 +128,6 @@ class HostConfigWiringTest {
         Files.writeString(configFile, configText)
         try {
             val settings = HostConfig.load(configFile.toString(), language)
-            val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
             val pipeline =
                 HostPipeline(
                     constructedPacks = BundledRulePackSelection::constructed,
@@ -143,7 +142,7 @@ class HostConfigWiringTest {
                 tree,
                 frontend.syntax(tree),
                 NullOracle,
-                settings.intentConfig(language, validationParams),
+                settings.intentConfig(language),
             )
         } finally {
             Files.deleteIfExists(configFile)

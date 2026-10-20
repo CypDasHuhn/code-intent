@@ -1,3 +1,3 @@
-dev.cint.rulepacks.LoggingRulePack
-dev.cint.rulepacks.BookkeepingRulePack
-dev.cint.rulepacks.ValidationRulePack
+dev.cint.rulepacks.logging.LoggingRulePack
+dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+dev.cint.rulepacks.validation.ValidationRulePack

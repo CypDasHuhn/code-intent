@@ -1,4 +1,4 @@
-package dev.cint.treesitter.rulepacks
+package dev.cint.rulepacks.tests.errorhandling
 
 import dev.cint.api.Annotation
 import dev.cint.api.Role
@@ -15,12 +15,12 @@ import dev.cint.core.syntax.SyntaxTree
 import dev.cint.rulepacks.errorhandling.ERROR_HANDLING_INTENT
 import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
+import dev.cint.rulepacks.tests.support.testConfig
 import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.JavascriptParser
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import dev.cint.treesitter.TypescriptParser
-import dev.cint.treesitter.support.testConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

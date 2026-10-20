@@ -1,4 +1,4 @@
-package dev.cint.frontend
+package dev.cint.rulepacks.tests.logging
 
 import dev.cint.api.Annotation
 import dev.cint.api.Role
@@ -9,7 +9,8 @@ import dev.cint.core.facts.oracle.SymbolFact
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
-import dev.cint.rulepacks.LoggingRulePack
+import dev.cint.frontend.Frontends
+import dev.cint.rulepacks.logging.LoggingRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

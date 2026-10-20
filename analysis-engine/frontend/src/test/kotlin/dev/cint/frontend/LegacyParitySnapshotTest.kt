@@ -8,7 +8,7 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.host.HostConfig
 import dev.cint.core.runtime.host.HostPipeline
-import dev.cint.rulepacks.BundledRulePackSelection
+import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.readText
@@ -131,11 +131,10 @@ class LegacyParitySnapshotTest {
                 knownPackIds = BundledRulePackSelection.packIds,
             )
         val options = OracleOptions(enabled = false, timeoutMs = 1_000)
-        val params = BundledRulePackSelection.validationIntentParams(settings.project.packs)
         return if (fixture.language == "vue") {
             val annotations =
                 SplitAnalyzer.analyze(source, VueFrontend, root, options, pipeline::plan) { language ->
-                    settings.intentConfig(language, params)
+                    settings.intentConfig(language)
                 }
             VueFrontend.regions(source).map { it.language } to annotations
         } else {
@@ -147,7 +146,7 @@ class LegacyParitySnapshotTest {
                     tree,
                     frontend.syntax(tree),
                     NullOracle,
-                    settings.intentConfig(fixture.language, params),
+                    settings.intentConfig(fixture.language),
                 )
         }
     }

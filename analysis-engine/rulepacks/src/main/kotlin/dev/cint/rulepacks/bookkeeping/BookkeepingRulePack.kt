@@ -1,4 +1,4 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.bookkeeping
 
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.ConfigurableRulePack
@@ -11,9 +11,9 @@ import dev.cint.api.RulePackConfigException
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.configString
-import dev.cint.rulepacks.configStringSets
-import dev.cint.rulepacks.configStrings
+import dev.cint.rulepacks.support.configString
+import dev.cint.rulepacks.support.configStringSets
+import dev.cint.rulepacks.support.configStrings
 
 const val BOOKKEEPING_INTENT: Intent = "BOOKKEEPING"
 const val BOOKKEEPING_PACK_ID: String = "bookkeeping"

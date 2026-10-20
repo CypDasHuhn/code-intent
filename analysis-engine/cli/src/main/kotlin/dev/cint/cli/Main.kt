@@ -11,7 +11,7 @@ import dev.cint.core.runtime.host.HostPipeline
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
-import dev.cint.rulepacks.BundledRulePackSelection
+import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.io.File
 
 private data class Args(
@@ -26,8 +26,7 @@ private data class Args(
 fun main(argv: Array<String>) {
     val args = parseArgs(argv)
     val settings = HostConfig.load(args.config, args.language)
-    val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
-    val config = settings.intentConfig(args.language, validationParams)
+    val config = settings.intentConfig(args.language)
     val lspOptions = settings.oracleOptions(!args.noLsp)
     val frontend = Frontends.require(config.language)
 
@@ -79,7 +78,7 @@ fun main(argv: Array<String>) {
                                 root.toPath(),
                                 lspOptions,
                                 packs::plan,
-                            ) { language -> settings.intentConfig(language, validationParams) }
+                            ) { language -> settings.intentConfig(language) }
                         usedLanguages += languages
                         result
                     }.onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }

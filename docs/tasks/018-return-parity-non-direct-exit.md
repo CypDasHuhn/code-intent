@@ -1,6 +1,6 @@
 ---
 name: return parity for non-direct-exit guards
-status: blocked
+status: done
 depends-on: [009, 010]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -38,3 +38,17 @@ and only guards tagged by the validation rule certify returns.
 - Blocked: needs a design decision on where the guard certificate lives (core
   composition vs a pack-neutral derived fact) and how it is bounded without
   re-coupling composition to pack identity.
+
+## Outcome (2026-10-20)
+
+Resolved by a generic return certificate instead of validation-specific core
+logic. `Emit`/`Contribution` gained an additive `certifiesReturn` flag; the
+validation pack sets it on its guard annotations and now emits them for every
+qualifying guard, including nested/else-edge returns. Core `ReturnComposition`
+uses only certified annotations and inherits their intents; `VALIDATION` and its
+config are gone from core, as are `HostConfig`'s validation intent mapping and
+the unused validation intent-params compatibility helpers. Validation tags widen
+to non-direct-exit guards, which is the intentional tradeoff for a pack-driven
+certificate. Rulepack detection tests moved to `:rulepacks-tests`; per-pack
+packages were normalized to logging/errorhandling/bookkeeping/validation/support.
+`just build`, `just test-engine`, and `just lint` pass.

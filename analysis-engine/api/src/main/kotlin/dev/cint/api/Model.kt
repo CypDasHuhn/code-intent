@@ -34,6 +34,7 @@ data class Contribution(
     val confidence: Double,
     val startByte: Int,
     val endByte: Int,
+    val certifiesReturn: Boolean = false,
 )
 
 data class Annotation(

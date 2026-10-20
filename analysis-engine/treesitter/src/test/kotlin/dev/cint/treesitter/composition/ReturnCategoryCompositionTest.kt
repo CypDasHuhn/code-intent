@@ -43,6 +43,7 @@ class ReturnCategoryCompositionTest {
                             confidence = 1.0,
                             startByte = text.indexOf("value < 0"),
                             endByte = text.indexOf("value < 0") + "value < 0".length,
+                            certifiesReturn = true,
                         ),
                     ),
             )
@@ -94,7 +95,7 @@ class ReturnCategoryCompositionTest {
             ReplayRule(
                 id = "test:validation",
                 owns = "VALIDATION",
-                emissions = conditions.map { condition -> emitFor("VALIDATION", condition) },
+                emissions = conditions.map { condition -> emitFor("VALIDATION", condition, certifiesReturn = true) },
             )
 
         val annotations =

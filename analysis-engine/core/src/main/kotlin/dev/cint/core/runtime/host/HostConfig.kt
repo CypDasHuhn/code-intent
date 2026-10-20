@@ -1,7 +1,6 @@
 package dev.cint.core.runtime.host
 
 import dev.cint.core.config.IntentConfig
-import dev.cint.core.config.IntentDefinition
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.config.ProjectConfigIssue
 import dev.cint.core.config.oracleOptions
@@ -28,19 +27,10 @@ data class HostSettings(
         return OracleOptions(policy.enabled && useLsp, timeoutMs)
     }
 
-    fun intentConfig(
-        language: String,
-        validationParams: Map<String, List<String>>,
-    ): IntentConfig =
+    fun intentConfig(language: String): IntentConfig =
         IntentConfig(
             language = language,
-            intents =
-                mapOf(
-                    "VALIDATION" to
-                        IntentDefinition(
-                            params = validationParams,
-                        ),
-                ),
+            intents = emptyMap(),
             pureAnnotations = project.core.purityAnnotations,
         )
 }

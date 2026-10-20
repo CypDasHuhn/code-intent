@@ -23,6 +23,7 @@ private val contributionOrder =
         { it.evidence },
         { it.source },
         { it.confidence },
+        { it.certifiesReturn },
         { it.intents.sorted().joinToString("\u0000") },
     )
 

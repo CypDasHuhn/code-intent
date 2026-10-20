@@ -1,7 +1,7 @@
-package dev.cint.treesitter.validation
+package dev.cint.rulepacks.tests.validation
 
-import dev.cint.treesitter.support.parseValidationInput
-import dev.cint.treesitter.support.validationSources
+import dev.cint.rulepacks.tests.support.parseValidationInput
+import dev.cint.rulepacks.tests.support.validationSources
 import kotlin.test.Test
 import kotlin.test.assertTrue
 

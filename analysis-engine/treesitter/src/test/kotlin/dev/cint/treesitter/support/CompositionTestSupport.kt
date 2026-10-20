@@ -82,6 +82,7 @@ internal fun emitFor(
     intent: Intent,
     node: SyntaxNode,
     evidence: String = node.text,
+    certifiesReturn: Boolean = false,
 ): Emit =
     Emit(
         intents = setOf(intent),
@@ -91,6 +92,7 @@ internal fun emitFor(
         confidence = 1.0,
         startByte = node.startByte,
         endByte = node.endByte,
+        certifiesReturn = certifiesReturn,
     )
 
 internal fun replaySource(

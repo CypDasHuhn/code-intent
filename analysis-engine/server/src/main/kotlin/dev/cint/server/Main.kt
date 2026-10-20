@@ -19,7 +19,7 @@ import dev.cint.core.runtime.host.HostSettings
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
-import dev.cint.rulepacks.BundledRulePackSelection
+import dev.cint.rulepacks.support.BundledRulePackSelection
 import java.net.InetSocketAddress
 import java.nio.file.Path
 
@@ -60,7 +60,6 @@ fun main(argv: Array<String>) {
     }
 
     val settings = HostConfig.load(configPath, language)
-    val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
 
     val packs =
         HostPipeline(
@@ -70,7 +69,7 @@ fun main(argv: Array<String>) {
         )
 
     if (socket != null) {
-        LiveServer(root, Path.of(socket), useLsp, language, packs, settings, validationParams).run()
+        LiveServer(root, Path.of(socket), useLsp, language, packs, settings).run()
         return
     }
 
@@ -104,8 +103,7 @@ private fun analyze(
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
     val requestedLanguage = request.language ?: defaultLanguage
     val settings = request.config?.let { HostConfig.load(it, requestedLanguage) } ?: defaultSettings
-    val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
-    val config = settings.intentConfig(requestedLanguage, validationParams)
+    val config = settings.intentConfig(requestedLanguage)
     val lspOptions = settings.oracleOptions(useLsp)
     val packs =
         if (request.config != null) {
@@ -128,7 +126,7 @@ private fun analyze(
                 root,
                 lspOptions,
                 packs::plan,
-            ) { language -> settings.intentConfig(language, validationParams) }
+            ) { language -> settings.intentConfig(language) }
         } else {
             val tree = frontend.parse(source)
             val syntax = frontend.syntax(tree)

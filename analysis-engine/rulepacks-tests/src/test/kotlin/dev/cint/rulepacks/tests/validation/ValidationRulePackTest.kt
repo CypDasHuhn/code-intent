@@ -1,20 +1,19 @@
-package dev.cint.treesitter.validation
+package dev.cint.rulepacks.tests.validation
 
 import dev.cint.api.Role
 import dev.cint.api.RulePack
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.CoreContributors
-import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
-import dev.cint.rulepacks.BookkeepingRulePack
-import dev.cint.rulepacks.VALIDATION_INTENT
-import dev.cint.rulepacks.VALIDATION_RULE_ID
-import dev.cint.rulepacks.ValidationRulePack
-import dev.cint.treesitter.support.NoOpValidationPack
-import dev.cint.treesitter.support.ValidationInput
-import dev.cint.treesitter.support.parseValidationInput
-import dev.cint.treesitter.support.validationPipeline
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.tests.support.NoOpValidationPack
+import dev.cint.rulepacks.tests.support.ValidationInput
+import dev.cint.rulepacks.tests.support.parseValidationInput
+import dev.cint.rulepacks.tests.support.validationPipeline
+import dev.cint.rulepacks.validation.VALIDATION_INTENT
+import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
+import dev.cint.rulepacks.validation.ValidationRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -102,15 +101,9 @@ class ValidationRulePackTest {
         val withoutValidation = returns(input, listOf(BookkeepingRulePack()))
         val withNoOpValidation = returns(input, listOf(BookkeepingRulePack(), NoOpValidationPack()))
         val withValidation = returns(input, listOf(BookkeepingRulePack(), ValidationRulePack()))
-        val withoutValidationIntent =
-            returns(
-                input.copy(config = IntentConfig("kotlin", emptyMap(), emptyList())),
-                emptyList(),
-            )
 
         assertEquals(setOf(UNTAGGED_INTENT), withoutValidation.intents)
         assertEquals(setOf(UNTAGGED_INTENT), withNoOpValidation.intents)
         assertEquals(setOf(VALIDATION_INTENT), withValidation.intents)
-        assertEquals(setOf(UNTAGGED_INTENT), withoutValidationIntent.intents)
     }
 }

@@ -32,7 +32,7 @@ class HostConfigTest {
             assertEquals(setOf("logging", "error-handling-kotlin"), settings.project.packs.keys)
             assertEquals(
                 listOf("CustomPure"),
-                settings.intentConfig("kotlin", emptyMap()).pureAnnotations,
+                settings.intentConfig("kotlin").pureAnnotations,
             )
         } finally {
             Files.deleteIfExists(file)

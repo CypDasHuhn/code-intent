@@ -4,88 +4,46 @@ import dev.cint.api.Contribution
 import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
-import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.flow.Guard
 import dev.cint.core.facts.flow.ReturnSite
 import dev.cint.core.runtime.engine.RuleContext
 
-internal fun returnContributions(
-    ctx: RuleContext,
-    config: IntentConfig,
-): List<Contribution> =
+internal fun returnContributions(ctx: RuleContext): List<Contribution> =
     ctx.flow.returns
         .map { site ->
-            val validation = isValidationReturn(ctx, site, config)
-            val intents = setOf(if (validation) VALIDATION_INTENT else UNTAGGED_INTENT)
+            val guard = site.guards.lastOrNull { guardIntents(ctx, it).isNotEmpty() }
+            val intents =
+                if (guard != null && (guard.onTrue || isRejection(site))) {
+                    guardIntents(ctx, guard)
+                } else {
+                    setOf(UNTAGGED_INTENT)
+                }
             site.node.raw(
                 Role.SCAFFOLD,
                 intents,
                 RETURN_RULE,
                 "cfg",
-                if (validation) 0.8 else 1.0,
+                if (intents == setOf(UNTAGGED_INTENT)) 1.0 else 0.8,
             )
         }
 
-private fun isValidationReturn(
-    ctx: RuleContext,
-    site: ReturnSite,
-    config: IntentConfig,
-): Boolean {
-    val guard = site.guards.lastOrNull { isValidationGuard(ctx, it, config) } ?: return false
-    if (guard.onTrue) return true
-    return isRejection(site)
-}
-
-private fun isValidationGuard(
+private fun guardIntents(
     ctx: RuleContext,
     guard: Guard,
-    config: IntentConfig,
-): Boolean {
-    val certified =
-        ctx.containingAnnotations(guard.condition).any { VALIDATION_INTENT in it.intents } ||
-            ctx.containingAnnotations(guard.node).any { VALIDATION_INTENT in it.intents }
-    if (!certified) return false
-    val explicit = hasValidationComment(ctx, guard.node, config)
-    val predicate = isValidationPredicate(ctx, guard.condition, config)
-    val pure = ctx.syntax.isSideEffectFree(guard.condition)
-    if (ctx.syntax.isConstant(guard.condition) && !explicit) return false
-    return explicit || predicate || pure
+): Set<String> {
+    val condition = annotatedIntents(ctx, guard.condition)
+    return condition.ifEmpty { annotatedIntents(ctx, guard.node) }
 }
 
-private fun isValidationPredicate(
+private fun annotatedIntents(
     ctx: RuleContext,
-    condition: SyntaxNode,
-    config: IntentConfig,
-): Boolean {
-    val definition = config.intents[VALIDATION_INTENT] ?: return false
-    val predicates = definition.list("predicates").toSet()
-    val prefixes = definition.list("predicatePrefixes")
-    return ctx.syntax.callsIn(condition).any { call ->
-        val name = call.callee ?: return@any false
-        name in predicates || prefixes.any { name.startsWith(it) }
-    }
-}
-
-private fun hasValidationComment(
-    ctx: RuleContext,
-    ifNode: SyntaxNode,
-    config: IntentConfig,
-): Boolean {
-    val scope =
-        ctx.syntax
-            .enclosingFunction(ifNode)
-            ?.let { ctx.syntax.bodyOf(it) }
-            ?: ctx.tree.root
-    val comment = ctx.syntax.closestCommentBefore(scope, ifNode) ?: return false
-    if (ifNode.startLine - comment.endLine > 1) return false
-    val magicComment =
-        config.intents[VALIDATION_INTENT]
-            ?.list("magicComment")
-            ?.firstOrNull()
-            ?: return false
-    return Regex("""cint\s*:\s*${Regex.escape(magicComment)}""", RegexOption.IGNORE_CASE)
-        .containsMatchIn(comment.text)
-}
+    node: SyntaxNode,
+): Set<String> =
+    ctx
+        .containingAnnotations(node)
+        .filter { annotation -> annotation.provenance.any { it.certifiesReturn } }
+        .flatMap { it.intents }
+        .filterTo(linkedSetOf()) { it != UNTAGGED_INTENT }
 
 private fun isRejection(site: ReturnSite): Boolean {
     val expression = site.expression ?: return true

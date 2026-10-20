@@ -1,8 +1,12 @@
 package dev.cint.rulepacks
 
 import dev.cint.api.RulePackConfigException
+import dev.cint.rulepacks.bookkeeping.BookkeepingConfig
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
+import dev.cint.rulepacks.validation.ValidationConfig
+import dev.cint.rulepacks.validation.ValidationRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -100,15 +104,6 @@ class PackConfigMigrationTest {
         assertEquals(listOf("is", "can"), config.predicatePrefixes)
         assertEquals("guard", config.magicComment)
         assertEquals(setOf("line_comment"), config.commentKinds)
-        assertEquals(
-            mapOf(
-                "predicates" to listOf("isValid"),
-                "predicatePrefixes" to listOf("is", "can"),
-                "magicComment" to listOf("guard"),
-            ),
-            config.definitionParams(),
-        )
-
         val error =
             assertFailsWith<RulePackConfigException> {
                 ValidationRulePack().configure(mapOf("predicatePrefix" to listOf("is")))

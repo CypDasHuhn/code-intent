@@ -10,8 +10,8 @@ import dev.cint.api.RulePack
 import dev.cint.api.RulePackConfigException
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.configBoolean
-import dev.cint.rulepacks.configStrings
+import dev.cint.rulepacks.support.configBoolean
+import dev.cint.rulepacks.support.configStrings
 
 const val ERROR_HANDLING_INTENT: Intent = "ERROR_HANDLING"
 

@@ -11,11 +11,11 @@ list:
 
 # Build engine modules without running tests.
 build:
-    cd {{engine}} && ./gradlew :api:build :rulepacks:build :core:build :treesitter:build :lsp:build :frontend:build :cli:build :server:build
+    cd {{engine}} && ./gradlew :api:build :rulepacks:build :core:build :treesitter:build :lsp:build :frontend:build :cli:build :server:build :rulepacks-tests:build
 
 # Run the deterministic engine tests (no live LSP dependency).
 test-engine:
-    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :treesitter:test :frontend:test
+    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :treesitter:test :frontend:test :rulepacks-tests:test
 
 # Run the shared-LSP oracle test (requires kotlin-lsp).
 test-lsp:

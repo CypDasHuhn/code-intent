@@ -36,7 +36,7 @@ class Composition {
         }
         val context = AnalysisContext(file, tree, syntax, flow, oracle, config, store)
 
-        val returns = returnContributions(context, config)
+        val returns = returnContributions(context)
         store.replaceRule(RETURN_KEY, returns)
         val derivatives =
             settle(store, DERIVATIVE_KEY) {

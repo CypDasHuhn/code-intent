@@ -12,7 +12,6 @@ internal const val DERIVATIVE_KEY = "${COMPOSITION_KEY_PREFIX}derivative"
 internal const val SCAFFOLD_KEY = "${COMPOSITION_KEY_PREFIX}scaffold"
 internal const val SOURCE_KEY_PREFIX = "${COMPOSITION_KEY_PREFIX}source:"
 
-internal const val VALIDATION_INTENT = "VALIDATION"
 internal const val RETURN_RULE = CoreContributors.RETURN_CATEGORY
 internal const val DERIVATIVE_RULE = CoreContributors.DERIVATIVE_USE
 internal const val SCAFFOLD_RULE = CoreContributors.SCAFFOLD

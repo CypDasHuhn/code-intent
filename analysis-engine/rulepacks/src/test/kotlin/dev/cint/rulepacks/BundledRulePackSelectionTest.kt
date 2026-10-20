@@ -3,6 +3,7 @@ package dev.cint.rulepacks
 import dev.cint.core.runtime.host.HostPipeline
 import dev.cint.core.runtime.rulepack.RulePackLoader
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
+import dev.cint.rulepacks.support.BundledRulePackSelection
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

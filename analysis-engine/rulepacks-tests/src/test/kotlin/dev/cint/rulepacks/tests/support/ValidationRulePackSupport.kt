@@ -1,4 +1,4 @@
-package dev.cint.treesitter.support
+package dev.cint.rulepacks.tests.support
 
 import dev.cint.api.Annotation
 import dev.cint.api.CINT_API_VERSION
@@ -16,10 +16,10 @@ import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxProfiles
 import dev.cint.core.syntax.SyntaxTree
-import dev.cint.rulepacks.BookkeepingRulePack
-import dev.cint.rulepacks.VALIDATION_INTENT
-import dev.cint.rulepacks.VALIDATION_RULE_ID
-import dev.cint.rulepacks.ValidationRulePack
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.validation.VALIDATION_INTENT
+import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
+import dev.cint.rulepacks.validation.ValidationRulePack
 import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.JavascriptParser
 import dev.cint.treesitter.KotlinParser

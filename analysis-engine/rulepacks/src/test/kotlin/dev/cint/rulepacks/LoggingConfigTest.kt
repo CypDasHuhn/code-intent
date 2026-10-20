@@ -1,6 +1,8 @@
 package dev.cint.rulepacks
 
 import dev.cint.api.RulePackConfigException
+import dev.cint.rulepacks.logging.LoggingConfig
+import dev.cint.rulepacks.logging.LoggingRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

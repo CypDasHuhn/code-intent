@@ -12,6 +12,9 @@ C#.
 
 | module | responsibility |
 |--------|----------------|
+| `api` | frozen plugin contract: intents, rules, views, emits, annotations |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
+| `rulepacks-tests` | integration tests for bundled packs using real parsers/frontends |
 | `core` | model, config, artifact writer, oracle interface, CFG, scheduler, composition |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
@@ -73,18 +76,19 @@ Detection rulepacks and core composition:
 - `bookkeeping:bookkeeping` — a property annotated with `@Bookkeeping` or
   preceded by `// cint:bookkeeping`. The declaration and all writes to it are
   tagged Bookkeeping; reads are not.
-- `validation:validation` — an `if` branch with a direct early exit (`return`,
-  `continue`, or `break`). The guard condition is tagged Validation when the
-  branch has a Bookkeeping write, the condition is a validity predicate, the
-  condition is side-effect-free, or a `// cint:validation` comment precedes it.
-  Bare exits are neutral, so the enclosing scaffold composes `VALIDATION` with
-  `BOOKKEEPING`/other intents.
+- `validation:validation` — an `if` guard tagged Validation when its branch has a
+  Bookkeeping write, the condition is a validity predicate, the condition is
+  side-effect-free, or a `// cint:validation` comment precedes it. The annotation
+  is also a return certificate, so core can categorize returns without knowing
+  the validation intent or config. Bare exits stay neutral.
 - `error-handling-<language>:error-handling` — `throw` and configured checks
   (`require`, `assert`, ...). Call spans include trailing lambda arguments.
 - `core:return-category` — classifies each `return` from the function CFG. A
-  return on a validation guard's true edge is `VALIDATION`; a normal return or a
-  non-rejection return on a guard's other edge is `UNTAGGED`. Normal returns
-  therefore block whole-function scaffolds instead of staying neutral.
+  return on a certified guard's true edge inherits that guard's source intents
+  (for example `VALIDATION`); a rejection sentinel on the other edge inherits
+  them too. A normal return is `UNTAGGED` and blocks whole-function scaffolds
+  instead of staying neutral. Core reads the generic certificate flag on source
+  annotations, not validation-specific config.
 - `core:derivative-use` — a local whose initializer is explicitly pure (literal,
   local read, or an annotated pure call) and whose reads flow into classified
   statements, or an annotated pure function whose references all occur inside

@@ -1,4 +1,4 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.logging
 
 import dev.cint.api.RulePackConfigException
 

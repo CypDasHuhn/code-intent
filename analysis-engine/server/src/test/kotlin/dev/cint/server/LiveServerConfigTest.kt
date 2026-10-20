@@ -49,6 +49,5 @@ class LiveServerConfigTest {
             defaultLanguage = "kotlin",
             packs = HostPipeline(loader = RulePackLoader(onFailure = {})),
             settings = settings,
-            validationParams = emptyMap(),
         )
 }

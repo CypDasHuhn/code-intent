@@ -1,48 +1,47 @@
-package dev.cint.treesitter.validation
+package dev.cint.rulepacks.tests.validation
 
 import dev.cint.api.Role
-import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.CoreContributors
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
-import dev.cint.rulepacks.BookkeepingRulePack
-import dev.cint.rulepacks.LoggingRulePack
-import dev.cint.rulepacks.ValidationRulePack
-import dev.cint.treesitter.support.parseValidationInput
-import dev.cint.treesitter.support.validationPipeline
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.logging.LoggingRulePack
+import dev.cint.rulepacks.tests.support.parseValidationInput
+import dev.cint.rulepacks.tests.support.validationPipeline
+import dev.cint.rulepacks.validation.VALIDATION_INTENT
+import dev.cint.rulepacks.validation.ValidationRulePack
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class ValidationRuleScaffoldTest {
     @Test
-    fun onlyFalseAndBareReturnsAreNeutralForScaffolds() {
+    fun nonExitingValidationGuardsTagReturnsAndScaffolds() {
         val text =
             """
             private val log = LoggerFactory.getLogger(Foo::class.java)
-            fun loggingEnabled(): Boolean = true
-            fun nullCase(): String? {
-                if (loggingEnabled()) {
+            fun nullCase(value: Int): String? {
+                if (value > 0) {
                     log.info("x")
                 } else {
                     return null
                 }
             }
-            fun zeroCase(): Int {
-                if (loggingEnabled()) {
+            fun zeroCase(value: Int): Int {
+                if (value > 0) {
                     log.info("x")
                 } else {
                     return 0
                 }
             }
-            fun falseCase(): Boolean {
-                if (loggingEnabled()) {
+            fun falseCase(value: Int): Boolean {
+                if (value > 0) {
                     log.info("x")
                 } else {
                     return false
                 }
             }
-            fun bareCase() {
-                if (loggingEnabled()) {
+            fun bareCase(value: Int) {
+                if (value > 0) {
                     log.info("x")
                 } else {
                     return
@@ -77,9 +76,9 @@ class ValidationRuleScaffoldTest {
             }
         }
 
-        assertTrue(scaffoldCovers("return null", UNTAGGED_INTENT))
-        assertTrue(scaffoldCovers("return 0", UNTAGGED_INTENT))
-        assertTrue(!scaffoldCovers("return false", UNTAGGED_INTENT))
+        assertTrue(scaffoldCovers("return null", VALIDATION_INTENT))
+        assertTrue(scaffoldCovers("return 0", VALIDATION_INTENT))
+        assertTrue(scaffoldCovers("return false", VALIDATION_INTENT))
         assertTrue(
             annotations.none {
                 it.role == Role.SCAFFOLD &&

@@ -1,14 +1,14 @@
-package dev.cint.treesitter.validation
+package dev.cint.rulepacks.tests.validation
 
 import dev.cint.api.Role
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.CoreContributors
-import dev.cint.rulepacks.BOOKKEEPING_INTENT
-import dev.cint.rulepacks.VALIDATION_INTENT
-import dev.cint.rulepacks.VALIDATION_RULE_ID
-import dev.cint.treesitter.support.parseValidationInput
-import dev.cint.treesitter.support.validationPipeline
-import dev.cint.treesitter.support.validationSources
+import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.tests.support.parseValidationInput
+import dev.cint.rulepacks.tests.support.validationPipeline
+import dev.cint.rulepacks.tests.support.validationSources
+import dev.cint.rulepacks.validation.VALIDATION_INTENT
+import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
 
 class ValidationRuleGuardTest {
     @Test
-    fun nestedFunctionAndLambdaReturnsDoNotCertifyGuards() {
+    fun nestedFunctionAndLambdaReturnsDoNotInheritEnclosingGuardIntents() {
         val cases =
             listOf(
                 """
@@ -41,11 +41,11 @@ class ValidationRuleGuardTest {
         for (text in cases) {
             val input = parseValidationInput("kotlin", "Sample.kt", text)
             val annotations = validationPipeline(input)
-            assertTrue(validationSources(input).isEmpty())
+            assertTrue(validationSources(input).isNotEmpty())
             assertTrue(
                 annotations.none {
-                    VALIDATION_INTENT in it.intents &&
-                        (it.rule == VALIDATION_RULE_ID || it.rule == CoreContributors.SCAFFOLD)
+                    it.rule == CoreContributors.RETURN_CATEGORY &&
+                        VALIDATION_INTENT in it.intents
                 },
             )
         }
@@ -134,7 +134,7 @@ class ValidationRuleGuardTest {
             }
 
         assertEquals(setOf(VALIDATION_INTENT), source.intents)
-        assertEquals(setOf(UNTAGGED_INTENT), returnFalse.intents)
+        assertEquals(setOf(VALIDATION_INTENT), returnFalse.intents)
         assertNotNull(scaffold, "missing bookkeeping guard scaffold")
         assertEquals(setOf(VALIDATION_INTENT, BOOKKEEPING_INTENT), scaffold.intents)
         assertTrue(UNTAGGED_INTENT !in scaffold.intents)

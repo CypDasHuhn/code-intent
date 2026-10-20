@@ -1,15 +1,15 @@
-package dev.cint.treesitter.validation
+package dev.cint.rulepacks.tests.validation
 
 import dev.cint.core.facts.flow.ControlFlowBuilder
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.store.AnnotationStore
 import dev.cint.core.runtime.engine.AnalysisContext
 import dev.cint.core.runtime.scheduler.RuleScheduler
-import dev.cint.rulepacks.BOOKKEEPING_INTENT
-import dev.cint.rulepacks.BookkeepingRulePack
-import dev.cint.rulepacks.VALIDATION_RULE_ID
-import dev.cint.rulepacks.ValidationRulePack
-import dev.cint.treesitter.support.parseValidationInput
+import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.tests.support.parseValidationInput
+import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
+import dev.cint.rulepacks.validation.ValidationRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

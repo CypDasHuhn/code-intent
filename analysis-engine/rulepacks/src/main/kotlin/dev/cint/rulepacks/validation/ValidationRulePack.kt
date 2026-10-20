@@ -1,4 +1,4 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.validation
 
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.ConfigurableRulePack
@@ -9,9 +9,10 @@ import dev.cint.api.RulePack
 import dev.cint.api.RulePackConfigException
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.configString
-import dev.cint.rulepacks.configStringList
-import dev.cint.rulepacks.configStrings
+import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.support.configString
+import dev.cint.rulepacks.support.configStringList
+import dev.cint.rulepacks.support.configStrings
 
 const val VALIDATION_INTENT: Intent = "VALIDATION"
 const val VALIDATION_PACK_ID: String = "validation"
@@ -58,13 +59,6 @@ data class ValidationConfig(
         if (errors.isNotEmpty()) throw RulePackConfigException(errors.joinToString("; "))
         return updated
     }
-
-    fun definitionParams(): Map<String, List<String>> =
-        mapOf(
-            "predicates" to predicates.toList(),
-            "predicatePrefixes" to predicatePrefixes,
-            "magicComment" to listOf(magicComment),
-        )
 
     companion object {
         val DEFAULT_PREDICATES: Set<String> =
@@ -125,8 +119,7 @@ private class ValidationRule(
             val pure = view.isSideEffectFree(condition)
             val constant = view.isConstant(condition)
             val validationGuard =
-                hasDirectExit(view, body) &&
-                    (explicit || bookkeeping || predicate || pure) &&
+                (explicit || bookkeeping || predicate || pure) &&
                     !(constant && !explicit && !bookkeeping)
             if (!validationGuard) continue
 
@@ -141,14 +134,6 @@ private class ValidationRule(
             result += emit(condition, source, confidence)
         }
         return result
-    }
-
-    private fun hasDirectExit(
-        view: View,
-        body: SyntaxNode,
-    ): Boolean {
-        val statements = view.statements(body) ?: listOf(body)
-        return statements.any(view::isExit)
     }
 
     private fun hasBookkeeping(
@@ -220,5 +205,6 @@ private class ValidationRule(
             confidence = confidence,
             startByte = node.startByte,
             endByte = node.endByte,
+            certifiesReturn = true,
         )
 }
