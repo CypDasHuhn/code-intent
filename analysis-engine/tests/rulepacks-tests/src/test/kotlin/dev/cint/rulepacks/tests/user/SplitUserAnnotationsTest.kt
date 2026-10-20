@@ -56,6 +56,112 @@ class SplitUserAnnotationsTest {
     }
 
     @Test
+    fun splitAnalysisClipsHashedRangesThatStartBeforeTheRegion() {
+        val root = Files.createTempDirectory("cint-split-user-annotations-hashed-clip")
+        try {
+            val prefix = "<template>π</template>\n\n"
+            val regionText = "fun make(): String = \"π\"\n"
+            val startLine = 2
+            val region = SplitRegion("kotlin", regionText, startByte = 0, startLine = startLine, startCol = 0)
+            val source = SourceFile("Sample.vue", prefix + regionText)
+            val handler =
+                object : SplitHandler {
+                    override fun regions(file: SourceFile): List<SplitRegion> = listOf(region)
+                }
+            val endCol = regionText.trimEnd('\n').toByteArray(Charsets.UTF_8).size
+            writeRecord(
+                root,
+                UserAnnotation(
+                    path = "Sample.vue",
+                    span = Span(0, 0, startLine, endCol),
+                    intents = setOf("TEAM_CUSTOM_INTENT"),
+                    contentHash = contentHash(prefix + regionText.trimEnd('\n')),
+                ),
+            )
+            val pipeline = HostPipeline(loader = RulePackLoader(onFailure = {}), root = root)
+
+            val annotations = analyze(source, handler, root, pipeline)
+
+            val user = userAnnotation(annotations)
+            assertEquals(startLine, user.span.startLine)
+            assertEquals(startLine, user.span.endLine)
+            assertEquals(0, user.span.startCol)
+            assertEquals(endCol, user.span.endCol)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun splitAnalysisClipsHashedRangesThatEndOnTheEndTagLine() {
+        val root = Files.createTempDirectory("cint-split-user-annotations-hashed-end-tag")
+        try {
+            val prefix = "<template></template>\n\n"
+            val regionText = "fun make(): String = \"x\"\n"
+            val endTag = "</script>"
+            val startLine = 2
+            val region = SplitRegion("kotlin", regionText, startByte = 0, startLine = startLine, startCol = 0)
+            val source = SourceFile("Sample.vue", prefix + regionText + endTag + "\n")
+            val handler =
+                object : SplitHandler {
+                    override fun regions(file: SourceFile): List<SplitRegion> = listOf(region)
+                }
+            val endCol = regionText.trimEnd('\n').toByteArray(Charsets.UTF_8).size
+            writeRecord(
+                root,
+                UserAnnotation(
+                    path = "Sample.vue",
+                    span = Span(startLine, 0, startLine + 1, endTag.length),
+                    intents = setOf("TEAM_CUSTOM_INTENT"),
+                    contentHash = contentHash(regionText + endTag),
+                ),
+            )
+            val pipeline = HostPipeline(loader = RulePackLoader(onFailure = {}), root = root)
+
+            val annotations = analyze(source, handler, root, pipeline)
+
+            val user = userAnnotation(annotations)
+            assertEquals(startLine, user.span.startLine)
+            assertEquals(startLine, user.span.endLine)
+            assertEquals(0, user.span.startCol)
+            assertEquals(endCol, user.span.endCol)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun splitAnalysisDropsAHashedRangeThatIsStaleOnTheHostSpan() {
+        val root = Files.createTempDirectory("cint-split-user-annotations-stale-clip")
+        try {
+            val regionText = "fun make(): String = \"x\"\n"
+            val startLine = 2
+            val region = SplitRegion("kotlin", regionText, startByte = 0, startLine = startLine, startCol = 0)
+            val source = SourceFile("Sample.vue", "<template></template>\n\n$regionText")
+            val handler =
+                object : SplitHandler {
+                    override fun regions(file: SourceFile): List<SplitRegion> = listOf(region)
+                }
+            writeRecord(
+                root,
+                UserAnnotation(
+                    path = "Sample.vue",
+                    span = Span(0, 0, startLine, regionText.trimEnd('\n').length),
+                    intents = setOf("TEAM_CUSTOM_INTENT"),
+                    contentHash = contentHash(regionText.trimEnd('\n')),
+                ),
+            )
+            val pipeline = HostPipeline(loader = RulePackLoader(onFailure = {}), root = root)
+
+            val annotations = analyze(source, handler, root, pipeline)
+
+            assertTrue(annotations.none { it.provenance.any { contribution -> contribution.rule == USER_CONTRIBUTOR_ID } })
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun splitAnalysisDropsRangesOnTheTrailingEndTagLine() {
         val root = Files.createTempDirectory("cint-split-user-annotations-end-tag")
         try {

@@ -15,6 +15,7 @@ import dev.cint.core.runtime.rulepack.RulePackLoadResult
 import dev.cint.core.runtime.rulepack.RulePackLoader
 import dev.cint.core.runtime.scheduler.ExecutionPlan
 import dev.cint.core.runtime.scheduler.RuleEngine
+import dev.cint.core.support.hashing.contentHash
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.core.user.UserAnnotation
@@ -59,10 +60,11 @@ class HostPipeline(
         syntax,
         oracle,
         config,
-        userContributionsFor(source, tree, syntax),
+        userContributionsFor(source, source, tree, syntax),
     )
 
     fun userContributionsFor(
+        host: SourceFile,
         source: SourceFile,
         tree: SyntaxTree,
         syntax: SyntaxModel,
@@ -78,11 +80,12 @@ class HostPipeline(
                 System.err.println("cint user annotations: $path: ${error.message}")
                 emptyList()
             }
-        val scoped = region?.let { scopeToRegion(records, it) } ?: records
+        val scoped = region?.let { scopeToRegion(host, records, it) } ?: records
         return UserAnnotationResolver.resolve(scoped, source, tree, syntax, annotationsRoot)
     }
 
     private fun scopeToRegion(
+        host: SourceFile,
         records: List<UserAnnotation>,
         region: SplitRegion,
     ): List<UserAnnotation> {
@@ -92,6 +95,10 @@ class HostPipeline(
         return records.mapNotNull { record ->
             if (record.span.endLine < region.startLine || record.span.startLine > lastHostLine) {
                 return@mapNotNull null
+            }
+            if (record.contentHash != null) {
+                val original = UserAnnotationResolver.selectionText(host, record.span) ?: return@mapNotNull null
+                if (contentHash(original) != record.contentHash) return@mapNotNull null
             }
             val localStartLine = (record.span.startLine - region.startLine).coerceIn(0, lastLine)
             val localEndLine = (record.span.endLine - region.startLine).coerceIn(0, lastLine)
@@ -126,9 +133,15 @@ class HostPipeline(
                     }
                 }
             if (localStartLine == localEndLine && localStartCol >= localEndCol) return@mapNotNull null
-            record.copy(
-                span = Span(localStartLine, localStartCol, localEndLine, localEndCol),
-            )
+            val span = Span(localStartLine, localStartCol, localEndLine, localEndCol)
+            val clippedHash =
+                if (record.contentHash != null) {
+                    UserAnnotationResolver.selectionText(region.text, span)?.let(::contentHash)
+                        ?: return@mapNotNull null
+                } else {
+                    record.contentHash
+                }
+            record.copy(span = span, contentHash = clippedHash)
         }
     }
 

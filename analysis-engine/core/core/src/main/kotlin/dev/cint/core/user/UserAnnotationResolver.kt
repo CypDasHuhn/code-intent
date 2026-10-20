@@ -27,6 +27,23 @@ object UserAnnotationResolver {
     fun isUserPure(contribution: Contribution): Boolean =
         contribution.rule == USER_CONTRIBUTOR_ID && USER_PURE_INTENT in contribution.intents
 
+    fun selectionText(
+        file: SourceFile,
+        span: Span,
+    ): String? = selectionText(file.text, span)
+
+    fun selectionText(
+        text: String,
+        span: Span,
+    ): String? {
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        val lineStarts = lineStarts(bytes)
+        val start = offset(bytes, lineStarts, span.startLine, span.startCol) ?: return null
+        val end = offset(bytes, lineStarts, span.endLine, span.endCol) ?: return null
+        if (start > end) return null
+        return slice(bytes, start, end)
+    }
+
     private fun resolve(
         annotation: UserAnnotation,
         file: SourceFile,

@@ -37,8 +37,8 @@ object SplitAnalyzer {
         root: Path,
         options: OracleOptions,
         planFor: (String) -> ExecutionPlan,
-        userContributionsFor: (SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution> =
-            { _, _, _, _ -> emptyList() },
+        userContributionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution> =
+            { _, _, _, _, _ -> emptyList() },
         configFor: (String) -> IntentConfig,
     ): List<Annotation> =
         analyzeRegions(
@@ -61,7 +61,7 @@ object SplitAnalyzer {
         handler: SplitHandler,
         root: Path,
         options: OracleOptions,
-        userContributionsFor: (SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution>,
+        userContributionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution>,
         configFor: (String) -> IntentConfig,
         leaf: RegionAnalysis,
         recurse: SplitRecursion,
@@ -84,7 +84,15 @@ object SplitAnalyzer {
                             NullOracle
                         }
                     try {
-                        leaf(file, frontend, tree, syntax, oracle, config, userContributionsFor(file, tree, syntax, region))
+                        leaf(
+                            file,
+                            frontend,
+                            tree,
+                            syntax,
+                            oracle,
+                            config,
+                            userContributionsFor(host, file, tree, syntax, region),
+                        )
                     } finally {
                         (oracle as? AutoCloseable)?.close()
                     }

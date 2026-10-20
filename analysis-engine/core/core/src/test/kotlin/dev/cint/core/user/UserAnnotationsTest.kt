@@ -1,6 +1,7 @@
 package dev.cint.core.user
 
 import dev.cint.api.FunctionFact
+import dev.cint.api.PropertyFact
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
 import dev.cint.core.facts.model.SourceFile
@@ -9,6 +10,7 @@ import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxProfile
 import dev.cint.core.syntax.SyntaxTree
+import java.security.MessageDigest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -100,6 +102,25 @@ class UserAnnotationsTest {
     }
 
     @Test
+    fun rangeEndingOnAnEmptyLineUsesTheWriterCanonicalHash() {
+        val sourceText = "fun make(): String = \"x\"\n"
+        val annotation =
+            UserAnnotation(
+                path = "Sample.kt",
+                span = Span(0, 0, 1, 0),
+                intents = setOf("TEAM_CUSTOM_INTENT"),
+                contentHash = writerContentHash(sourceText),
+            )
+        val tree = fakeTree(sourceText)
+
+        val contribution =
+            UserAnnotationResolver.resolve(listOf(annotation), tree.source, tree, fakeSyntax(tree), null).single()
+
+        assertEquals(0, contribution.startByte)
+        assertEquals(sourceText.toByteArray(Charsets.UTF_8).size, contribution.endByte)
+    }
+
+    @Test
     fun clientRangeAnchorWithAHashMissIsStale() {
         val annotation =
             UserAnnotation(
@@ -117,15 +138,16 @@ class UserAnnotationsTest {
         val annotation =
             UserAnnotation(
                 path = "Sample.kt",
-                span = Span(1, 4, 1, 8),
+                span = Span(1, 10, 1, 14),
                 intents = setOf("PURE"),
                 symbol = "make",
                 contentHash = contentHash("make"),
             )
-        val sourceText = "fun keep() = 1\nval ref = make\n"
+        val sourceText = "fun keep(): Int = 1\nval ref = make()\n"
         val tree = nonDeclarationTree(sourceText)
 
-        val result = UserAnnotationResolver.resolve(listOf(annotation), tree.source, tree, emptyModel, null)
+        val result =
+            UserAnnotationResolver.resolve(listOf(annotation), tree.source, tree, nonMakeSyntax(tree), null)
 
         assertTrue(result.isEmpty())
     }
@@ -188,6 +210,12 @@ class UserAnnotationsTest {
         return UserAnnotationResolver.resolve(annotations, tree.source, tree, fakeSyntax(tree), null)
     }
 
+    private fun writerContentHash(text: String): String {
+        val canonical = text.replace("\r\n", "\n").removeSuffix("\n")
+        val digest = MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
     private fun fakeSyntax(tree: SyntaxTree): SyntaxModel {
         val function = fakeFunction(tree)
         return object : SyntaxModel by emptyModel {
@@ -201,13 +229,29 @@ class UserAnnotationsTest {
     }
 
     private fun nonDeclarationTree(text: String): SyntaxTree {
-        val rootNode = Node("source_file", 0, text.toByteArray(Charsets.UTF_8).size, text)
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        val rootNode = Node("source_file", 0, bytes.size, text)
+        val newline = text.indexOf('\n')
+        val functionText = text.substring(0, newline)
+        val function = Node("function_declaration", 0, functionText.toByteArray(Charsets.UTF_8).size, functionText, rootNode)
+        val propertyStart = text.substring(0, newline + 1).toByteArray(Charsets.UTF_8).size
+        val property = Node("property_declaration", propertyStart, bytes.size - 1, text.substring(newline + 1).trimEnd('\n'), rootNode)
         val start = text.substring(0, text.indexOf("make")).toByteArray(Charsets.UTF_8).size
-        val reference = Node("identifier", start, start + "make".length, "make", rootNode)
-        rootNode.children = listOf(reference)
+        val reference = Node("identifier", start, start + "make".toByteArray(Charsets.UTF_8).size, "make", rootNode)
+        rootNode.children = listOf(function, property, reference)
         return object : SyntaxTree {
             override val source: SourceFile = SourceFile("Sample.kt", text)
             override val root: SyntaxNode = rootNode
+        }
+    }
+
+    private fun nonMakeSyntax(tree: SyntaxTree): SyntaxModel {
+        val function = tree.root.children.first { it.kind == "function_declaration" }
+        val property = tree.root.children.first { it.kind == "property_declaration" }
+        return object : SyntaxModel by emptyModel {
+            override fun functions(tree: SyntaxTree): Sequence<FunctionFact> = sequenceOf(FunctionFact(function, "keep", function, null))
+
+            override fun properties(tree: SyntaxTree): Sequence<PropertyFact> = sequenceOf(PropertyFact(property, "ref", property, null))
         }
     }
 
