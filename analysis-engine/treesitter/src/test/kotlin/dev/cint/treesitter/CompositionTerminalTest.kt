@@ -12,11 +12,8 @@ import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.api.View
 import dev.cint.core.CoreContributors
 import dev.cint.core.config.IntentConfig
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.core.scheduler.ReservedContributorId
 import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
@@ -69,33 +66,23 @@ private fun snapshot(annotation: Annotation): Snapshot =
         endByte = annotation.endByte,
     )
 
-private fun compositionSnapshots(
-    annotations: List<Annotation>,
-    includeLegacyReturns: Boolean,
-): List<Snapshot> =
+private fun compositionSnapshots(annotations: List<Annotation>): List<Snapshot> =
     annotations
-        .filter { annotation ->
-            annotation.role == Role.SCAFFOLD ||
-                annotation.role == Role.DERIVATIVE_USE ||
-                (includeLegacyReturns && annotation.rule.startsWith("return-"))
-        }
-        .map { annotation ->
-            val snapshot = snapshot(annotation)
-            if (includeLegacyReturns && annotation.rule.startsWith("return-")) {
-                snapshot.copy(role = Role.SCAFFOLD)
-            } else {
-                snapshot
-            }
-        }.sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.role.ordinal }, { it.intents.joinToString() }))
+        .filter { annotation -> annotation.role == Role.SCAFFOLD || annotation.role == Role.DERIVATIVE_USE }
+        .map(::snapshot)
+        .sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.role.ordinal }, { it.intents.joinToString() }))
 
 private fun replaySource(
-    legacy: List<Annotation>,
-    idPrefix: String = "parity",
+    text: String,
+    idPrefix: String = "source",
 ): List<Rule> {
+    val source = SourceFile("Sample.kt", text)
+    val tree = KotlinParser().parse(source)
+    val annotations =
+        RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks("kotlin"))
     val emissions = linkedMapOf<String, MutableList<Emit>>()
-    for (annotation in legacy) {
+    for (annotation in annotations) {
         if (annotation.role != Role.SOURCE_INTENT) continue
-        if (annotation.rule.startsWith("return-")) continue
         for (intent in annotation.intents) {
             if (intent == UNTAGGED_INTENT) continue
             emissions.getOrPut(intent) { mutableListOf() } +=
@@ -129,13 +116,7 @@ private fun fixture(
 }
 
 class CompositionTerminalTest {
-    private val config = loadIntentConfig(null, "kotlin")
-
-    private fun legacy(text: String, path: String = "Sample.kt"): List<Annotation> {
-        val source = SourceFile(path, text)
-        val tree = KotlinParser().parse(source)
-        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, KotlinSyntaxModel, NullOracle, config)
-    }
+    private val config = testConfig("kotlin")
 
     private fun newPipeline(
         text: String,
@@ -148,94 +129,22 @@ class CompositionTerminalTest {
     }
 
     @Test
-    fun compositionParityOverFixtures() {
-        val fixtures =
-            listOf(
-                "Scaffolds.kt",
-                "Catches.kt",
-                "PurityAssist.kt",
-                "Bookkeeping.kt",
-                "LoggerInteractions.kt",
-                "ErrorHandling.kt",
-            )
-
-        for (name in fixtures) {
-            val text = fixture(name)
-            val legacyAnnotations = legacy(text, name)
-            val rules = replaySource(legacyAnnotations)
-            val expected = compositionSnapshots(legacyAnnotations, includeLegacyReturns = true)
-            val actual =
-                compositionSnapshots(
-                    newPipeline(text, listOf(ReplayPack("parity", rules)), name),
-                    includeLegacyReturns = false,
-                )
-
-            assertEquals(expected, actual, "composition parity failed for $name")
-        }
-    }
-
-    @Test
-    fun compositionParityOverCrossLanguageFixtures() {
-        val fixtures =
-            listOf(
-                "javascript" to "Sample.js",
-                "typescript" to "Sample.ts",
-                "csharp" to "Sample.cs",
-            )
-
-        for ((language, name) in fixtures) {
-            val config = loadIntentConfig(null, language)
-            val text = fixture(name, language)
-            val source = SourceFile(name, text)
-            val tree =
-                when (language) {
-                    "javascript" -> JavascriptParser().parse(source)
-                    "typescript" -> TypescriptParser().parse(source)
-                    else -> CsharpParser().parse(source)
-                }
-            val syntax = ProfileSyntaxModel(SyntaxProfiles.load(language))
-            val legacyAnnotations =
-                AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, syntax, NullOracle, config)
-            val rules = replaySource(legacyAnnotations)
-            val expected = compositionSnapshots(legacyAnnotations, includeLegacyReturns = true)
-            val actual =
-                compositionSnapshots(
-                    RuleEngine().analyze(
-                        source,
-                        tree,
-                        syntax,
-                        NullOracle,
-                        config,
-                        listOf(ReplayPack("parity", rules)),
-                    ),
-                    includeLegacyReturns = false,
-                )
-
-            assertEquals(expected, actual, "composition parity failed for $name")
-        }
-    }
-
-    @Test
     fun compositionIgnoresProducerRuleAndPackIdentity() {
         val text = fixture("Scaffolds.kt")
-        val legacyAnnotations = legacy(text)
         val first =
             newPipeline(
                 text,
-                listOf(ReplayPack("first", replaySource(legacyAnnotations, "first"))),
+                listOf(ReplayPack("first", replaySource(text, "first"))),
                 "Scaffolds.kt",
             )
         val second =
             newPipeline(
                 text,
-                listOf(ReplayPack("second", replaySource(legacyAnnotations, "another"))),
+                listOf(ReplayPack("second", replaySource(text, "another"))),
                 "Scaffolds.kt",
             )
 
-        assertEquals(
-            compositionSnapshots(first, includeLegacyReturns = false),
-            compositionSnapshots(second, includeLegacyReturns = false),
-        )
+        assertEquals(compositionSnapshots(first), compositionSnapshots(second))
     }
 
     @Test
@@ -293,7 +202,6 @@ class CompositionTerminalTest {
         fun run(packs: List<RulePack>): List<Snapshot> =
             compositionSnapshots(
                 RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, config, packs),
-                includeLegacyReturns = false,
             )
 
         val loggingOnly = run(listOf(ReplayPack("a", listOf(logging))))
@@ -340,8 +248,7 @@ class CompositionTerminalTest {
             }
             fun work() {}
             """.trimIndent()
-        val legacyAnnotations = legacy(text)
-        val annotations = newPipeline(text, listOf(ReplayPack("parity", replaySource(legacyAnnotations))))
+        val annotations = newPipeline(text, listOf(ReplayPack("source", replaySource(text))))
         val composed = annotations.filter { it.role == Role.SCAFFOLD || it.role == Role.DERIVATIVE_USE }
 
         val coreOnly =
@@ -378,7 +285,7 @@ class CompositionTerminalTest {
     @Test
     fun packOrderAndSplitDoNotChangeComposition() {
         val text = fixture("Catches.kt")
-        val rules = replaySource(legacy(text))
+        val rules = replaySource(text)
         val onePack = newPipeline(text, listOf(ReplayPack("all", rules)), "Catches.kt")
         val split = rules.chunked(2)
         val reversed =
@@ -388,7 +295,7 @@ class CompositionTerminalTest {
                 "Catches.kt",
             )
 
-        assertEquals(compositionSnapshots(onePack, false), compositionSnapshots(reversed, false))
+        assertEquals(compositionSnapshots(onePack), compositionSnapshots(reversed))
     }
 
     @Test
@@ -577,7 +484,7 @@ class CompositionTerminalTest {
             }
             """.trimIndent()
         val annotations =
-            newPipeline(text, listOf(ReplayPack("parity", replaySource(legacy(text)))))
+            newPipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
         assertEquals(3, derivatives.size)
@@ -601,7 +508,7 @@ class CompositionTerminalTest {
             }
             """.trimIndent()
         val annotations =
-            newPipeline(text, listOf(ReplayPack("parity", replaySource(legacy(text)))))
+            newPipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("val message") })
@@ -623,7 +530,7 @@ class CompositionTerminalTest {
             }
             """.trimIndent()
         val annotations =
-            newPipeline(text, listOf(ReplayPack("parity", replaySource(legacy(text)))))
+            newPipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
         assertTrue(derivatives.any { it.evidence.contains("val message") })

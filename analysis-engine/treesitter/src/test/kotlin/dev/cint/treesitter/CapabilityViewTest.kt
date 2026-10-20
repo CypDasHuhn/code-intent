@@ -3,7 +3,6 @@ package dev.cint.treesitter
 import dev.cint.api.Contribution
 import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
-import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.engine.AnalysisContext
 import dev.cint.core.flow.ControlFlowBuilder
 import dev.cint.core.model.SourceFile
@@ -17,7 +16,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class CapabilityViewTest {
-    private val config = loadIntentConfig(null, "kotlin")
+    private val config = testConfig("kotlin")
     private val text =
         """
         import java.util.List

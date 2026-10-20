@@ -2,11 +2,10 @@ package dev.cint.treesitter
 
 import dev.cint.api.Annotation
 import dev.cint.api.Role
+import dev.cint.core.CoreContributors
 import dev.cint.core.model.SourceFile
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.oracle.NullOracle
-import dev.cint.core.rules.IntentBlocks
+import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxProfiles
 import kotlin.test.Test
@@ -14,9 +13,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class WebBlockTest {
-    private val javascriptConfig = loadIntentConfig(null, "javascript")
-    private val typescriptConfig = loadIntentConfig(null, "typescript")
-
     private fun analyze(
         language: String,
         text: String,
@@ -29,16 +25,15 @@ class WebBlockTest {
             } else {
                 TypescriptParser().parse(source)
             }
-        val config = if (language == "javascript") javascriptConfig else typescriptConfig
         val model = ProfileSyntaxModel(SyntaxProfiles.load(language))
-        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, model, NullOracle, config)
+        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig(language), testPacks(language))
     }
 
     @Test
     fun javascriptConsoleLogging() {
         val annotations = analyze("javascript", """function f() { console.log("x") }""")
         val source = annotations.first { it.role == Role.SOURCE_INTENT }
-        assertEquals("print", source.rule)
+        assertEquals("logging:logging", source.rule)
         assertEquals(setOf("LOGGING"), source.intents)
     }
 
@@ -47,7 +42,7 @@ class WebBlockTest {
         val annotations = analyze("javascript", """function f() { throw new Error("x") }""")
         assertTrue(
             annotations.any {
-                it.rule == "error-handling-throw" && it.intents == setOf("ERROR_HANDLING")
+                it.rule == "error-handling-javascript:error-handling" && it.intents == setOf("ERROR_HANDLING")
             },
         )
     }
@@ -63,7 +58,7 @@ class WebBlockTest {
             }
             """.trimIndent()
         val annotations = analyze("javascript", text)
-        val guard = annotations.first { it.rule == "validation-guard" }
+        val guard = annotations.first { it.rule == "validation:validation" }
         assertEquals(setOf("VALIDATION"), guard.intents)
         val scaffold = annotations.first { it.role == Role.SCAFFOLD }
         assertEquals(setOf("VALIDATION"), scaffold.intents)
@@ -82,10 +77,10 @@ class WebBlockTest {
         val annotations = analyze("javascript", text)
         assertTrue(
             annotations.any {
-                it.rule == "bookkeeping-declaration" && it.intents == setOf("BOOKKEEPING")
+                it.rule == "bookkeeping:bookkeeping" && it.intents == setOf("BOOKKEEPING")
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping-write" }
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "skipped++" }
         assertEquals("skipped++", write.evidence)
     }
 
@@ -118,24 +113,16 @@ class WebBlockTest {
             }
             """.trimIndent()
         val annotations = analyze("typescript", text)
-        assertTrue(
-            annotations.any {
-                it.rule == "return-validation" && it.intents == setOf("VALIDATION")
-            },
-        )
-        assertTrue(
-            annotations.any {
-                it.rule == "return-untagged" && it.intents == setOf("UNTAGGED")
-            },
-        )
-        assertTrue(annotations.none { it.rule == "intent-scaffold-function" })
+        val returns = annotations.filter { it.rule == CoreContributors.RETURN_CATEGORY }
+        assertTrue(returns.any { it.intents == setOf("VALIDATION") })
+        assertTrue(returns.any { it.intents == setOf("UNTAGGED") })
     }
 
     @Test
     fun typescriptConsoleLogging() {
         val annotations = analyze("typescript", """function f() { console.log("x") }""")
         val source = annotations.first { it.role == Role.SOURCE_INTENT }
-        assertEquals("print", source.rule)
+        assertEquals("logging:logging", source.rule)
         assertEquals(setOf("LOGGING"), source.intents)
     }
 
@@ -154,10 +141,10 @@ class WebBlockTest {
         val annotations = analyze("typescript", text)
         assertTrue(
             annotations.any {
-                it.rule == "bookkeeping-declaration" && it.intents == setOf("BOOKKEEPING")
+                it.rule == "bookkeeping:bookkeeping" && it.intents == setOf("BOOKKEEPING")
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping-write" }
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "this.skipped++" }
         assertEquals("this.skipped++", write.evidence)
     }
 }

@@ -7,18 +7,14 @@ import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
-import dev.cint.api.Span
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.api.View
 import dev.cint.core.CoreContributors
 import dev.cint.core.config.IntentConfig
-import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.engine.AnalysisContext
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.flow.ControlFlowBuilder
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.scheduler.RuleScheduler
 import dev.cint.core.store.AnnotationStore
@@ -62,308 +58,6 @@ class ValidationRulePackTest {
         val syntax: SyntaxModel,
         val config: IntentConfig,
     )
-
-    private data class Shape(
-        val role: Role,
-        val intents: Set<String>,
-        val evidence: String,
-        val span: Span,
-        val sourceTier: String,
-        val confidence: Double,
-        val startByte: Int,
-        val endByte: Int,
-    )
-
-    private val shapeOrder =
-        compareBy<Shape> { it.startByte }
-            .thenBy { it.endByte }
-            .thenBy { it.evidence }
-            .thenBy { it.sourceTier }
-
-    @Test
-    fun matchesLegacyValidationOverFixturesAndGuardCases() {
-        val cases =
-            listOf(
-                "kotlin" to fixture("kotlin/Bookkeeping.kt"),
-                "javascript" to fixture("javascript/Sample.js"),
-                "typescript" to fixture("typescript/Sample.ts"),
-                "csharp" to fixture("csharp/Sample.cs"),
-                "kotlin" to
-                    """
-                    class C {
-                        @Bookkeeping var skipped = 0
-                        fun f(value: Int) {
-                            if (value < 0) {
-                                skipped++
-                                return false
-                            }
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    class C {
-                        @Bookkeeping var skipped = 0
-                        fun f(value: Int): Boolean {
-                            if (consume(value)) {
-                                skipped++
-                                return false
-                            }
-                            return true
-                        }
-                        fun consume(value: Int): Boolean = value > 0
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(value: Int): Boolean {
-                        if (value < 0) {
-                            return false
-                        }
-                        return true
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(values: List<String>) {
-                        for (value in values) {
-                            if (value.isEmpty()) {
-                                continue
-                            }
-                            println(value)
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(values: List<String>) {
-                        for (value in values) {
-                            if (value.isBlank()) {
-                                break
-                            }
-                            println(value)
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(values: List<String>) {
-                        if (values.none { it.isBlank() }) {
-                            return
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(value: String?) {
-                        if (value.isValidThing()) {
-                            return
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(value: String?) {
-                        if (value.hasThing()) {
-                            return
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun enabled(): Boolean = true
-                    fun f() {
-                        // cint:validation
-                        if (enabled()) {
-                            return
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun enabled(): Boolean = true
-                    fun f() {
-                        if (enabled()) {
-                            return
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f() {
-                        if (1 == 1) {
-                            return
-                        }
-                    }
-                    """.trimIndent(),
-                "javascript" to
-                    """
-                    function f(options) {
-                        if (!options.id) {
-                            return 0;
-                        }
-                    }
-                    """.trimIndent(),
-                "javascript" to
-                    """
-                    function f(values) {
-                        if (values.isEmpty()) {
-                            return;
-                        }
-                    }
-                    """.trimIndent(),
-                "typescript" to
-                    """
-                    function f(value: string | null) {
-                        if (value.isValidValue()) {
-                            return;
-                        }
-                    }
-                    """.trimIndent(),
-                "csharp" to
-                    """
-                    class C {
-                        int F(string value) {
-                            if (string.IsNullOrEmpty(value)) {
-                                return 0;
-                            }
-                            return 1;
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun chooseNull(ok: Boolean): String? {
-                        if (!ok) {
-                            work()
-                        } else {
-                            return null
-                        }
-                    }
-                    fun work() {}
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun nested(values: List<String>): Int {
-                        if (values.isNotEmpty()) {
-                            while (true) {
-                                return values.first().length
-                            }
-                        }
-                        return 0
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(values: List<String>) {
-                        if (values.isNotEmpty()) {
-                            fun positive() {
-                                return
-                            }
-                            positive()
-                        }
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(values: List<String>) {
-                        if (values.isNotEmpty()) {
-                            values.forEach { return@forEach }
-                        }
-                    }
-                    """.trimIndent(),
-            )
-
-        for ((language, text) in cases) {
-            val input = parse(language, "Sample", text)
-            val legacy = legacyValidation(input).map(::shape).sortedWith(shapeOrder)
-            val actual = validation(input).map(::shape).sortedWith(shapeOrder)
-            assertEquals(legacy, actual, "$language validation parity")
-        }
-    }
-
-    @Test
-    fun returnsMatchLegacyCategorization() {
-        val cases =
-            listOf(
-                "kotlin" to fixture("kotlin/Bookkeeping.kt"),
-                "javascript" to fixture("javascript/Sample.js"),
-                "kotlin" to
-                    """
-                    fun choose(value: Int): Int {
-                        if (value < 0) {
-                            return 0
-                        }
-                        return 1
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun f(value: String?) {
-                        if (value != null) {
-                            return
-                        }
-                        work()
-                    }
-                    fun work() {}
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun choose(ok: Boolean, value: String?): String? {
-                        if (ok) {
-                            if (value != null) {
-                                return value
-                            } else {
-                                return null
-                            }
-                        }
-                        return null
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    fun nested(values: List<String>): Int {
-                        if (values.isNotEmpty()) {
-                            while (true) {
-                                if (values.isNotEmpty()) {
-                                    return values.first().length
-                                }
-                            }
-                        }
-                        return 0
-                    }
-                    """.trimIndent(),
-                "kotlin" to
-                    """
-                    class C {
-                        @Bookkeeping var skipped = 0
-                        fun f(value: Int): Boolean {
-                            if (consume(value)) {
-                                skipped++
-                                return false
-                            }
-                            return true
-                        }
-                        fun consume(value: Int): Boolean = value > 0
-                    }
-                    """.trimIndent(),
-            )
-
-        for ((language, text) in cases) {
-            val input = parse(language, "Sample", text)
-            val legacy =
-                legacyAnnotations(input)
-                    .filter { it.role == Role.SOURCE_INTENT && it.rule.startsWith("return-") }
-                    .map { shape(it).copy(role = Role.SCAFFOLD) }
-                    .sortedWith(shapeOrder)
-            val actual =
-                newPipeline(input)
-                    .filter { it.rule == CoreContributors.RETURN_CATEGORY }
-                    .map(::shape)
-                    .sortedWith(shapeOrder)
-            assertEquals(legacy, actual, "$language return categorization parity")
-        }
-    }
 
     @Test
     fun validationReturnAndBareReturnAreNotUntagged() {
@@ -747,13 +441,6 @@ class ValidationRulePackTest {
     private fun validation(input: Input): List<Annotation> =
         newPipeline(input).filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
 
-    private fun legacyValidation(input: Input): List<Annotation> =
-        legacyAnnotations(input).filter { it.role == Role.SOURCE_INTENT && it.rule == "validation-guard" }
-
-    private fun legacyAnnotations(input: Input): List<Annotation> =
-        AnalysisEngine(IntentBlocks.build(input.config))
-            .analyze(input.source, input.tree, input.syntax, NullOracle, input.config)
-
     private fun newPipeline(input: Input): List<Annotation> =
         RuleEngine().analyze(
             input.source,
@@ -770,7 +457,7 @@ class ValidationRulePackTest {
         text: String,
     ): Input {
         val source = SourceFile(name, text)
-        val config = loadIntentConfig(null, language)
+        val config = testConfig(language)
         return when (language) {
             "kotlin" -> Input(source, KotlinParser().parse(source), KotlinSyntaxModel, config)
             "javascript" ->
@@ -803,16 +490,4 @@ class ValidationRulePackTest {
         check(Files.exists(path)) { "missing fixture $path" }
         return Files.readString(path)
     }
-
-    private fun shape(annotation: Annotation): Shape =
-        Shape(
-            role = annotation.role,
-            intents = annotation.intents,
-            evidence = annotation.evidence,
-            span = annotation.span,
-            sourceTier = annotation.source,
-            confidence = annotation.confidence,
-            startByte = annotation.startByte,
-            endByte = annotation.endByte,
-        )
 }

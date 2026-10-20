@@ -1,8 +1,9 @@
 # CodeIntent Engine
 
 Kotlin engine for intent classification. Tree-sitter provides structure, a
-function-local CFG provides control-flow facts, LSP provides types, and rule
-blocks classify the result into roles and intent sets.
+function-local CFG provides control-flow facts, LSP provides types, rulepacks
+classify source intents, and core composition builds scaffolds and derivative
+use.
 The engine emits only semantic facts; clients resolve intent sets into meanings
 and visuals. Built-in frontends cover Kotlin, JavaScript, TypeScript, Vue, and
 C#.
@@ -11,7 +12,7 @@ C#.
 
 | module | responsibility |
 |--------|----------------|
-| `core` | model, config, artifact writer, oracle interface, CFG, block engine, language-neutral rules |
+| `core` | model, config, artifact writer, oracle interface, CFG, scheduler, composition |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
 | `frontend` | language registry wiring parser, syntax model, and oracle |
@@ -31,14 +32,12 @@ frontend binding, not new analysis code:
    canonical `SyntaxGroups` names to that grammar's node kinds.
 3. Register a `LanguageFrontend` under `frontend`. It supplies `parse`, `syntax`,
    and `oracle`.
-4. Add the language's semantic names (calls, types, imports, predicates) to
-   `intents.yaml` under `params`, or override individual keys under
-   `overrides.<language>`.
+4. Add the language's detection names (calls, types, imports, predicates) to the
+   owning rulepack's typed config defaults.
 
-`params` is the shared default; `overrides.<language>` replaces individual keys for
-that language. Kotlin, JavaScript, TypeScript, Vue, and C# are built in. Profiles
-live under `treesitter/src/main/resources/syntax/`, and frontends are registered
-in `frontend/`.
+Kotlin, JavaScript, TypeScript, Vue, and C# are built in. Profiles live under
+`treesitter/src/main/resources/syntax/`, and frontends are registered in
+`frontend/`.
 
 ### Split handlers
 
@@ -63,44 +62,42 @@ Every annotation has:
 `UNTAGGED` is a reserved intent label for unclassified effects. Clients decide
 how `UNTAGGED` should influence a scaffold or derivative.
 
-Blocks:
+Detection rulepacks and core composition:
 
-- `print` — configured call names and receiver qualifiers (`println`/`print`,
-  `System.out`/`System.err`, `console.log`/`console.error`, ...).
-- `logger-interaction` — a call on a receiver whose LSP type is a configured
-  logger type. Factory properties and qualifiers answer without LSP; ambiguous
-  receiver names and import-gated matches consult the type oracle. A resolved
-  non-logger type rejects the heuristic; an unresolved type falls back to it.
-  Live mode caps hover time.
-- `logging-state` — conditions using configured logging-state names.
-- `bookkeeping` — a property annotated with `@Bookkeeping` or preceded by
-  `// cint:bookkeeping`. The declaration and all writes to it are tagged
-  Bookkeeping; reads are not.
-- `validation` — an `if` branch with a direct early exit (`return`, `continue`,
-  or `break`). The guard condition is tagged Validation when the branch has a
-  Bookkeeping write, the condition is a validity predicate, the condition is
-  side-effect-free, or a `// cint:validation` comment precedes it. Bare exits
-  are neutral, so the enclosing scaffold composes `VALIDATION` with
+- `logging:logging` — configured print calls and qualifiers, logger receiver
+  interaction, and logging-state conditions. A call on a receiver whose LSP type
+  is a configured logger type is tagged; factory properties and qualifiers answer
+  without LSP, while ambiguous receiver names and import-gated matches consult
+  the type oracle. A resolved non-logger type rejects the heuristic; an
+  unresolved type falls back to it. Live mode caps hover time.
+- `bookkeeping:bookkeeping` — a property annotated with `@Bookkeeping` or
+  preceded by `// cint:bookkeeping`. The declaration and all writes to it are
+  tagged Bookkeeping; reads are not.
+- `validation:validation` — an `if` branch with a direct early exit (`return`,
+  `continue`, or `break`). The guard condition is tagged Validation when the
+  branch has a Bookkeeping write, the condition is a validity predicate, the
+  condition is side-effect-free, or a `// cint:validation` comment precedes it.
+  Bare exits are neutral, so the enclosing scaffold composes `VALIDATION` with
   `BOOKKEEPING`/other intents.
-- `error-handling` — `throw` and configured checks (`require`, `assert`, ...).
-  Call spans include trailing lambda arguments.
-- `return-category` — classifies each `return` from the function CFG. A return
-  on a validation guard's true edge is `VALIDATION`; a normal return or a
+- `error-handling-<language>:error-handling` — `throw` and configured checks
+  (`require`, `assert`, ...). Call spans include trailing lambda arguments.
+- `core:return-category` — classifies each `return` from the function CFG. A
+  return on a validation guard's true edge is `VALIDATION`; a normal return or a
   non-rejection return on a guard's other edge is `UNTAGGED`. Normal returns
   therefore block whole-function scaffolds instead of staying neutral.
-- `derivative-use` — a local whose initializer is explicitly pure (literal,
+- `core:derivative-use` — a local whose initializer is explicitly pure (literal,
   local read, or an annotated pure call) and whose reads flow into classified
   statements, or an annotated pure function whose references all occur inside
   other derivative-use declarations. Unannotated calls and operators are assumed
   to have side effects and are not derivative.
-- `intent-scaffold` — bottom-up control-flow classification. An `if`/`catch`
-  gets the union of its guard and body intents. Side-effect-free guards
-  (constants, comparisons, reads) are neutral; effectful guards add `UNTAGGED`.
-  Mixed `if`/`else` emits separate then/else spans, so the `if` part can be
-  `LOGGING` while an untagged else stays visible. A catch span includes the
-  preceding try-body `}` so the try/catch boundary is concealed as one unit. A
-  `try` is classified whole only when the body, catches, and finally are fully
-  covered; otherwise all-logging catches can still classify the `try {` header.
+- `core:scaffold` — bottom-up control-flow classification. An `if`/`catch` gets
+  the union of its guard and body intents. Side-effect-free guards (constants,
+  comparisons, reads) are neutral; effectful guards add `UNTAGGED`. Mixed
+  `if`/`else` emits separate then/else spans, so the `if` part can be `LOGGING`
+  while an untagged else stays visible. A catch span includes the preceding
+  try-body `}` so the try/catch boundary is concealed as one unit. A `try` is
+  classified whole only when the body, catches, and finally are fully covered;
+  otherwise all-logging catches can still classify the `try {` header.
 
 ## Client-side meanings
 
@@ -112,56 +109,34 @@ win for mixed scaffolds.
 
 ## Config
 
-`core/src/main/resources/intents.yaml` is bundled; `--config` overrides it.
+Detection config belongs to rulepacks. A project config file supplies pack
+sections keyed by pack id plus a `core:` section for framework policy:
 
 ```yaml
-intents:
-  LOGGING:
-    blocks: [print, logger-interaction, logging-state]
-    params:
-      printCalls: [println, print]
-      printQualifiers: [System.out, System.err]
-      methods: [info, debug, warn, error, trace, log, verbose, fatal]
-      types: [org.slf4j.Logger, org.apache.logging.log4j.Logger, java.util.logging.Logger]
-      factories: [LoggerFactory.getLogger, KotlinLogging.logger, LogManager.getLogger, Logger.getLogger]
-      receiverNames: [log, logger, LOG, LOGGER, Logger]
-      qualifiers: [System.out, System.err]
-      guardNames: [loggingEnabled, logEnabled, debugEnabled, logging]
-      imports: [org.slf4j, mu.KotlinLogging, java.util.logging]
-    overrides:
-      javascript:
-        printCalls: [log, error, warn, info, debug, trace]
-        printQualifiers: [console]
-        imports: []
+core:
+  purity:
+    annotations: [Pure, "Contract(pure = true)"]
+  lsp:
+    enabled: true
+    timeoutMs: 750
 
-  BOOKKEEPING:
-    blocks: [bookkeeping]
+logging:
+  kotlin:
+    printCalls: [println, print]
+    printQualifiers: [System.out, System.err]
 
-  ERROR_HANDLING:
-    blocks: [error-handling]
-    params:
-      calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
-      throws: true
-    overrides:
-      javascript:
-        calls: [assert, invariant]
-        throws: true
+error-handling-kotlin:
+  calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
+  throws: true
 
-  VALIDATION:
-    blocks: [validation]
-    params:
-      predicates: [none, any, all, isEmpty, isBlank, contains, matches]
-      predicatePrefixes: [is, has]
-
-purity:
-  annotations:
-    - Pure
-    - Contract(pure = true)
-    - org.checkerframework.dataflow.qual.Pure
+validation:
+  predicates: [none, any, all, isEmpty, isBlank, contains, matches]
+  predicatePrefixes: [is, has]
 ```
 
-Purity is explicit: an annotation means pure; its absence means impure. There is
-no body inference.
+Missing values use the owning pack's defaults. Unknown packs and keys are
+reported. Purity is explicit: an annotation means pure; its absence means
+impure. There is no body inference.
 
 ## LSP sharing
 
@@ -228,10 +203,10 @@ facts. `--no-lsp` disables the LSP oracle on the server.
       "hash": "sha256-hex",
       "spans": [
         {"role":"source-intent","intents":["LOGGING"],
-         "rule":"typed-receiver","evidence":"log.info(...)","source":"lsp",
+         "rule":"logging:logging","evidence":"log.info(...)","source":"lsp",
          "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22},
         {"role":"scaffold","intents":["LOGGING","ERROR_HANDLING"],
-         "rule":"intent-scaffold","evidence":"if (...) { ... }",
+         "rule":"core:scaffold","evidence":"if (...) { ... }",
          "source":"treesitter","confidence":0.9,
          "startLine":12,"startCol":4,"endLine":18,"endCol":5}
       ]

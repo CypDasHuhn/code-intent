@@ -3,8 +3,6 @@ package dev.cint.frontend
 import dev.cint.api.Annotation
 import dev.cint.api.Span
 import dev.cint.core.config.IntentConfig
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
@@ -12,7 +10,6 @@ import dev.cint.core.frontend.SplitRegion
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.core.scheduler.ExecutionPlan
 import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.syntax.SyntaxModel
@@ -32,35 +29,6 @@ private typealias RegionAnalysis =
 private typealias SplitRecursion = (SourceFile, SplitHandler) -> List<Annotation>
 
 object SplitAnalyzer {
-    fun analyze(
-        host: SourceFile,
-        handler: SplitHandler,
-        root: Path,
-        configPath: String?,
-        options: OracleOptions,
-    ): List<Annotation> =
-        analyzeRegions(
-            host,
-            handler,
-            root,
-            options,
-            { loadIntentConfig(configPath, it) },
-            leaf = { file, frontend, tree, syntax, oracle, config ->
-                AnalysisEngine(IntentBlocks.build(config)).analyze(file, tree, syntax, oracle, config)
-            },
-            recurse = { file, frontend -> analyze(file, frontend, root, configPath, options) },
-        )
-
-    fun analyze(
-        host: SourceFile,
-        handler: SplitHandler,
-        root: Path,
-        configPath: String?,
-        options: OracleOptions,
-        planFor: (String) -> ExecutionPlan,
-    ): List<Annotation> =
-        analyze(host, handler, root, options, planFor) { loadIntentConfig(configPath, it) }
-
     fun analyze(
         host: SourceFile,
         handler: SplitHandler,

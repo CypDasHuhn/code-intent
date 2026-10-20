@@ -123,7 +123,7 @@ class ProjectConfigTest {
     fun frameworkAppliesCorePolicyToIntentConfig() {
         val policy = CorePolicy(purityAnnotations = listOf("CustomPure"))
 
-        val config = loadIntentConfig(null, "kotlin").withCorePolicy(policy)
+        val config = IntentConfig("kotlin", emptyMap(), DEFAULT_PURITY_ANNOTATIONS).withCorePolicy(policy)
 
         assertEquals(listOf("CustomPure"), config.pureAnnotations)
     }

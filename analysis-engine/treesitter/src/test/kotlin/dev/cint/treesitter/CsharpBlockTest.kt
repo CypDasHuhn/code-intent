@@ -3,10 +3,8 @@ package dev.cint.treesitter
 import dev.cint.api.Annotation
 import dev.cint.api.Role
 import dev.cint.core.model.SourceFile
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.oracle.NullOracle
-import dev.cint.core.rules.IntentBlocks
+import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
 import dev.cint.core.syntax.SyntaxProfiles
 import kotlin.test.Test
@@ -14,27 +12,25 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CsharpBlockTest {
-    private val config = loadIntentConfig(null, "csharp")
-
     private fun analyze(text: String): List<Annotation> {
         val source = SourceFile("Sample.cs", text)
         val tree = CsharpParser().parse(source)
         val model = ProfileSyntaxModel(SyntaxProfiles.load("csharp"))
-        return AnalysisEngine(IntentBlocks.build(config)).analyze(source, tree, model, NullOracle, config)
+        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig("csharp"), testPacks("csharp"))
     }
 
     @Test
     fun consoleWriteLineIsLogging() {
         val annotations = analyze("""class C { void F() { Console.WriteLine("x"); } }""")
         val source = annotations.first { it.role == Role.SOURCE_INTENT }
-        assertEquals("print", source.rule)
+        assertEquals("logging:logging", source.rule)
         assertEquals(setOf("LOGGING"), source.intents)
     }
 
     @Test
     fun loggerCallsUseReceiverName() {
         val annotations = analyze("""class C { void F() { _logger.LogInformation("x"); } }""")
-        assertTrue(annotations.any { it.rule == "receiver-name" && it.intents == setOf("LOGGING") })
+        assertTrue(annotations.any { it.rule == "logging:logging" && it.intents == setOf("LOGGING") })
     }
 
     @Test
@@ -42,7 +38,7 @@ class CsharpBlockTest {
         val annotations = analyze("""class C { void F() { throw new Exception("x"); } }""")
         assertTrue(
             annotations.any {
-                it.rule == "error-handling-throw" && it.intents == setOf("ERROR_HANDLING")
+                it.rule == "error-handling-csharp:error-handling" && it.intents == setOf("ERROR_HANDLING")
             },
         )
     }
@@ -52,7 +48,7 @@ class CsharpBlockTest {
         val annotations = analyze("""class C { void F(string id) { Debug.Assert(!string.IsNullOrEmpty(id)); } }""")
         assertTrue(
             annotations.any {
-                it.rule == "error-handling-call" && it.intents == setOf("ERROR_HANDLING")
+                it.rule == "error-handling-csharp:error-handling" && it.intents == setOf("ERROR_HANDLING")
             },
         )
     }
@@ -60,7 +56,7 @@ class CsharpBlockTest {
     @Test
     fun assertOnUnqualifiedReceiverIsNotErrorHandling() {
         val annotations = analyze("""class C { void F(Checker c) { c.Assert(true); } }""")
-        assertTrue(annotations.none { it.rule == "error-handling-call" })
+        assertTrue(annotations.none { it.rule == "error-handling-csharp:error-handling" })
     }
 
     @Test
@@ -77,7 +73,7 @@ class CsharpBlockTest {
             }
             """.trimIndent()
         val annotations = analyze(text)
-        val guard = annotations.first { it.rule == "validation-guard" }
+        val guard = annotations.first { it.rule == "validation:validation" }
         assertEquals(setOf("VALIDATION"), guard.intents)
         assertTrue(annotations.any { it.role == Role.SCAFFOLD && it.intents == setOf("VALIDATION") })
     }
@@ -98,10 +94,10 @@ class CsharpBlockTest {
         val annotations = analyze(text)
         assertTrue(
             annotations.any {
-                it.rule == "bookkeeping-declaration" && it.intents == setOf("BOOKKEEPING")
+                it.rule == "bookkeeping:bookkeeping" && it.intents == setOf("BOOKKEEPING")
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping-write" }
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "skipped++" }
         assertEquals("skipped++", write.evidence)
     }
 
@@ -121,10 +117,10 @@ class CsharpBlockTest {
         val annotations = analyze(text)
         assertTrue(
             annotations.any {
-                it.rule == "bookkeeping-declaration" && it.source == "annotation"
+                it.rule == "bookkeeping:bookkeeping" && it.source == "annotation"
             },
         )
-        val write = annotations.first { it.rule == "bookkeeping-write" }
+        val write = annotations.first { it.rule == "bookkeeping:bookkeeping" && it.evidence == "this.skipped++" }
         assertEquals("this.skipped++", write.evidence)
     }
 }

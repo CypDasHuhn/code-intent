@@ -1,6 +1,7 @@
 package dev.cint.frontend
 
 import dev.cint.api.Role
+import dev.cint.core.config.IntentConfig
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.host.HostPipeline
 import dev.cint.core.model.SourceFile
@@ -55,8 +56,12 @@ class VueSplitTest {
             </script>
             """.trimIndent()
         val source = SourceFile("Sample.vue", text)
-        val annotations = SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), null, options)
-        val print = annotations.first { it.rule == "print" }
+        val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+        val annotations =
+            SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
+                IntentConfig(language, emptyMap(), emptyList())
+            }
+        val print = annotations.first { it.rule == "logging:logging" }
         val expectedLine = text.lines().indexOfFirst { it.contains("console.log") }
         val expectedCol = text.lines()[expectedLine].indexOf("console.log")
         val expectedStartByte = text.substring(0, text.indexOf("console.log")).toByteArray(Charsets.UTF_8).size
@@ -67,7 +72,7 @@ class VueSplitTest {
         assertTrue(text.substring(print.startByte, print.endByte).startsWith("console.log"))
 
         val contributor = print.provenance.single()
-        assertEquals("print", contributor.rule)
+        assertEquals("logging:logging", contributor.rule)
         assertEquals(Role.SOURCE_INTENT, contributor.role)
         assertEquals(print.span, contributor.span)
         assertEquals(print.startByte, contributor.startByte)
@@ -92,7 +97,10 @@ class VueSplitTest {
         val source = SourceFile("Sample.vue", text)
         val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
 
-        val annotations = SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), null, options, pipeline::plan)
+        val annotations =
+            SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
+                IntentConfig(language, emptyMap(), emptyList())
+            }
         val logging = annotations.first { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
         val errorHandling = annotations.first { it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents }
 
@@ -124,11 +132,18 @@ class VueSplitTest {
             </script>
             """.trimIndent()
         val source = SourceFile("Sample.vue", text)
-        val annotations = SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), null, options)
-        val merged = annotations.first { it.rule == "logging-state" && it.intents == setOf("LOGGING", "VALIDATION") }
+        val pipeline = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+        val annotations =
+            SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
+                IntentConfig(language, emptyMap(), emptyList())
+            }
+        val merged =
+            annotations.first {
+                it.role == Role.SOURCE_INTENT && it.intents == setOf("LOGGING", "VALIDATION")
+            }
 
         assertEquals(2, merged.provenance.size)
-        assertEquals(setOf("logging-state", "validation-guard"), merged.provenance.map { it.rule }.toSet())
+        assertEquals(setOf("logging:logging", "validation:validation"), merged.provenance.map { it.rule }.toSet())
         assertTrue(merged.provenance.all { it.span == merged.span })
         assertTrue(merged.provenance.all { it.startByte == merged.startByte && it.endByte == merged.endByte })
 

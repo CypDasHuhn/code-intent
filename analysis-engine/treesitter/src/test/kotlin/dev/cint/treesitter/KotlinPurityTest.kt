@@ -1,13 +1,12 @@
 package dev.cint.treesitter
 
 import dev.cint.core.model.SourceFile
-import dev.cint.core.config.loadIntentConfig
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class KotlinPurityTest {
-    private val config = loadIntentConfig(null, "kotlin")
+    private val config = testConfig("kotlin")
 
     @Test
     fun detectsConfiguredPureAnnotations() {

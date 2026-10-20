@@ -4,11 +4,8 @@ import dev.cint.api.Annotation
 import dev.cint.api.Role
 import dev.cint.api.RulePack
 import dev.cint.api.Span
-import dev.cint.core.config.loadIntentConfig
-import dev.cint.core.engine.AnalysisEngine
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.NullOracle
-import dev.cint.core.rules.IntentBlocks
 import dev.cint.core.scheduler.DuplicateIntentOwner
 import dev.cint.core.scheduler.RuleEngine
 import dev.cint.core.syntax.ProfileSyntaxModel
@@ -18,7 +15,6 @@ import dev.cint.core.syntax.SyntaxTree
 import dev.cint.rulepacks.errorhandling.ERROR_HANDLING_INTENT
 import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
-import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -76,7 +72,6 @@ class ErrorHandlingRulePackTest {
 
             assertEquals(1, plan.strata.size)
             assertEquals(listOf(pack.rules().single().id), plan.strata.single().map { it.id })
-            assertParity(language, fixtureFor(language))
         }
     }
 
@@ -88,45 +83,7 @@ class ErrorHandlingRulePackTest {
     }
 
     @Test
-    fun kotlinFixtureMatchesLegacy() {
-        assertParity("kotlin", fixture("kotlin/ErrorHandling.kt"))
-    }
-
-    @Test
-    fun javascriptFixtureMatchesLegacy() {
-        assertParity("javascript", fixture("javascript/Sample.js"))
-    }
-
-    @Test
-    fun typescriptFixtureMatchesLegacy() {
-        assertParity("typescript", fixture("typescript/Sample.ts"))
-    }
-
-    @Test
-    fun csharpFixtureMatchesLegacy() {
-        assertParity("csharp", fixture("csharp/Sample.cs"))
-    }
-
-    @Test
-    fun kotlinCatchesFixtureMatchesLegacy() {
-        assertParity("kotlin", fixture("kotlin/Catches.kt"))
-    }
-
-    @Test
-    fun vueScriptThrowMatchesLegacy() {
-        val script =
-            Regex("""<script[^>]*>(.*?)</script>""", RegexOption.DOT_MATCHES_ALL)
-                .find(fixture("vue/Sample.vue"))
-                ?.groupValues
-                ?.get(1)
-                ?.trim()
-                ?: error("vue fixture has no script block")
-
-        assertParity("typescript", script)
-    }
-
-    @Test
-    fun csharpQualifiedCallsMatchLegacyAndArbitraryReceiverStaysUntagged() {
+    fun csharpQualifiedCallsAreDetectedAndArbitraryReceiverStaysUntagged() {
         val text =
             """
             class C {
@@ -141,10 +98,7 @@ class ErrorHandlingRulePackTest {
             }
             """.trimIndent()
 
-        val legacy = legacyHits("csharp", text)
         val current = newHits("csharp", text)
-
-        assertEquals(legacy, current)
         assertTrue(current.any { it.evidence == "Debug.Assert(true)" })
         assertTrue(current.any { it.evidence == "Trace.Assert(true)" })
         assertTrue(current.any { it.evidence == "Contract.Assert(true)" })
@@ -163,17 +117,14 @@ class ErrorHandlingRulePackTest {
             }
             """.trimIndent()
 
-        val legacy = legacyHits("kotlin", text)
         val current = newHits("kotlin", text)
-
-        assertEquals(legacy, current)
         assertTrue(current.none { it.evidence.startsWith("c.require") })
         assertTrue(current.any { it.evidence.startsWith("require(true)") })
         assertTrue(current.any { it.evidence == "throw Exception(\"x\")" })
     }
 
     @Test
-    fun javascriptUnqualifiedChecksMatchLegacyAndReceiverStaysUntagged() {
+    fun javascriptUnqualifiedChecksAreDetectedAndReceiverStaysUntagged() {
         val text =
             """
             function f(obj, id) {
@@ -183,10 +134,7 @@ class ErrorHandlingRulePackTest {
             }
             """.trimIndent()
 
-        val legacy = legacyHits("javascript", text)
         val current = newHits("javascript", text)
-
-        assertEquals(legacy, current)
         assertTrue(current.any { it.evidence == "assert(id, \"id required\")" })
         assertTrue(current.any { it.evidence == "invariant(id)" })
         assertTrue(current.none { it.evidence == "obj.assert(id)" })
@@ -206,19 +154,15 @@ class ErrorHandlingRulePackTest {
         val current = newHits("kotlin", text)
         val check = current.single { it.evidence.contains("\"message\"") }
 
-        assertEquals(legacyHits("kotlin", text), current)
         assertEquals(2, check.span.endLine - check.span.startLine)
         assertTrue(check.evidence.startsWith("require(true)"))
     }
 
     @Test
-    fun kotlinAssertMatchesLegacy() {
+    fun kotlinAssertIsDetected() {
         val text = """fun f(x: Int) { assert(x > 0) }"""
 
-        val legacy = legacyHits("kotlin", text)
         val current = newHits("kotlin", text)
-
-        assertEquals(legacy, current)
         assertTrue(current.any { it.evidence == "assert(x > 0)" })
     }
 
@@ -227,28 +171,8 @@ class ErrorHandlingRulePackTest {
         val text = """fun f() { throw Exception("x") }"""
         val pack = ErrorHandlingRulePack("kotlin", ErrorHandlingConfig(detectThrows = false))
 
-        assertEquals(1, legacyHits("kotlin", text).size)
+        assertTrue(newHits("kotlin", text).isNotEmpty())
         assertTrue(newHits("kotlin", text, pack).isEmpty())
-    }
-
-    private fun assertParity(
-        language: String,
-        text: String,
-    ) {
-        assertEquals(legacyHits(language, text), newHits(language, text))
-    }
-
-    private fun legacyHits(
-        language: String,
-        text: String,
-    ): List<ErrorHandlingHit> {
-        val source = SourceFile(fileName(language), text)
-        val tree = parse(language, source)
-        val config = loadIntentConfig(null, language)
-        val annotations =
-            AnalysisEngine(IntentBlocks.build(config))
-                .analyze(source, tree, syntax(language), NullOracle, config)
-        return hits(annotations)
     }
 
     private fun newHits(
@@ -263,7 +187,6 @@ class ErrorHandlingRulePackTest {
     ): List<ErrorHandlingHit> {
         val source = SourceFile(fileName(language), text)
         val tree = parse(language, source)
-        val config = loadIntentConfig(null, language)
         val annotations =
             RuleEngine()
                 .analyze(
@@ -271,7 +194,7 @@ class ErrorHandlingRulePackTest {
                     tree,
                     syntax(language),
                     NullOracle,
-                    config,
+                    testConfig(language),
                     listOf(pack),
                 )
         return hits(annotations)
@@ -323,23 +246,4 @@ class ErrorHandlingRulePackTest {
             "csharp" -> "Sample.cs"
             else -> error("unsupported fixture language: $language")
         }
-
-    private fun fixtureFor(language: String): String =
-        when (language) {
-            "kotlin" -> fixture("kotlin/ErrorHandling.kt")
-            "javascript" -> fixture("javascript/Sample.js")
-            "typescript" -> fixture("typescript/Sample.ts")
-            "csharp" -> fixture("csharp/Sample.cs")
-            else -> error("unsupported fixture language: $language")
-        }
-
-    private fun fixture(relative: String): String {
-        var directory: File? = File(System.getProperty("user.dir")).absoluteFile
-        while (directory != null) {
-            val candidate = File(directory, "testing-grounds/$relative")
-            if (candidate.isFile) return candidate.readText()
-            directory = directory.parentFile
-        }
-        error("fixture not found: testing-grounds/$relative")
-    }
 }

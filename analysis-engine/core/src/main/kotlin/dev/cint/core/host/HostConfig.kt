@@ -38,8 +38,6 @@ data class HostSettings(
                 mapOf(
                     "VALIDATION" to
                         IntentDefinition(
-                            name = "VALIDATION",
-                            blocks = emptyList(),
                             params = validationParams,
                         ),
                 ),

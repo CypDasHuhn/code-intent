@@ -2,7 +2,6 @@ package dev.cint.core.engine
 
 import dev.cint.api.Annotation
 import dev.cint.api.CallFact
-import dev.cint.api.Contribution
 import dev.cint.api.Coverage
 import dev.cint.api.FunctionFact
 import dev.cint.api.IfFact
@@ -14,20 +13,12 @@ import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.api.View
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.flow.ControlFlow
-import dev.cint.core.flow.ControlFlowBuilder
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.core.store.AnnotationStore
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.core.view.CapabilityView
-import java.util.IdentityHashMap
-
-enum class Phase {
-    SOURCE,
-    DERIVATIVE,
-    SCAFFOLD,
-}
 
 interface RuleContext {
     val file: SourceFile
@@ -56,14 +47,6 @@ interface RuleContext {
         node: SyntaxNode,
         effect: Boolean = true,
     ): Coverage
-}
-
-interface RuleBlock {
-    val id: String
-    val phase: Phase get() = Phase.SOURCE
-    val readsAnnotations: Boolean get() = false
-
-    fun apply(ctx: RuleContext): List<Contribution>
 }
 
 private fun spanKey(
@@ -239,52 +222,5 @@ class AnalysisContext(
             return Coverage(covering.flatMap { it.intents }.toSet())
         }
         return if (effect) Coverage(setOf(UNTAGGED_INTENT)) else Coverage(emptySet())
-    }
-}
-
-class AnalysisEngine(
-    private val blocks: List<RuleBlock>,
-) {
-    private val blockKeys: Map<RuleBlock, String> =
-        IdentityHashMap<RuleBlock, String>().apply {
-            blocks.forEachIndexed { index, block -> put(block, "${block.id}#$index") }
-        }
-
-    fun analyze(
-        file: SourceFile,
-        tree: SyntaxTree,
-        syntax: SyntaxModel,
-        oracle: TypeOracle,
-        config: IntentConfig,
-    ): List<Annotation> {
-        val flow = ControlFlowBuilder(tree, syntax).build()
-        val store = AnnotationStore()
-        val ctx = AnalysisContext(file, tree, syntax, flow, oracle, config, store)
-        runPhase(ctx, store, Phase.SOURCE)
-        runPhase(ctx, store, Phase.DERIVATIVE)
-        runPhase(ctx, store, Phase.SCAFFOLD)
-
-        return ctx.annotations().sortedWith(
-            compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
-        )
-    }
-
-    private fun runPhase(
-        ctx: RuleContext,
-        store: AnnotationStore,
-        phase: Phase,
-    ) {
-        val phaseBlocks = blocks.filter { it.phase == phase }
-        if (phaseBlocks.isEmpty()) return
-        var first = true
-        do {
-            store.clearDirty()
-            for (block in phaseBlocks) {
-                if (first || block.readsAnnotations) {
-                    store.replaceRule(blockKeys.getValue(block), block.apply(ctx))
-                }
-            }
-            first = false
-        } while (store.isDirty())
     }
 }
