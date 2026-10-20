@@ -35,6 +35,7 @@ data class ProjectConfigIssue(
 data class ParsedProjectConfig(
     val config: ProjectConfig,
     val issues: List<ProjectConfigIssue>,
+    val lspTimeoutConfigured: Boolean = false,
 )
 
 fun parseProjectConfig(path: String?): ParsedProjectConfig {
@@ -68,6 +69,7 @@ fun parseProjectConfig(path: String?): ParsedProjectConfig {
 
     val issues = mutableListOf<ProjectConfigIssue>()
     var core = CorePolicy()
+    var lspTimeoutConfigured = false
     val packs = linkedMapOf<String, Map<String, Any?>>()
 
     for ((rawKey, rawValue) in root) {
@@ -76,6 +78,7 @@ fun parseProjectConfig(path: String?): ParsedProjectConfig {
             continue
         }
         if (rawKey == CORE_SECTION) {
+            lspTimeoutConfigured = overridesLspTimeout(rawValue)
             core = parseCore(rawValue, issues) ?: core
             continue
         }
@@ -87,7 +90,7 @@ fun parseProjectConfig(path: String?): ParsedProjectConfig {
         }
     }
 
-    return ParsedProjectConfig(ProjectConfig(core, packs), issues)
+    return ParsedProjectConfig(ProjectConfig(core, packs), issues, lspTimeoutConfigured)
 }
 
 fun IntentConfig.withCorePolicy(policy: CorePolicy): IntentConfig =
@@ -95,6 +98,12 @@ fun IntentConfig.withCorePolicy(policy: CorePolicy): IntentConfig =
 
 fun CorePolicy.oracleOptions(): OracleOptions =
     OracleOptions(lsp.enabled, lsp.timeoutMs)
+
+private fun overridesLspTimeout(value: Any?): Boolean {
+    if (value !is Map<*, *>) return false
+    val lsp = value["lsp"] as? Map<*, *> ?: return false
+    return lsp.containsKey("timeoutMs")
+}
 
 private fun parseCore(
     value: Any?,

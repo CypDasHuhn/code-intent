@@ -164,7 +164,7 @@ class Composition {
             ctx.containingAnnotations(guard.condition).any { VALIDATION_INTENT in it.intents } ||
                 ctx.containingAnnotations(guard.node).any { VALIDATION_INTENT in it.intents }
         if (!certified) return false
-        val explicit = hasValidationComment(ctx, guard.node)
+        val explicit = hasValidationComment(ctx, guard.node, config)
         val predicate = isValidationPredicate(ctx, guard.condition, config)
         val pure = ctx.syntax.isSideEffectFree(guard.condition)
         if (ctx.syntax.isConstant(guard.condition) && !explicit) return false
@@ -188,6 +188,7 @@ class Composition {
     private fun hasValidationComment(
         ctx: RuleContext,
         ifNode: SyntaxNode,
+        config: IntentConfig,
     ): Boolean {
         val scope =
             ctx.syntax
@@ -196,7 +197,13 @@ class Composition {
                 ?: ctx.tree.root
         val comment = ctx.syntax.closestCommentBefore(scope, ifNode) ?: return false
         if (ifNode.startLine - comment.endLine > 1) return false
-        return Regex("""cint\s*:\s*validation""").containsMatchIn(comment.text.lowercase())
+        val magicComment =
+            config.intents[VALIDATION_INTENT]
+                ?.list("magicComment")
+                ?.firstOrNull()
+                ?: return false
+        return Regex("""cint\s*:\s*${Regex.escape(magicComment)}""", RegexOption.IGNORE_CASE)
+            .containsMatchIn(comment.text)
     }
 
     private fun isRejection(site: ReturnSite): Boolean {

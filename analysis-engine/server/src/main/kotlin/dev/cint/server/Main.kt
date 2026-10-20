@@ -5,11 +5,11 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
-import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
 import dev.cint.core.host.HostConfig
 import dev.cint.core.host.HostPipeline
+import dev.cint.core.host.HostSettings
 import dev.cint.core.model.SourceFile
 import dev.cint.core.oracle.MapOracle
 import dev.cint.core.oracle.NullOracle
@@ -22,8 +22,6 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
 import java.nio.file.Path
-
-private const val DEFAULT_LSP_TIMEOUT_MS = 5_000L
 
 data class AnalyzeRequest(
     val path: String = "<buffer>",
@@ -61,12 +59,18 @@ fun main(argv: Array<String>) {
         i++
     }
 
-    if (configPath != null) HostConfig.load(configPath, language)
+    val settings = HostConfig.load(configPath, language)
+    val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
 
-    val packs = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+    val packs =
+        HostPipeline(
+            constructedPacks = BundledRulePackSelection::constructed,
+            project = settings.project,
+            knownPackIds = BundledRulePackSelection.packIds,
+        )
 
     if (socket != null) {
-        LiveServer(root, Path.of(socket), useLsp, language, packs).run()
+        LiveServer(root, Path.of(socket), useLsp, language, packs, settings, validationParams).run()
         return
     }
 
@@ -81,7 +85,7 @@ fun main(argv: Array<String>) {
         }
         try {
             val request = exchange.requestBody.use { mapper.readValue<AnalyzeRequest>(it) }
-            respond(exchange, 200, analyze(request, useLsp, language, packs))
+            respond(exchange, 200, analyze(request, useLsp, language, settings, packs))
         } catch (error: Exception) {
             respond(exchange, 400, """{"error":"${error.message?.replace("\"", "'")}"}""")
         }
@@ -94,10 +98,25 @@ private fun analyze(
     request: AnalyzeRequest,
     useLsp: Boolean,
     defaultLanguage: String,
-    packs: HostPipeline,
+    defaultSettings: HostSettings,
+    defaultPacks: HostPipeline,
 ): String {
     val root = Path.of(request.root ?: ".").toAbsolutePath().normalize()
-    val config = HostConfig.load(request.config, request.language ?: defaultLanguage)
+    val requestedLanguage = request.language ?: defaultLanguage
+    val settings = request.config?.let { HostConfig.load(it, requestedLanguage) } ?: defaultSettings
+    val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
+    val config = settings.intentConfig(requestedLanguage, validationParams)
+    val lspOptions = settings.oracleOptions(useLsp)
+    val packs =
+        if (request.config != null) {
+            HostPipeline(
+                constructedPacks = BundledRulePackSelection::constructed,
+                project = settings.project,
+                knownPackIds = BundledRulePackSelection.packIds,
+            )
+        } else {
+            defaultPacks
+        }
     val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
@@ -107,10 +126,9 @@ private fun analyze(
                 source,
                 frontend,
                 root,
-                null,
-                OracleOptions(useLsp, DEFAULT_LSP_TIMEOUT_MS),
+                lspOptions,
                 packs::plan,
-            )
+            ) { language -> settings.intentConfig(language, validationParams) }
         } else {
             val tree = frontend.parse(source)
             val syntax = frontend.syntax(tree)
@@ -124,7 +142,7 @@ private fun analyze(
 
                     useLsp -> {
                         runCatching {
-                            frontend.oracle(root, OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS))
+                            frontend.oracle(root, lspOptions)
                         }.getOrElse { NullOracle }
                     }
 

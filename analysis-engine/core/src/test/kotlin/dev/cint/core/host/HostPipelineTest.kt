@@ -1,11 +1,15 @@
 package dev.cint.core.host
 
 import dev.cint.api.CINT_API_VERSION
+import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigException
 import dev.cint.api.View
+import dev.cint.core.config.ProjectConfig
+import dev.cint.core.rulepack.RulePackLoadFailureKind
 import dev.cint.core.rulepack.RulePackLoader
 import java.net.URLClassLoader
 import java.nio.file.Files
@@ -29,6 +33,71 @@ private class TestPack(
     private val entries: List<Rule>,
 ) : RulePack {
     override fun rules(): List<Rule> = entries
+}
+
+private class ConfigurableTestPack(
+    val calls: Set<String> = setOf("default"),
+) : ConfigurableRulePack {
+    companion object {
+        var lastCalls: Set<String>? = null
+            private set
+
+        fun reset() {
+            lastCalls = null
+        }
+    }
+
+    override val id: String = "constructed-configurable"
+    override val languages: Set<String> = setOf("testlang")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun configure(values: Map<String, Any?>): RulePack {
+        val unknown = values.keys - "calls"
+        if (unknown.isNotEmpty()) {
+            throw RulePackConfigException("constructed-configurable.${unknown.sorted().first()}: unknown key")
+        }
+        val calls =
+            when (val raw = values["calls"]) {
+                null -> this.calls
+                is String -> setOf(raw)
+                is List<*> ->
+                    if (raw.all { it is String }) {
+                        raw.map { it as String }.toSet()
+                    } else {
+                        throw RulePackConfigException("constructed-configurable.calls: expected strings")
+                    }
+
+                else -> throw RulePackConfigException("constructed-configurable.calls: expected a string or list")
+            }
+        lastCalls = calls
+        return ConfigurableTestPack(calls)
+    }
+
+    override fun rules(): List<Rule> =
+        listOf(TestRule("constructed-configurable:configurable", "CONFIGURABLE"))
+}
+
+private class ConfigurableMismatchTestPack : ConfigurableRulePack {
+    companion object {
+        var configureCalls: Int = 0
+            private set
+
+        fun reset() {
+            configureCalls = 0
+        }
+    }
+
+    override val id: String = "constructed-configurable-mismatch"
+    override val languages: Set<String> = setOf("testlang")
+    override val apiVersion: Int = CINT_API_VERSION + 1
+
+    override fun configure(values: Map<String, Any?>): RulePack {
+        configureCalls++
+        return this
+    }
+
+    override fun rules(): List<Rule> =
+        listOf(TestRule("constructed-configurable-mismatch:configurable", "MISMATCH"))
 }
 
 class ServiceValidationPack : RulePack {
@@ -137,6 +206,87 @@ class HostPipelineTest {
         } finally {
             directory.toFile().deleteRecursively()
         }
+    }
+
+    @Test
+    fun projectConfigIsAppliedToConstructedPacks() {
+        ConfigurableTestPack.reset()
+        val project =
+            ProjectConfig(
+                packs = mapOf("constructed-configurable" to mapOf("calls" to listOf("audit"))),
+            )
+        val pipeline =
+            HostPipeline(
+                loader = RulePackLoader(onFailure = {}),
+                constructedPacks = { language ->
+                    if (language == "testlang") listOf(ConfigurableTestPack()) else emptyList()
+                },
+                project = project,
+                knownPackIds = setOf("constructed-configurable"),
+            )
+
+        assertEquals(listOf("constructed-configurable"), pipeline.packs("testlang").map { it.id })
+        assertEquals(setOf("audit"), ConfigurableTestPack.lastCalls)
+        assertEquals(listOf("CONFIGURABLE", "UNTAGGED"), pipeline.intents(listOf("testlang")))
+        assertTrue(pipeline.failures.isEmpty())
+    }
+
+    @Test
+    fun constructedPackApiVersionIsCheckedBeforeConfiguration() {
+        ConfigurableMismatchTestPack.reset()
+        val project =
+            ProjectConfig(
+                packs =
+                    mapOf(
+                        "constructed-configurable-mismatch" to
+                            mapOf("calls" to listOf("audit")),
+                    ),
+            )
+        val pipeline =
+            HostPipeline(
+                loader = RulePackLoader(onFailure = {}),
+                constructedPacks = { language ->
+                    if (language == "testlang") listOf(ConfigurableMismatchTestPack()) else emptyList()
+                },
+                project = project,
+                knownPackIds = setOf("constructed-configurable-mismatch"),
+            )
+
+        assertTrue(pipeline.packs("testlang").isEmpty())
+        assertEquals(0, ConfigurableMismatchTestPack.configureCalls)
+        assertTrue(
+            pipeline.failures.any {
+                it.kind == RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION &&
+                    it.packId == "constructed-configurable-mismatch"
+            },
+        )
+    }
+
+    @Test
+    fun constructedPackConfigFailureIsReported() {
+        ConfigurableTestPack.reset()
+        val project =
+            ProjectConfig(
+                packs = mapOf("constructed-configurable" to mapOf("bogus" to true)),
+            )
+        val pipeline =
+            HostPipeline(
+                loader = RulePackLoader(onFailure = {}),
+                constructedPacks = { language ->
+                    if (language == "testlang") listOf(ConfigurableTestPack()) else emptyList()
+                },
+                project = project,
+                knownPackIds = setOf("constructed-configurable"),
+            )
+
+        assertTrue(pipeline.packs("testlang").isEmpty())
+        assertTrue(
+            pipeline.failures.any {
+                it.kind == RulePackLoadFailureKind.INVALID_PACK_CONFIG &&
+                    it.packId == "constructed-configurable"
+            },
+        )
+        assertEquals(listOf("UNTAGGED"), pipeline.intents(listOf("testlang")))
     }
 
     @Test

@@ -1,14 +1,19 @@
 package dev.cint.rulepacks
 
 import dev.cint.api.CINT_API_VERSION
+import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.PropertyFact
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigException
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
+import dev.cint.rulepacks.configString
+import dev.cint.rulepacks.configStringSets
+import dev.cint.rulepacks.configStrings
 
 const val BOOKKEEPING_INTENT: Intent = "BOOKKEEPING"
 const val BOOKKEEPING_PACK_ID: String = "bookkeeping"
@@ -28,14 +33,54 @@ data class BookkeepingConfig(
             "compilation_unit" to
                 setOf("variable_declaration", "local_declaration_statement", "field_declaration"),
         ),
-)
+) {
+    fun withOverrides(values: Map<String, Any?>): BookkeepingConfig {
+        val errors = mutableListOf<String>()
+        var updated = this
+        for ((rawKey, rawValue) in values) {
+            val path = "$BOOKKEEPING_PACK_ID.$rawKey"
+            updated =
+                when (rawKey) {
+                    "annotation" ->
+                        updated.copy(annotation = configString(rawValue, path, errors) ?: updated.annotation)
+                    "magicComment" ->
+                        updated.copy(magicComment = configString(rawValue, path, errors) ?: updated.magicComment)
+                    "annotationKinds" ->
+                        updated.copy(
+                            annotationKinds = configStrings(rawValue, path, errors) ?: updated.annotationKinds,
+                        )
+                    "modifierKinds" ->
+                        updated.copy(modifierKinds = configStrings(rawValue, path, errors) ?: updated.modifierKinds)
+                    "propertyKinds" ->
+                        updated.copy(propertyKinds = configStrings(rawValue, path, errors) ?: updated.propertyKinds)
+                    "declarationWrappersByRoot" ->
+                        updated.copy(
+                            declarationWrappersByRoot =
+                                configStringSets(rawValue, path, errors) ?: updated.declarationWrappersByRoot,
+                        )
+                    else -> {
+                        errors += "$path: unknown key"
+                        updated
+                    }
+                }
+        }
+        if (errors.isNotEmpty()) throw RulePackConfigException(errors.joinToString("; "))
+        return updated
+    }
+
+    companion object {
+        fun from(values: Map<String, Any?>): BookkeepingConfig = BookkeepingConfig().withOverrides(values)
+    }
+}
 
 class BookkeepingRulePack(
     private val config: BookkeepingConfig = BookkeepingConfig(),
-) : RulePack {
+) : ConfigurableRulePack {
     override val id: String = BOOKKEEPING_PACK_ID
     override val apiVersion: Int = CINT_API_VERSION
     override val languages: Set<String> = setOf("csharp", "javascript", "kotlin", "typescript", "vue")
+
+    override fun configure(values: Map<String, Any?>): RulePack = BookkeepingRulePack(config.withOverrides(values))
 
     override fun rules(): List<Rule> = listOf(BookkeepingRule(config))
 }

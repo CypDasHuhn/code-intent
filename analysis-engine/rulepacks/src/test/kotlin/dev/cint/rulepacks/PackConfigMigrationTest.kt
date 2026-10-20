@@ -1,0 +1,131 @@
+package dev.cint.rulepacks
+
+import dev.cint.api.RulePackConfigException
+import dev.cint.rulepacks.errorhandling.ErrorHandlingConfig
+import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
+
+class PackConfigMigrationTest {
+    @Test
+    fun errorHandlingDefaultsMatchTheLanguageProfiles() {
+        assertEquals(
+            setOf("require", "requireNotNull", "check", "checkNotNull", "error", "TODO", "assert"),
+            ErrorHandlingConfig.forLanguage("kotlin").calls,
+        )
+        assertEquals(setOf("assert", "invariant"), ErrorHandlingConfig.forLanguage("typescript").calls)
+        assertEquals(setOf("Assert"), ErrorHandlingConfig.forLanguage("csharp").calls)
+        assertEquals(setOf("Debug", "Trace", "Contract"), ErrorHandlingConfig.forLanguage("csharp").qualifiers)
+        assertTrue(ErrorHandlingConfig.forLanguage("kotlin").detectThrows)
+    }
+
+    @Test
+    fun errorHandlingConfigReplacesOnlyNamedValues() {
+        val config =
+            ErrorHandlingConfig.from(
+                mapOf(
+                    "calls" to listOf("fail"),
+                    "qualifiers" to listOf("Checks"),
+                    "throws" to false,
+                ),
+                "csharp",
+            )
+
+        assertEquals(setOf("fail"), config.calls)
+        assertEquals(setOf("Checks"), config.qualifiers)
+        assertEquals(false, config.detectThrows)
+    }
+
+    @Test
+    fun errorHandlingRejectsUnknownKeysAndBadValues() {
+        val unknown =
+            assertFailsWith<RulePackConfigException> {
+                ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("bogus" to true))
+            }
+        assertTrue(unknown.message.orEmpty().contains("error-handling-kotlin.bogus: unknown key"))
+
+        val badValue =
+            assertFailsWith<RulePackConfigException> {
+                ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("throws" to "yes"))
+            }
+        assertTrue(badValue.message.orEmpty().contains("error-handling-kotlin.throws: expected a boolean"))
+    }
+
+    @Test
+    fun bookkeepingConfigIsTypedAndStrict() {
+        val config =
+            BookkeepingConfig.from(
+                mapOf(
+                    "annotation" to "Tracked",
+                    "magicComment" to "tracked",
+                    "propertyKinds" to listOf("my_property"),
+                    "declarationWrappersByRoot" to
+                        mapOf(
+                            "program" to listOf("lexical_declaration"),
+                            "source_file" to emptyList<String>(),
+                        ),
+                ),
+            )
+
+        assertEquals("Tracked", config.annotation)
+        assertEquals("tracked", config.magicComment)
+        assertEquals(setOf("my_property"), config.propertyKinds)
+        assertEquals(setOf("lexical_declaration"), config.declarationWrappersByRoot.getValue("program"))
+        assertEquals(emptySet(), config.declarationWrappersByRoot.getValue("source_file"))
+        assertEquals(setOf("modifiers", "attribute_list"), config.modifierKinds)
+
+        val error =
+            assertFailsWith<RulePackConfigException> {
+                BookkeepingRulePack().configure(mapOf("bogus" to true))
+            }
+        assertTrue(error.message.orEmpty().contains("bookkeeping.bogus: unknown key"))
+    }
+
+    @Test
+    fun validationConfigIsTypedAndStrict() {
+        val config =
+            ValidationConfig.from(
+                mapOf(
+                    "predicates" to listOf("isValid"),
+                    "predicatePrefixes" to listOf("is", "can"),
+                    "magicComment" to "guard",
+                    "commentKinds" to listOf("line_comment"),
+                ),
+            )
+
+        assertEquals(setOf("isValid"), config.predicates)
+        assertEquals(listOf("is", "can"), config.predicatePrefixes)
+        assertEquals("guard", config.magicComment)
+        assertEquals(setOf("line_comment"), config.commentKinds)
+        assertEquals(
+            mapOf(
+                "predicates" to listOf("isValid"),
+                "predicatePrefixes" to listOf("is", "can"),
+                "magicComment" to listOf("guard"),
+            ),
+            config.definitionParams(),
+        )
+
+        val error =
+            assertFailsWith<RulePackConfigException> {
+                ValidationRulePack().configure(mapOf("predicatePrefix" to listOf("is")))
+            }
+        assertTrue(error.message.orEmpty().contains("validation.predicatePrefix: unknown key"))
+    }
+
+    @Test
+    fun configuredPacksKeepTheirDistributionIdentity() {
+        assertIs<ErrorHandlingRulePack>(
+            ErrorHandlingRulePack.forLanguage("javascript").configure(mapOf("calls" to listOf("audit"))),
+        ).let { assertEquals("error-handling-javascript", it.id) }
+        assertIs<BookkeepingRulePack>(
+            BookkeepingRulePack().configure(mapOf("annotation" to "Tracked")),
+        ).let { assertEquals("bookkeeping", it.id) }
+        assertIs<ValidationRulePack>(
+            ValidationRulePack().configure(mapOf("predicates" to listOf("isValid"))),
+        ).let { assertEquals("validation", it.id) }
+    }
+}

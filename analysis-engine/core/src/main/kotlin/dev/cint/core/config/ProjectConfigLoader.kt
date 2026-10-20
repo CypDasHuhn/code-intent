@@ -16,14 +16,20 @@ data class LoadedProjectConfig(
 class ProjectConfigLoader(
     private val loader: RulePackLoader = RulePackLoader(),
 ) {
-    fun load(path: String?): LoadedProjectConfig {
+    fun load(
+        path: String?,
+        knownPackIds: Set<String> = emptySet(),
+    ): LoadedProjectConfig {
         val parsed = parseProjectConfig(path)
-        val loaded = load(parsed.config)
+        val loaded = load(parsed.config, knownPackIds)
         return loaded.copy(issues = parsed.issues)
     }
 
-    fun load(config: ProjectConfig): LoadedProjectConfig {
-        val result = loader.load(config.packs)
+    fun load(
+        config: ProjectConfig,
+        knownPackIds: Set<String> = emptySet(),
+    ): LoadedProjectConfig {
+        val result = loader.load(config.packs, knownPackIds)
         return LoadedProjectConfig(result.packs, config.core, result.failures, emptyList())
     }
 }

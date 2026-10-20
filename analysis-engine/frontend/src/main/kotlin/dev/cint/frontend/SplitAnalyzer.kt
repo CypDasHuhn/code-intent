@@ -43,8 +43,8 @@ object SplitAnalyzer {
             host,
             handler,
             root,
-            configPath,
             options,
+            { loadIntentConfig(configPath, it) },
             leaf = { file, frontend, tree, syntax, oracle, config ->
                 AnalysisEngine(IntentBlocks.build(config)).analyze(file, tree, syntax, oracle, config)
             },
@@ -59,31 +59,41 @@ object SplitAnalyzer {
         options: OracleOptions,
         planFor: (String) -> ExecutionPlan,
     ): List<Annotation> =
+        analyze(host, handler, root, options, planFor) { loadIntentConfig(configPath, it) }
+
+    fun analyze(
+        host: SourceFile,
+        handler: SplitHandler,
+        root: Path,
+        options: OracleOptions,
+        planFor: (String) -> ExecutionPlan,
+        configFor: (String) -> IntentConfig,
+    ): List<Annotation> =
         analyzeRegions(
             host,
             handler,
             root,
-            configPath,
             options,
+            configFor,
             leaf = { file, frontend, tree, syntax, oracle, config ->
                 RuleEngine().analyze(planFor(frontend.language), file, tree, syntax, oracle, config)
             },
-            recurse = { file, frontend -> analyze(file, frontend, root, configPath, options, planFor) },
+            recurse = { file, frontend -> analyze(file, frontend, root, options, planFor, configFor) },
         )
 
     private fun analyzeRegions(
         host: SourceFile,
         handler: SplitHandler,
         root: Path,
-        configPath: String?,
         options: OracleOptions,
+        configFor: (String) -> IntentConfig,
         leaf: RegionAnalysis,
         recurse: SplitRecursion,
     ): List<Annotation> {
         val result = mutableListOf<Annotation>()
         for (region in handler.regions(host)) {
             val frontend = Frontends.require(region.language)
-            val config = loadIntentConfig(configPath, region.language)
+            val config = configFor(region.language)
             val file = SourceFile(host.path, region.text)
             val annotations =
                 if (frontend is SplitHandler) {

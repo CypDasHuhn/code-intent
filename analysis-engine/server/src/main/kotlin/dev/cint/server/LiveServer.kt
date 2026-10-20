@@ -6,12 +6,12 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.Annotation
 import dev.cint.core.model.SourceFile
 import dev.cint.core.config.IntentConfig
-import dev.cint.core.config.loadIntentConfig
 import dev.cint.core.frontend.LanguageFrontend
 import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
 import dev.cint.core.host.HostPipeline
+import dev.cint.core.host.HostSettings
 import dev.cint.core.oracle.NullOracle
 import dev.cint.core.oracle.TypeOracle
 import dev.cint.frontend.Frontends
@@ -30,6 +30,8 @@ import java.nio.file.attribute.PosixFilePermissions
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
+internal const val LIVE_LSP_TIMEOUT_MS: Long = 750L
+
 private data class DocState(
     val uri: String,
     val text: String,
@@ -37,14 +39,14 @@ private data class DocState(
     val language: String,
 )
 
-private const val LIVE_LSP_TIMEOUT_MS = 750L
-
 class LiveServer(
     private val root: Path,
     private val socketPath: Path,
     private val useLsp: Boolean,
     private val defaultLanguage: String,
     private val packs: HostPipeline,
+    private val settings: HostSettings,
+    private val validationParams: Map<String, List<String>>,
 ) {
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val configs = ConcurrentHashMap<String, IntentConfig>()
@@ -205,13 +207,17 @@ class LiveServer(
 
     private fun configFor(language: String): IntentConfig =
         configs.computeIfAbsent(language) {
-            loadIntentConfig(null, it)
+            settings.intentConfig(it, validationParams)
         }
 
+    internal fun oracleOptions(useLsp: Boolean = this.useLsp): OracleOptions =
+        settings.oracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS)
+
     private fun oracleFor(frontend: LanguageFrontend): TypeOracle {
-        if (!useLsp) return NullOracle
+        val options = oracleOptions()
+        if (!options.enabled) return NullOracle
         return oracles.computeIfAbsent(frontend.language) {
-            runCatching { frontend.oracle(root, OracleOptions(true, LIVE_LSP_TIMEOUT_MS)) }
+            runCatching { frontend.oracle(root, options) }
                 .onFailure { error ->
                     System.err.println("cint: LSP connect failed, using heuristics")
                     error.printStackTrace()
@@ -230,10 +236,9 @@ class LiveServer(
                 source,
                 frontend,
                 root,
-                null,
-                OracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS),
+                oracleOptions(),
                 packs::plan,
-            )
+            ) { language -> settings.intentConfig(language, validationParams) }
         }
         val tree = frontend.parse(source)
         val syntax = frontend.syntax(tree)
@@ -250,10 +255,9 @@ class LiveServer(
                 source,
                 frontend,
                 root,
-                null,
-                OracleOptions(false, LIVE_LSP_TIMEOUT_MS),
+                oracleOptions(false),
                 packs::plan,
-            )
+            ) { language -> settings.intentConfig(language, validationParams) }
         }
         val tree = frontend.parse(source)
         val syntax = frontend.syntax(tree)

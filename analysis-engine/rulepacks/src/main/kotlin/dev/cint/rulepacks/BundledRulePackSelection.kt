@@ -1,6 +1,7 @@
 package dev.cint.rulepacks
 
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigException
 import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
 
 /**
@@ -11,9 +12,18 @@ import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
  * through the same loader path as service-discovered packs.
  */
 object BundledRulePackSelection {
+    val packIds: Set<String> = ErrorHandlingRulePack.languages.mapTo(linkedSetOf()) { ErrorHandlingRulePack.forLanguage(it).id }
+
     fun constructed(language: String): List<RulePack> {
         val normalized = language.lowercase()
         if (normalized !in ErrorHandlingRulePack.languages) return emptyList()
         return listOf(ErrorHandlingRulePack.forLanguage(normalized))
     }
+
+    fun validationIntentParams(projectPacks: Map<String, Map<String, Any?>>): Map<String, List<String>> =
+        try {
+            ValidationConfig.from(projectPacks[VALIDATION_PACK_ID].orEmpty()).definitionParams()
+        } catch (_: RulePackConfigException) {
+            ValidationConfig().definitionParams()
+        }
 }

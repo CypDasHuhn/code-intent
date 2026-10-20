@@ -1,0 +1,54 @@
+package dev.cint.server
+
+import dev.cint.core.frontend.OracleOptions
+import dev.cint.core.host.HostConfig
+import dev.cint.core.host.HostPipeline
+import dev.cint.core.host.HostSettings
+import dev.cint.core.rulepack.RulePackLoader
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class LiveServerConfigTest {
+    @Test
+    fun liveOracleKeepsItsDefaultTimeoutWithoutExplicitConfig() {
+        val settings = HostConfig.load(null, "kotlin")
+        val server = server(settings)
+
+        assertEquals(OracleOptions(enabled = true, timeoutMs = LIVE_LSP_TIMEOUT_MS), server.oracleOptions())
+        assertEquals(OracleOptions(enabled = false, timeoutMs = LIVE_LSP_TIMEOUT_MS), server.oracleOptions(false))
+    }
+
+    @Test
+    fun liveOracleHonorsAnExplicitConfiguredTimeout() {
+        val file = Files.createTempFile("cint-live-lsp", ".yaml")
+        Files.writeString(
+            file,
+            """
+            core:
+              lsp:
+                timeoutMs: 900
+            """.trimIndent(),
+        )
+        try {
+            val server = server(HostConfig.load(file.toString(), "kotlin"))
+
+            assertEquals(OracleOptions(enabled = true, timeoutMs = 900), server.oracleOptions())
+            assertEquals(OracleOptions(enabled = false, timeoutMs = 900), server.oracleOptions(false))
+        } finally {
+            Files.deleteIfExists(file)
+        }
+    }
+
+    private fun server(settings: HostSettings): LiveServer =
+        LiveServer(
+            root = Path.of("."),
+            socketPath = Path.of("/tmp/opencode/cint-013-test.sock"),
+            useLsp = true,
+            defaultLanguage = "kotlin",
+            packs = HostPipeline(loader = RulePackLoader(onFailure = {})),
+            settings = settings,
+            validationParams = emptyMap(),
+        )
+}

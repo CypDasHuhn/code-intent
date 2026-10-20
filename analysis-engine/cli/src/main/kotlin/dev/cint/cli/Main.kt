@@ -2,7 +2,6 @@ package dev.cint.cli
 
 import dev.cint.core.artifact.Artifact
 import dev.cint.core.artifact.FileEntry
-import dev.cint.core.frontend.OracleOptions
 import dev.cint.core.frontend.SplitHandler
 import dev.cint.core.hashing.contentHash
 import dev.cint.core.host.HostConfig
@@ -15,8 +14,6 @@ import dev.cint.frontend.SplitAnalyzer
 import dev.cint.rulepacks.BundledRulePackSelection
 import java.io.File
 
-private const val DEFAULT_LSP_TIMEOUT_MS = 5_000L
-
 private data class Args(
     val root: String,
     val config: String?,
@@ -28,12 +25,20 @@ private data class Args(
 
 fun main(argv: Array<String>) {
     val args = parseArgs(argv)
-    val config = HostConfig.load(args.config, args.language)
+    val settings = HostConfig.load(args.config, args.language)
+    val validationParams = BundledRulePackSelection.validationIntentParams(settings.project.packs)
+    val config = settings.intentConfig(args.language, validationParams)
+    val lspOptions = settings.oracleOptions(!args.noLsp)
     val frontend = Frontends.require(config.language)
 
     val root = File(args.root)
     require(root.exists()) { "no such path: ${args.root}" }
-    val packs = HostPipeline(constructedPacks = BundledRulePackSelection::constructed)
+    val packs =
+        HostPipeline(
+            constructedPacks = BundledRulePackSelection::constructed,
+            project = settings.project,
+            knownPackIds = BundledRulePackSelection.packIds,
+        )
 
     val files =
         root
@@ -53,7 +58,7 @@ fun main(argv: Array<String>) {
         if (args.noLsp || frontend is SplitHandler) {
             NullOracle
         } else {
-            runCatching { frontend.oracle(root.toPath(), OracleOptions(true, DEFAULT_LSP_TIMEOUT_MS)) }
+            runCatching { frontend.oracle(root.toPath(), lspOptions) }
                 .onFailure { System.err.println("lsp unavailable, using heuristic facts: ${it.message}") }
                 .getOrElse { NullOracle }
         }
@@ -72,10 +77,9 @@ fun main(argv: Array<String>) {
                                 source,
                                 frontend,
                                 root.toPath(),
-                                null,
-                                OracleOptions(!args.noLsp, DEFAULT_LSP_TIMEOUT_MS),
+                                lspOptions,
                                 packs::plan,
-                            )
+                            ) { language -> settings.intentConfig(language, validationParams) }
                         usedLanguages += languages
                         result
                     }.onFailure { System.err.println("parse failed: ${file.path}: ${it.message}") }
