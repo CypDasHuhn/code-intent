@@ -220,6 +220,37 @@ class LoggingRulePackTest {
     }
 
     @Test
+    fun configuredLoggingPackUsesPackOverrides() {
+        val pack = LoggingRulePack().configure(mapOf("kotlin" to mapOf("printCalls" to listOf("audit"))))
+        val file =
+            sourceFor(
+                "kotlin",
+                """
+                fun f() {
+                    audit("logged")
+                    println("not configured")
+                }
+                """.trimIndent(),
+            )
+        val config = loadIntentConfig(null, "kotlin")
+        val frontend = Frontends.require("kotlin")
+        val tree = frontend.parse(file)
+        val annotations =
+            RuleEngine().analyze(
+                file,
+                tree,
+                frontend.syntax(tree),
+                NullOracle,
+                config,
+                listOf(pack),
+            )
+
+        val logging = loggingSpans(annotations)
+        assertEquals(1, logging.size)
+        assertTrue(logging.single().evidence.contains("audit"))
+    }
+
+    @Test
     fun factoryLoggerSymbolSkipsOracle() {
         val text =
             """

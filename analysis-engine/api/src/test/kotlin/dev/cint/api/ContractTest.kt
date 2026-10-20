@@ -24,6 +24,21 @@ private class TestPack(
     override fun rules(): List<Rule> = entries
 }
 
+private class TestConfigurablePack(
+    private val extra: Boolean = false,
+) : ConfigurableRulePack {
+    override val id: String = "demo-config"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun rules(): List<Rule> =
+        listOf(TestRule("demo-config:base", "CONFIG_BASE")) +
+            if (extra) listOf(TestRule("demo-config:extra", "CONFIG_EXTRA")) else emptyList()
+
+    override fun configure(values: Map<String, Any?>): RulePack =
+        TestConfigurablePack(values["extra"] == true)
+}
+
 @RulePackApi(CINT_API_VERSION + 1)
 private class TestAnnotatedPack : RulePack {
     override val id: String = "annotated"
@@ -55,6 +70,19 @@ class ContractTest {
     fun rulePackApiVersionMustBeDeclaredByThePack() {
         assertFalse(RulePack::class.java.getMethod("getApiVersion").isDefault)
         assertEquals(CINT_API_VERSION, pack.apiVersion)
+    }
+
+    @Test
+    fun configurableRulePackIsAdditiveAndVersionPinned() {
+        assertEquals(1, CINT_API_VERSION)
+
+        val original = TestConfigurablePack()
+        val configured = original.configure(mapOf("extra" to true))
+
+        assertEquals(original.id, configured.id)
+        assertEquals(CINT_API_VERSION, configured.apiVersion)
+        assertEquals(1, original.rules().size)
+        assertEquals(2, configured.rules().size)
     }
 
     @Test

@@ -1,10 +1,12 @@
 package dev.cint.core.rulepack
 
 import dev.cint.api.CINT_API_VERSION
+import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigException
 import dev.cint.api.RulePackApi
 import dev.cint.api.View
 
@@ -251,4 +253,70 @@ class FixtureÜnicodePack : RulePack {
 
     override fun rules(): List<Rule> =
         listOf(FixtureRule("fixture-unicode:logging", "UNICODE_LOGGING"))
+}
+
+
+class FixtureConfigurableMismatchPack : ConfigurableRulePack {
+    companion object {
+        var configurations: Int = 0
+            private set
+
+        fun reset() {
+            configurations = 0
+        }
+    }
+
+    override val id: String = "zzz-configurable-mismatch"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION + 1
+
+    override fun configure(values: Map<String, Any?>): RulePack {
+        configurations += 1
+        return this
+    }
+
+    override fun rules(): List<Rule> =
+        listOf(FixtureRule("zzz-configurable-mismatch:logging", "CONFIGURABLE_MISMATCH"))
+}
+
+class FixtureConfigurablePack(
+    private val calls: Set<String> = setOf("default"),
+) : ConfigurableRulePack {
+    companion object {
+        var lastCalls: Set<String>? = null
+            private set
+
+        fun reset() {
+            lastCalls = null
+        }
+    }
+
+    override val id: String = "fixture-configurable"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun configure(values: Map<String, Any?>): RulePack {
+        val unknown = values.keys - "calls"
+        if (unknown.isNotEmpty()) {
+            throw RulePackConfigException("fixture-configurable.${unknown.sorted().first()}: unknown key")
+        }
+        val configured =
+            when (val raw = values["calls"]) {
+                null -> calls
+                is String -> setOf(raw)
+                is List<*> ->
+                    if (raw.all { it is String }) {
+                        raw.map { it as String }.toSet()
+                    } else {
+                        throw RulePackConfigException("fixture-configurable.calls: expected strings")
+                    }
+
+                else -> throw RulePackConfigException("fixture-configurable.calls: expected a string or list")
+            }
+        lastCalls = configured
+        return FixtureConfigurablePack(configured)
+    }
+
+    override fun rules(): List<Rule> =
+        listOf(FixtureRule("fixture-configurable:logging", "CONFIGURABLE_LOGGING"))
 }

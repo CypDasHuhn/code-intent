@@ -1,11 +1,13 @@
 package dev.cint.core.rulepack
 
 import dev.cint.api.CINT_API_VERSION
+import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RulePack
 import dev.cint.api.RulePackApi
+import dev.cint.api.RulePackConfigException
 import dev.cint.api.View
 import dev.cint.core.scheduler.DependencyCycle
 import dev.cint.core.scheduler.DuplicateIntentOwner
@@ -31,6 +33,9 @@ enum class RulePackLoadFailureKind {
     RESERVED_CONTRIBUTOR_ID,
     UNKNOWN_DEPENDENCY,
     DEPENDENCY_CYCLE,
+    UNKNOWN_PACK_CONFIG,
+    UNVERIFIED_PACK_CONFIG,
+    INVALID_PACK_CONFIG,
 }
 
 data class RulePackLoadFailure(
@@ -59,7 +64,7 @@ class RulePackLoader(
         System.err.println("cint rulepack: ${it.message}")
     },
 ) {
-    fun load(): RulePackLoadResult {
+    fun load(config: Map<String, Map<String, Any?>> = emptyMap()): RulePackLoadResult {
         val failures = mutableListOf<RulePackLoadFailure>()
 
         fun report(failure: RulePackLoadFailure) {
@@ -67,20 +72,48 @@ class RulePackLoader(
             onFailure(failure)
         }
 
-        val loaded = settle(discover(::report), ::report)
+        val state = DiscoveryState()
+        val loaded = settle(discover(config, state, ::report), ::report)
+        for (packId in config.keys) {
+            if (packId in state.seenPackIds) continue
+            if (state.unidentifiedProviderFailure) {
+                report(
+                    RulePackLoadFailure(
+                        RulePackLoadFailureKind.UNVERIFIED_PACK_CONFIG,
+                        setOf(packId),
+                        "config for '$packId' could not be verified because discovery was incomplete",
+                    ),
+                )
+            } else {
+                report(
+                    RulePackLoadFailure(
+                        RulePackLoadFailureKind.UNKNOWN_PACK_CONFIG,
+                        setOf(packId),
+                        "config for unknown rulepack '$packId'",
+                    ),
+                )
+            }
+        }
         return RulePackLoadResult(loaded, failures.toList())
     }
 
-    private fun discover(report: (RulePackLoadFailure) -> Unit): List<LoadedRulePack> {
+    private fun discover(
+        config: Map<String, Map<String, Any?>>,
+        state: DiscoveryState,
+        report: (RulePackLoadFailure) -> Unit,
+    ): List<LoadedRulePack> {
         val loaded = mutableListOf<LoadedRulePack>()
-        for (name in providerNames(report)) {
-            discoverProvider(name, report)?.let { loaded += it }
+        for (name in providerNames(state, report)) {
+            discoverProvider(name, config, state, report)?.let { loaded += it }
         }
         return rejectDuplicatePackIds(loaded, report)
             .sortedWith(compareBy({ it.id }, { it.sourceClassName }))
     }
 
-    private fun providerNames(report: (RulePackLoadFailure) -> Unit): List<String> {
+    private fun providerNames(
+        state: DiscoveryState,
+        report: (RulePackLoadFailure) -> Unit,
+    ): List<String> {
         val names = linkedSetOf<String>()
         var resourceCount = 0
         var lineCount = 0
@@ -90,6 +123,7 @@ class RulePackLoader(
                 classLoader.getResources(SERVICE_RESOURCE)
             } catch (error: Throwable) {
                 if (error is VirtualMachineError) throw error
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.CORRUPT_PACK,
@@ -107,6 +141,7 @@ class RulePackLoader(
                     resources.hasMoreElements()
                 } catch (error: Throwable) {
                     if (error is VirtualMachineError) throw error
+                    state.unidentifiedProviderFailure = true
                     report(
                         RulePackLoadFailure(
                             RulePackLoadFailureKind.CORRUPT_PACK,
@@ -124,6 +159,7 @@ class RulePackLoader(
                     resources.nextElement()
                 } catch (error: Throwable) {
                     if (error is VirtualMachineError) throw error
+                    state.unidentifiedProviderFailure = true
                     report(
                         RulePackLoadFailure(
                             RulePackLoadFailureKind.CORRUPT_PACK,
@@ -137,6 +173,7 @@ class RulePackLoader(
 
             resourceCount += 1
             if (resourceCount > MAX_SERVICE_RESOURCES) {
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.DISCOVERY_LIMIT_EXCEEDED,
@@ -152,6 +189,7 @@ class RulePackLoader(
                     for (line in lines) {
                         lineCount += 1
                         if (lineCount > MAX_SERVICE_LINES) {
+                            state.unidentifiedProviderFailure = true
                             report(
                                 RulePackLoadFailure(
                                     RulePackLoadFailureKind.DISCOVERY_LIMIT_EXCEEDED,
@@ -165,6 +203,7 @@ class RulePackLoader(
                         val name = line.substringBefore('#').trim()
                         if (name.isEmpty()) continue
                         if (!isValidProviderName(name)) {
+                            state.unidentifiedProviderFailure = true
                             report(
                                 RulePackLoadFailure(
                                     RulePackLoadFailureKind.CORRUPT_PACK,
@@ -179,6 +218,7 @@ class RulePackLoader(
                 }
             } catch (error: Throwable) {
                 if (error is VirtualMachineError) throw error
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.CORRUPT_PACK,
@@ -217,6 +257,8 @@ class RulePackLoader(
 
     private fun discoverProvider(
         name: String,
+        config: Map<String, Map<String, Any?>>,
+        state: DiscoveryState,
         report: (RulePackLoadFailure) -> Unit,
     ): LoadedRulePack? {
         var className: String? = name
@@ -224,6 +266,7 @@ class RulePackLoader(
             val type = Class.forName(name, false, classLoader)
             className = type.name
             if (!RulePack::class.java.isAssignableFrom(type)) {
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.CORRUPT_PACK,
@@ -236,6 +279,7 @@ class RulePackLoader(
 
             val declaredVersion = type.getAnnotation(RulePackApi::class.java)?.version
             if (declaredVersion != null && declaredVersion != expectedApiVersion) {
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION,
@@ -250,6 +294,7 @@ class RulePackLoader(
                 try {
                     type.getMethod("getApiVersion")
                 } catch (error: NoSuchMethodException) {
+                    state.unidentifiedProviderFailure = true
                     report(
                         RulePackLoadFailure(
                             RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION,
@@ -260,6 +305,7 @@ class RulePackLoader(
                     return null
                 }
             if (versionMethod.declaringClass == RulePack::class.java) {
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION,
@@ -273,6 +319,7 @@ class RulePackLoader(
             val instance = type.getDeclaredConstructor().newInstance()
             val pack = instance as? RulePack
             if (pack == null) {
+                state.unidentifiedProviderFailure = true
                 report(
                     RulePackLoadFailure(
                         RulePackLoadFailureKind.CORRUPT_PACK,
@@ -282,13 +329,146 @@ class RulePackLoader(
                 )
                 return null
             }
-            validate(pack, className, report)
+            val id = preflight(pack, state, report) ?: return null
+            val configured = configure(pack, id, config, report) ?: return null
+            validate(configured, className, report)
         } catch (error: ClassNotFoundException) {
+            state.unidentifiedProviderFailure = true
             report(providerFailure(className, error, missingProvider = true))
             null
         } catch (error: Throwable) {
             if (error is VirtualMachineError) throw error
+            state.unidentifiedProviderFailure = true
             report(providerFailure(className, error))
+            null
+        }
+    }
+
+    private fun preflight(
+        pack: RulePack,
+        state: DiscoveryState,
+        report: (RulePackLoadFailure) -> Unit,
+    ): String? {
+        val id =
+            try {
+                pack.id
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError) throw error
+                state.unidentifiedProviderFailure = true
+                report(
+                    RulePackLoadFailure(
+                        RulePackLoadFailureKind.CORRUPT_PACK,
+                        emptySet(),
+                        "rulepack could not report its id: ${error.message ?: error.javaClass.name}",
+                        error,
+                    ),
+                )
+                return null
+            }
+
+        if (id.isNullOrBlank()) {
+            state.unidentifiedProviderFailure = true
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.CORRUPT_PACK,
+                    emptySet(),
+                    "rulepack has a blank id",
+                ),
+            )
+            return null
+        }
+
+        state.seenPackIds += id
+
+        val version =
+            try {
+                pack.apiVersion
+            } catch (error: Throwable) {
+                if (error is VirtualMachineError) throw error
+                val incompatible = error is LinkageError
+                report(
+                    RulePackLoadFailure(
+                        if (incompatible) {
+                            RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION
+                        } else {
+                            RulePackLoadFailureKind.CORRUPT_PACK
+                        },
+                        setOf(id),
+                        "rulepack '$id' could not report its api version: ${error.message ?: error.javaClass.name}",
+                        error,
+                    ),
+                )
+                return null
+            }
+
+        if (version != expectedApiVersion) {
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION,
+                    setOf(id),
+                    "rulepack '$id' targets api version $version, expected $expectedApiVersion",
+                ),
+            )
+            return null
+        }
+
+        return id
+    }
+
+    private fun configure(
+        pack: RulePack,
+        id: String,
+        config: Map<String, Map<String, Any?>>,
+        report: (RulePackLoadFailure) -> Unit,
+    ): RulePack? {
+        val values = config[id] ?: return pack
+        if (values.isEmpty()) return pack
+
+        if (pack !is ConfigurableRulePack) {
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                    setOf(id),
+                    "rulepack '$id' does not accept config keys: ${values.keys.sorted().joinToString(", ")}",
+                ),
+            )
+            return null
+        }
+
+        return try {
+            val configured = pack.configure(values)
+            if (configured.id != id) {
+                report(
+                    RulePackLoadFailure(
+                        RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                        setOf(id),
+                        "rulepack '$id' changed its id while applying config",
+                    ),
+                )
+                null
+            } else {
+                configured
+            }
+        } catch (error: RulePackConfigException) {
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                    setOf(id),
+                    "rulepack '$id' has invalid config: ${error.message ?: error.javaClass.name}",
+                    error,
+                ),
+            )
+            null
+        } catch (error: Throwable) {
+            if (error is VirtualMachineError) throw error
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                    setOf(id),
+                    "rulepack '$id' could not apply config: ${error.message ?: error.javaClass.name}",
+                    error,
+                ),
+            )
             null
         }
     }
@@ -656,6 +836,11 @@ class RulePackLoader(
             SchedulerError.UNKNOWN_DEPENDENCY -> RulePackLoadFailureKind.UNKNOWN_DEPENDENCY
             SchedulerError.DEPENDENCY_CYCLE -> RulePackLoadFailureKind.DEPENDENCY_CYCLE
         }
+
+    private class DiscoveryState {
+        val seenPackIds: MutableSet<String> = linkedSetOf()
+        var unidentifiedProviderFailure: Boolean = false
+    }
 
     private data class RuleMetadata(
         val id: String?,
