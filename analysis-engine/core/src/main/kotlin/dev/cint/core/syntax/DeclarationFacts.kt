@@ -312,7 +312,7 @@ internal class DeclarationFacts(
         second: SyntaxNode,
     ): Boolean = first != null && first.startByte == second.startByte && first.endByte == second.endByte
 
-    private fun commentBlock(node: SyntaxNode): List<CommentFact> = precedingComments(node).map(::CommentFact).toList().reversed()
+    private fun commentBlock(node: SyntaxNode): List<CommentFact> = precedingComments(node).map(::commentFact).toList().reversed()
 
     fun variableName(declaration: SyntaxNode): String? = nameNode(declaration)?.text
 
@@ -382,7 +382,7 @@ internal class DeclarationFacts(
 
     fun annotationTexts(declaration: SyntaxNode): List<String> = annotationNodes(declaration).map { normalizeAnnotation(it.text) }
 
-    fun commentBefore(node: SyntaxNode): CommentFact? = precedingComments(node).firstOrNull()?.let(::CommentFact)
+    fun commentBefore(node: SyntaxNode): CommentFact? = precedingComments(node).firstOrNull()?.let(::commentFact)
 
     fun precedingComments(node: SyntaxNode): Sequence<SyntaxNode> =
         sequence {

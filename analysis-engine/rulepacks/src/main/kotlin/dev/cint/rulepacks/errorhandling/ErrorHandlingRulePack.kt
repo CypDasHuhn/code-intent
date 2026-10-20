@@ -9,8 +9,8 @@ import dev.cint.api.LanguageConfig
 import dev.cint.api.Matcher
 import dev.cint.api.RulePack
 import dev.cint.api.SingleIntentPack
-import dev.cint.api.SyntaxNode
 import dev.cint.api.View
+import dev.cint.api.emit
 
 const val ERROR_HANDLING_INTENT: Intent = "ERROR_HANDLING"
 
@@ -20,11 +20,12 @@ data class ErrorHandlingConfig(
     val detectThrows: Boolean = true,
 ) {
     internal fun accepts(call: CallFact): Boolean {
-        val callee = call.callee ?: return false
+        val path = call.path ?: return false
+        val callee = path.substringAfterLast('.')
         if (callee !in calls) return false
-        val receiver = call.receiver ?: return true
+        if (call.receiver == null) return true
         return qualifiers.any { qualifier ->
-            receiver.text == qualifier || receiver.text.endsWith(".$qualifier")
+            path == "$qualifier.$callee" || path.endsWith(".$qualifier.$callee")
         }
     }
 
@@ -114,10 +115,13 @@ private class ErrorHandlingRule(
     private val config: ErrorHandlingConfig,
 ) : Matcher {
     override fun match(view: View): List<Emit> {
-        val calls = view.calls().filter(config::accepts).map { emit(it.site) }
-        val throws = if (config.detectThrows) view.throws().map(::emit) else emptyList()
+        val calls = view.calls().filter(config::accepts).map { it.emit(ERROR_HANDLING_INTENT) }
+        val throws =
+            if (config.detectThrows) {
+                view.throws().map { Emit.of(ERROR_HANDLING_INTENT, it) }
+            } else {
+                emptyList()
+            }
         return calls + throws
     }
-
-    private fun emit(node: SyntaxNode): Emit = Emit.of(ERROR_HANDLING_INTENT, node)
 }

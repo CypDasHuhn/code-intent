@@ -1,8 +1,11 @@
 package dev.cint.rulepacks.validation
 
+import dev.cint.api.CommentKind
 import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema
 import dev.cint.api.Emit
+import dev.cint.api.GuardFact
+import dev.cint.api.GuardKind
 import dev.cint.api.Intent
 import dev.cint.api.Matcher
 import dev.cint.api.SingleIntentPack
@@ -18,7 +21,7 @@ data class ValidationConfig(
     val predicates: Set<String> = DEFAULT_PREDICATES,
     val predicatePrefixes: List<String> = DEFAULT_PREDICATE_PREFIXES,
     val magicComment: String = "validation",
-    val commentKinds: Set<String> = setOf("comment", "line_comment", "multiline_comment"),
+    val commentKinds: Set<String> = DEFAULT_COMMENT_KINDS,
 ) {
     fun withOverrides(values: Map<String, Any?>): ValidationConfig = SCHEMA.decode(this, values, VALIDATION_PACK_ID)
 
@@ -42,6 +45,7 @@ data class ValidationConfig(
                 "matches",
             )
         val DEFAULT_PREDICATE_PREFIXES: List<String> = listOf("is", "has", "Is", "Has")
+        val DEFAULT_COMMENT_KINDS: Set<String> = setOf("comment", "line_comment", "multiline_comment")
 
         internal val SCHEMA =
             ConfigSchema.of(
@@ -93,34 +97,42 @@ private class ValidationRule(
 ) : Matcher {
     private val commentPattern =
         Regex("""cint\s*:\s*${Regex.escape(config.magicComment)}""", RegexOption.IGNORE_CASE)
+    private val commentKinds = CommentKind.fromConfig(config.commentKinds)
 
-    override fun match(view: View): List<Emit> {
-        val result = mutableListOf<Emit>()
-        for ((node, condition1, thenBody) in view.ifs()) {
-            val condition = condition1 ?: continue
-            val body = thenBody ?: continue
+    override fun match(view: View): List<Emit> =
+        view
+            .guards()
+            .asSequence()
+            .filter { it.kind == GuardKind.CONDITIONAL }
+            .mapNotNull { guard -> emitFor(view, guard) }
+            .toList()
 
-            val explicit = hasValidationComment(view, node)
-            val bookkeeping = hasBookkeeping(view, body)
-            val predicate = isValidationPredicate(view, condition)
-            val pure = view.isSideEffectFree(condition)
-            val constant = view.isConstant(condition)
-            val validationGuard =
-                (explicit || bookkeeping || predicate || pure) &&
-                    !(constant && !explicit && !bookkeeping)
-            if (!validationGuard) continue
+    private fun emitFor(
+        view: View,
+        guard: GuardFact,
+    ): Emit? {
+        val condition = guard.condition ?: return null
+        val body = guard.thenBody ?: return null
 
-            val confidence =
-                when {
-                    explicit -> 1.0
-                    bookkeeping -> 0.9
-                    predicate -> 0.7
-                    else -> 0.5
-                }
-            val source = if (explicit) "comment" else "treesitter"
-            result += emit(condition, source, confidence)
-        }
-        return result
+        val explicit = hasValidationComment(view, guard)
+        val bookkeeping = hasBookkeeping(view, body)
+        val predicate = isValidationPredicate(view, condition)
+        val pure = view.isSideEffectFree(condition)
+        val constant = view.isConstant(condition)
+        val validationGuard =
+            (explicit || bookkeeping || predicate || pure) &&
+                !(constant && !explicit && !bookkeeping)
+        if (!validationGuard) return null
+
+        val confidence =
+            when {
+                explicit -> 1.0
+                bookkeeping -> 0.9
+                predicate -> 0.7
+                else -> 0.5
+            }
+        val source = if (explicit) "comment" else Emit.DEFAULT_SOURCE
+        return Emit.of(VALIDATION_INTENT, condition, source, confidence, certifiesReturn = true)
     }
 
     private fun hasBookkeeping(
@@ -147,51 +159,27 @@ private class ValidationRule(
 
     private fun hasValidationComment(
         view: View,
-        guard: SyntaxNode,
+        guard: GuardFact,
     ): Boolean {
-        val comment =
-            commentScope(view, guard)
-                .descendants()
-                .filter { it.endByte <= guard.startByte && it.kind in config.commentKinds }
-                .maxByOrNull { it.startByte } ?: return false
-        if (guard.startLine - comment.endLine > 1) return false
-        return commentPattern.containsMatchIn(comment.text.lowercase())
-    }
-
-    private fun commentScope(
-        view: View,
-        guard: SyntaxNode,
-    ): SyntaxNode {
-        val function = view.enclosingFunction(guard)
-        if (function != null) {
-            val body =
+        val function = view.enclosingFunction(guard.node)
+        val scope =
+            function?.let { node ->
                 view
                     .functions()
                     .firstOrNull {
-                        it.node.startByte == function.startByte &&
-                            it.node.endByte == function.endByte
-                    }?.body
-            return body ?: function
-        }
-        var root = guard
-        while (true) {
-            root = root.parent ?: return root
-        }
+                        it.node.startByte == node.startByte &&
+                            it.node.endByte == node.endByte
+                    }?.body ?: node
+            }
+        val comment =
+            view
+                .comments()
+                .asSequence()
+                .filter { it.kind in commentKinds }
+                .filter { it.node.endByte <= guard.node.startByte }
+                .filter { scope == null || it.node.startByte >= scope.startByte }
+                .maxByOrNull { it.node.startByte } ?: return false
+        if (guard.node.startLine - comment.node.endLine > 1) return false
+        return commentPattern.containsMatchIn(comment.text)
     }
-
-    private fun emit(
-        node: SyntaxNode,
-        source: String,
-        confidence: Double,
-    ): Emit =
-        Emit(
-            intents = setOf(VALIDATION_INTENT),
-            evidence = node.text.replace("\n", " ").take(160),
-            span = node.span(),
-            source = source,
-            confidence = confidence,
-            startByte = node.startByte,
-            endByte = node.endByte,
-            certifiesReturn = true,
-        )
 }

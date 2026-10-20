@@ -170,6 +170,15 @@ class ErrorHandlingRulePackTest {
         assertTrue(newHits("kotlin", text, pack).isEmpty())
     }
 
+    @Test
+    fun detectThrowsAliasControlsThrowEmission() {
+        val text = """fun f() { throw Exception("x") }"""
+        val pack = ErrorHandlingRulePack.forLanguage("kotlin").configure(mapOf("detectThrows" to false))
+
+        assertTrue(newHits("kotlin", text).isNotEmpty())
+        assertTrue(newHits("kotlin", text, pack).isEmpty())
+    }
+
     private fun newHits(
         language: String,
         text: String,

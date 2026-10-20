@@ -64,14 +64,39 @@ enum class DeclarationKind {
     FUNCTION,
 }
 
-data class CommentFact(
-    val node: SyntaxNode,
-    val magicComment: String? = magicCommentIn(node.text),
-) {
-    val text: String get() = node.text
+enum class CommentKind {
+    LINE,
+    BLOCK,
+    DOC,
+    OTHER,
+    ;
 
-    fun isMagicComment(name: String): Boolean = matchesMagicComment(node.text, name)
+    companion object {
+        fun fromConfig(names: Collection<String>): Set<CommentKind> =
+            names.flatMapTo(linkedSetOf()) { name ->
+                when (name.trim().lowercase()) {
+                    "comment" -> values().toList()
+                    "line", "line_comment" -> listOf(LINE)
+                    "block", "block_comment", "multiline_comment" -> listOf(BLOCK)
+                    "doc", "documentation", "doc_comment", "documentation_comment" -> listOf(DOC)
+                    "other" -> listOf(OTHER)
+                    else -> emptyList()
+                }
+            }
+    }
 }
+
+data class CommentFact
+    @JvmOverloads
+    constructor(
+        val node: SyntaxNode,
+        val magicComment: String? = magicCommentIn(node.text),
+        val kind: CommentKind = CommentKind.OTHER,
+    ) {
+        val text: String get() = node.text
+
+        fun isMagicComment(name: String): Boolean = matchesMagicComment(node.text, name)
+    }
 
 data class DeclarationFact(
     val node: SyntaxNode,
