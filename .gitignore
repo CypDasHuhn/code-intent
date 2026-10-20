@@ -6,3 +6,8 @@ out/
 .idea/
 *.iml
 tags.json
+.classpath
+.factorypath
+.project
+.settings/
+bin/
