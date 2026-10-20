@@ -25,6 +25,7 @@ private class AnnotationContext(
     private val entries: List<Annotation>,
 ) : RuleContext {
     override val file: SourceFile get() = error("unused")
+    override val language: String get() = "kotlin"
     override val tree: SyntaxTree get() = error("unused")
     override val syntax: SyntaxModel get() = error("unused")
     override val flow: ControlFlow get() = error("unused")

@@ -23,6 +23,10 @@ private class FakeView(
     private val callFacts: List<CallFact> = emptyList(),
     private val importNames: List<String> = emptyList(),
 ) : View {
+    override fun language(): String = "kotlin"
+
+    override fun typeAt(node: SyntaxNode): TypeRef? = null
+
     override fun calls(): List<CallFact> = callFacts
 
     override fun properties(): List<PropertyFact> = emptyList()
@@ -30,6 +34,8 @@ private class FakeView(
     override fun functions(): List<FunctionFact> = emptyList()
 
     override fun ifs(): List<IfFact> = emptyList()
+
+    override fun guardConditions(): List<SyntaxNode> = emptyList()
 
     override fun tries(): List<TryFact> = emptyList()
 

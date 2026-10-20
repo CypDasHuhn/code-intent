@@ -29,10 +29,13 @@ fun Rule.toContribution(emit: Emit): Contribution =
     )
 
 interface View {
+    fun language(): String
+    fun typeAt(node: SyntaxNode): TypeRef?
     fun calls(): List<CallFact>
     fun properties(): List<PropertyFact>
     fun functions(): List<FunctionFact>
     fun ifs(): List<IfFact>
+    fun guardConditions(): List<SyntaxNode>
     fun tries(): List<TryFact>
     fun catches(): List<SyntaxNode>
     fun imports(): List<String>

@@ -11,6 +11,7 @@ import dev.cint.api.PropertyFact
 import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TryFact
+import dev.cint.api.TypeRef
 import dev.cint.api.View
 import dev.cint.core.engine.RuleContext
 
@@ -23,6 +24,13 @@ class CapabilityView(
 ) : View {
     private val visible: Set<Intent> = reads + owns
 
+    override fun language(): String = context.language
+
+    override fun typeAt(node: SyntaxNode): TypeRef? =
+        context.oracle
+            .typeAt(context.file, context.syntax.receiverOffset(node))
+            ?.let { TypeRef(it.fqName, it.source, it.confidence) }
+
     override fun calls(): List<CallFact> = context.calls
 
     override fun properties(): List<PropertyFact> = context.properties
@@ -30,6 +38,8 @@ class CapabilityView(
     override fun functions(): List<FunctionFact> = context.functions
 
     override fun ifs(): List<IfFact> = context.ifs
+
+    override fun guardConditions(): List<SyntaxNode> = context.guardConditions
 
     override fun tries(): List<TryFact> = context.tries
 

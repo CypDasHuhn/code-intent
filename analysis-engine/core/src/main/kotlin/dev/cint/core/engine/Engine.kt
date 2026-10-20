@@ -31,6 +31,7 @@ enum class Phase {
 
 interface RuleContext {
     val file: SourceFile
+    val language: String
     val tree: SyntaxTree
     val syntax: SyntaxModel
     val flow: ControlFlow
@@ -157,6 +158,7 @@ class AnalysisContext(
     val config: IntentConfig,
     private val store: AnnotationStore,
 ) : RuleContext {
+    override val language: String get() = config.language
     private var exactIndex: Map<Long, List<Annotation>>? = null
     private var intervalIndex: IntervalIndex? = null
     private var indexRevision = -1L

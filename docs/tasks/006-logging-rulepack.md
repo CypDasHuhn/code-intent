@@ -45,3 +45,20 @@ Re-express logging detection as a single bundled `logging` rule on the new API
   inside this one rule, not three rules; stratum 0 holds a single logging node.
   This refines `§4`'s worked example.
 - Configuration values move to pack config in 013; keep them pack-local now.
+
+## Contract note (2026-10-20)
+
+The logging pack needs facts the frozen `View` did not expose. The following are
+additive `api` members, recorded here and versioned by the pack-compatibility
+check owned by 011:
+
+- `View.language()` — lets one multi-language pack select pack-local defaults
+  without core language branching.
+- `View.typeAt(SyntaxNode)` — oracle-backed receiver type for
+  `logger-interaction`, returning the `api` `TypeRef` projection of the core
+  `TypeFact`.
+- `View.guardConditions()` — exposes the existing core guard/loop condition fact
+  used by `logging-state`.
+
+External `View` implementations must implement these members; 011's API version
+check is the compatibility gate for packs compiled against the previous surface.

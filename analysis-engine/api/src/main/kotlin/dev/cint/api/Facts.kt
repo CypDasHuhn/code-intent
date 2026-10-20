@@ -75,3 +75,9 @@ data class Coverage(
     val hasRealIntent: Boolean get() = intents.any { it != UNTAGGED_INTENT }
     val hasUntagged: Boolean get() = UNTAGGED_INTENT in intents
 }
+
+data class TypeRef(
+    val fqName: String,
+    val source: String,
+    val confidence: Double,
+)
