@@ -2,6 +2,7 @@ package dev.cint.core.artifact
 
 import dev.cint.api.Annotation
 import dev.cint.api.Contribution
+import dev.cint.api.NodeAnchor
 import dev.cint.api.Role
 import dev.cint.api.Span
 import kotlin.test.Test
@@ -28,6 +29,7 @@ class ArtifactTest {
                 startByte = 12,
                 endByte = 26,
                 provenance = listOf(logging, validation),
+                nodeAnchor = NodeAnchor("node-1"),
             )
 
         val json =
@@ -37,6 +39,7 @@ class ArtifactTest {
                 listOf(FileEntry("Sample.vue", "hash", listOf(annotation))),
             )
 
+        assertTrue(json.contains("\"nodeAnchor\":\"node-1\""))
         assertTrue(json.contains("\"provenance\":[{\"rule\":\"logging-state\""))
         assertTrue(json.indexOf("\"rule\":\"validation-guard\"") > json.indexOf("\"provenance\":["))
         assertTrue(json.contains("{\"role\":\"source-intent\",\"intents\":[\"LOGGING\",\"VALIDATION\"],\"evidence\""))
