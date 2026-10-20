@@ -7,11 +7,13 @@ import dev.cint.api.RulePack
 import dev.cint.api.Schedule
 import dev.cint.api.Scheduler
 import dev.cint.api.UNTAGGED_INTENT
+import dev.cint.core.CoreContributors
 
 enum class SchedulerError {
     DUPLICATE_INTENT_OWNER,
     DUPLICATE_RULE_ID,
     RESERVED_INTENT_OWNER,
+    RESERVED_CONTRIBUTOR_ID,
     UNKNOWN_DEPENDENCY,
     DEPENDENCY_CYCLE,
 }
@@ -42,6 +44,13 @@ class ReservedIntentOwner(
 ) : SchedulerException(
         SchedulerError.RESERVED_INTENT_OWNER,
         "rule '${rule.id}' owns reserved intent '$UNTAGGED_INTENT'",
+    )
+
+class ReservedContributorId(
+    val rule: Rule,
+) : SchedulerException(
+        SchedulerError.RESERVED_CONTRIBUTOR_ID,
+        "rule '${rule.id}' uses the reserved core contributor prefix '${CoreContributors.PREFIX}'",
     )
 
 class UnknownDependency(
@@ -96,6 +105,9 @@ class RuleScheduler : Scheduler {
         val rules = packs.flatMap { it.rules() }.sortedWith(ruleOrder)
         var previous: Rule? = null
         for (rule in rules) {
+            if (rule.id.startsWith(CoreContributors.PREFIX)) {
+                throw ReservedContributorId(rule)
+            }
             if (previous?.id == rule.id) {
                 throw DuplicateRuleId(rule.id, listOf(previous, rule))
             }

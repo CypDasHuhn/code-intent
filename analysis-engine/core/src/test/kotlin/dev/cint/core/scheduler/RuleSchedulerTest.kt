@@ -110,6 +110,20 @@ class RuleSchedulerTest {
     }
 
     @Test
+    fun reservedCoreContributorRuleIdFailsWithNamedError() {
+        val rule = TestRule("core:scaffold", "LOGGING")
+
+        val error =
+            assertFailsWith<ReservedContributorId> {
+                RuleScheduler().plan(listOf(TestPack("plugin", listOf(rule))))
+            }
+
+        assertEquals(SchedulerError.RESERVED_CONTRIBUTOR_ID, error.error)
+        assertEquals(rule, error.rule)
+        assertTrue(error.message.orEmpty().contains("core:"))
+    }
+
+    @Test
     fun reservedUntaggedOwnerFailsWithNamedError() {
         val rule = TestRule("example:untagged", UNTAGGED_INTENT)
 
