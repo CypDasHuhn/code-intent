@@ -10,6 +10,7 @@ class RulePackLoader(
     fun load(
         config: Map<String, Map<String, Any?>> = emptyMap(),
         configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
+        overlay: Map<String, Map<String, Any?>> = emptyMap(),
     ): RulePackLoadResult {
         val failures = mutableListOf<RulePackLoadFailure>()
 
@@ -20,9 +21,9 @@ class RulePackLoader(
 
         val state = DiscoveryState()
         val (discovered, resolvedConfig) =
-            discoverRulePacks(classLoader, expectedApiVersion, config, configResolver, state, ::report)
+            discoverRulePacks(classLoader, expectedApiVersion, config, configResolver, overlay, state, ::report)
         val loaded = settleRulePacks(discovered, ::report)
-        for (packId in resolvedConfig.keys) {
+        for (packId in resolvedConfig.keys + overlay.keys) {
             if (packId in state.seenPackIds) continue
             if (state.unidentifiedProviderFailure) {
                 report(

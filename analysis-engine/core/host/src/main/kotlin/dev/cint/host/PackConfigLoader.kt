@@ -19,8 +19,9 @@ internal class PackConfigLoader(
     fun load(
         config: ProjectConfig,
         configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
+        overlay: Map<String, Map<String, Any?>> = emptyMap(),
     ): LoadedPackConfig {
-        val result = loader.load(config.packs, configResolver)
+        val result = loader.load(config.packs, configResolver, overlay)
         return LoadedPackConfig(result.packs, config.core, result.failures)
     }
 }

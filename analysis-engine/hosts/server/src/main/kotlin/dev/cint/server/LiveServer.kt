@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.util.RawValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.Annotation
+import dev.cint.api.ConfigFieldDescriptor
+import dev.cint.api.ConfigFieldKind
+import dev.cint.api.ConfigFieldScope
+import dev.cint.api.RulePackConfigDescriptor
 import dev.cint.core.artifact.AnnotationJson
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.frontend.LanguageFrontend
@@ -18,6 +22,8 @@ import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.host.HostPipeline
 import dev.cint.host.HostSettings
+import dev.cint.host.PackConfigOverlay
+import dev.cint.host.PackConfigOverlayState
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.StandardProtocolFamily
@@ -33,6 +39,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 internal const val LIVE_LSP_TIMEOUT_MS: Long = 750L
+internal const val LIVE_PROTOCOL_VERSION: Int = 2
+
+private data class ResolvedConfigField(
+    val packId: String,
+    val language: String,
+    val field: ConfigFieldDescriptor,
+)
 
 private data class DocState(
     val uri: String,
@@ -52,8 +65,11 @@ class LiveServer(
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val configs = ConcurrentHashMap<String, IntentConfig>()
     private val oracles = ConcurrentHashMap<String, TypeOracle>()
-    private val docs = ConcurrentHashMap<String, DocState>()
+    private val docs = ConcurrentHashMap<BufferedWriter, ConcurrentHashMap<String, DocState>>()
     private val clients = Executors.newCachedThreadPool()
+
+    @Volatile
+    private var configRevision: Long = 0
 
     fun run() {
         val parent = socketPath.parent
@@ -90,19 +106,23 @@ class LiveServer(
         channel.use {
             val reader = BufferedReader(Channels.newReader(channel, StandardCharsets.UTF_8))
             val writer = BufferedWriter(Channels.newWriter(channel, StandardCharsets.UTF_8))
-            while (true) {
-                val line = reader.readLine() ?: break
-                if (line.isBlank()) continue
-                runCatching { handleMessage(line, writer) }
-                    .onFailure { error ->
-                        error.printStackTrace()
-                        sendError(writer, null, error.toString())
-                    }
+            try {
+                while (true) {
+                    val line = reader.readLine() ?: break
+                    if (line.isBlank()) continue
+                    runCatching { handleMessage(line, writer) }
+                        .onFailure { error ->
+                            error.printStackTrace()
+                            sendError(writer, null, error.toString())
+                        }
+                }
+            } finally {
+                docs.remove(writer)
             }
         }
     }
 
-    private fun handleMessage(
+    internal fun handleMessage(
         line: String,
         writer: BufferedWriter,
     ) {
@@ -113,37 +133,78 @@ class LiveServer(
 
         when (method) {
             "initialize" -> {
+                val overlay = configReadState()
                 respond(
                     writer,
                     id,
                     mapOf(
-                        "protocol" to 1,
+                        "protocol" to LIVE_PROTOCOL_VERSION,
                         "root" to root.toString(),
                         "languages" to Frontends.languages(),
+                        "config" to configPayload(overlay.packs, overlay.error),
                     ),
                 )
             }
 
+            "cint/config/read" -> {
+                val overlay = configReadState()
+                val error = overlay.error
+                if (error != null) {
+                    sendError(writer, id, error)
+                } else {
+                    respond(writer, id, configPayload(overlay.packs))
+                }
+            }
+
+            "cint/config/append" -> {
+                val packId = params?.get("packId")?.asText() ?: return sendError(writer, id, "packId is required")
+                val language = params.get("language")?.asText() ?: return sendError(writer, id, "language is required")
+                val field = params.get("field")?.asText() ?: return sendError(writer, id, "field is required")
+                val value = params.get("value")?.asText() ?: return sendError(writer, id, "value is required")
+                if (value.isBlank()) return sendError(writer, id, "value must not be blank")
+                runCatching {
+                    val overlay = configAppend(packId, language, field, value)
+                    republishOpenDocs()
+                    respond(writer, id, configPayload(overlay))
+                }.onFailure { error ->
+                    sendError(writer, id, error.message ?: error.toString())
+                }
+            }
+
+            "cint/config/remove" -> {
+                val packId = params?.get("packId")?.asText() ?: return sendError(writer, id, "packId is required")
+                val language = params.get("language")?.asText() ?: return sendError(writer, id, "language is required")
+                val field = params.get("field")?.asText() ?: return sendError(writer, id, "field is required")
+                val value = params.get("value")?.asText() ?: return sendError(writer, id, "value is required")
+                runCatching {
+                    val overlay = configRemove(packId, language, field, value)
+                    republishOpenDocs()
+                    respond(writer, id, configPayload(overlay))
+                }.onFailure { error ->
+                    sendError(writer, id, error.message ?: error.toString())
+                }
+            }
+
             "textDocument/didOpen" -> {
                 val doc = docFrom(params) ?: return
-                docs[doc.uri] = doc
+                docsFor(writer)[doc.uri] = doc
                 publish(writer, doc)
             }
 
             "textDocument/didChange" -> {
                 val doc = docFrom(params) ?: return
-                docs[doc.uri] = doc
+                docsFor(writer)[doc.uri] = doc
                 publish(writer, doc)
             }
 
             "textDocument/didClose" -> {
                 val uri = params?.get("uri")?.asText() ?: return
-                docs.remove(uri)
+                docsFor(writer).remove(uri)
             }
 
             "cint/analyze" -> {
                 val uri = params?.get("uri")?.asText() ?: return
-                val doc = docs[uri] ?: return
+                val doc = docsFor(writer)[uri] ?: return
                 publish(writer, doc)
                 if (id != null) respond(writer, id, true)
             }
@@ -157,6 +218,129 @@ class LiveServer(
             }
         }
     }
+
+    internal fun configDescriptors(): List<RulePackConfigDescriptor> = packs.configDescriptors()
+
+    internal fun configReadState(): PackConfigOverlayState = PackConfigOverlay.read(root)
+
+    internal fun configRead(): Map<String, Map<String, Any?>> {
+        val overlay = configReadState()
+        if (overlay.error != null) throw IllegalStateException(overlay.error)
+        return overlay.packs
+    }
+
+    internal fun configAppend(
+        packId: String,
+        language: String,
+        field: String,
+        value: String,
+    ): Map<String, Map<String, Any?>> =
+        synchronized(this) {
+            val resolved = resolveConfigField(packId, language, field)
+            applyConfigMutation(resolved.packId) {
+                PackConfigOverlay.append(root, resolved.packId, resolved.language, resolved.field, value)
+            }
+        }
+
+    internal fun configRemove(
+        packId: String,
+        language: String,
+        field: String,
+        value: String,
+    ): Map<String, Map<String, Any?>> =
+        synchronized(this) {
+            val resolved = resolveConfigField(packId, language, field)
+            applyConfigMutation(resolved.packId) {
+                PackConfigOverlay.remove(root, resolved.packId, resolved.language, resolved.field, value)
+            }
+        }
+
+    private fun applyConfigMutation(
+        packId: String,
+        mutate: () -> Map<String, Map<String, Any?>>,
+    ): Map<String, Map<String, Any?>> {
+        val previous = PackConfigOverlay.read(root)
+        val previousError = previous.error
+        if (previousError != null) {
+            throw IllegalStateException("refusing to modify invalid config overlay: $previousError")
+        }
+        val overlay = mutate()
+        packs.reload()
+        // Any target failure means the candidate overlay was not applied, even
+        // when the same failure was already present before this mutation.
+        val failure = packs.failures.firstOrNull { packId in it.packIds }
+        val targetMissing = packs.effectivePacks.none { it.id == packId }
+        if (failure != null || targetMissing) {
+            PackConfigOverlay.restore(root, previous)
+            packs.reload()
+            throw IllegalStateException(
+                failure?.message ?: "rulepack '$packId' failed to reload after config mutation",
+            )
+        }
+        configRevision += 1
+        return overlay
+    }
+
+    internal fun analyzeForTest(
+        uri: String,
+        text: String,
+        language: String,
+    ): List<Annotation> {
+        val frontend = Frontends.forLanguage(language) ?: error("unsupported language: $language")
+        return analyze(frontend, SourceFile(uri, text), settings.intentConfig(frontend.language))
+    }
+
+    private fun resolveConfigField(
+        packId: String,
+        language: String,
+        field: String,
+    ): ResolvedConfigField {
+        val descriptor =
+            packs.configDescriptors().firstOrNull { it.packId == packId }
+                ?: throw IllegalArgumentException("unknown rulepack: $packId")
+        val canonicalLanguage =
+            descriptor.languages.firstOrNull { it.equals(language, ignoreCase = true) }
+                ?: throw IllegalArgumentException("rulepack '$packId' does not support language '$language'")
+        val configField =
+            descriptor.fields.firstOrNull { it.key == field }
+                ?: throw IllegalArgumentException("rulepack '$packId' has no config field '$field'")
+        if (configField.kind != ConfigFieldKind.STRINGS && configField.kind != ConfigFieldKind.STRING_LIST) {
+            throw IllegalArgumentException("rulepack '$packId' field '$field' is not a string list field")
+        }
+        if (
+            configField.scope == ConfigFieldScope.LANGUAGE &&
+            configField.languages.none { it.equals(canonicalLanguage, ignoreCase = true) }
+        ) {
+            throw IllegalArgumentException("rulepack '$packId' field '$field' does not apply to '$canonicalLanguage'")
+        }
+        return ResolvedConfigField(packId, canonicalLanguage, configField)
+    }
+
+    private fun configPayload(
+        overlay: Map<String, Map<String, Any?>> = configRead(),
+        overlayError: String? = null,
+    ): Map<String, Any?> {
+        val result =
+            linkedMapOf<String, Any?>(
+                "packs" to configDescriptors(),
+                "overlay" to overlay,
+            )
+        if (overlayError != null) result["overlayError"] = overlayError
+        return result
+    }
+
+    private fun republishOpenDocs() {
+        for ((writer, clientDocs) in docs.entries.toList()) {
+            for (doc in clientDocs.values.toList()) {
+                runCatching { publish(writer, doc) }
+                    .onFailure { error ->
+                        System.err.println("cint config republish: ${error.message ?: error.javaClass.name}")
+                    }
+            }
+        }
+    }
+
+    private fun docsFor(writer: BufferedWriter): ConcurrentHashMap<String, DocState> = docs.computeIfAbsent(writer) { ConcurrentHashMap() }
 
     private fun docFrom(params: JsonNode?): DocState? {
         val uri = params?.get("uri")?.asText() ?: return null
@@ -178,22 +362,28 @@ class LiveServer(
                 }
         val config = configFor(frontend.language)
         val source = SourceFile(doc.uri, doc.text)
-        val analysis =
+        // Pin the analysis to the config revision it actually observed, then
+        // release the global lock before any socket write. A later mutation may
+        // increment the revision first; the client ignores publishes whose
+        // revision is lower than the last accepted revision.
+        val (analysis, revision) =
             synchronized(this) {
-                runCatching {
-                    analyze(frontend, source, config)
-                }.getOrElse { error ->
-                    System.err.println("cint: analysis failed, using heuristics")
-                    error.printStackTrace()
-                    analyzeHeuristic(frontend, source, config)
-                }
+                val result =
+                    runCatching {
+                        analyze(frontend, source, config)
+                    }.getOrElse { error ->
+                        System.err.println("cint: analysis failed, using heuristics")
+                        error.printStackTrace()
+                        analyzeHeuristic(frontend, source, config)
+                    }
+                result to configRevision
             }
-
         val params =
             mapOf(
                 "uri" to doc.uri,
                 "version" to doc.version,
                 "hash" to contentHash(doc.text),
+                "revision" to revision,
                 "annotations" to analysis.map { RawValue(AnnotationJson.render(it)) },
             )
         write(
@@ -300,8 +490,10 @@ class LiveServer(
         writer: BufferedWriter,
         message: Any,
     ) {
-        writer.write(mapper.writeValueAsString(message))
-        writer.newLine()
-        writer.flush()
+        synchronized(writer) {
+            writer.write(mapper.writeValueAsString(message))
+            writer.newLine()
+            writer.flush()
+        }
     }
 }

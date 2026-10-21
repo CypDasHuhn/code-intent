@@ -7,6 +7,7 @@ internal fun discoverRulePacks(
     expectedApiVersion: Int,
     config: Map<String, Map<String, Any?>>,
     configResolver: RulePackConfigResolver,
+    overlay: Map<String, Map<String, Any?>>,
     state: DiscoveryState,
     report: (RulePackLoadFailure) -> Unit,
 ): Pair<List<LoadedRulePack>, Map<String, Map<String, Any?>>> {
@@ -41,8 +42,10 @@ internal fun discoverRulePacks(
     }
     val loaded = mutableListOf<LoadedRulePack>()
     for (provider in discovered) {
+        val schema = configSchemaOf(provider.pack)
         val configured = configureRulePack(provider.pack, provider.id, resolvedConfig, report) ?: continue
-        validateRulePack(configured, provider.sourceClassName, expectedApiVersion, report)?.let { loaded += it }
+        val additive = configureRulePackAdditive(configured, provider.id, overlay, report) ?: continue
+        validateRulePack(additive, provider.sourceClassName, expectedApiVersion, report, schema)?.let { loaded += it }
     }
     val packs =
         rejectDuplicatePackIds(loaded, report)

@@ -3,6 +3,7 @@ package dev.cint.api
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 private data class TestConfig(
@@ -11,6 +12,19 @@ private data class TestConfig(
     val flags: Set<String> = setOf("base"),
     val wrappers: Map<String, Set<String>> = mapOf("root" to setOf("wrapper")),
 )
+
+private data class ListConfig(
+    val names: List<String> = listOf("default"),
+)
+
+private val listSchema =
+    ConfigSchema.of(
+        ConfigField.stringList<ListConfig>(
+            "names",
+            { it.names },
+            { config, value -> config.copy(names = value) },
+        ),
+    )
 
 private val testSchema =
     ConfigSchema.of(
@@ -113,6 +127,42 @@ private class ConfigTestPack(
         )
 
     override fun withConfig(config: TestConfig): SingleIntentPack<TestConfig> = ConfigTestPack(config)
+}
+
+private class LegacyConfigurablePack : ConfigurableRulePack {
+    override val id: String = "legacy"
+    override val languages: Set<String> = setOf("kotlin")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun configure(values: Map<String, Any?>): RulePack = this
+
+    override fun rules(): List<Rule> =
+        listOf(
+            object : Rule {
+                override val id: String = "legacy:rule"
+                override val owns: Intent = "LEGACY"
+                override val reads: Set<Intent> = emptySet()
+
+                override fun run(view: View): List<Emit> = emptyList()
+            },
+        )
+}
+
+private class LanguageConfigTestPack : ConfigurableRulePack {
+    override val id: String = "language-test"
+    override val languages: Set<String> = setOf("kotlin", "javascript")
+    override val apiVersion: Int = CINT_API_VERSION
+
+    override fun configure(values: Map<String, Any?>): RulePack = this
+
+    override fun configSchema(): ConfigSchema<*> =
+        LanguageConfig.schema<TestConfig, LanguageConfig<TestConfig>>(
+            languageSchema = testSchema,
+            get = { it.values },
+            set = { _, languages -> LanguageConfig(languages) },
+        )
+
+    override fun rules(): List<Rule> = emptyList()
 }
 
 private fun emit(label: String): Emit =
@@ -279,6 +329,91 @@ class ConfigSupportTest {
                 )
             }
         assertTrue(error.message.orEmpty().contains("logging.vue: unknown language"))
+    }
+
+    @Test
+    fun schemaDescriptorReportsFieldKindsAndLanguageScope() {
+        val descriptor = LanguageConfigTestPack().configSchema().describe()
+        assertTrue(descriptor.fields.isEmpty())
+
+        val language = assertNotNull(descriptor.language)
+        assertEquals(
+            listOf("name", "enabled", "flags", "wrappers"),
+            language.fields.map { it.key },
+        )
+        assertEquals(ConfigFieldKind.STRING, language.fields.first { it.key == "name" }.kind)
+        assertEquals(ConfigFieldKind.BOOLEAN, language.fields.first { it.key == "enabled" }.kind)
+        assertEquals(ConfigFieldKind.STRINGS, language.fields.first { it.key == "flags" }.kind)
+        assertEquals(ConfigFieldKind.STRING_SETS, language.fields.first { it.key == "wrappers" }.kind)
+        assertTrue(language.fields.all { it.scope == ConfigFieldScope.LANGUAGE })
+    }
+
+    @Test
+    fun packDescriptorIncludesRulesAndLanguageScopedFields() {
+        val descriptor = LanguageConfigTestPack().configDescriptor()
+
+        assertEquals("language-test", descriptor.packId)
+        assertEquals(setOf("kotlin", "javascript"), descriptor.languages)
+        assertTrue(descriptor.rules.isEmpty())
+        assertEquals(
+            listOf("name", "enabled", "flags", "wrappers"),
+            descriptor.fields.map { it.key },
+        )
+        assertTrue(descriptor.fields.all { it.scope == ConfigFieldScope.LANGUAGE })
+        assertTrue(descriptor.fields.all { it.languages == listOf("javascript", "kotlin") })
+
+        val rules = ConfigTestPack().configDescriptor().rules
+        assertEquals(listOf("test:test"), rules.map { it.id })
+        assertEquals("TEST", rules.single().owns)
+        assertEquals(setOf("DEPENDENCY"), rules.single().reads)
+    }
+
+    @Test
+    fun schemaAdditiveDecodeUnionsCollectionsAndReplacesScalars() {
+        val current =
+            TestConfig(
+                name = "base",
+                enabled = true,
+                flags = setOf("base", "shared"),
+                wrappers = mapOf("root" to setOf("a")),
+            )
+        val decoded =
+            testSchema.decodeAdditive(
+                current,
+                mapOf(
+                    "name" to "overlay",
+                    "enabled" to false,
+                    "flags" to listOf("audit", "shared"),
+                    "wrappers" to mapOf("root" to listOf("b"), "extra" to listOf("c")),
+                ),
+            )
+
+        assertEquals("overlay", decoded.name)
+        assertEquals(false, decoded.enabled)
+        assertEquals(setOf("base", "shared", "audit"), decoded.flags)
+        assertEquals(setOf("a", "b"), decoded.wrappers.getValue("root"))
+        assertEquals(setOf("c"), decoded.wrappers.getValue("extra"))
+    }
+
+    @Test
+    fun additiveStringListUnionsAndDeduplicates() {
+        val current = ListConfig(names = listOf("base", "shared"))
+
+        val fromList = listSchema.decodeAdditive(current, mapOf("names" to listOf("shared", "overlay")))
+        assertEquals(listOf("base", "shared", "overlay"), fromList.names)
+
+        val fromScalar = listSchema.decodeAdditive(current, mapOf("names" to "scalar"))
+        assertEquals(listOf("base", "shared", "scalar"), fromScalar.names)
+    }
+
+    @Test
+    fun oldStyleConfigurablePackStillYieldsMetadataWithEmptyFields() {
+        val descriptor = LegacyConfigurablePack().configDescriptor()
+
+        assertEquals("legacy", descriptor.packId)
+        assertEquals(listOf("legacy:rule"), descriptor.rules.map { it.id })
+        assertEquals(setOf("kotlin"), descriptor.languages)
+        assertTrue(descriptor.fields.isEmpty())
     }
 
     @Test

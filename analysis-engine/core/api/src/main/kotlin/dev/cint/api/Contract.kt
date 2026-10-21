@@ -250,6 +250,11 @@ abstract class SingleIntentPack<C : Any>(
     override fun configure(values: Map<String, Any?>): RulePack =
         if (values.isEmpty()) this else withConfig(schema.decode(config, values, id))
 
+    override fun configureAdditive(values: Map<String, Any?>): RulePack =
+        if (values.isEmpty()) this else withConfig(schema.decodeAdditive(config, values, id))
+
+    override fun configSchema(): ConfigSchema<*> = schema
+
     override fun rules(): List<Rule> = listOf(SingleIntentRule(ruleId, intent, reads, matchers))
 }
 

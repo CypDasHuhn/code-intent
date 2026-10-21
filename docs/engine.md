@@ -158,6 +158,32 @@ Missing values use the owning pack's defaults. Unknown packs and keys are
 reported. Purity is explicit: an annotation means pure; its absence means
 impure. There is no body inference.
 
+An optional user overlay at `<root>/.cint/config.overlay.yml` is auto-discovered
+on load and after live config mutations. It is keyed by pack id; `PACK`-scoped
+fields sit directly under the pack and `LANGUAGE`-scoped fields nest under the
+language:
+
+```yaml
+logging:
+  kotlin:
+    methods: [audit]
+
+validation:
+  predicates: [isPresent]
+```
+
+Additive overlay support is opt-in: a pack must implement
+`ConfigurableRulePack.configureAdditive` (normally via
+`ConfigSchema.decodeAdditive`). For those packs the overlay is applied after the
+project config with additive semantics: string lists and sets union with the
+effective pack value, string-set maps recurse, and scalars from the overlay win.
+Packs that do not opt in keep their project/default values; the loader reports
+`UNSUPPORTED_PACK_OVERLAY`, and the server rejects the mutation and rolls the
+overlay back. All bundled packs use `SingleIntentPack` and therefore support
+additive overlay. The overlay only changes pack config; it never creates source
+annotations, contributions, evidence, confidence, or magic comments. A malformed
+overlay is reported, and mutations are refused until it is fixed.
+
 ## LSP sharing
 
 The Kotlin oracle connects to the **same** `kotlin-lsp --multi-client` server
@@ -179,12 +205,41 @@ The server can run as a per-project daemon over a Unix socket:
 cint-server --socket /path/to/project.sock --root /path/to/project
 ```
 
-Transport is NDJSON JSON-RPC. The client sends `textDocument/didOpen`,
-`didChange`, and `didClose` with full text and a monotonic version. The server
-re-runs that file and emits `cint/publishTags` with the analyzed
-version, content hash, and annotations. `cint/analyze` requests an
-explicit re-run. Profiles and shards stay client-side; changing them never
-re-runs analysis.
+Transport is NDJSON JSON-RPC, protocol `2`. `initialize` takes
+`{protocol, root, client}` and returns `{protocol, root, languages, config}`.
+`config` is `{packs, overlay}`: `packs` lists pack descriptors (`packId`,
+`rules` with `id`/`owns`/`reads`, `languages`, and `fields` with
+`key`/`kind`/`scope`/`languages`), and `overlay` is the user overlay map. An
+unreadable overlay adds `overlayError` to `config`. Field `kind` is one of
+`STRING`, `BOOLEAN`, `STRINGS`, `STRING_LIST`, `STRING_SETS`, `CUSTOM`; `scope`
+is `PACK` or `LANGUAGE`, and only language-scoped fields carry concrete
+`languages`. The server answers with its own protocol version and does not
+negotiate the client's requested value.
+
+The client sends `textDocument/didOpen`, `didChange`, and `didClose` with full
+text and a monotonic version. The server re-runs that file and emits
+`cint/publishTags` with the analyzed version, content hash, config revision, and
+annotations. The client ignores stale out-of-order publishes whose config
+revision is older than the last accepted revision. Analysis and revision
+sampling are serialized under the global lock; socket writes and config
+republishes happen outside it. `cint/analyze` requests an explicit re-run.
+Profiles and shards stay client-side; changing them never re-runs analysis.
+
+Config mutations are protocol-2 only:
+
+- `cint/config/read` takes no params and returns `{packs, overlay}`.
+- `cint/config/append` and `cint/config/remove` take
+  `{packId, language, field, value}` and return the same `{packs, overlay}`.
+  They validate the pack, language, field, kind (`STRINGS` or `STRING_LIST`),
+  and language scope, write `<root>/.cint/config.overlay.yml`, reload packs, bump
+  the config revision, and republish tags for open documents. If the target pack
+  does not support additive overlay (`UNSUPPORTED_PACK_OVERLAY`), the server
+  restores or deletes the overlay, reloads the previous state, and reports an
+  error without bumping the revision.
+
+Failures use the existing JSON-RPC error shape `{code: -32000, message}`.
+`cint/config/read` errors when the overlay is unreadable; append/remove also
+refuse to overwrite an invalid overlay.
 
 Flags: `--socket`, `--root`, `--no-lsp`, `--config`, `--lang`. The live server
 reuses the shared `kotlin-lsp` socket. The HTTP server remains available for

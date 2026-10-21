@@ -207,6 +207,14 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
   are reported.
 - Language-specific detection values are pack config, not duplicated per
   language in one global file.
+- An optional `<root>/.cint/config.overlay.yml` is auto-discovered and applied
+  after the project config. Additive merge is opt-in per pack via
+  `ConfigurableRulePack.configureAdditive`/`ConfigSchema.decodeAdditive` (string
+  lists/sets union, string-set maps recurse, scalars from the overlay win). A
+  non-opt-in pack keeps its project/default values; the server reports
+  `UNSUPPORTED_PACK_OVERLAY`, rejects the mutation, and rolls the overlay back.
+  All bundled packs use `SingleIntentPack` and support overlay. Live config
+  commands write it through the server, which reloads packs in place.
 
 ## 9. Modules and loading
 
@@ -236,10 +244,12 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
   compiler or classloader swapping.
 - **Graceful degradation:** a missing, corrupt, or version-mismatched pack is
   reported and skipped; the engine keeps analyzing with what loaded.
-- **Reload is daemon restart.** A pack change is a dev-time action, never a
-  per-edit one; the daemon is per-project and detached, and the client re-opens
-  buffers on reconnect, so `:CintServerRestart` is a transparent reload path.
-  No hot-swap machinery is built.
+- **Reload.** A pack change is normally a dev-time action, never a per-edit one;
+  the daemon is per-project and detached, and the client re-opens buffers on
+  reconnect, so `:CintServerRestart` is a transparent reload path for new pack
+  code. Config-overlay mutations are the exception: the server owns the write
+  and calls `HostPipeline.reload()` for that project without restarting the
+  daemon. There is no general hot-swap of pack code.
 
 ## 10. Deferred / non-goals
 

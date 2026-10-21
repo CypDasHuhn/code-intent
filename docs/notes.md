@@ -392,14 +392,27 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - Product: **CodeIntent**. CLI: `cint`. Server: `cint-server`.
 - Kotlin package: `dev.cint.*`. Lua module: `require("cint")`.
 - Commands: `:CintRender|Clear|Toggle|Refresh|Info|Profile|ProfileEdit|`
-  `ProfileReload|Shard|ShardUndo|ShardReset|ShardHistory|Analyze|LiveTags|`
-  `ServerStatus|ServerDisconnect|ServerStop|ServerRestart`.
+  `ProfileReload|Shard|ShardUndo|ShardReset|ShardHistory|Analyze|ConfigAdd|`
+  `ConfigRemove|LiveTags|ServerStatus|ServerDisconnect|ServerStop|`
+  `ServerRestart`.
 - Project presentation config: `<root>/.cint/profiles.lua`. Global config:
   `stdpath("config")/cint/profiles.lua`.
 - Detection config is a project YAML file passed with `--config`; it is keyed by
   pack id with a `core:` policy section. It is not auto-discovered.
+- User config overlay: `<root>/.cint/config.overlay.yml`, auto-discovered and
+  applied after project config. Additive merge is opt-in per pack via
+  `ConfigurableRulePack.configureAdditive`/`ConfigSchema.decodeAdditive` (string
+  lists/sets union, string-set maps recurse, scalars from the overlay win); all
+  bundled packs use `SingleIntentPack` and support it, while a non-opt-in pack
+  keeps its project/default values and the server rejects and rolls back the
+  mutation (`UNSUPPORTED_PACK_OVERLAY`). It only changes pack config: no source
+  annotations, contributions, evidence, confidence, or magic comments.
 - Socket dir: `cint-<uid>`. Log: `stdpath("log")/cint-live.log`.
-- JSON-RPC: `cint/publishTags`, `cint/analyze`, `cint/error`.
+- JSON-RPC protocol 2: `initialize` (returns pack/field descriptors in
+  `config`), `cint/publishTags`, `cint/analyze`, `cint/config/read|append|remove`,
+  `cint/error`. Publishes carry a config revision; the client ignores stale
+  out-of-order revisions. Analysis and revision sampling are serialized under
+  the global lock, while socket writes and republishes happen outside it.
 - Magic comments: `// cint:bookkeeping`, `// cint:validation`.
 
 ### Engine

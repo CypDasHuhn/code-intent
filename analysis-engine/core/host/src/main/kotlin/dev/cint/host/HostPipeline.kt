@@ -2,9 +2,11 @@ package dev.cint.host
 
 import dev.cint.api.Contribution
 import dev.cint.api.RulePack
+import dev.cint.api.RulePackConfigDescriptor
 import dev.cint.api.RulePackConfigResolver
 import dev.cint.api.Span
 import dev.cint.api.UNTAGGED_INTENT
+import dev.cint.api.configDescriptor
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.facts.frontend.SplitRegion
@@ -27,24 +29,59 @@ import java.util.concurrent.ConcurrentHashMap
 
 class HostPipeline(
     private val loader: RulePackLoader = defaultLoader(),
-    project: ProjectConfig = ProjectConfig(),
-    configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
+    private val project: ProjectConfig = ProjectConfig(),
+    private val configResolver: RulePackConfigResolver = RulePackConfigResolver.NONE,
     private val root: Path? = null,
 ) {
-    private val loaded = PackConfigLoader(loader).load(project, configResolver)
-    private val discovered = RulePackLoadResult(loaded.packs, loaded.failures)
+    private val reloadLock = Any()
     private val engine = RuleEngine()
     private val snapshots = ConcurrentHashMap<String, RulePackLoadResult>()
     private val plans = ConcurrentHashMap<String, ExecutionPlan>()
 
+    @Volatile
+    private var loaded = loadPacks()
+
+    @Volatile
+    private var discovered = RulePackLoadResult(loaded.packs, loaded.failures)
+
     val failures: List<RulePackLoadFailure>
         get() = loaded.failures + snapshots.values.flatMap { it.failures }
 
-    fun packs(language: String): List<RulePack> = snapshot(language).packs
+    val effectivePacks: List<RulePack>
+        get() = loaded.packs
+
+    fun configDescriptors(): List<RulePackConfigDescriptor> =
+        synchronized(reloadLock) {
+            loaded.packs.map { it.configDescriptor() }
+        }
+
+    fun reload() {
+        synchronized(reloadLock) {
+            loaded = loadPacks()
+            discovered = RulePackLoadResult(loaded.packs, loaded.failures)
+            snapshots.clear()
+            plans.clear()
+        }
+    }
+
+    private fun loadPacks(): LoadedPackConfig {
+        val overlay = PackConfigOverlay.read(root)
+        if (overlay.error != null) {
+            System.err.println("cint config overlay: ${overlay.error}")
+        }
+        return PackConfigLoader(loader).load(project, configResolver, overlay.packs)
+    }
+
+    fun packs(language: String): List<RulePack> =
+        synchronized(reloadLock) {
+            snapshot(language).packs
+        }
 
     fun plan(language: String): ExecutionPlan =
-        plans.computeIfAbsent(normalize(language)) {
-            engine.plan(snapshot(it).packs)
+        synchronized(reloadLock) {
+            plans.computeIfAbsent(normalize(language)) {
+                engine.plan(snapshot(it).packs)
+            }
         }
 
     fun analyze(

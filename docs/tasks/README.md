@@ -46,6 +46,7 @@ host and client cutover at the end.
 | 032 | [remove evidence from annotation contract](032-remove-evidence-from-contract.md) | done | 019, 025 | Drop evidence from API/provenance/output/tests; API v4. |
 | 033 | [renderer package layout](033-renderer-package-layout.md) | done | 028 | Group lua/cint modules into subpackages. |
 | 034 | [engine module layout](034-engine-module-layout.md) | done | 024, 027 | Move Gradle modules under analysis-engine/modules. |
+| 035 | [protocolized config overlay](035-protocolized-config-overlay.md) | done | 030 | Config descriptors over the live protocol plus additive user symbol overlay. |
 
 ## Resolved decisions
 

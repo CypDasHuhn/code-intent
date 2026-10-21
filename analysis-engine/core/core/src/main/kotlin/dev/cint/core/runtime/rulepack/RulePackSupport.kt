@@ -19,6 +19,7 @@ enum class RulePackLoadFailureKind {
     UNKNOWN_PACK_CONFIG,
     UNVERIFIED_PACK_CONFIG,
     INVALID_PACK_CONFIG,
+    UNSUPPORTED_PACK_OVERLAY,
 }
 
 data class RulePackLoadFailure(
@@ -67,8 +68,12 @@ internal class LoadedRulePack(
     override val apiVersion: Int,
     private val cachedRules: List<Rule>,
     val sourceClassName: String,
-) : RulePack {
+    private val schema: ConfigSchema<*>? = null,
+) : RulePack,
+    ConfigSchemaProvider {
     override fun rules(): List<Rule> = cachedRules
+
+    override fun configSchema(): ConfigSchema<*>? = schema
 }
 
 internal class LoadedRule(
@@ -152,6 +157,11 @@ internal fun preflightRulePack(
     return id
 }
 
+internal fun configSchemaOf(pack: RulePack): ConfigSchema<*>? =
+    runCatching {
+        (pack as? ConfigSchemaProvider)?.configSchema()
+    }.getOrNull()
+
 internal fun configureRulePack(
     pack: RulePack,
     id: String,
@@ -203,6 +213,74 @@ internal fun configureRulePack(
                 RulePackLoadFailureKind.INVALID_PACK_CONFIG,
                 setOf(id),
                 "rulepack '$id' could not apply config: ${error.message ?: error.javaClass.name}",
+                error,
+            ),
+        )
+        null
+    }
+}
+
+internal fun configureRulePackAdditive(
+    pack: RulePack,
+    id: String,
+    config: Map<String, Map<String, Any?>>,
+    report: (RulePackLoadFailure) -> Unit,
+): RulePack? {
+    val values = config[id] ?: return pack
+    if (values.isEmpty()) return pack
+
+    if (pack !is ConfigurableRulePack) {
+        report(
+            RulePackLoadFailure(
+                RulePackLoadFailureKind.UNSUPPORTED_PACK_OVERLAY,
+                setOf(id),
+                "rulepack '$id' was configured to a plain RulePack and does not support an additive overlay",
+            ),
+        )
+        return pack
+    }
+
+    return try {
+        val configured = pack.configureAdditive(values)
+        if (configured.id != id) {
+            report(
+                RulePackLoadFailure(
+                    RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                    setOf(id),
+                    "rulepack '$id' changed its id while applying additive config",
+                ),
+            )
+            pack
+        } else {
+            configured
+        }
+    } catch (error: UnsupportedOperationException) {
+        report(
+            RulePackLoadFailure(
+                RulePackLoadFailureKind.UNSUPPORTED_PACK_OVERLAY,
+                setOf(id),
+                "rulepack '$id' does not support additive config: ${error.message ?: error.javaClass.name}",
+                error,
+            ),
+        )
+        pack
+    } catch (error: RulePackConfigException) {
+        report(
+            RulePackLoadFailure(
+                RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                setOf(id),
+                "rulepack '$id' has invalid additive config: ${error.message ?: error.javaClass.name}",
+                error,
+            ),
+        )
+        null
+    } catch (error: Throwable) {
+        if (error is VirtualMachineError) throw error
+        report(
+            RulePackLoadFailure(
+                RulePackLoadFailureKind.INVALID_PACK_CONFIG,
+                setOf(id),
+                "rulepack '$id' could not apply additive config: ${error.message ?: error.javaClass.name}",
                 error,
             ),
         )

@@ -360,7 +360,9 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
   and pending state.
 - The daemon holds in-memory docs and loaded engine config; changes to the
   project detection config passed with `--config`, `server_cmd`, LSP flags, or a
-  rebuilt binary require a daemon restart.
+  rebuilt binary require a daemon restart. Config-overlay mutations are the
+  exception: the server writes `<root>/.cint/config.overlay.yml` and reloads
+  packs in place.
 - Profiles/shards are client-side and only re-render cached annotations.
 - Live keeps old marks while a new version is pending; reveal-on-cursor reveals
   all annotations contained in the active scaffold/vertical block.

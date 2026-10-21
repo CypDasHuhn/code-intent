@@ -7,6 +7,7 @@ internal fun validateRulePack(
     className: String,
     expectedApiVersion: Int,
     report: (RulePackLoadFailure) -> Unit,
+    schema: ConfigSchema<*>? = null,
 ): LoadedRulePack? {
     val id =
         try {
@@ -111,7 +112,8 @@ internal fun validateRulePack(
         }
 
     val cachedRules = validateRules(id, rules, report) ?: return null
-    return LoadedRulePack(id, languages, version, cachedRules, className)
+    val capturedSchema = schema ?: configSchemaOf(pack)
+    return LoadedRulePack(id, languages, version, cachedRules, className, capturedSchema)
 }
 
 private fun validateRules(
