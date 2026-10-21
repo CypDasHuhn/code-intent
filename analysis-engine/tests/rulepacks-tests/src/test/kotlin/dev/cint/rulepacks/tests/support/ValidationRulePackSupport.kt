@@ -6,6 +6,7 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.View
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
@@ -20,7 +21,7 @@ internal class NoOpValidationRule : Rule {
     override val owns: Intent = VALIDATION_INTENT
     override val reads: Set<Intent> = emptySet()
 
-    override fun run(view: View): List<Emit> = emptyList()
+    override fun run(view: View): List<RuleEmit> = emptyList()
 }
 
 internal class NoOpValidationPack : RulePack {
@@ -36,6 +37,9 @@ internal fun validationPipeline(input: ValidationInput): List<Annotation> =
 
 internal fun validationSources(input: ValidationInput): List<Annotation> =
     validationPipeline(input).filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
+
+internal fun validationAnalysis(input: ValidationInput): PackAnalysis =
+    analyzePack(input, listOf(BookkeepingRulePack(), ValidationRulePack()))
 
 internal fun parseValidationInput(
     language: String,

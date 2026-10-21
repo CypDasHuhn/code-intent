@@ -52,10 +52,14 @@ data class CandidateEmit(
     override val span: Span,
     override val startByte: Int,
     override val endByte: Int,
-    override val source: String,
+    override val source: String,         // "candidate", "rule:<id>", or "ai:<provider>"
     override val confidence: Double,
     val reason: CandidateReason,         // GAP, LOW_CONFIDENCE, PACK_DOMAIN
     val aiEligible: Boolean = true,
+    val rationale: String? = null,
+    val promptVersion: String? = null,
+    val provider: String? = null,
+    val model: String? = null,
 ) : RuleEmit
 
 interface Rule {
@@ -127,39 +131,72 @@ CandidateEmit (aiEligible)
 ```
 
 - Provider SPI is one-shot and provider-agnostic: fake/local/remote providers.
+  This slice ships only the deterministic fake provider; there is no network
+  path.
 - Prompt is versioned and structured; code and comments are untrusted data.
-- Invalid or out-of-bounds output is dropped. No tool calls, no edits.
-- Async, cancellable, debounced, one in-flight request per document.
-- Cache by `(file, version, analysisRevision, candidateHash, provider, model,
-  promptVersion)`.
+- `CandidateValidator` enforces intent vocabulary, confidence range, byte bounds
+  and containment inside the input candidate, dedupes, and applies
+  `maxCandidates`. Invalid output is dropped. No tool calls, no edits.
+- `SuggestionService` merges AI proposals with the deterministic candidate
+  instead of replacing it, groups candidates by anchor (content hash + byte
+  span), and keeps alternatives for one span. Confirming any alternative
+  resolves the entire anchor group.
+- Async and cancellable with one in-flight request per document. The provider
+  call and suggestion pass use bounded `workerThreads` pools and are interrupted
+  after `timeoutMs`; both pools shut down with the server. The trigger is manual
+  in this slice; idle triggering is a follow-up.
 - AI disabled by default. Pack candidates still work without AI.
 
 ## Candidate lifecycle
 
 - `candidate` — proposed, shown non-destructively.
-- `confirmed` — user accepted; written as a user annotation and re-analyzed.
-- `rejected` — persisted as suppression keyed by path + anchor/content hash +
-  intent.
-- `stale` — anchor no longer matches; drop or re-propose.
+- `confirmed` — user accepted; written to `.cint/user-annotations.json` and
+  re-analyzed as an established `user` source. Confirming one alternative
+  resolves the whole anchor group, so the sibling alternatives stop being
+  published and are no longer confirmable. A confirm record is kept in
+  `.cint/suggestions.json` as audit history. If the user annotation is removed,
+  the next analysis re-proposes the candidate unless it was rejected.
+- `rejected` — persisted as suppression in `.cint/suggestions.json`, keyed by
+  path + anchor/content hash + byte span + sorted intents + reason.
+- `skipped` — hidden for the current server session only; not persisted.
+- `stale` — anchor no longer matches; the decision is refused and the candidate
+  is dropped.
 
-Decisions live in `.cint/suggestions.json`. Established annotations and the
-frozen `Annotation` API are unchanged.
+Each `.cint/suggestions.json` decision stores `candidateId`, `path`,
+`contentHash`, `intents`, `reason`, `decision`, and `createdAt`, plus optional
+`anchorId` and a `startLine`/`startCol`/`endLine`/`endCol` span snapshot. Older
+records without those optional fields still load, with the span defaulting to
+zeros. Established annotations and the frozen `Annotation` API are unchanged.
 
 ## Protocol
 
 Protocol 3 additions:
 
-- `initialize.suggestions` — capability descriptor: enabled, trigger policy,
-  provider/model, known intents. No secrets.
+- `initialize.suggestions` — secret-free capability descriptor
+  `{enabled, trigger, provider, model, knownIntents}`. `enabled` comes from
+  `.cint/suggestions.yml` and defaults to false.
 - `cint/publishCandidates` — `uri`, `version`, `analysisRevision`,
-  `suggestionRevision`, candidate groups.
-- `cint/suggest` / `cint/suggest/cancel` — manual or idle pass.
-- `cint/candidates/decide` — confirm/reject/skip; server persists, re-analyzes
-  on confirm, republishes.
+  `suggestionRevision`, flat `candidates`, and `groups`. A group is one anchor
+  (`anchorId`, `path`, `contentHash`, span/positions) with its alternative
+  candidates. The message is also emitted with empty `candidates`/`groups` after
+  a decision resolves everything.
+- `cint/suggest` — `{uri, version, requestId}`; asynchronous, one pass per
+  document, returns `{accepted, cancelled, count}` or a disabled/stale/busy
+  result. A provider timeout returns `cancelled: true` with `timeout: true` and
+  publishes nothing. `cint/suggest/cancel` takes `{uri?, requestId?}`.
+- `cint/candidates/decide` — `{uri, version, candidateId, decision}` with
+  confirm/reject/skip; the server validates version and anchor hash, persists,
+  re-analyzes on confirm, and republishes. Confirming one alternative resolves
+  the whole anchor group, so siblings are not published afterward.
 
-Candidates carry `source` (`rule:<id>` or `ai:<provider>`), confidence,
-rationale, prompt version, reason, and a stable anchor. Stale versions and
-revisions are discarded.
+Candidates carry `candidateId`, `path`, `contentHash`, `source`
+(`rule:<id>` or `ai:<provider>`), confidence, reason, `aiEligible`, span/bytes,
+and optional `rationale`/`promptVersion`/`provider`/`model`. Stale document
+versions and older revisions are discarded. `analysisRevision` is allocated with
+the analysis and config snapshot under the same lock, so it stays monotonic with
+config revision; candidate publishes older than the cached analysis or the last
+published candidates are dropped, and a suggest pass is discarded if candidate
+state changes before publish.
 
 ## Renderer UX
 
@@ -169,42 +206,46 @@ revisions are discarded.
 - `:CintSuggest` runs a pass; `:CintReview` lists candidates with evidence,
   rationale, and provenance.
 - `[Confirm] [Reject] [Skip]`, plus choosing among alternative intents for one
-  span.
-- AI unavailable or over budget → no candidates, deterministic tags unaffected.
+  span. Confirming an alternative resolves the whole anchor group; the siblings
+  disappear with the republished (possibly empty) candidate list.
+- AI unavailable, timed out, or over budget → no candidates, deterministic tags
+  unaffected. A timeout cancels the pass without publishing partial results.
 
 ## Config and privacy
 
-`.cint/suggestions.yml`:
+`.cint/suggestions.yml` (implemented keys):
 
 ```yaml
 suggestions:
   enabled: false
-  trigger: manual        # manual | idle
-  provider: openai-compatible
-  model: ...
-  apiKeyEnv: CINT_SUGGESTIONS_API_KEY
-  timeoutMs: 4000
-  idleMs: 750
+  trigger: manual        # manual; idle is a follow-up
+  provider: fake         # provider registry id; the current slice ships "fake"
+  model: fake-intent-v1
   maxCandidates: 5
-  allowNewIntents: false
-  privacy:
-    allowGlobs: ["src/**"]
-    redactPatterns: [...]
+  promptVersion: fake-prompt-v1
+  timeoutMs: 4000        # provider interrupt timeout, minimum 1
+  workerThreads: 2       # bounded suggestion/provider pools, clamped 1..8
 ```
 
-Secrets stay server-side. Only bounded candidate context is sent, never the whole
-project by default. Local providers are first-class. Prompt/response logging is
-off by default.
+A missing file defaults to disabled/manual/5 candidates, a 4000 ms timeout, and
+2 worker threads. When disabled, `initialize.suggestions.enabled` is false and
+`cint/suggest` refuses, but pack candidates still publish. Both executor pools
+are bounded by `workerThreads` and are shut down on server shutdown. Secrets
+stay server-side; future local/remote provider configuration (keys, privacy
+globs, additional timeouts) is a follow-up. Prompt/response logging is off by
+default.
 
 ## Modules
 
-- `api` — `RuleEmit`, `CandidateEmit`, v5 rule contract.
-- `core` — scheduler partition and `AnalysisOutput`; no AI.
+- `api` — `RuleEmit`, `Emit`, `CandidateEmit`, v5 rule contract.
+- `core` — scheduler partition, `AnalysisOutput`, candidate identity; no AI.
 - `rulepacks` — deterministic secondaries where domain-specific.
-- `suggest` — context builder, provider SPI, validator, candidate merging,
-  policy. No server/editor/provider SDK.
-- provider modules — optional local/remote implementations.
-- `server` — async orchestration, config, credentials, protocol, persistence.
+- `suggest` — context model, provider SPI/registry, fake provider, validator,
+  merge, and grouping. Depends on `api` and `core`; no server/editor/provider
+  SDK.
+- provider modules — optional local/remote implementations (follow-up).
+- `server` — async orchestration, settings, protocol, persistence, fake provider
+  instance.
 - `nvim-renderer` — candidate rendering and review UI.
 - `cli` — deterministic candidates only; no AI by default.
 

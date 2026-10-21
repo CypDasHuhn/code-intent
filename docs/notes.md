@@ -393,7 +393,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - Kotlin package: `dev.cint.*`. Lua module: `require("cint")`.
 - Commands: `:CintRender|Clear|Toggle|Refresh|Info|Profile|ProfileEdit|`
   `ProfileReload|Shard|ShardUndo|ShardReset|ShardHistory|Analyze|ConfigAdd|`
-  `ConfigRemove|LiveTags|ServerStatus|ServerDisconnect|ServerStop|`
+  `ConfigRemove|Suggest|Review|LiveTags|ServerStatus|ServerDisconnect|ServerStop|`
   `ServerRestart`.
 - Project presentation config: `<root>/.cint/profiles.lua`. Global config:
   `stdpath("config")/cint/profiles.lua`.
@@ -407,24 +407,55 @@ Authoritative for resuming. Older sections are historical where they conflict.
   keeps its project/default values and the server rejects and rolls back the
   mutation (`UNSUPPORTED_PACK_OVERLAY`). It only changes pack config: no source
   annotations, contributions, evidence, confidence, or magic comments.
+- Suggestion config: `<root>/.cint/suggestions.yml` under `suggestions:` with
+  `enabled` (default false), `trigger`, `provider`, `model`, `maxCandidates`,
+  `promptVersion`, `timeoutMs` (default 4000, min 1), and `workerThreads`
+  (default 2, clamped 1..8). It gates `cint/suggest`; deterministic pack
+  candidates still publish when it is disabled. The suggestion and provider
+  pools are bounded by `workerThreads`, provider calls are interrupted after
+  `timeoutMs`, and both pools shut down with the server. Decisions live in
+  `<root>/.cint/suggestions.json`; confirm also writes
+  `<root>/.cint/user-annotations.json`. Decision records carry optional
+  `anchorId` plus a span snapshot, and older records without them still load.
 - Socket dir: `cint-<uid>`. Log: `stdpath("log")/cint-live.log`.
-- JSON-RPC protocol 2: `initialize` (returns pack/field descriptors in
-  `config`), `cint/publishTags`, `cint/analyze`, `cint/config/read|append|remove`,
-  `cint/error`. Publishes carry a config revision; the client ignores stale
-  out-of-order revisions. Analysis and revision sampling are serialized under
-  the global lock, while socket writes and republishes happen outside it.
+- JSON-RPC protocol 3: `initialize` (returns pack/field descriptors in `config`
+  and a secret-free `suggestions` descriptor), `cint/publishTags`,
+  `cint/publishCandidates`, `cint/analyze`, `cint/suggest`,
+  `cint/suggest/cancel`, `cint/candidates/decide`,
+  `cint/config/read|append|remove`, `cint/error`. Publishes carry the config
+  revision and a per-document monotonic `analysisRevision`; candidates add a
+  server-wide `suggestionRevision`. The analysis, config snapshot, and new
+  `analysisRevision` are allocated together under the global lock, so revision
+  order matches analysis order; candidate publishes older than the cached
+  analysis or the last published candidates are dropped. The client ignores
+  stale versions and older revisions. Analysis and revision sampling are
+  serialized under the global lock, while socket writes and republishes happen
+  outside it. A `cint/suggest` provider timeout returns `cancelled: true` with
+  `timeout: true` and publishes nothing.
 - Magic comments: `// cint:bookkeeping`, `// cint:validation`.
 
 ### Engine
 
-- Gradle modules: `api`, `rulepacks`, `core`, `host`, `treesitter`, `lsp`,
-  `frontend`, `cli`, `server`; test-only `rulepacks-tests`, `test-fixtures`,
-  `integration-tests`.
-- Dependency line: `core` depends on `api` only. `host` depends on `api` and
-  `core`. `frontend` binds parser/syntax/oracle. CLI, HTTP, and live server use
-  `host`'s `HostPipeline`; `rulepacks` supplies bundled detection.
-- `api` holds the frozen contract (`Intent`, `Rule`, `RulePack`, `View`, `Emit`,
-  `Annotation`, DSL). Rules own one intent; composition roles are core-only.
+- Gradle modules: `api`, `rulepacks`, `core`, `suggest`, `host`, `treesitter`,
+  `lsp`, `frontend`, `cli`, `server`; test-only `rulepacks-tests`,
+  `test-fixtures`, `integration-tests`.
+- Dependency line: `core` depends on `api` only. `suggest` depends on `api` and
+  `core`; `host` depends on `api` and `core`. `frontend` binds
+  parser/syntax/oracle. CLI, HTTP, and live server use `host`'s `HostPipeline`;
+  `rulepacks` supplies bundled detection.
+- `api` holds the frozen v5 contract (`Intent`, `Rule`, `RulePack`, `View`,
+  `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, DSL). Rules own one intent;
+  composition roles are core-only.
+- Candidate channel: `Rule.run` returns `List<RuleEmit>`; `settle` partitions
+  established `Emit`s from `CandidateEmit`s and returns
+  `AnalysisOutput(annotations, candidates)`. Candidates never enter the
+  annotation store, composition, or `reads`; fixpoint rules keep candidates from
+  the final iteration. Identity is path + anchor/content hash + byte span +
+  sorted intents + reason. Alternatives at one anchor form a group; confirming
+  any of them resolves the whole group, so siblings are no longer published or
+  confirmable. Decision republishes still emit `cint/publishCandidates`, with
+  empty groups when nothing remains. Removing the confirmed user annotation
+  lets the next analysis re-propose the candidate unless it was rejected.
 - Rulepack loading reads `META-INF/services/dev.cint.api.RulePack` explicitly,
   validates API version/ownership, and degrades per provider. The per-language
   error-handling packs are constructed by `BundledRulePackSelection` because
@@ -461,8 +492,16 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - Shard syntax:
   `shards = { NAME = { tags = { LOGGING = { meaning = "IGNORE" } } } }`; shards
   are config patches.
+- Candidates render non-destructively with an undercurl and `?` sign; status
+  text is `CodeIntent: N unsure`. `:CintSuggest` requests a pass;
+  `:CintReview` picks a group/alternative then `Confirm`/`Reject`/`Skip`.
+  Confirming an alternative resolves the whole anchor group, so siblings vanish
+  with the republished candidate list. Candidate commands are gated on a
+  returned protocol >= 3 with `suggestions.enabled ~= false`.
 - Tests: `nvim-renderer/tests/live_spec.lua` drives an in-process fake daemon;
-  `render_spec.lua` covers extmarks, profiles, and language mapping.
+  `candidates_spec.lua` covers candidate publish/revision gating, suggest,
+  review, decisions, and the protocol-2 fallback; `render_spec.lua` covers
+  extmarks, profiles, and language mapping.
 
 ### Daemon latency / Rust
 

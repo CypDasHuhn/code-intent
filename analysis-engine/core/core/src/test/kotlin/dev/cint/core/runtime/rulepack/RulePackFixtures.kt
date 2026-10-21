@@ -1,13 +1,14 @@
 package dev.cint.core.runtime.rulepack
 
 import dev.cint.api.*
+import dev.cint.api.RuleEmit
 
 private class FixtureRule(
     override val id: String,
     override val owns: Intent,
     override val reads: Set<Intent> = emptySet(),
 ) : Rule {
-    override fun run(view: View): List<Emit> = emptyList()
+    override fun run(view: View): List<RuleEmit> = emptyList()
 }
 
 class FixtureGoodPack : RulePack {
@@ -104,10 +105,10 @@ class FixtureOlderVersionPack : RulePack {
 }
 
 @RulePackApi(3)
-class FixtureVersionThreePack : RulePack {
+class FixtureVersionFourPack : RulePack {
     override val id: String = "fixture-v3"
     override val languages: Set<String> = setOf("kotlin")
-    override val apiVersion: Int = 3
+    override val apiVersion: Int = 4
 
     override fun rules(): List<Rule> = listOf(FixtureRule("fixture-v3:logging", "V3_LOGGING"))
 }
@@ -165,7 +166,7 @@ class FixtureThrowingRuleMetadataPack : RulePack {
                 override val owns: Intent = "THROWING_RULE"
                 override val reads: Set<Intent> = emptySet()
 
-                override fun run(view: View): List<Emit> = emptyList()
+                override fun run(view: View): List<RuleEmit> = emptyList()
             },
         )
 }

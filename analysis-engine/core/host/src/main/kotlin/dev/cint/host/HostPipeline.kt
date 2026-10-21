@@ -22,6 +22,7 @@ import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.core.user.UserAnnotation
 import dev.cint.core.user.UserAnnotationResolver
+import dev.cint.core.user.UserAnnotationsFile
 import dev.cint.core.user.UserAnnotationsJson
 import java.nio.file.Files
 import java.nio.file.Path
@@ -108,7 +109,7 @@ class HostPipeline(
         region: SplitRegion? = null,
     ): List<Contribution> {
         val annotationsRoot = root ?: return emptyList()
-        val path = annotationsRoot.resolve(".cint").resolve("user-annotations.json")
+        val path = UserAnnotationsFile.path(annotationsRoot)
         if (!Files.isRegularFile(path)) return emptyList()
         val records =
             runCatching {
@@ -199,7 +200,7 @@ class HostPipeline(
 
     private fun userIntents(): Set<String> {
         val annotationsRoot = root ?: return emptySet()
-        val path = annotationsRoot.resolve(".cint").resolve("user-annotations.json")
+        val path = UserAnnotationsFile.path(annotationsRoot)
         if (!Files.isRegularFile(path)) return emptySet()
         return runCatching {
             UserAnnotationsJson

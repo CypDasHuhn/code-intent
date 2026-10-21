@@ -101,14 +101,15 @@ class RulePackLoaderConfigTest {
     }
 
     @Test
-    fun versionThreePacksAreRejectedByTheVersionFourLoader() {
-        assertEquals(4, CINT_API_VERSION)
+    fun versionFourPacksAreRejectedByTheVersionFiveLoader() {
+        assertEquals(5, CINT_API_VERSION)
 
-        loadWithProviders(good, FixtureVersionThreePack::class.java.name) { result ->
+        loadWithProviders(good, FixtureVersionFourPack::class.java.name) { result ->
             assertEquals(listOf("fixture-good"), result.loadedPackIds)
             val failure = result.failures.single()
             assertEquals(RulePackLoadFailureKind.INCOMPATIBLE_API_VERSION, failure.kind)
-            assertTrue(failure.message.contains("targets api version 3, expected 4"))
+            assertTrue(failure.message.contains("api version"))
+            assertTrue(failure.message.contains("expected 5"))
         }
     }
 

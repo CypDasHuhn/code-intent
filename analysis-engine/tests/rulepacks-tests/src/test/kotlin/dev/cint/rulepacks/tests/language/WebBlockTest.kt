@@ -31,7 +31,7 @@ class WebBlockTest {
                 TypescriptParser().parse(source)
             }
         val model = ProfileSyntaxModel(SyntaxProfiles.load(language))
-        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig(language), testPacks())
+        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig(language), testPacks()).annotations
     }
 
     @Test

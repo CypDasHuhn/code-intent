@@ -180,7 +180,7 @@ A property/local is `DERIVATIVE_USE` when its reads flow into classified spans.
 
 Confidence is **not** a user-tuned filter. It is a review state.
 
-Proposed states:
+Review states:
 
 - `established` — certified; normal painting.
 - `candidate` — possible intent; shown non-destructively; needs review.
@@ -194,36 +194,43 @@ Candidate rules:
 - be reviewable on demand, not with popups while typing;
 - show counts such as `CodeIntent: 3 unsure`.
 
-Possible UX:
+Implemented UX:
 
 ```text
 :CintReview
-Possible VALIDATION
-evidence: if (target == null) { player.msg(...); return }
+src/.../NavCommands.kt:42 · VALIDATION · 1 alternative(s)
 [Confirm] [Reject] [Skip]
 ```
 
-- Confirm → this occurrence becomes established and is persisted.
-- Reject → this occurrence is suppressed and persisted.
-- Skip → unchanged.
+- Confirm → this occurrence becomes established: the server writes an existing
+  `.cint/user-annotations.json` record and the next analysis re-evaluates it as
+  a `user` source. It also keeps a confirm record as audit history.
+- Reject → this occurrence is suppressed in `.cint/suggestions.json` and is not
+  proposed again for the same identity.
+- Skip → unchanged for the current server session only.
 
 Confirmation is **occurrence-scoped**. It does not raise the rule's confidence
-for other tags or other files. Confirmed knowledge can be stored in a project
-file such as:
+for other tags or other files. Decisions are project-local:
 
-```lua
-return {
-  {
-    file = "src/.../NavCommands.kt",
-    intent = "VALIDATION",
-    anchor = "...",
-    decision = "confirm",
-    evidence = "...",
-  },
+```json
+{
+  "version": 1,
+  "decisions": [
+    {
+      "candidateId": "<identity hash>",
+      "path": "src/.../NavCommands.kt",
+      "contentHash": "<anchor hash>",
+      "intents": ["VALIDATION"],
+      "reason": "GAP",
+      "decision": "confirm",
+      "createdAt": "..."
+    }
+  ]
 }
 ```
 
-Identity is the hard part:
+The implemented identity is path + anchor/content hash + byte span + sorted
+intents + reason. The stronger identity remains a deferred refinement:
 
 - file + enclosing symbol + tree-sitter node path (kinds/child indices) or a
   stable node anchor;
@@ -232,10 +239,10 @@ Identity is the hard part:
 - invalidate and re-ask when the construct is structurally edited;
 - line/byte spans alone are not sufficient.
 
-Confirmation should be applied as a client overlay immediately. The engine can
-read the same store later for batch/other clients. An optional action could
-write a `// cint:validation` source comment instead, which is maximally durable
-but edits code.
+The server persists the decision and republishes immediately; the client does
+not block on a local overlay. An optional action could write a
+`// cint:validation` source comment instead, which is maximally durable but
+edits code.
 
 Numeric confidence remains diagnostic; the client uses the explicit
 `candidate`/`established` state rather than a threshold slider.

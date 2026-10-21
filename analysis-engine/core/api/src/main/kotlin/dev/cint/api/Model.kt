@@ -5,8 +5,9 @@ typealias Intent = String
 const val UNTAGGED_INTENT: Intent = "UNTAGGED"
 
 /**
- * Pack API v4. Removing annotation `evidence` is a breaking change from v3.
- * The loader requires exact version equality, so v3 packs are rejected and
+ * Pack API v5. Rule output is a `RuleEmit` list split into established `Emit`s
+ * and review-only `CandidateEmit`s; v5 is a breaking change from v4.
+ * The loader requires exact version equality, so v4 packs are rejected and
  * must be recompiled.
  *
  * The config descriptor surface (`ConfigSchemaProvider`, `ConfigSchema.describe`,
@@ -16,7 +17,7 @@ const val UNTAGGED_INTENT: Intent = "UNTAGGED"
  * `ConfigurableRulePack.configureAdditive` and `ConfigSchema.decodeAdditive`;
  * the default rejects additive config instead of replacing project values.
  */
-const val CINT_API_VERSION: Int = 4
+const val CINT_API_VERSION: Int = 5
 
 enum class Role {
     SOURCE_INTENT,

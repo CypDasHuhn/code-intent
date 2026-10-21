@@ -7,7 +7,7 @@ import org.yaml.snakeyaml.Yaml
 /**
  * User records are engine-owned source facts, so the contributor id lives under
  * the existing `core:` reservation. This avoids adding a new reserved pack
- * namespace to the v4 contract.
+ * namespace to the v5 contract.
  */
 const val USER_CONTRIBUTOR_ID: String = "${CoreContributors.PREFIX}user-annotations"
 const val USER_SOURCE: String = "user"

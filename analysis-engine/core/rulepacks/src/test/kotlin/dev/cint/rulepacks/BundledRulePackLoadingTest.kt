@@ -4,6 +4,7 @@ import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.RulePackApi
 import dev.cint.api.View
@@ -27,7 +28,7 @@ private class TestBundledRule : Rule {
     override val owns: Intent = "BUNDLED_LOGGING"
     override val reads: Set<Intent> = emptySet()
 
-    override fun run(view: View): List<Emit> = emptyList()
+    override fun run(view: View): List<RuleEmit> = emptyList()
 }
 
 class BundledRulePackLoadingTest {

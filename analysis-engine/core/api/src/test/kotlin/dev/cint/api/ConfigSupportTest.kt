@@ -1,5 +1,6 @@
 package dev.cint.api
 
+import dev.cint.api.RuleEmit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -143,7 +144,7 @@ private class LegacyConfigurablePack : ConfigurableRulePack {
                 override val owns: Intent = "LEGACY"
                 override val reads: Set<Intent> = emptySet()
 
-                override fun run(view: View): List<Emit> = emptyList()
+                override fun run(view: View): List<RuleEmit> = emptyList()
             },
         )
 }
@@ -417,8 +418,8 @@ class ConfigSupportTest {
     }
 
     @Test
-    fun supportSurfaceRemainsAdditiveAtVersionFour() {
-        assertEquals(4, CINT_API_VERSION)
+    fun supportSurfaceRemainsAdditiveAtVersionFive() {
+        assertEquals(5, CINT_API_VERSION)
 
         val matcher: Matcher = Matcher { emptyList() }
         val schema: ConfigSchema<TestConfig> = testSchema

@@ -5,6 +5,7 @@ import dev.cint.api.ConfigurableRulePack
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.RulePackConfigException
 import dev.cint.api.RulePackConfigResolver
@@ -29,7 +30,7 @@ private class ThirdPartyRule(
 ) : Rule {
     override val reads: Set<Intent> = emptySet()
 
-    override fun run(view: View): List<Emit> = emptyList()
+    override fun run(view: View): List<RuleEmit> = emptyList()
 }
 
 class ThirdPartyErrorHandlingLanguagePack(

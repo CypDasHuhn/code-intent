@@ -23,14 +23,15 @@ class RuleEngineConvergenceTest {
             }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(chain))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(chain))),
+                ).annotations
 
         assertEquals(4, chain.runs)
         assertEquals(3, annotations.count { "CHAIN" in it.intents })
@@ -43,14 +44,15 @@ class RuleEngineConvergenceTest {
         val rule = TestRule("test:anchor", "ANCHOR") { listOf(emitAt("ANCHOR", tree.root)) }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(rule))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(rule))),
+                ).annotations
 
         assertTrue(annotations.isNotEmpty())
         assertTrue(annotations.all { it.nodeAnchor == null })
@@ -73,14 +75,15 @@ class RuleEngineConvergenceTest {
             }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(rule))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(rule))),
+                ).annotations
 
         assertEquals(1, annotations.count { "METADATA" in it.intents })
         assertEquals("|||", annotations.single { "METADATA" in it.intents }.source)
@@ -125,14 +128,15 @@ class RuleEngineConvergenceTest {
             }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(rule))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(rule))),
+                ).annotations
 
         assertEquals(2, annotations.count { "GROW" in it.intents })
         assertEquals("c", annotations.single { it.startByte == 0 && it.endByte == 0 }.source)
@@ -155,14 +159,15 @@ class RuleEngineConvergenceTest {
             }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(chain))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(chain))),
+                ).annotations
 
         assertEquals(3, annotations.count { "CHAIN" in it.intents })
         assertEquals(4, chain.runs)
@@ -180,14 +185,15 @@ class RuleEngineConvergenceTest {
             }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(chain))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(chain))),
+                ).annotations
 
         assertEquals(target, annotations.count { "CHAIN" in it.intents })
         assertEquals(target + 1, chain.runs)

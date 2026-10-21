@@ -4,6 +4,7 @@ import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
@@ -13,12 +14,12 @@ internal class TestRule(
     override val id: String,
     override val owns: Intent,
     override val reads: Set<Intent> = emptySet(),
-    private val body: (View) -> List<Emit>,
+    private val body: (View) -> List<RuleEmit>,
 ) : Rule {
     var runs: Int = 0
         private set
 
-    override fun run(view: View): List<Emit> {
+    override fun run(view: View): List<RuleEmit> {
         runs++
         return body(view)
     }

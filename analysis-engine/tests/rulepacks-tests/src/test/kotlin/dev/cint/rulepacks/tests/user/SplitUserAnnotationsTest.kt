@@ -223,14 +223,16 @@ class SplitUserAnnotationsTest {
             val config = IntentConfig("kotlin", emptyList())
 
             val annotations =
-                SplitAnalyzer.analyze(
-                    source,
-                    handler,
-                    root,
-                    OracleOptions(enabled = false, timeoutMs = 1_000L),
-                    pipeline::plan,
-                    pipeline::userContributionsFor,
-                ) { config }
+                SplitAnalyzer
+                    .analyze(
+                        source,
+                        handler,
+                        root,
+                        OracleOptions(enabled = false, timeoutMs = 1_000L),
+                        pipeline::plan,
+                        pipeline::userContributionsFor,
+                    ) { config }
+                    .annotations
 
             val user =
                 annotations.first { annotation ->
@@ -251,14 +253,16 @@ class SplitUserAnnotationsTest {
         root: java.nio.file.Path,
         pipeline: HostPipeline,
     ): List<dev.cint.api.Annotation> =
-        SplitAnalyzer.analyze(
-            source,
-            handler,
-            root,
-            OracleOptions(enabled = false, timeoutMs = 1_000L),
-            pipeline::plan,
-            pipeline::userContributionsFor,
-        ) { IntentConfig("kotlin", emptyList()) }
+        SplitAnalyzer
+            .analyze(
+                source,
+                handler,
+                root,
+                OracleOptions(enabled = false, timeoutMs = 1_000L),
+                pipeline::plan,
+                pipeline::userContributionsFor,
+            ) { IntentConfig("kotlin", emptyList()) }
+            .annotations
 
     private fun userAnnotation(annotations: List<dev.cint.api.Annotation>): dev.cint.api.Annotation =
         annotations.first { annotation ->

@@ -15,9 +15,10 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 
 | module | responsibility |
 |--------|----------------|
-| `api` | frozen plugin contract: intents, rules, views, emits, annotations |
+| `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
-| `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, composition |
+| `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
+| `suggest` | candidate context/provider SPI, fake provider, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
@@ -28,10 +29,12 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | `test-fixtures` | shared `java-test-fixtures` parser, pack, and fixture helpers |
 | `integration-tests` | composition, host, frontend-pipeline, and snapshot integration tests |
 
-Modules are grouped under `analysis-engine/core/`,
+Modules are grouped under `analysis-engine/core/` (`api`, `core`, `suggest`),
 `analysis-engine/languages/`, `analysis-engine/hosts/`, and
 `analysis-engine/tests/`; Gradle project names remain `:api`, `:core`,
-and so on. `core` has no tree-sitter, LSP, or editor dependency. `frontend` is the composition
+and so on. `core` has no tree-sitter, LSP, or editor dependency. `suggest`
+depends on `api` and `core` (candidate identity/hash) and carries no server or
+provider SDK. `frontend` is the composition
 root that binds a language id to its parser, syntax profile, and oracle. `host`
 owns the pipeline that assembles discovered and constructed packs, applies
 project config, and is reused by every host.
@@ -119,6 +122,40 @@ Detection rulepacks and core composition:
   classified whole only when the body, catches, and finally are fully covered;
   otherwise all-logging catches can still classify the `try {` header.
 
+## Candidate channel
+
+The v5 rule contract (`CINT_API_VERSION = 5`) returns one list:
+
+```kotlin
+sealed interface RuleEmit { /* intents, span, source, confidence, bytes */ }
+
+data class Emit(...) : RuleEmit                    // established
+
+data class CandidateEmit(
+    ...,
+    val reason: CandidateReason,                   // GAP, LOW_CONFIDENCE, PACK_DOMAIN
+    val aiEligible: Boolean = true,
+    val rationale: String? = null,
+    val promptVersion: String? = null,
+    val provider: String? = null,
+    val model: String? = null,
+) : RuleEmit
+```
+
+`Rule.run` and `Matcher.match` return `List<RuleEmit>`. `Emit` is the only type
+`toContribution` accepts. `settle` checks that every emit uses the rule's owned
+intent, turns only established emits into contributions, and collects
+candidates separately. Fixpoint rules converge on established output only and
+keep candidates from the final settled iteration. `RuleEngine.analyze` returns
+`AnalysisOutput(annotations, candidates)`.
+
+Candidates never enter `AnnotationStore`, composition, purity, provenance, the
+`reads` graph, or `cint/publishTags`; they travel on a separate channel.
+Candidate builders default to source `candidate`; deterministic candidates use
+`rule:<rule-id>` and AI proposals use `ai:<provider>`. Identity is path +
+anchor/content hash + byte span + sorted intents + reason. Confirmed candidates
+re-enter through the existing user-annotation path on the next analysis.
+
 ## Client-side meanings
 
 The engine deliberately emits only `role` and `intents`; it has no meaning
@@ -184,6 +221,22 @@ additive overlay. The overlay only changes pack config; it never creates source
 annotations, contributions, evidence, confidence, or magic comments. A malformed
 overlay is reported, and mutations are refused until it is fixed.
 
+Suggestion settings are discovered at `<root>/.cint/suggestions.yml` under a
+top-level `suggestions:` mapping. Implemented keys are `enabled` (default
+`false`), `trigger` (default `manual`), `provider`, `model`, `maxCandidates`
+(default `5`, minimum `1`), `promptVersion`, `timeoutMs` (default `4000`,
+minimum `1`), and `workerThreads` (default `2`, clamped to `1..8`). This gate
+controls the `cint/suggest` enrichment pass; deterministic pack candidates still
+publish when it is disabled. The suggestion and provider pools are bounded by
+`workerThreads`, provider calls are interrupted after `timeoutMs`, and both
+pools are shut down on server shutdown, the `shutdown` request, or the shutdown
+hook. Decisions are stored in `<root>/.cint/suggestions.json`; each record
+carries `candidateId`, `path`, `contentHash`, `intents`, `reason`, `decision`,
+`createdAt`, and optional `anchorId` plus a `startLine`/`startCol`/`endLine`/
+`endCol` span snapshot. Missing `anchorId` and span fields default sensibly, so
+older records still load. A confirm also writes the existing
+`<root>/.cint/user-annotations.json` record.
+
 ## LSP sharing
 
 The Kotlin oracle connects to the **same** `kotlin-lsp --multi-client` server
@@ -205,27 +258,40 @@ The server can run as a per-project daemon over a Unix socket:
 cint-server --socket /path/to/project.sock --root /path/to/project
 ```
 
-Transport is NDJSON JSON-RPC, protocol `2`. `initialize` takes
-`{protocol, root, client}` and returns `{protocol, root, languages, config}`.
-`config` is `{packs, overlay}`: `packs` lists pack descriptors (`packId`,
-`rules` with `id`/`owns`/`reads`, `languages`, and `fields` with
+Transport is NDJSON JSON-RPC, protocol `3`. `initialize` takes
+`{protocol, root, client}` and returns `{protocol, root, languages, config,
+suggestions}`. `config` is `{packs, overlay}`: `packs` lists pack descriptors
+(`packId`, `rules` with `id`/`owns`/`reads`, `languages`, and `fields` with
 `key`/`kind`/`scope`/`languages`), and `overlay` is the user overlay map. An
 unreadable overlay adds `overlayError` to `config`. Field `kind` is one of
 `STRING`, `BOOLEAN`, `STRINGS`, `STRING_LIST`, `STRING_SETS`, `CUSTOM`; `scope`
 is `PACK` or `LANGUAGE`, and only language-scoped fields carry concrete
-`languages`. The server answers with its own protocol version and does not
-negotiate the client's requested value.
+`languages`.
+
+`suggestions` is a secret-free capability descriptor: `{enabled, trigger,
+provider, model, knownIntents}`. It comes from `.cint/suggestions.yml`; a
+missing file advertises `enabled: false`, `trigger: "manual"`, and null
+provider/model. The server answers with its own protocol version and does not
+negotiate the client's requested value; client suggestion features are gated on
+a returned protocol of at least 3.
 
 The client sends `textDocument/didOpen`, `didChange`, and `didClose` with full
 text and a monotonic version. The server re-runs that file and emits
-`cint/publishTags` with the analyzed version, content hash, config revision, and
-annotations. The client ignores stale out-of-order publishes whose config
-revision is older than the last accepted revision. Analysis and revision
-sampling are serialized under the global lock; socket writes and config
+`cint/publishTags` with `uri`, `version`, content `hash`, config `revision`,
+`analysisRevision`, and `annotations`. `revision` tracks pack/config changes;
+`analysisRevision` is a monotonic per-document counter for every analysis
+publish. The analysis, its config snapshot, and the new `analysisRevision` are
+allocated together under the global lock, so revision order always matches
+analysis order and a publish from a newer config snapshot cannot receive an
+older `analysisRevision`. The client ignores stale out-of-order publishes whose
+version or `analysisRevision` is older than the last accepted one, using
+`revision` as a tiebreaker when an `analysisRevision` is reused. Analysis and
+revision sampling are serialized under the global lock; socket writes and config
 republishes happen outside it. `cint/analyze` requests an explicit re-run.
 Profiles and shards stay client-side; changing them never re-runs analysis.
 
-Config mutations are protocol-2 only:
+Every tags publish is followed by `cint/publishCandidates` on the secondary
+channel (see below). Config mutations remain unchanged:
 
 - `cint/config/read` takes no params and returns `{packs, overlay}`.
 - `cint/config/append` and `cint/config/remove` take
@@ -236,6 +302,43 @@ Config mutations are protocol-2 only:
   does not support additive overlay (`UNSUPPORTED_PACK_OVERLAY`), the server
   restores or deletes the overlay, reloads the previous state, and reports an
   error without bumping the revision.
+
+### Candidate protocol
+
+- `cint/publishCandidates` is pushed after each tags publish and after a
+  suggest/decision republish, including when the result is empty. Params are
+  `uri`, `version`, `analysisRevision`, `suggestionRevision`, flat `candidates`,
+  and `groups`. A candidate carries `candidateId`, `path`, `contentHash`,
+  `intents`, `source`, `confidence`, span and byte positions, `reason`,
+  `aiEligible`, plus optional `rationale`, `promptVersion`, `provider`, and
+  `model`. A group carries `anchorId`, `path`, `contentHash`, span/positions, and
+  its `candidates` alternatives for one anchored span. `suggestionRevision` is
+  server-wide and monotonic. A candidate publish is dropped if its
+  `analysisRevision` is older than the cached analysis or the last published
+  candidates; the cached analysis revision advances with the config snapshot.
+- `cint/suggest` takes `{uri, version, requestId}` and asynchronously enriches
+  the cached analysis for that exact document version. It returns
+  `{accepted, cancelled, count}`; a disabled, stale-version, or already-busy
+  pass returns `{accepted: false, ...}` with `disabled`, `stale`, or `busy`.
+  A provider timeout returns `{accepted: false, cancelled: true, timeout: true,
+  count: 0}` after interrupting the provider. Only one pass runs per document,
+  and the result is dropped if the document, `analysisRevision`, or candidate
+  state changes before publish.
+- `cint/suggest/cancel` takes `{uri?, requestId?}`, marks the matching in-flight
+  pass cancelled, and returns `true`. Cancelled request ids are pruned after 60
+  seconds.
+- `cint/candidates/decide` takes `{uri, version, candidateId, decision}` with
+  `decision` one of `confirm`, `reject`, or `skip`. It validates the document
+  version and current anchor hash, persists the decision, and republishes. It
+  returns `{accepted: true, stale: false, decision}` or
+  `{accepted: false, stale: true}` / `{accepted: false, missing: true}`.
+  Confirm adds a user annotation and records the candidate's `anchorId` and span,
+  which resolves the whole anchor group: sibling alternatives are no longer
+  published or confirmable. Reject persists suppression for that candidate, and
+  skip hides it for the session. A republish after a decision still emits
+  `cint/publishCandidates`, with empty `candidates`/`groups` when nothing
+  remains. If the user annotation is later removed, the next analysis
+  re-proposes the candidate unless it is rejected.
 
 Failures use the existing JSON-RPC error shape `{code: -32000, message}`.
 `cint/config/read` errors when the overlay is unreadable; append/remove also
@@ -293,6 +396,13 @@ facts. `--no-lsp` disables the LSP oracle on the server.
            "intents":["LOGGING","ERROR_HANDLING"],
            "source":"treesitter","confidence":0.9,"startLine":12,"startCol":4,
            "endLine":18,"endCol":5,"startByte":310,"endByte":455}]}
+      ],
+      "candidates": [
+        {"intents":["VALIDATION"],
+         "source":"rule:validation:validation","confidence":0.4,
+         "startLine":20,"startCol":4,"endLine":20,"endCol":24,
+         "startByte":520,"endByte":544,
+         "reason":"GAP","aiEligible":true}
       ]
     }
   ]
@@ -300,7 +410,12 @@ facts. `--no-lsp` disables the LSP oracle on the server.
 ```
 
 Lines and columns are 0-based. `hash` covers canonical content (CRLF -> LF, one
-trailing newline removed) so consumers can reject stale artifacts.
+trailing newline removed) so consumers can reject stale artifacts. `candidates`
+defaults to an empty list. Entries share the live presentation fields (`intents`,
+`source`, `confidence`, span/bytes, `reason`, `aiEligible`, and optional
+`rationale`/`promptVersion`/`provider`/`model`) but omit the live-only
+`candidateId` and `contentHash`; the artifact is a presentation surface, not a
+decision surface.
 
 ## Development
 

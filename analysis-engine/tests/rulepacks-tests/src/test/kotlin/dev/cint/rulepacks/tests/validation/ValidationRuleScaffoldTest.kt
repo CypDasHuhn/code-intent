@@ -49,14 +49,15 @@ class ValidationRuleScaffoldTest {
             """.trimIndent()
         val input = parseValidationInput("kotlin", "Sample.kt", text)
         val annotations =
-            RuleEngine().analyze(
-                input.source,
-                input.tree,
-                input.syntax,
-                NullOracle,
-                input.config,
-                listOf(LoggingRulePack(), BookkeepingRulePack(), ValidationRulePack()),
-            )
+            RuleEngine()
+                .analyze(
+                    input.source,
+                    input.tree,
+                    input.syntax,
+                    NullOracle,
+                    input.config,
+                    listOf(LoggingRulePack(), BookkeepingRulePack(), ValidationRulePack()),
+                ).annotations
 
         fun scaffoldCovers(
             text: String,

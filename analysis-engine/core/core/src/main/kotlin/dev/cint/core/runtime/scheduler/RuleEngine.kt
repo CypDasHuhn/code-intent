@@ -1,11 +1,13 @@
 package dev.cint.core.runtime.scheduler
 
 import dev.cint.api.Annotation
+import dev.cint.api.CandidateEmit
 import dev.cint.api.Contribution
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.toContribution
 import dev.cint.core.config.IntentConfig
@@ -59,7 +61,7 @@ class RuleEngine(
         config: IntentConfig,
         packs: List<RulePack>,
         userContributions: List<Contribution> = emptyList(),
-    ): List<Annotation> = analyze(plan(packs), file, tree, syntax, oracle, config, userContributions)
+    ): AnalysisOutput = analyze(plan(packs), file, tree, syntax, oracle, config, userContributions)
 
     fun analyze(
         plan: ExecutionPlan,
@@ -69,9 +71,10 @@ class RuleEngine(
         oracle: TypeOracle,
         config: IntentConfig,
         userContributions: List<Contribution> = emptyList(),
-    ): List<Annotation> {
+    ): AnalysisOutput {
         val flow = ControlFlowBuilder(tree, syntax).build()
         val settled = linkedMapOf<String, List<Contribution>>()
+        val candidates = mutableListOf<CandidateEmit>()
         if (userContributions.isNotEmpty()) {
             settled[USER_CONTRIBUTOR_ID] = userContributions
         }
@@ -79,8 +82,9 @@ class RuleEngine(
         for (stratum in plan.strata) {
             val settledStratum = mutableListOf<Pair<String, List<Contribution>>>()
             for (rule in stratum) {
-                val contributions = settle(rule, settled, file, tree, syntax, flow, oracle, config)
-                settledStratum += rule.id to contributions
+                val settlement = settle(rule, settled, file, tree, syntax, flow, oracle, config)
+                settledStratum += rule.id to settlement.contributions
+                candidates += settlement.candidates
             }
             for ((id, contributions) in settledStratum) {
                 if (contributions.isEmpty()) {
@@ -108,8 +112,21 @@ class RuleEngine(
                 sources,
                 userContributions,
             )
-        return (store.annotations() + composed).sortedWith(
-            compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
+        val annotations =
+            (store.annotations() + composed).sortedWith(
+                compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
+            )
+        return AnalysisOutput(
+            annotations,
+            candidates.sortedWith(
+                compareBy<CandidateEmit>(
+                    { it.startByte },
+                    { it.endByte },
+                    { it.intents.sorted().joinToString(",") },
+                    { it.reason.name },
+                    { it.source },
+                ),
+            ),
         )
     }
 
@@ -122,7 +139,7 @@ class RuleEngine(
         flow: ControlFlow,
         oracle: TypeOracle,
         config: IntentConfig,
-    ): List<Contribution> {
+    ): RuleSettlement {
         val store = AnnotationStore()
         for ((id, contributions) in base) {
             store.replaceRule(id, contributions)
@@ -130,19 +147,19 @@ class RuleEngine(
         val context = AnalysisContext(file, tree, syntax, flow, oracle, config, store)
         val view = context.view(rule.owns, rule.reads)
 
-        fun run(): List<Contribution> = contributionsOf(rule, rule.run(view))
+        fun run(): RuleOutcome = outcomeOf(rule, rule.run(view))
 
         var output = run()
-        if (rule.owns !in rule.reads) return output
+        if (rule.owns !in rule.reads) return settleOutput(rule, output)
 
         val configuredLimit = maxIterationsPerRule?.toLong()
         val limit = configuredLimit ?: fixpointLimit(file)
         var identities = emptySet<AnnotationIdentity>()
         var iterations = 0L
         while (true) {
-            if (!store.replaceRule(rule.id, output)) return output
+            if (!store.replaceRule(rule.id, output.established.map(rule::toContribution))) return settleOutput(rule, output)
             iterations++
-            val next = identitiesOf(output)
+            val next = identitiesOf(output.established.map(rule::toContribution))
             if (!next.containsAll(identities)) {
                 throw NonMonotoneRule(rule.id, iterations, "annotation identity set shrank")
             }
@@ -154,6 +171,15 @@ class RuleEngine(
             output = run()
         }
     }
+
+    private fun settleOutput(
+        rule: Rule,
+        outcome: RuleOutcome,
+    ): RuleSettlement =
+        RuleSettlement(
+            contributions = outcome.established.map(rule::toContribution),
+            candidates = outcome.candidates,
+        )
 
     private fun identitiesOf(contributions: List<Contribution>): Set<AnnotationIdentity> =
         contributions.mapTo(mutableSetOf()) {
@@ -169,14 +195,26 @@ class RuleEngine(
         return (length + 1L) * (length + 2L) / 2L + 1L
     }
 
-    private fun contributionsOf(
+    private fun outcomeOf(
         rule: Rule,
-        emits: List<Emit>,
-    ): List<Contribution> =
-        emits.map { emit ->
+        emits: List<RuleEmit>,
+    ): RuleOutcome {
+        val established = mutableListOf<Emit>()
+        val candidates = mutableListOf<CandidateEmit>()
+        for (emit in emits) {
             require(emit.intents == setOf(rule.owns)) {
                 "rule '${rule.id}' emitted intents ${emit.intents.sorted()} but owns '${rule.owns}'"
             }
-            rule.toContribution(emit)
+            when (emit) {
+                is Emit -> established += emit
+                is CandidateEmit -> candidates += emit
+            }
         }
+        return RuleOutcome(established, candidates)
+    }
+
+    private data class RuleSettlement(
+        val contributions: List<Contribution>,
+        val candidates: List<CandidateEmit>,
+    )
 }

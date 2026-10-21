@@ -62,7 +62,7 @@ fun main(argv: Array<String>) {
             val text = runCatching { file.readText() }.getOrNull() ?: continue
             val relative = root.toURI().relativize(file.toURI()).path
             val source = SourceFile(relative, text)
-            val annotations =
+            val output =
                 if (frontend is SplitHandler) {
                     runCatching {
                         val languages = frontend.regions(source).map { it.language }
@@ -88,8 +88,8 @@ fun main(argv: Array<String>) {
                         .onFailure { System.err.println("analysis failed: ${file.path}: ${it.message}") }
                         .getOrNull() ?: continue
                 }
-            if (annotations.isNotEmpty() || args.all) {
-                entries.add(FileEntry(relative, contentHash(text), annotations))
+            if (output.annotations.isNotEmpty() || output.candidates.isNotEmpty() || args.all) {
+                entries.add(FileEntry(relative, contentHash(text), output.annotations, output.candidates))
             }
         }
     } finally {

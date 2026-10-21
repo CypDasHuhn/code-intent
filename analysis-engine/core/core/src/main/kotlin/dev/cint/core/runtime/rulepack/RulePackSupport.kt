@@ -82,7 +82,7 @@ internal class LoadedRule(
     override val owns: Intent,
     override val reads: Set<Intent>,
 ) : Rule {
-    override fun run(view: View): List<Emit> = source.run(view)
+    override fun run(view: View): List<RuleEmit> = source.run(view)
 }
 
 internal fun preflightRulePack(

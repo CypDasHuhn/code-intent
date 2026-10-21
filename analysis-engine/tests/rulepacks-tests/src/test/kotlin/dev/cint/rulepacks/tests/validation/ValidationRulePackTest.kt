@@ -95,7 +95,8 @@ class ValidationRulePackTest {
                 NullOracle,
                 source.config,
                 packs,
-            ).first {
+            ).annotations
+            .first {
                 it.rule == CoreContributors.RETURN_CATEGORY && it.text(text).contains("return false")
             }
 

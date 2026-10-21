@@ -19,7 +19,7 @@ interface Rule {
     val owns: Intent
     val reads: Set<Intent>
 
-    fun run(view: View): List<Emit>
+    fun run(view: View): List<RuleEmit>
 }
 
 fun Rule.toContribution(emit: Emit): Contribution =
@@ -105,15 +105,30 @@ interface View {
     fun intentsAt(node: SyntaxNode): Set<Intent>
 }
 
+sealed interface RuleEmit {
+    val intents: Set<Intent>
+    val span: Span
+    val startByte: Int
+    val endByte: Int
+    val source: String
+    val confidence: Double
+}
+
+enum class CandidateReason {
+    GAP,
+    LOW_CONFIDENCE,
+    PACK_DOMAIN,
+}
+
 data class Emit(
-    val intents: Set<Intent>,
-    val span: Span,
-    val source: String,
-    val confidence: Double,
-    val startByte: Int,
-    val endByte: Int,
+    override val intents: Set<Intent>,
+    override val span: Span,
+    override val source: String,
+    override val confidence: Double,
+    override val startByte: Int,
+    override val endByte: Int,
     val certifiesReturn: Boolean = false,
-) {
+) : RuleEmit {
     companion object {
         const val DEFAULT_SOURCE: String = "treesitter"
 
@@ -190,6 +205,100 @@ data class Emit(
     }
 }
 
+data class CandidateEmit(
+    override val intents: Set<Intent>,
+    override val span: Span,
+    override val startByte: Int,
+    override val endByte: Int,
+    override val source: String,
+    override val confidence: Double,
+    val reason: CandidateReason,
+    val aiEligible: Boolean = true,
+    val rationale: String? = null,
+    val promptVersion: String? = null,
+    val provider: String? = null,
+    val model: String? = null,
+) : RuleEmit {
+    companion object {
+        const val DEFAULT_SOURCE: String = "candidate"
+
+        fun of(
+            intent: Intent,
+            node: SyntaxNode,
+            reason: CandidateReason,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 0.5,
+            aiEligible: Boolean = true,
+        ): CandidateEmit = of(setOf(intent), node, reason, source, confidence, aiEligible)
+
+        fun of(
+            intents: Set<Intent>,
+            node: SyntaxNode,
+            reason: CandidateReason,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 0.5,
+            aiEligible: Boolean = true,
+        ): CandidateEmit =
+            CandidateEmit(
+                intents = intents,
+                span = node.span(),
+                startByte = node.startByte,
+                endByte = node.endByte,
+                source = source,
+                confidence = confidence,
+                reason = reason,
+                aiEligible = aiEligible,
+            )
+
+        fun range(
+            intent: Intent,
+            start: SyntaxNode,
+            end: SyntaxNode,
+            reason: CandidateReason,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 0.5,
+            aiEligible: Boolean = true,
+        ): CandidateEmit =
+            CandidateEmit(
+                intents = setOf(intent),
+                span = Span(start.startLine, start.startCol, end.endLine, end.endCol),
+                startByte = start.startByte,
+                endByte = end.endByte,
+                source = source,
+                confidence = confidence,
+                reason = reason,
+                aiEligible = aiEligible,
+            )
+
+        fun declaration(
+            intent: Intent,
+            declaration: DeclarationFact,
+            reason: CandidateReason,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 0.5,
+            aiEligible: Boolean = true,
+            includePrecedingComment: Boolean = false,
+            magicComment: String? = null,
+        ): CandidateEmit {
+            val start = declaration.commentFor(includePrecedingComment, magicComment)
+            return if (start != null) {
+                range(intent, start.node, declaration.node, reason, source, confidence, aiEligible)
+            } else {
+                of(intent, declaration.node, reason, source, confidence, aiEligible)
+            }
+        }
+
+        fun call(
+            intent: Intent,
+            call: CallFact,
+            reason: CandidateReason,
+            source: String = DEFAULT_SOURCE,
+            confidence: Double = 0.5,
+            aiEligible: Boolean = true,
+        ): CandidateEmit = of(intent, call.site, reason, source, confidence, aiEligible)
+    }
+}
+
 private fun DeclarationFact.commentFor(
     includePrecedingComment: Boolean,
     name: String?,
@@ -224,7 +333,7 @@ data class Relation(
 )
 
 fun interface Matcher {
-    fun match(view: View): List<Emit>
+    fun match(view: View): List<RuleEmit>
 
     infix fun union(other: Matcher): Matcher = Matcher { view -> match(view) + other.match(view) }
 }
@@ -264,5 +373,5 @@ private class SingleIntentRule(
     override val reads: Set<Intent>,
     private val matchers: List<Matcher>,
 ) : Rule {
-    override fun run(view: View): List<Emit> = matcherUnion(*matchers.toTypedArray()).match(view)
+    override fun run(view: View): List<RuleEmit> = matcherUnion(*matchers.toTypedArray()).match(view)
 }

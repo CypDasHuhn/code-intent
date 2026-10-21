@@ -1,11 +1,13 @@
 package dev.cint.core.artifact
 
 import dev.cint.api.Annotation
+import dev.cint.api.CandidateEmit
 
 data class FileEntry(
     val path: String,
     val hash: String,
     val annotations: List<Annotation>,
+    val candidates: List<CandidateEmit> = emptyList(),
 )
 
 object Artifact {
@@ -30,6 +32,14 @@ object Artifact {
                     append("        ")
                     append(AnnotationJson.render(annotation))
                     if (j < entry.annotations.size - 1) append(",")
+                    append("\n")
+                }
+                append("      ],\n")
+                append("      \"candidates\": [\n")
+                entry.candidates.forEachIndexed { j, candidate ->
+                    append("        ")
+                    append(CandidateJson.render(candidate))
+                    if (j < entry.candidates.size - 1) append(",")
                     append("\n")
                 }
                 append("      ]\n    }")

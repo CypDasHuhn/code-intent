@@ -3,6 +3,7 @@ package dev.cint.rulepacks.logging
 import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Matcher
+import dev.cint.api.RuleEmit
 import dev.cint.api.SingleIntentPack
 import dev.cint.api.View
 import dev.cint.api.emit
@@ -31,7 +32,7 @@ class LoggingRulePack(
 private class LoggingRule(
     private val config: LoggingConfig,
 ) : Matcher {
-    override fun match(view: View): List<Emit> {
+    override fun match(view: View): List<RuleEmit> {
         val language = config.forLanguage(view.language())
         return print(view, language) +
             loggerInteraction(view, language) +

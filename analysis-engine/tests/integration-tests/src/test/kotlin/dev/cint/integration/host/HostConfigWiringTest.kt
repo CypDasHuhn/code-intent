@@ -191,13 +191,14 @@ class HostConfigWiringTest {
             val frontend = Frontends.require(language)
             val source = SourceFile("Sample.kt", text)
             val tree = frontend.parse(source)
-            return pipeline.analyze(
-                source,
-                tree,
-                frontend.syntax(tree),
-                NullOracle,
-                settings.intentConfig(language),
-            )
+            return pipeline
+                .analyze(
+                    source,
+                    tree,
+                    frontend.syntax(tree),
+                    NullOracle,
+                    settings.intentConfig(language),
+                ).annotations
         } finally {
             Files.deleteIfExists(configFile)
         }

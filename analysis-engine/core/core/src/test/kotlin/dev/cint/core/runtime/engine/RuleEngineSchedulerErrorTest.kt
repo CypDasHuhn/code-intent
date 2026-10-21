@@ -30,14 +30,15 @@ class RuleEngineSchedulerErrorTest {
 
         val error =
             assertFailsWith<NonMonotoneRule> {
-                RuleEngine().analyze(
-                    source,
-                    tree,
-                    fakeSyntax(),
-                    NullOracle,
-                    config,
-                    listOf(TestPack("test", listOf(rule))),
-                )
+                RuleEngine()
+                    .analyze(
+                        source,
+                        tree,
+                        fakeSyntax(),
+                        NullOracle,
+                        config,
+                        listOf(TestPack("test", listOf(rule))),
+                    ).annotations
             }
 
         assertEquals("test:shrink", error.ruleId)
@@ -57,14 +58,15 @@ class RuleEngineSchedulerErrorTest {
 
         val error =
             assertFailsWith<NonConvergentRule> {
-                RuleEngine(maxIterationsPerRule = 2).analyze(
-                    source,
-                    tree,
-                    fakeSyntax(),
-                    NullOracle,
-                    config,
-                    listOf(TestPack("test", listOf(chain))),
-                )
+                RuleEngine(maxIterationsPerRule = 2)
+                    .analyze(
+                        source,
+                        tree,
+                        fakeSyntax(),
+                        NullOracle,
+                        config,
+                        listOf(TestPack("test", listOf(chain))),
+                    ).annotations
             }
 
         assertEquals("test:chain", error.ruleId)
@@ -83,14 +85,15 @@ class RuleEngineSchedulerErrorTest {
 
         val error =
             assertFailsWith<NonConvergentRule> {
-                RuleEngine().analyze(
-                    source,
-                    tree,
-                    fakeSyntax(),
-                    NullOracle,
-                    config,
-                    listOf(TestPack("test", listOf(growing))),
-                )
+                RuleEngine()
+                    .analyze(
+                        source,
+                        tree,
+                        fakeSyntax(),
+                        NullOracle,
+                        config,
+                        listOf(TestPack("test", listOf(growing))),
+                    ).annotations
             }
 
         assertEquals("test:fresh", error.ruleId)

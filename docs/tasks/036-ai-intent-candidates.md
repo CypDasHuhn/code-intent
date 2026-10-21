@@ -1,6 +1,6 @@
 ---
 name: ai intent candidates via secondary emits
-status: todo
+status: in-progress
 depends-on: [035]
 reviewers: [correctness, api-fidelity]
 ---

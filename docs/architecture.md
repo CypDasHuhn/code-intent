@@ -14,9 +14,10 @@ editor-specific part.
 
 ```
 source → frontend.parse → tree-sitter facts → CFG
-       → stratified rule graph (rulepacks) → annotations
+       → stratified rule graph (rulepacks) → annotations + candidates
        → core composition (scaffolds, derivative use)
        → artifact / live publish → client
+                                  └→ optional candidate enrichment → review
 ```
 
 ## 1. The boundary: core vs rulepack
@@ -30,6 +31,7 @@ The engine is split into two kinds of code with a hard line between them.
 - the scheduler: stratification, fixpoint, provenance
 - composition: coverage, intent scaffolds, derivative use, return
   categorization
+- the separate candidate channel and its publication
 - config plumbing, artifact and live publishing
 
 **Rulepacks own**
@@ -81,9 +83,16 @@ interface Rule {
     val id: String          // "<packId>:<localName>", globally unique
     val owns: Intent        // exactly one
     val reads: Set<Intent>  // cross-rule dependencies, by intent name
-    fun run(view: View): List<Emit>
+    fun run(view: View): List<RuleEmit>
 }
 ```
+
+The v5 (`CINT_API_VERSION = 5`) rule output is one sealed `RuleEmit` list.
+`Emit` remains the established type; `CandidateEmit` is review-only. Both carry
+the common intents/span/source/confidence fields, and candidates add a
+`CandidateReason` (`GAP`, `LOW_CONFIDENCE`, `PACK_DOMAIN`), `aiEligible`, and
+optional rationale/prompt/provider/model provenance. `toContribution` accepts
+only `Emit`, so a candidate cannot become an established contribution.
 
 ## 4. Dependencies and stratification
 
@@ -176,11 +185,41 @@ entries so the client can answer "why did this fire" with the full chain.
 
 **Per-rule contribution replacement.** Each iteration the framework replaces a
 rule's *entire* previous contribution with its new output. Rules are pure
-`(View) -> List<Emit>`; they never mutate the store. This is why the current
+`(View) -> List<RuleEmit>`; they never mutate the store. This is why the current
 `ctx.remove(...)` calls disappear: the scaffold rule that emits one whole span
 when `then == else` and two ranges when they differ simply returns its current
 answer, and the framework swaps out its old shape. Add-only holds from the
 author's perspective; the framework handles the diff.
+
+### Candidate channel
+
+A rule may return `CandidateEmit`s alongside established `Emit`s from the same
+`List<RuleEmit>`. `settle` validates that every emit uses the rule's owned
+intent, turns only `Emit`s into contributions, and collects candidates
+separately. The engine returns `AnalysisOutput(annotations, candidates)`.
+Candidates never enter `AnnotationStore`, composition, purity, provenance,
+fixpoint identity, or the `reads` graph. For fixpoint rules, only established
+output drives convergence; candidates come from the final settled iteration.
+
+Candidate identity is path + anchor/content hash + byte span + sorted intents +
+reason. Payloads carry `source` (`rule:<rule-id>` or `ai:<provider>`),
+`confidence`, `reason`, `aiEligible`, span/positions, and optional
+`rationale`/`promptVersion`/`provider`/`model`.
+
+### AI enrichment boundary
+
+AI is post-analysis and non-authoritative. The server caches an
+`AnalysisOutput`, gives the `:suggest` service the candidate context for that
+exact document version, and publishes candidate-only results on
+`cint/publishCandidates`. AI never runs in the scheduler, never owns an intent,
+and cannot create an established annotation. `.cint/suggestions.yml` gates the
+manual `cint/suggest` path and is disabled by default; deterministic pack
+candidates publish regardless.
+
+Confirmation writes an existing `.cint/user-annotations.json` record and the
+next analysis re-evaluates it as an established `user` source. Rejection
+persists suppression in `.cint/suggestions.json`; skip is session-only. The
+frozen `Annotation` shape is unchanged.
 
 ## 7. DSL and IR
 
@@ -220,9 +259,10 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 
 | module | responsibility |
 |---|---|
-| `api` | frozen contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `Emit`, `Annotation`, scheduler contract, DSL |
+| `api` | frozen v5 contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, scheduler contract, DSL |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
-| `core` | syntax facts, config, annotation store, CFG, scheduler, composition, artifact writer |
+| `core` | syntax facts, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
+| `suggest` | candidate context, provider SPI/registry, fake provider, validator, merge, grouping |
 | `host` | host pipeline and project config loading shared by all hosts |
 | `treesitter` | parsers and per-language syntax profiles |
 | `lsp` | spec-driven LSP oracle |
@@ -235,9 +275,12 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 
 - `api` is the frozen public surface. Plugins compile against it; it changes
   only deliberately and with versioning. The DSL lives in `api`.
-- `core` has no tree-sitter, LSP, host, or editor dependency. The `host` module
-  assembles the production pack selection and applies project config; CLI,
-  HTTP, and live server reuse it.
+- `core` has no tree-sitter, LSP, host, editor, or suggestion dependency. The
+  `host` module assembles the production pack selection and applies project
+  config; CLI, HTTP, and live server reuse it.
+- `suggest` depends on `api` and `core` (candidate identity/hash) only; the
+  `server` depends on `suggest` and owns orchestration, persistence, credentials,
+  and the fake provider instance. No provider SDK leaks into `core` or `api`.
 - Loading reads `META-INF/services/dev.cint.api.RulePack` explicitly rather
   than iterating `ServiceLoader`. That keeps per-provider failure isolation,
   API-version checks, and deterministic ordering; there is no runtime Kotlin
@@ -259,15 +302,18 @@ Explicitly out of scope, none of which constrains the API:
 - multi-language reuse of a single rulepack
 - a second (dataflow / whole-program) backend
 - splitting `dsl` into its own module
-- occurrence persistence (candidate / established / suppressed) — the stable
-  node anchor is reserved in `api` now so it can be added later
+- real local/remote AI providers; the current slice ships a deterministic fake
+  provider only
+- node-anchored candidate identity; the stable node anchor is reserved in `api`,
+  while the current identity uses content hash + byte span + intents + reason
 - packs exporting named derived relations (dependency currency stays intents)
 - optional dependencies (unknown dependency is a hard error)
 - full IR reification / CEL predicates
 
 ## 11. Sequencing
 
-1. `api` module: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `Emit`.
+1. `api` module: `Intent`, `Relation`, `Rule`, `RulePack`, `View`,
+   `RuleEmit`/`Emit`/`CandidateEmit`.
 2. Scheduler: rule-level stratification, per-rule contribution replacement,
    internal fixpoint, provenance store.
 3. Re-express existing detection as bundled rulepacks on the new API.

@@ -5,6 +5,7 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.View
 import dev.cint.core.config.IntentConfig
@@ -31,7 +32,7 @@ private class HostLoggingRule : Rule {
     override val owns: Intent = "USER_MERGE_INTENT"
     override val reads: Set<Intent> = emptySet()
 
-    override fun run(view: View): List<Emit> =
+    override fun run(view: View): List<RuleEmit> =
         view
             .functions()
             .map { function ->
@@ -74,7 +75,7 @@ class HostUserAnnotationsTest {
                     ),
                 )
 
-                val merged = pipeline.analyze(source, tree, syntax, NullOracle, config)
+                val merged = pipeline.analyze(source, tree, syntax, NullOracle, config).annotations
                 val annotation =
                     merged.first {
                         it.role == Role.SOURCE_INTENT && "TEAM_CUSTOM_INTENT" in it.intents
@@ -94,7 +95,7 @@ class HostUserAnnotationsTest {
                 assertTrue(annotation.provenance.any { it.rule == USER_CONTRIBUTOR_ID && it.intents.contains("PURE") })
 
                 write(root)
-                val removed = pipeline.analyze(source, tree, syntax, NullOracle, config)
+                val removed = pipeline.analyze(source, tree, syntax, NullOracle, config).annotations
 
                 assertFalse(removed.any { "TEAM_CUSTOM_INTENT" in it.intents })
                 assertFalse(removed.any { annotation -> annotation.provenance.any { it.rule == USER_CONTRIBUTOR_ID } })

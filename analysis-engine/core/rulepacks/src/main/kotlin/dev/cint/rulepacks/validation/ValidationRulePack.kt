@@ -1,5 +1,7 @@
 package dev.cint.rulepacks.validation
 
+import dev.cint.api.CandidateEmit
+import dev.cint.api.CandidateReason
 import dev.cint.api.CommentKind
 import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema
@@ -8,6 +10,7 @@ import dev.cint.api.GuardFact
 import dev.cint.api.GuardKind
 import dev.cint.api.Intent
 import dev.cint.api.Matcher
+import dev.cint.api.RuleEmit
 import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
@@ -99,13 +102,34 @@ private class ValidationRule(
         Regex("""cint\s*:\s*${Regex.escape(config.magicComment)}""", RegexOption.IGNORE_CASE)
     private val commentKinds = CommentKind.fromConfig(config.commentKinds)
 
-    override fun match(view: View): List<Emit> =
-        view
-            .guards()
-            .asSequence()
-            .filter { it.kind == GuardKind.CONDITIONAL }
-            .mapNotNull { guard -> emitFor(view, guard) }
-            .toList()
+    override fun match(view: View): List<RuleEmit> {
+        val result = mutableListOf<RuleEmit>()
+        for (guard in view.guards()) {
+            if (guard.kind != GuardKind.CONDITIONAL) continue
+            val established = emitFor(view, guard)
+            if (established != null) {
+                result += established
+            } else {
+                gapCandidate(view, guard)?.let { result += it }
+            }
+        }
+        return result
+    }
+
+    private fun gapCandidate(
+        view: View,
+        guard: GuardFact,
+    ): CandidateEmit? {
+        val condition = guard.condition ?: return null
+        if (!validationComment(view, guard, maxDistanceLines = 3)) return null
+        return CandidateEmit.of(
+            VALIDATION_INTENT,
+            condition,
+            CandidateReason.GAP,
+            source = "rule:$VALIDATION_RULE_ID",
+            confidence = 0.4,
+        )
+    }
 
     private fun emitFor(
         view: View,
@@ -160,6 +184,12 @@ private class ValidationRule(
     private fun hasValidationComment(
         view: View,
         guard: GuardFact,
+    ): Boolean = validationComment(view, guard, maxDistanceLines = 1)
+
+    private fun validationComment(
+        view: View,
+        guard: GuardFact,
+        maxDistanceLines: Int,
     ): Boolean {
         val function = view.enclosingFunction(guard.node)
         val scope =
@@ -179,7 +209,7 @@ private class ValidationRule(
                 .filter { it.node.endByte <= guard.node.startByte }
                 .filter { scope == null || it.node.startByte >= scope.startByte }
                 .maxByOrNull { it.node.startByte } ?: return false
-        if (guard.node.startLine - comment.node.endLine > 1) return false
+        if (guard.node.startLine - comment.node.endLine > maxDistanceLines) return false
         return commentPattern.containsMatchIn(comment.text)
     }
 }

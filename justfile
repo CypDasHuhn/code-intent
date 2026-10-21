@@ -15,7 +15,7 @@ build:
 
 # Run the deterministic engine tests (no live LSP dependency).
 test-engine:
-    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :host:test :treesitter:test :frontend:test :cli:test :server:test :rulepacks-tests:test :test-fixtures:test :integration-tests:test
+    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :suggest:test :host:test :treesitter:test :frontend:test :cli:test :server:test :rulepacks-tests:test :test-fixtures:test :integration-tests:test
 
 # Run the shared-LSP oracle test. Set CINT_LSP_ROOT to a project with a running kotlin-lsp.
 test-lsp:

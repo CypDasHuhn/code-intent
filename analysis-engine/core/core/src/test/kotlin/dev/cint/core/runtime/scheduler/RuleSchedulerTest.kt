@@ -5,6 +5,7 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Relation
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.api.View
@@ -18,7 +19,7 @@ private class TestRule(
     override val owns: Intent,
     override val reads: Set<Intent> = emptySet(),
 ) : Rule {
-    override fun run(view: View): List<Emit> = emptyList()
+    override fun run(view: View): List<RuleEmit> = emptyList()
 }
 
 private class TestPack(

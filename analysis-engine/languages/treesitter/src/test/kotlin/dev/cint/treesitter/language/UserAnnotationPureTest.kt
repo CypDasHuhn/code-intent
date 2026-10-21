@@ -5,6 +5,7 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.View
 import dev.cint.core.facts.model.SourceFile
@@ -24,7 +25,7 @@ private class UserPureLoggingRule : Rule {
     override val owns: Intent = "LOGGING"
     override val reads: Set<Intent> = emptySet()
 
-    override fun run(view: View): List<Emit> =
+    override fun run(view: View): List<RuleEmit> =
         view
             .calls()
             .filter { it.callee == "warn" }
@@ -76,15 +77,16 @@ class UserAnnotationPureTest {
             )
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                syntax,
-                NullOracle,
-                testConfig("kotlin"),
-                listOf(UserPureLoggingPack()),
-                users,
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    syntax,
+                    NullOracle,
+                    testConfig("kotlin"),
+                    listOf(UserPureLoggingPack()),
+                    users,
+                ).annotations
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
 
         assertTrue(derivatives.any { slice(text, it.startByte, it.endByte).contains("fun make") })

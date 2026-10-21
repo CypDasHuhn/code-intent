@@ -1,6 +1,7 @@
 package dev.cint.frontend
 
 import dev.cint.api.Annotation
+import dev.cint.api.CandidateEmit
 import dev.cint.api.Contribution
 import dev.cint.api.Span
 import dev.cint.core.config.IntentConfig
@@ -11,6 +12,7 @@ import dev.cint.core.facts.frontend.SplitRegion
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.core.runtime.scheduler.AnalysisOutput
 import dev.cint.core.runtime.scheduler.ExecutionPlan
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.SyntaxModel
@@ -26,9 +28,9 @@ private typealias RegionAnalysis =
         TypeOracle,
         IntentConfig,
         List<Contribution>,
-    ) -> List<Annotation>
+    ) -> AnalysisOutput
 
-private typealias SplitRecursion = (SourceFile, SplitHandler) -> List<Annotation>
+private typealias SplitRecursion = (SourceFile, SplitHandler) -> AnalysisOutput
 
 object SplitAnalyzer {
     fun analyze(
@@ -40,7 +42,7 @@ object SplitAnalyzer {
         userContributionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution> =
             { _, _, _, _, _ -> emptyList() },
         configFor: (String) -> IntentConfig,
-    ): List<Annotation> =
+    ): AnalysisOutput =
         analyzeRegions(
             host,
             handler,
@@ -65,13 +67,14 @@ object SplitAnalyzer {
         configFor: (String) -> IntentConfig,
         leaf: RegionAnalysis,
         recurse: SplitRecursion,
-    ): List<Annotation> {
+    ): AnalysisOutput {
         val result = mutableListOf<Annotation>()
+        val candidates = mutableListOf<CandidateEmit>()
         for (region in handler.regions(host)) {
             val frontend = Frontends.require(region.language)
             val config = configFor(region.language)
             val file = SourceFile(host.path, region.text)
-            val annotations =
+            val output =
                 if (frontend is SplitHandler) {
                     recurse(file, frontend)
                 } else {
@@ -97,10 +100,22 @@ object SplitAnalyzer {
                         (oracle as? AutoCloseable)?.close()
                     }
                 }
-            result += annotations.map { it.shift(region) }
+            result += output.annotations.map { it.shift(region) }
+            candidates += output.candidates.map { it.shift(region) }
         }
-        return result.sortedWith(
-            compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
+        return AnalysisOutput(
+            result.sortedWith(
+                compareBy<Annotation>({ it.span.startLine }, { it.span.startCol }, { -it.endByte }),
+            ),
+            candidates.sortedWith(
+                compareBy<CandidateEmit>(
+                    { it.startByte },
+                    { it.endByte },
+                    { it.intents.sorted().joinToString(",") },
+                    { it.reason.name },
+                    { it.source },
+                ),
+            ),
         )
     }
 
@@ -117,6 +132,13 @@ object SplitAnalyzer {
                         endByte = region.startByte + it.endByte,
                     )
                 },
+        )
+
+    private fun CandidateEmit.shift(region: SplitRegion): CandidateEmit =
+        copy(
+            span = span.shift(region),
+            startByte = region.startByte + startByte,
+            endByte = region.startByte + endByte,
         )
 
     private fun Span.shift(region: SplitRegion): Span =

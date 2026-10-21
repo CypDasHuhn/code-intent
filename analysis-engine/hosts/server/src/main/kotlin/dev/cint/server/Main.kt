@@ -103,7 +103,7 @@ internal fun analyze(
     val frontend = Frontends.require(config.language)
 
     val source = SourceFile(request.path, request.text)
-    val annotations =
+    val output =
         if (frontend is SplitHandler) {
             SplitAnalyzer.analyze(
                 source,
@@ -153,7 +153,7 @@ internal fun analyze(
     return Artifact.render(
         config.language,
         packs.intents(languages),
-        listOf(FileEntry(request.path, contentHash(request.text), annotations)),
+        listOf(FileEntry(request.path, contentHash(request.text), output.annotations, output.candidates)),
     )
 }
 

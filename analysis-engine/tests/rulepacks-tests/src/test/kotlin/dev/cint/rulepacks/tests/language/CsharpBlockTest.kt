@@ -20,7 +20,7 @@ class CsharpBlockTest {
         val source = SourceFile("Sample.cs", text)
         val tree = CsharpParser().parse(source)
         val model = ProfileSyntaxModel(SyntaxProfiles.load("csharp"))
-        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig("csharp"), testPacks())
+        return RuleEngine().analyze(source, tree, model, NullOracle, testConfig("csharp"), testPacks()).annotations
     }
 
     @Test

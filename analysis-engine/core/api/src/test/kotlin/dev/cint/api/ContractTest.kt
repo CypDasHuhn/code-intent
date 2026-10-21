@@ -1,5 +1,6 @@
 package dev.cint.api
 
+import dev.cint.api.RuleEmit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -27,7 +28,7 @@ private class TestRule(
     override val owns: Intent,
     override val reads: Set<Intent> = emptySet(),
 ) : Rule {
-    override fun run(view: View): List<Emit> = emptyList()
+    override fun run(view: View): List<RuleEmit> = emptyList()
 }
 
 private class TestPack(
@@ -88,7 +89,7 @@ class ContractTest {
 
     @Test
     fun configurableRulePackIsAdditiveAndVersionPinned() {
-        assertEquals(4, CINT_API_VERSION)
+        assertEquals(5, CINT_API_VERSION)
 
         val original = TestConfigurablePack()
         val configured = original.configure(mapOf("extra" to true))
@@ -363,5 +364,43 @@ class ContractTest {
         assertEquals("demo:bookkeeping", contribution.rule)
         assertEquals(Role.SOURCE_INTENT, contribution.role)
         assertEquals(setOf("LOGGING"), contribution.intents)
+    }
+
+    @Test
+    fun ruleOutputSplitsEstablishedAndCandidateEmits() {
+        val node = TestNode("identifier", 3, 7, "name")
+        val established = Emit.of("LOGIN", node)
+        val candidate =
+            CandidateEmit.of(
+                "LOGIN",
+                node,
+                CandidateReason.LOW_CONFIDENCE,
+                source = "rule:demo:login",
+                confidence = 0.4,
+                aiEligible = true,
+            )
+
+        val output: List<RuleEmit> = listOf(established, candidate)
+
+        assertEquals(2, output.size)
+        assertTrue(output[0] is Emit)
+        assertEquals("rule:demo:login", (output[1] as CandidateEmit).source)
+        assertEquals(CandidateReason.LOW_CONFIDENCE, (output[1] as CandidateEmit).reason)
+        assertEquals(established.span, candidate.span)
+        assertEquals(established.startByte, candidate.startByte)
+        assertEquals(established.endByte, candidate.endByte)
+    }
+
+    @Test
+    fun workspaceCompatibleSignaturesPinCandidateBoundary() {
+        val contribution: (Rule, Emit) -> Contribution = Rule::toContribution
+        val node = TestNode("identifier", 0, 4, "name")
+        val candidate = CandidateEmit.of("LOGIN", node, CandidateReason.GAP)
+
+        assertEquals(Emit.DEFAULT_SOURCE, Emit.of("LOGIN", node).source)
+        assertEquals("candidate", candidate.source)
+        assertTrue(candidate.source != Emit.DEFAULT_SOURCE)
+        assertEquals(CandidateReason.GAP, candidate.reason)
+        assertTrue(contribution.toString().isNotEmpty())
     }
 }

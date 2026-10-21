@@ -1,5 +1,8 @@
 package dev.cint.core.runtime.engine
 
+import dev.cint.api.CandidateEmit
+import dev.cint.api.CandidateReason
+import dev.cint.api.Span
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
@@ -23,14 +26,15 @@ class RuleEngineEmitValidationTest {
 
         val error =
             assertFailsWith<IllegalArgumentException> {
-                RuleEngine().analyze(
-                    source,
-                    tree,
-                    fakeSyntax(),
-                    NullOracle,
-                    config,
-                    listOf(TestPack("test", listOf(rule))),
-                )
+                RuleEngine()
+                    .analyze(
+                        source,
+                        tree,
+                        fakeSyntax(),
+                        NullOracle,
+                        config,
+                        listOf(TestPack("test", listOf(rule))),
+                    ).annotations
             }
 
         assertTrue(error.message.orEmpty().contains("test:empty"))
@@ -48,6 +52,42 @@ class RuleEngineEmitValidationTest {
 
         val error =
             assertFailsWith<IllegalArgumentException> {
+                RuleEngine()
+                    .analyze(
+                        source,
+                        tree,
+                        fakeSyntax(),
+                        NullOracle,
+                        config,
+                        listOf(TestPack("test", listOf(rule))),
+                    ).annotations
+            }
+
+        assertTrue(error.message.orEmpty().contains("test:foreign"))
+        assertTrue(error.message.orEmpty().contains("OTHER"))
+    }
+
+    @Test
+    fun foreignCandidateIntentFails() {
+        val source = SourceFile("Sample.kt", "fun f() {}")
+        val tree = fakeTree(source.text)
+        val rule =
+            TestRule("test:candidate", "CANDIDATE") {
+                listOf(
+                    CandidateEmit(
+                        intents = setOf("OTHER"),
+                        span = Span(0, 0, 0, 1),
+                        startByte = 0,
+                        endByte = 1,
+                        source = "rule:test",
+                        confidence = 0.4,
+                        reason = CandidateReason.GAP,
+                    ),
+                )
+            }
+
+        val error =
+            assertFailsWith<IllegalArgumentException> {
                 RuleEngine().analyze(
                     source,
                     tree,
@@ -58,7 +98,7 @@ class RuleEngineEmitValidationTest {
                 )
             }
 
-        assertTrue(error.message.orEmpty().contains("test:foreign"))
+        assertTrue(error.message.orEmpty().contains("test:candidate"))
         assertTrue(error.message.orEmpty().contains("OTHER"))
     }
 }

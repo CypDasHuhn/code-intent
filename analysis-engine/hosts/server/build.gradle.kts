@@ -7,10 +7,12 @@ plugins {
 dependencies {
     implementation(project(":api"))
     implementation(project(":core"))
+    implementation(project(":suggest"))
     implementation(project(":host"))
     implementation(project(":frontend"))
     implementation(project(":rulepacks"))
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3")
+    implementation("org.yaml:snakeyaml:2.4")
     testImplementation(kotlin("test"))
 }
 

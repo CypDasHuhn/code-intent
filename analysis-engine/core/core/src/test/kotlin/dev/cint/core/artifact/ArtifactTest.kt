@@ -1,6 +1,8 @@
 package dev.cint.core.artifact
 
 import dev.cint.api.Annotation
+import dev.cint.api.CandidateEmit
+import dev.cint.api.CandidateReason
 import dev.cint.api.Contribution
 import dev.cint.api.NodeAnchor
 import dev.cint.api.Role
@@ -48,5 +50,40 @@ class ArtifactTest {
         assertEquals(3, Regex("\"startByte\":12").findAll(json).count())
         assertEquals(3, Regex("\"endByte\":26").findAll(json).count())
         assertEquals(1, Regex("\"rule\":\"logging-state\"").findAll(json).count())
+    }
+
+    @Test
+    fun renderPublishesCandidatesSeparatelyFromSpans() {
+        val candidate =
+            CandidateEmit(
+                intents = setOf("VALIDATION"),
+                span = Span(3, 8, 3, 12),
+                startByte = 52,
+                endByte = 56,
+                source = "ai:fake",
+                confidence = 0.75,
+                reason = CandidateReason.GAP,
+                rationale = "anchor matches validation gap",
+                promptVersion = "prompt-v1",
+                provider = "fake",
+                model = "fake-intent-v1",
+            )
+
+        val json =
+            Artifact.render(
+                "kotlin",
+                listOf("VALIDATION"),
+                listOf(FileEntry("Sample.kt", "hash", emptyList(), listOf(candidate))),
+            )
+
+        assertTrue(json.contains("\"candidates\": ["))
+        assertTrue(json.contains(CandidateJson.render(candidate)))
+        assertTrue(json.contains("\"reason\":\"GAP\""))
+        assertTrue(json.contains("\"aiEligible\":true"))
+        assertTrue(json.contains("\"rationale\":\"anchor matches validation gap\""))
+        assertTrue(json.contains("\"promptVersion\":\"prompt-v1\""))
+        assertTrue(json.contains("\"provider\":\"fake\""))
+        assertTrue(json.contains("\"model\":\"fake-intent-v1\""))
+        assertTrue(json.contains("\"spans\": [\n      ]"))
     }
 }

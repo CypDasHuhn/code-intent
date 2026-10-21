@@ -28,14 +28,15 @@ class RuleEngineStratificationTest {
             }
 
         val annotations =
-            RuleEngine().analyze(
-                source,
-                tree,
-                fakeSyntax(),
-                NullOracle,
-                config,
-                listOf(TestPack("test", listOf(upstream, downstream))),
-            )
+            RuleEngine()
+                .analyze(
+                    source,
+                    tree,
+                    fakeSyntax(),
+                    NullOracle,
+                    config,
+                    listOf(TestPack("test", listOf(upstream, downstream))),
+                ).annotations
 
         assertEquals(1, upstream.runs)
         assertEquals(1, downstream.runs)
@@ -59,14 +60,15 @@ class RuleEngineStratificationTest {
                 emptyList()
             }
 
-        RuleEngine().analyze(
-            source,
-            tree,
-            fakeSyntax(),
-            NullOracle,
-            config,
-            listOf(TestPack("test", listOf(chain, reader))),
-        )
+        RuleEngine()
+            .analyze(
+                source,
+                tree,
+                fakeSyntax(),
+                NullOracle,
+                config,
+                listOf(TestPack("test", listOf(chain, reader))),
+            ).annotations
 
         assertEquals(4, chain.runs)
         assertEquals(1, reader.runs)
@@ -87,14 +89,15 @@ class RuleEngineStratificationTest {
                 emptyList()
             }
 
-        RuleEngine().analyze(
-            source,
-            tree,
-            fakeSyntax(),
-            NullOracle,
-            config,
-            listOf(TestPack("test", listOf(first, second))),
-        )
+        RuleEngine()
+            .analyze(
+                source,
+                tree,
+                fakeSyntax(),
+                NullOracle,
+                config,
+                listOf(TestPack("test", listOf(first, second))),
+            ).annotations
 
         assertTrue("A" !in seen)
     }
@@ -118,14 +121,15 @@ class RuleEngineStratificationTest {
                 emptyList()
             }
 
-        RuleEngine().analyze(
-            source,
-            tree,
-            fakeSyntax(),
-            NullOracle,
-            config,
-            listOf(TestPack("test", listOf(sourceRule, anchor, probe))),
-        )
+        RuleEngine()
+            .analyze(
+                source,
+                tree,
+                fakeSyntax(),
+                NullOracle,
+                config,
+                listOf(TestPack("test", listOf(sourceRule, anchor, probe))),
+            ).annotations
 
         assertEquals(1, probe.runs)
     }

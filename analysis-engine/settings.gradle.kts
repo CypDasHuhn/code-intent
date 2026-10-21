@@ -4,6 +4,7 @@ include(
     ":api",
     ":rulepacks",
     ":core",
+    ":suggest",
     ":host",
     ":treesitter",
     ":lsp",
@@ -18,6 +19,7 @@ include(
 project(":api").projectDir = file("core/api")
 project(":rulepacks").projectDir = file("core/rulepacks")
 project(":core").projectDir = file("core/core")
+project(":suggest").projectDir = file("core/suggest")
 project(":host").projectDir = file("core/host")
 project(":treesitter").projectDir = file("languages/treesitter")
 project(":lsp").projectDir = file("languages/lsp")

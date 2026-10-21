@@ -6,6 +6,7 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Role
 import dev.cint.api.Rule
+import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
@@ -26,9 +27,9 @@ internal class ReplayRule(
     override val id: String,
     override val owns: Intent,
     override val reads: Set<Intent> = emptySet(),
-    private val emissions: List<Emit>,
+    private val emissions: List<RuleEmit>,
 ) : Rule {
-    override fun run(view: View): List<Emit> = emissions
+    override fun run(view: View): List<RuleEmit> = emissions
 }
 
 internal class ReplayPack(
@@ -76,7 +77,7 @@ internal fun analyzePipeline(
 ): List<Annotation> {
     val source = SourceFile(path, text)
     val tree = KotlinParser().parse(source)
-    return RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, config, packs)
+    return RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, config, packs).annotations
 }
 
 internal fun emitFor(
@@ -101,8 +102,8 @@ internal fun replaySource(
     val source = SourceFile("Sample.kt", text)
     val tree = KotlinParser().parse(source)
     val annotations =
-        RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks())
-    val emissions = linkedMapOf<String, MutableList<Emit>>()
+        RuleEngine().analyze(source, tree, KotlinSyntaxModel, NullOracle, testConfig("kotlin"), testPacks()).annotations
+    val emissions = linkedMapOf<String, MutableList<RuleEmit>>()
     for ((role, intents, span, source1, confidence, startByte, endByte) in annotations) {
         if (role != Role.SOURCE_INTENT) continue
         for (intent in intents) {

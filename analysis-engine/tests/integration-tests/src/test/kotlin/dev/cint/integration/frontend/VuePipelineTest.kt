@@ -32,9 +32,10 @@ class VuePipelineTest {
         val source = SourceFile("Sample.vue", text)
         val pipeline = HostRuntime.pipeline()
         val annotations =
-            SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
-                IntentConfig(language, emptyList())
-            }
+            SplitAnalyzer
+                .analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
+                    IntentConfig(language, emptyList())
+                }.annotations
         val print = annotations.first { it.rule == "logging:logging" }
         val expectedLine = text.lines().indexOfFirst { it.contains("console.log") }
         val expectedCol = text.lines()[expectedLine].indexOf("console.log")
@@ -72,9 +73,10 @@ class VuePipelineTest {
         val pipeline = HostRuntime.pipeline()
 
         val annotations =
-            SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
-                IntentConfig(language, emptyList())
-            }
+            SplitAnalyzer
+                .analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
+                    IntentConfig(language, emptyList())
+                }.annotations
         val logging = annotations.first { it.role == Role.SOURCE_INTENT && "LOGGING" in it.intents }
         val errorHandling = annotations.first { it.role == Role.SOURCE_INTENT && "ERROR_HANDLING" in it.intents }
 
@@ -108,9 +110,10 @@ class VuePipelineTest {
         val source = SourceFile("Sample.vue", text)
         val pipeline = HostRuntime.pipeline()
         val annotations =
-            SplitAnalyzer.analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
-                IntentConfig(language, emptyList())
-            }
+            SplitAnalyzer
+                .analyze(source, VueFrontend, Path.of("."), options, pipeline::plan) { language ->
+                    IntentConfig(language, emptyList())
+                }.annotations
         val merged =
             annotations.first {
                 it.role == Role.SOURCE_INTENT && it.intents == setOf("LOGGING", "VALIDATION")

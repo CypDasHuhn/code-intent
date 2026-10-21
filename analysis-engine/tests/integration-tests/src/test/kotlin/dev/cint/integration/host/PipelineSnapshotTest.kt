@@ -143,21 +143,23 @@ class PipelineSnapshotTest {
         val options = OracleOptions(enabled = false, timeoutMs = 1_000)
         return if (fixture.language == "vue") {
             val annotations =
-                SplitAnalyzer.analyze(source, VueFrontend, root, options, pipeline::plan) { language ->
-                    settings.intentConfig(language)
-                }
+                SplitAnalyzer
+                    .analyze(source, VueFrontend, root, options, pipeline::plan) { language ->
+                        settings.intentConfig(language)
+                    }.annotations
             VueFrontend.regions(source).map { it.language } to annotations
         } else {
             val frontend = Frontends.require(fixture.language)
             val tree = frontend.parse(source)
             listOf(fixture.language) to
-                pipeline.analyze(
-                    source,
-                    tree,
-                    frontend.syntax(tree),
-                    NullOracle,
-                    settings.intentConfig(fixture.language),
-                )
+                pipeline
+                    .analyze(
+                        source,
+                        tree,
+                        frontend.syntax(tree),
+                        NullOracle,
+                        settings.intentConfig(fixture.language),
+                    ).annotations
         }
     }
 

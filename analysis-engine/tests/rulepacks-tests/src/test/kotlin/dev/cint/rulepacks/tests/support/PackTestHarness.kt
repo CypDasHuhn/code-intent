@@ -1,6 +1,7 @@
 package dev.cint.rulepacks.tests.support
 
 import dev.cint.api.Annotation
+import dev.cint.api.CandidateEmit
 import dev.cint.api.Contribution
 import dev.cint.api.Intent
 import dev.cint.api.Role
@@ -34,6 +35,7 @@ internal data class PackInput(
 internal data class PackAnalysis(
     val input: PackInput,
     val annotations: List<Annotation>,
+    val candidates: List<CandidateEmit> = emptyList(),
 ) {
     fun withIntent(intent: Intent): List<Annotation> = annotations.filter { intent in it.intents }
 
@@ -48,6 +50,8 @@ internal data class PackAnalysis(
     fun texts(intent: Intent): List<String> = source(intent).map { it.text(input.source.text) }
 
     fun spans(intent: Intent): List<Span> = source(intent).map { it.span }
+
+    fun candidates(intent: Intent): List<CandidateEmit> = candidates.filter { intent in it.intents }
 
     fun assertSourceCount(
         intent: Intent,
@@ -108,9 +112,8 @@ internal fun analyzePack(
     input: PackInput,
     packs: List<RulePack>,
     oracle: TypeOracle = NullOracle,
-): PackAnalysis =
-    PackAnalysis(
-        input,
+): PackAnalysis {
+    val output =
         RuleEngine().analyze(
             input.source,
             input.tree,
@@ -118,8 +121,9 @@ internal fun analyzePack(
             oracle,
             input.config,
             packs,
-        ),
-    )
+        )
+    return PackAnalysis(input, output.annotations, output.candidates)
+}
 
 internal fun analyzePack(
     language: String,
