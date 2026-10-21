@@ -6,11 +6,13 @@ import dev.cint.api.LanguageConfig
 
 data class NormalizationLanguageConfig(
     val calls: Set<String> = emptySet(),
+    val instanceCalls: Set<String> = emptySet(),
     val prefixes: List<String> = emptyList(),
     val qualifiers: Set<String> = emptySet(),
     val types: Set<String> = emptySet(),
     val candidateCalls: Set<String> = emptySet(),
     val candidatePrefixes: List<String> = emptyList(),
+    val chainCalls: Set<String> = emptySet(),
 )
 
 data class NormalizationConfig(
@@ -29,6 +31,11 @@ data class NormalizationConfig(
                     "calls",
                     { it.calls },
                     { config, value -> config.copy(calls = value) },
+                ),
+                ConfigField.strings<NormalizationLanguageConfig>(
+                    "instanceCalls",
+                    { it.instanceCalls },
+                    { config, value -> config.copy(instanceCalls = value) },
                 ),
                 ConfigField.stringList<NormalizationLanguageConfig>(
                     "prefixes",
@@ -54,6 +61,11 @@ data class NormalizationConfig(
                     "candidatePrefixes",
                     { it.candidatePrefixes },
                     { config, value -> config.copy(candidatePrefixes = value) },
+                ),
+                ConfigField.strings<NormalizationLanguageConfig>(
+                    "chainCalls",
+                    { it.chainCalls },
+                    { config, value -> config.copy(chainCalls = value) },
                 ),
             )
 
@@ -97,10 +109,31 @@ data class NormalizationConfig(
                         "canonicalize",
                         "decodeFromString",
                     ),
+                instanceCalls =
+                    setOf(
+                        "trim",
+                        "trimStart",
+                        "trimEnd",
+                        "lowercase",
+                        "uppercase",
+                        "toLowerCase",
+                        "toUpperCase",
+                        "toInt",
+                        "toLong",
+                        "toShort",
+                        "toByte",
+                        "toDouble",
+                        "toFloat",
+                        "toBigDecimal",
+                        "toBigInteger",
+                        "toPath",
+                        "toUri",
+                    ),
                 prefixes = listOf("parse", "normalize", "canonicalize"),
                 qualifiers =
                     setOf(
                         "String",
+                        "Json",
                         "Integer",
                         "Long",
                         "Short",
@@ -136,9 +169,20 @@ data class NormalizationConfig(
                         "java.util.UUID",
                         "java.nio.file.Path",
                         "java.math.BigDecimal",
+                        "kotlinx.serialization.json.Json",
                     ),
                 candidateCalls = setOf("format", "stringify"),
                 candidatePrefixes = listOf("format", "pretty", "display"),
+                chainCalls =
+                    setOf(
+                        "replace",
+                        "replaceAll",
+                        "replaceFirst",
+                        "removePrefix",
+                        "removeSuffix",
+                        "padStart",
+                        "padEnd",
+                    ),
             )
 
         private val JAVASCRIPT =
@@ -163,11 +207,22 @@ data class NormalizationConfig(
                         "decodeURI",
                         "decodeURIComponent",
                     ),
+                instanceCalls =
+                    setOf(
+                        "trim",
+                        "trimStart",
+                        "trimEnd",
+                        "toLowerCase",
+                        "toUpperCase",
+                        "toLocaleLowerCase",
+                        "toLocaleUpperCase",
+                    ),
                 prefixes = listOf("parse", "normalize", "canonicalize"),
                 qualifiers = setOf("JSON", "Number", "Date", "Intl", "String", "Buffer", "URL", "URLSearchParams", "path"),
                 types = setOf("Date", "URL", "URLSearchParams"),
                 candidateCalls = setOf("format", "formatDate", "formatDateTime", "formatTime", "stringify", "toISOString", "toJSON"),
                 candidatePrefixes = listOf("format", "pretty", "display"),
+                chainCalls = setOf("replace", "replaceAll", "padStart", "padEnd"),
             )
 
         private val CSHARP =
@@ -184,9 +239,7 @@ data class NormalizationConfig(
                         "Normalize",
                         "Canonicalize",
                         "Parse",
-                        "TryParse",
                         "ParseExact",
-                        "TryParseExact",
                         "GetFullPath",
                         "GetRelativePath",
                         "EscapeDataString",
@@ -199,7 +252,17 @@ data class NormalizationConfig(
                         "ToBoolean",
                         "ToDateTime",
                     ),
-                prefixes = listOf("Parse", "TryParse", "Normalize", "Canonicalize"),
+                instanceCalls =
+                    setOf(
+                        "Trim",
+                        "TrimStart",
+                        "TrimEnd",
+                        "ToLower",
+                        "ToUpper",
+                        "ToLowerInvariant",
+                        "ToUpperInvariant",
+                    ),
+                prefixes = listOf("Parse", "Normalize", "Canonicalize"),
                 qualifiers =
                     setOf(
                         "Convert",
@@ -237,8 +300,9 @@ data class NormalizationConfig(
                         "System.IO.Path",
                         "System.Decimal",
                     ),
-                candidateCalls = setOf("Format", "FormatDate", "FormatDateTime", "FormatTime"),
-                candidatePrefixes = listOf("Format", "Pretty", "Display"),
+                candidateCalls = setOf("Format", "FormatDate", "FormatDateTime", "FormatTime", "TryParse", "TryParseExact"),
+                candidatePrefixes = listOf("Format", "Pretty", "Display", "TryParse"),
+                chainCalls = setOf("Replace", "PadLeft", "PadRight"),
             )
 
         private val LANGUAGE_DEFAULTS: Map<String, NormalizationLanguageConfig> =

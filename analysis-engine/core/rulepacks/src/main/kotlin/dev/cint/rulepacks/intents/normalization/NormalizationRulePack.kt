@@ -7,7 +7,6 @@ import dev.cint.api.Intent
 import dev.cint.api.Matcher
 import dev.cint.api.RuleEmit
 import dev.cint.api.SingleIntentPack
-import dev.cint.api.SyntaxNode
 import dev.cint.api.View
 import dev.cint.api.emit
 
@@ -75,7 +74,7 @@ private class NormalizationRule(
 
         return calls.mapNotNull { call ->
             val span = call.node.startByte to call.node.endByte
-            if (span in receivers) return@mapNotNull null
+            if (span in receivers || matchesBySpan[span] != null || !config.isChainCall(call)) return@mapNotNull null
 
             val chain = mutableListOf<CallFact>()
             var current: CallFact? = call
@@ -85,8 +84,8 @@ private class NormalizationRule(
             }
             if (chain.size < 2) return@mapNotNull null
 
-            val chainMatches = chain.map { matchesBySpan[it.node.startByte to it.node.endByte] }
-            if (chainMatches.none { it != null }) return@mapNotNull null
+            val innerMatches = chain.drop(1).map { matchesBySpan[it.node.startByte to it.node.endByte] }
+            if (innerMatches.none { it == Match.ESTABLISHED }) return@mapNotNull null
             candidate(call)
         }
     }
@@ -118,18 +117,36 @@ private fun NormalizationLanguageConfig.matchKind(
     call: CallFact,
 ): Match? {
     val callee = call.callee ?: return null
-    val configuredName = callee in calls || prefixes.any { it.isNotEmpty() && callee.startsWith(it) }
-    if (configuredName) {
-        val unqualifiedStatic =
-            call.receiver?.let(::isTypeLike) == true &&
-                !qualifierMatches(call) &&
-                !typeMatches(view, call)
-        return if (unqualifiedStatic) Match.CANDIDATE else Match.ESTABLISHED
+    if (callee in calls) {
+        return if (isQualified(call) && !acceptsReceiver(view, call)) Match.CANDIDATE else Match.ESTABLISHED
     }
 
     val candidateName = callee in candidateCalls || candidatePrefixes.any { it.isNotEmpty() && callee.startsWith(it) }
-    if (!candidateName) return null
-    return if (qualifierMatches(call) || typeMatches(view, call)) Match.ESTABLISHED else Match.CANDIDATE
+    if (candidateName) return Match.CANDIDATE
+
+    if (prefixes.any { it.isNotEmpty() && callee.startsWith(it) }) {
+        return if (qualifierMatches(call) || typeMatches(view, call)) Match.ESTABLISHED else Match.CANDIDATE
+    }
+    return null
+}
+
+private fun NormalizationLanguageConfig.isQualified(call: CallFact): Boolean {
+    if (call.receiver == null || call.callee in instanceCalls) return false
+    return qualifiers.isNotEmpty() || types.isNotEmpty()
+}
+
+private fun NormalizationLanguageConfig.acceptsReceiver(
+    view: View,
+    call: CallFact,
+): Boolean =
+    call.receiver == null ||
+        call.callee in instanceCalls ||
+        qualifierMatches(call) ||
+        typeMatches(view, call)
+
+private fun NormalizationLanguageConfig.isChainCall(call: CallFact): Boolean {
+    val callee = call.callee ?: return false
+    return callee in chainCalls
 }
 
 private fun NormalizationLanguageConfig.qualifierMatches(call: CallFact): Boolean {
@@ -154,9 +171,3 @@ private fun NormalizationLanguageConfig.typeMatches(
             (!actual.contains('.') && expected.substringAfterLast('.') == actualSimple)
     }
 }
-
-private fun isTypeLike(receiver: SyntaxNode): Boolean =
-    receiver.text
-        .substringAfterLast('.')
-        .firstOrNull()
-        ?.isUpperCase() == true
