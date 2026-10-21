@@ -37,6 +37,15 @@ private val NESTED_SCOPE_KINDS =
         "function_expression",
     )
 
+private val LOOP_KINDS =
+    setOf(
+        "while_statement",
+        "for_statement",
+        "for_in_statement",
+        "foreach_statement",
+        "do_statement",
+    )
+
 data class ValidationConfig(
     val predicates: Set<String> = DEFAULT_PREDICATES,
     val predicatePrefixes: List<String> = DEFAULT_PREDICATE_PREFIXES,
@@ -211,7 +220,12 @@ private class ValidationRule(
         body: SyntaxNode,
     ): Boolean =
         body.descendants().any { node ->
-            view.isExit(node) && !insideNestedScope(node, body) && isRejectingExit(view, node)
+            if (insideNestedScope(node, body)) return@any false
+            when {
+                isThrowExit(node) -> true
+                isContinueOrBreak(node) -> !insideNestedLoop(node, body)
+                else -> view.isExit(node) && isRejectingExit(view, node)
+            }
         }
 
     private fun insideNestedScope(
@@ -226,10 +240,29 @@ private class ValidationRule(
         return false
     }
 
+    private fun insideNestedLoop(
+        node: SyntaxNode,
+        body: SyntaxNode,
+    ): Boolean {
+        var current = node.parent
+        while (current != null && current.startByte != body.startByte) {
+            if (current.kind in LOOP_KINDS) return true
+            current = current.parent
+        }
+        return false
+    }
+
+    private fun isThrowExit(node: SyntaxNode): Boolean = leadingKeyword(node) in setOf("throw", "raise")
+
+    private fun isContinueOrBreak(node: SyntaxNode): Boolean = leadingKeyword(node) in setOf("continue", "break")
+
+    private fun leadingKeyword(node: SyntaxNode): String = node.text.trimStart().takeWhile { it.isLetter() }
+
     private fun isRejectingExit(
         view: View,
         node: SyntaxNode,
     ): Boolean {
+        if (isThrowExit(node)) return true
         if (!view.isExit(node)) return false
         val text =
             node.text

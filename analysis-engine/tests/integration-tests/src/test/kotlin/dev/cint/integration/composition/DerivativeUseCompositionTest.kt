@@ -149,6 +149,22 @@ class DerivativeUseCompositionTest {
     }
 
     @Test
+    fun initializerPropagationIgnoresArgumentEffects() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun format(first: Any?, second: Any?): String = second.toString()
+            fun f(repository: Repository) {
+                val message = format(log.info("x"), repository.findAll())
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+
+        assertTrue(annotations.none { it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message") })
+    }
+
+    @Test
     fun assignmentPropagationPaintsTheAssignmentSpan() {
         val text =
             """

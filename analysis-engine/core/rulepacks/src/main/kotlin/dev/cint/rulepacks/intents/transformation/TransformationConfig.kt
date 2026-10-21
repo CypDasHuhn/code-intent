@@ -10,6 +10,7 @@ private val DEFAULT_QUALIFIERS =
         "lists",
         "items",
         "values",
+        "uses",
         "collection",
         "collections",
         "stream",

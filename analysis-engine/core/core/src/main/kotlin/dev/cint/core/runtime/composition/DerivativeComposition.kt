@@ -19,6 +19,14 @@ private val LAMBDA_KINDS =
     )
 private val ASSIGNMENT_OPERATORS = setOf("=", "+=", "-=", "*=", "/=", "%=", "?:=", "||=", "&&=")
 private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment")
+private val ARGUMENT_KINDS =
+    setOf(
+        "value_arguments",
+        "value_argument",
+        "argument_list",
+        "argument",
+        "arguments",
+    )
 
 private const val DERIVATIVE_CONFIDENCE: Double = 0.7
 private const val DERIVATIVE_UNKNOWN_READ_ONLY_CONFIDENCE: Double = 0.55
@@ -157,7 +165,7 @@ private fun valueSourceAnnotations(
 ): List<Annotation> =
     node
         .descendants()
-        .filterNot(::insideLambda)
+        .filterNot { insideLambda(it) || insideCallArgument(it) }
         .flatMap { ctx.covering(it).filter { annotation -> annotation.role == Role.SOURCE_INTENT } }
         .distinct()
         .toList()
@@ -173,6 +181,8 @@ private fun allSourceAnnotations(
         .toList()
 
 private fun insideLambda(node: SyntaxNode): Boolean = generateSequence(node) { it.parent }.any { it.kind in LAMBDA_KINDS }
+
+private fun insideCallArgument(node: SyntaxNode): Boolean = generateSequence(node) { it.parent }.any { it.kind in ARGUMENT_KINDS }
 
 private fun assignmentValue(node: SyntaxNode): SyntaxNode? {
     node.childByField("right")?.let { return it }

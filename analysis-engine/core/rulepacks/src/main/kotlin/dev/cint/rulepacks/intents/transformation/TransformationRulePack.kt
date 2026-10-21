@@ -18,6 +18,8 @@ const val DATA_TRANSFORMATION_RULE_ID: String = "$DATA_TRANSFORMATION_PACK_ID:da
 private const val ESTABLISHED_CONFIDENCE: Double = 0.9
 private const val CANDIDATE_CONFIDENCE: Double = 0.4
 
+private val CALL_RECEIVER_KINDS = setOf("call_expression", "invocation_expression")
+
 class TransformationRulePack(
     config: TransformationConfig = TransformationConfig(),
 ) : SingleIntentPack<TransformationConfig>(
@@ -84,7 +86,8 @@ private class TransformationRule(
     ): Boolean {
         val receiver = call.receiver ?: return false
         if (qualifierMatches(receiver.text)) return true
-        val type = view.receiverType(call) ?: return true
+        if (receiver.kind in CALL_RECEIVER_KINDS || receiver.text.contains('(')) return true
+        val type = view.receiverType(call) ?: return false
         return typeMatches(type.fqName)
     }
 

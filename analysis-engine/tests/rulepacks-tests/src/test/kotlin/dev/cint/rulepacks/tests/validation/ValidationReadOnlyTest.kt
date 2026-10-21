@@ -100,6 +100,45 @@ class ValidationReadOnlyTest {
     }
 
     @Test
+    fun throwingRejectionGuardsAndElvisAreValidation() {
+        val source =
+            """
+            fun f(call: String?, value: String?): String {
+                if (receiverNode(call) == null) throw IllegalArgumentException()
+                return value ?: throw IllegalStateException()
+            }
+            fun receiverNode(value: String?): String? = value
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
+        val values = analysis.source(VALIDATION_INTENT).map { it.text(source) }
+
+        assertTrue(values.any { "receiverNode(call) == null" in it })
+        assertTrue(values.any { "value ?: throw" in it })
+    }
+
+    @Test
+    fun continueInsideANestedLoopDoesNotRejectTheOuterGuard() {
+        val source =
+            """
+            fun f(call: String?, items: List<String>): String? {
+                if (receiverNode(call) != null) {
+                    for (item in items) {
+                        if (item.isEmpty()) continue
+                    }
+                    consume(call)
+                }
+                return call
+            }
+            fun receiverNode(value: String?): String? = value
+            fun consume(value: String?) {}
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
+
+        assertTrue(analysis.source(VALIDATION_INTENT).none { it.text(source) == "receiverNode(call) != null" })
+        assertTrue(analysis.source(VALIDATION_INTENT).any { it.text(source) == "item.isEmpty()" })
+    }
+
+    @Test
     fun knownWritesDoNotBecomeReadOnlyValidationGuards() {
         val source =
             """

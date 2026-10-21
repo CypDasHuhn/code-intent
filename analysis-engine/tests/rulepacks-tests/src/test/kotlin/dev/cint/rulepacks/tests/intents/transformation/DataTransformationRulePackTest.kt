@@ -199,11 +199,15 @@ class DataTransformationRulePackTest {
                 repository.filter { it.isNotBlank() }.map { it.trim() }
             }
             """.trimIndent()
+        val dedicatedTransformation =
+            TransformationRulePack().configure(
+                mapOf("kotlin" to mapOf("qualifiers" to listOf("repository"))),
+            )
         val searchAnalysis =
             analyze(
                 "kotlin",
                 searchText,
-                listOf(DataAccessRulePack(), NormalizationRulePack(), TransformationRulePack()),
+                listOf(DataAccessRulePack(), NormalizationRulePack(), dedicatedTransformation),
             )
         val filter =
             searchAnalysis.annotations.first {
@@ -293,6 +297,17 @@ class DataTransformationRulePackTest {
         val qualified = analyzePack(input, listOf(qualifiedPack), oracle)
         assertEquals(listOf("entity.map { it.id }"), qualified.texts(DATA_TRANSFORMATION_INTENT))
         assertTrue(qualified.candidates(DATA_TRANSFORMATION_INTENT).isEmpty())
+    }
+
+    @Test
+    fun unknownReceiverTypesWithoutQualifiersStayCandidates() {
+        val text = "fun f(entity: Entity) = entity.map { it.id }"
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(DATA_TRANSFORMATION_INTENT).isEmpty())
+        assertEquals(1, analysis.candidates(DATA_TRANSFORMATION_INTENT).size)
+        assertTrue("entity.map" in analysis.candidateText(text))
     }
 
     @Test
