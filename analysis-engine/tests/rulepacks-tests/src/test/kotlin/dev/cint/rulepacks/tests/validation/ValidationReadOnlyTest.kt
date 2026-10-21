@@ -61,6 +61,45 @@ class ValidationReadOnlyTest {
     }
 
     @Test
+    fun nonRejectingReturnsStayOutOfValidation() {
+        val source =
+            """
+            fun computed(): String = "computed"
+            fun f(call: String?, value: String?): String? {
+                if (receiverNode(call) != null) return computed()
+                return value ?: return computed()
+            }
+            fun g(call: String?): Boolean {
+                if (receiverNode(call) != null) return true
+                return false
+            }
+            fun receiverNode(value: String?): String? = value
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
+        val values = analysis.source(VALIDATION_INTENT).map { it.text(source) }
+
+        assertTrue(values.none { "receiverNode(call) != null" in it })
+        assertTrue(values.none { "?:" in it })
+    }
+
+    @Test
+    fun mutationCallConditionsAreNotReadOnlyValidation() {
+        val source =
+            """
+            class C {
+                val values = mutableListOf<String>()
+                fun f(value: String): Boolean {
+                    if (values.add(value)) return false
+                    return true
+                }
+            }
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
+
+        assertTrue(analysis.source(VALIDATION_INTENT).none { "values.add" in it.text(source) })
+    }
+
+    @Test
     fun knownWritesDoNotBecomeReadOnlyValidationGuards() {
         val source =
             """

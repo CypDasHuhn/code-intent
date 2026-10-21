@@ -105,6 +105,74 @@ class DerivativeUseCompositionTest {
     }
 
     @Test
+    fun initializerPropagationBlocksWritesAndMutationCalls() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            private var counter = 0
+            fun f(items: List<String>, repository: Repository) {
+                val withWrite = run { counter++; repository.findAll() }
+                val nestedMutation = items.map { repository.save(it) }
+                val directMutation = repository.save(repository.findAll())
+                log.warn(withWrite)
+                log.warn(nestedMutation)
+                log.warn(directMutation)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+        val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
+
+        assertTrue(derivatives.none { it.text(text).contains("val withWrite") })
+        assertTrue(derivatives.none { it.text(text).contains("val nestedMutation") })
+        assertTrue(derivatives.none { it.text(text).contains("val directMutation") })
+    }
+
+    @Test
+    fun initializerPropagationIgnoresEffectsNestedInsideLambdas() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f(repository: Repository) {
+                val users = repository.findAll().onEach { log.info(it) }
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val users")
+            }
+
+        assertTrue("SEARCH" in derivative.intents)
+        assertTrue("LOGGING" !in derivative.intents)
+    }
+
+    @Test
+    fun assignmentPropagationPaintsTheAssignmentSpan() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f(repository: Repository) {
+                var target: String? = null
+                target = repository.findAll().map { it.name }
+                log.warn(target)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+
+        val assignment =
+            annotations
+                .filter { it.role == Role.DERIVATIVE_USE }
+                .filter { it.text(text).contains("target = repository.findAll") }
+
+        assertEquals(1, assignment.size)
+        assertTrue("SEARCH" in assignment.single().intents)
+        assertTrue("DATA_TRANSFORMATION" in assignment.single().intents)
+    }
+
+    @Test
     fun newPipelineRequiresFunctionReferencesToStayInsideDerivativeUse() {
         val text =
             """

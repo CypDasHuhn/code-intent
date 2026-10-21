@@ -164,7 +164,16 @@ private class BoolCombinatoricsRule(
 
     private fun classifiedPredicate(callee: String): Boolean =
         callee in config.predicateCalls ||
-            config.predicatePrefixes.any { it.isNotEmpty() && callee.startsWith(it) }
+            config.predicatePrefixes.any { prefixMatches(callee, it) }
+
+    private fun prefixMatches(
+        callee: String,
+        prefix: String,
+    ): Boolean {
+        if (prefix.isEmpty() || !callee.startsWith(prefix) || callee.length == prefix.length) return false
+        val next = callee[prefix.length]
+        return next.isUpperCase() || next.isDigit() || next == '_'
+    }
 
     private fun unwrapParenthesized(node: SyntaxNode): SyntaxNode {
         var current = node

@@ -58,10 +58,10 @@ class ValidationRuleGuardTest {
             """
             fun f(value: String?): String {
                 val current = value
-                if (current != null) {
-                    return current
+                if (current == null || current.isEmpty()) {
+                    return ""
                 }
-                return ""
+                return "x"
             }
             """.trimIndent()
         val input = parseValidationInput("kotlin", "Sample.kt", text)

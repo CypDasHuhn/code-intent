@@ -161,6 +161,45 @@ class BoolCombinatoricsRulePackTest {
     }
 
     @Test
+    fun predicatePrefixesRequireAWordBoundary() {
+        val text =
+            """
+            fun f(): Boolean {
+                if (issue() && hashCode() > 0) return false
+                return true
+            }
+            fun issue(): Boolean = true
+            fun hashCode(): Int = 1
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(BOOL_COMBINATORICS_INTENT).isEmpty())
+        assertEquals(1, analysis.candidates(BOOL_COMBINATORICS_INTENT).size)
+        assertTrue("issue" in analysis.candidateText(text))
+    }
+
+    @Test
+    fun predicatePrefixHelpersStillEstablish() {
+        val text = "fun f(value: String): Boolean { return value.isValid() || value.hasValue() }"
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(listOf("value.isValid() || value.hasValue()"), analysis.texts(BOOL_COMBINATORICS_INTENT))
+        assertTrue(analysis.candidates(BOOL_COMBINATORICS_INTENT).isEmpty())
+    }
+
+    @Test
+    fun negationOnlyGuardsDoNotEstablishOrBecomeCandidates() {
+        val text = "fun f(flag: Boolean): Boolean { if (!flag) return false; return true }"
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(BOOL_COMBINATORICS_INTENT).isEmpty())
+        assertTrue(analysis.candidates(BOOL_COMBINATORICS_INTENT).isEmpty())
+    }
+
+    @Test
     fun nestedBooleanInsideACallIsNotTheRootExpression() {
         val text = "fun f(values: List<String>) = values.filter { it.isNotEmpty() && it.isNotBlank() }"
 

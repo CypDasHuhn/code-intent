@@ -5,11 +5,23 @@ import dev.cint.api.Contribution
 import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
+import dev.cint.api.WriteKind
 import dev.cint.core.runtime.context.RuleContext
+
+private val MUTATION_INTENTS = setOf("DATA_MODIFY", "LOCAL_VALUE_MODIFY", "BOOKKEEPING")
+private val LAMBDA_KINDS =
+    setOf(
+        "lambda_literal",
+        "annotated_lambda",
+        "lambda_expression",
+        "arrow_function",
+        "function_expression",
+    )
+private val ASSIGNMENT_OPERATORS = setOf("=", "+=", "-=", "*=", "/=", "%=", "?:=", "||=", "&&=")
+private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment")
 
 private const val DERIVATIVE_CONFIDENCE: Double = 0.7
 private const val DERIVATIVE_UNKNOWN_READ_ONLY_CONFIDENCE: Double = 0.55
-private const val INITIALIZER_CONFIDENCE: Double = 0.7
 
 internal fun derivativeContributions(
     ctx: RuleContext,
@@ -55,26 +67,36 @@ internal fun derivativeContributions(
 
     for ((node, _, _, initializer1) in ctx.properties) {
         val initializer = initializer1 ?: continue
-        val annotations = initializerSourceAnnotations(ctx, initializer)
-        val intentsAt =
-            if (annotations.isEmpty()) {
-                emptySet()
-            } else {
-                ctx.intentsAt(initializer).filter { it != UNTAGGED_INTENT }
-            }
-        val intents = (annotations.flatMap { it.intents } + intentsAt).toSet()
+        readOnlyConfidence(ctx, initializer, pureAnnotations) ?: continue
+        val annotations = valueSourceAnnotations(ctx, initializer)
+        val intents = annotations.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) continue
 
-        val confidence =
-            annotations.maxOfOrNull { it.confidence }
-                ?: INITIALIZER_CONFIDENCE
         result +=
             node.raw(
                 Role.DERIVATIVE_USE,
                 intents,
                 DERIVATIVE_RULE,
                 "treesitter",
-                confidence,
+                annotations.minOf { it.confidence },
+            )
+    }
+
+    for (write in ctx.writes) {
+        if (write.kind != WriteKind.ASSIGNMENT) continue
+        val value = assignmentValue(write.node) ?: continue
+        readOnlyConfidence(ctx, value, pureAnnotations) ?: continue
+        val annotations = valueSourceAnnotations(ctx, value)
+        val intents = annotations.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
+        if (intents.isEmpty()) continue
+
+        result +=
+            write.node.raw(
+                Role.DERIVATIVE_USE,
+                intents,
+                DERIVATIVE_RULE,
+                "treesitter",
+                annotations.minOf { it.confidence },
             )
     }
 
@@ -122,23 +144,43 @@ private fun merge(contributions: List<Contribution>): List<Contribution> {
             } else {
                 previous.copy(
                     intents = previous.intents + contribution.intents,
-                    confidence = maxOf(previous.confidence, contribution.confidence),
+                    confidence = minOf(previous.confidence, contribution.confidence),
                 )
             }
     }
     return merged.values.toList()
 }
 
-private fun initializerSourceAnnotations(
+private fun valueSourceAnnotations(
     ctx: RuleContext,
-    initializer: SyntaxNode,
-): List<Annotation> {
-    val annotations = mutableListOf<Annotation>()
-    annotations += ctx.covering(initializer).filter { it.role == Role.SOURCE_INTENT }
-    for (descendant in initializer.descendants()) {
-        annotations += ctx.covering(descendant).filter { it.role == Role.SOURCE_INTENT }
-    }
-    return annotations
+    node: SyntaxNode,
+): List<Annotation> =
+    node
+        .descendants()
+        .filterNot(::insideLambda)
+        .flatMap { ctx.covering(it).filter { annotation -> annotation.role == Role.SOURCE_INTENT } }
+        .distinct()
+        .toList()
+
+private fun allSourceAnnotations(
+    ctx: RuleContext,
+    node: SyntaxNode,
+): List<Annotation> =
+    node
+        .descendants()
+        .flatMap { ctx.covering(it).filter { annotation -> annotation.role == Role.SOURCE_INTENT } }
+        .distinct()
+        .toList()
+
+private fun insideLambda(node: SyntaxNode): Boolean = generateSequence(node) { it.parent }.any { it.kind in LAMBDA_KINDS }
+
+private fun assignmentValue(node: SyntaxNode): SyntaxNode? {
+    node.childByField("right")?.let { return it }
+    val operator = node.children.indexOfFirst { it.kind in ASSIGNMENT_OPERATORS || it.text in ASSIGNMENT_OPERATORS }
+    if (operator < 0) return null
+    return node.children
+        .drop(operator + 1)
+        .firstOrNull { it.kind != ";" && it.kind !in COMMENT_KINDS }
 }
 
 private fun derivativePlaceIntents(
@@ -153,16 +195,16 @@ private fun derivativePlaceIntents(
 
 private fun readOnlyConfidence(
     ctx: RuleContext,
-    initializer: SyntaxNode,
+    node: SyntaxNode,
     pureAnnotations: List<String>,
 ): Double? {
-    if (hasKnownWrite(ctx, initializer)) return null
+    if (hasKnownWrite(ctx, node)) return null
     return when {
-        ctx.syntax.isConstant(initializer) ||
-            ctx.syntax.isIdentifier(initializer) ||
-            ctx.syntax.isSideEffectFree(initializer) ||
-            ctx.syntax.isAnnotatedPureCall(ctx.tree, initializer, pureAnnotations) ||
-            isUserPureCall(ctx, initializer) -> DERIVATIVE_CONFIDENCE
+        ctx.syntax.isConstant(node) ||
+            ctx.syntax.isIdentifier(node) ||
+            ctx.syntax.isSideEffectFree(node) ||
+            ctx.syntax.isAnnotatedPureCall(ctx.tree, node, pureAnnotations) ||
+            isUserPureCall(ctx, node) -> DERIVATIVE_CONFIDENCE
 
         else -> DERIVATIVE_UNKNOWN_READ_ONLY_CONFIDENCE
     }
@@ -170,11 +212,14 @@ private fun readOnlyConfidence(
 
 private fun hasKnownWrite(
     ctx: RuleContext,
-    initializer: SyntaxNode,
+    node: SyntaxNode,
 ): Boolean =
     ctx.writes.any { write ->
-        write.node.startByte >= initializer.startByte && write.node.endByte <= initializer.endByte
-    }
+        write.node.startByte >= node.startByte && write.node.endByte <= node.endByte
+    } ||
+        allSourceAnnotations(ctx, node).any { annotation ->
+            annotation.intents.any { it in MUTATION_INTENTS }
+        }
 
 private fun isUserPureCall(
     ctx: RuleContext,

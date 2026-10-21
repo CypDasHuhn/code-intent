@@ -4,10 +4,66 @@ import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema
 import dev.cint.api.LanguageConfig
 
+private val DEFAULT_QUALIFIERS =
+    setOf(
+        "list",
+        "lists",
+        "items",
+        "values",
+        "collection",
+        "collections",
+        "stream",
+        "streams",
+        "sequence",
+        "sequences",
+        "array",
+        "arrays",
+        "set",
+        "sets",
+        "map",
+        "maps",
+        "entries",
+        "elements",
+        "nodes",
+        "results",
+        "rows",
+        "records",
+        "children",
+    )
+
+private val DEFAULT_TYPES =
+    setOf(
+        "kotlin.collections.Iterable",
+        "kotlin.collections.Collection",
+        "kotlin.collections.List",
+        "kotlin.collections.Set",
+        "kotlin.collections.Map",
+        "kotlin.collections.MutableList",
+        "kotlin.collections.MutableSet",
+        "kotlin.collections.MutableMap",
+        "kotlin.sequences.Sequence",
+        "java.lang.Iterable",
+        "java.util.Collection",
+        "java.util.List",
+        "java.util.Set",
+        "java.util.Map",
+        "java.util.stream.Stream",
+        "System.Collections.IEnumerable",
+        "System.Collections.Generic.IEnumerable",
+        "System.Collections.Generic.List",
+        "System.Collections.Generic.IList",
+        "System.Collections.Generic.ICollection",
+        "System.Collections.Generic.IReadOnlyList",
+        "System.Collections.Generic.IReadOnlyCollection",
+        "System.Array",
+    )
+
 data class TransformationLanguageConfig(
     val calls: Set<String> = emptySet(),
     val candidateCalls: Set<String> = emptySet(),
     val candidatePrefixes: List<String> = emptyList(),
+    val qualifiers: Set<String> = DEFAULT_QUALIFIERS,
+    val types: Set<String> = DEFAULT_TYPES,
 )
 
 data class TransformationConfig(
@@ -36,6 +92,16 @@ data class TransformationConfig(
                     "candidatePrefixes",
                     { it.candidatePrefixes },
                     { config, value -> config.copy(candidatePrefixes = value) },
+                ),
+                ConfigField.strings<TransformationLanguageConfig>(
+                    "qualifiers",
+                    { it.qualifiers },
+                    { config, value -> config.copy(qualifiers = value) },
+                ),
+                ConfigField.strings<TransformationLanguageConfig>(
+                    "types",
+                    { it.types },
+                    { config, value -> config.copy(types = value) },
                 ),
             )
 

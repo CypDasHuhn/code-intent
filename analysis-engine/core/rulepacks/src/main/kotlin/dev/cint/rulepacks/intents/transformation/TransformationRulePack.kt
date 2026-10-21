@@ -41,13 +41,19 @@ private class TransformationRule(
         val selected = linkedMapOf<Pair<Int, Int>, Pair<CallFact, Boolean>>()
         for (call in view.calls()) {
             val callee = call.callee ?: continue
-            val established = callee in config.calls
+            val configured = callee in config.calls
+            val established = configured && hasReceiverEvidence(view, call)
             val candidate =
-                !established &&
-                    (
+                when {
+                    configured -> {
+                        !established
+                    }
+
+                    else -> {
                         callee in config.candidateCalls ||
                             config.candidatePrefixes.any { it.isNotEmpty() && callee.startsWith(it) }
-                    )
+                    }
+                }
             if (!established && !candidate) continue
             val key = call.node.startByte to call.node.endByte
             val previous = selected[key]
@@ -69,6 +75,32 @@ private class TransformationRule(
                     aiEligible = true,
                 )
             }
+        }
+    }
+
+    private fun hasReceiverEvidence(
+        view: View,
+        call: CallFact,
+    ): Boolean {
+        val receiver = call.receiver ?: return false
+        if (qualifierMatches(receiver.text)) return true
+        val type = view.receiverType(call) ?: return true
+        return typeMatches(type.fqName)
+    }
+
+    private fun qualifierMatches(receiver: String): Boolean {
+        val segments = receiver.split('.').map { it.substringBefore('(').substringBefore('[').trim() }
+        return config.qualifiers.any { qualifier ->
+            segments.any { it.equals(qualifier, ignoreCase = true) }
+        }
+    }
+
+    private fun typeMatches(actual: String): Boolean {
+        val simple = actual.substringAfterLast('.')
+        return config.types.any { expected ->
+            actual == expected ||
+                actual.endsWith(".$expected") ||
+                simple.equals(expected.substringAfterLast('.'), ignoreCase = true)
         }
     }
 }

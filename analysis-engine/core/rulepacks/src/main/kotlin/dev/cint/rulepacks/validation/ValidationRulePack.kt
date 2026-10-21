@@ -15,10 +15,27 @@ import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
+import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 
 const val VALIDATION_INTENT: Intent = "VALIDATION"
 const val VALIDATION_PACK_ID: String = "validation"
 const val VALIDATION_RULE_ID: String = "$VALIDATION_PACK_ID:validation"
+
+private val MUTATION_INTENTS = setOf(DATA_MODIFY_INTENT, LOCAL_VALUE_MODIFY_INTENT, BOOKKEEPING_INTENT)
+
+private val NESTED_SCOPE_KINDS =
+    setOf(
+        "function_declaration",
+        "local_function_statement",
+        "method_declaration",
+        "constructor_declaration",
+        "lambda_literal",
+        "annotated_lambda",
+        "lambda_expression",
+        "arrow_function",
+        "function_expression",
+    )
 
 data class ValidationConfig(
     val predicates: Set<String> = DEFAULT_PREDICATES,
@@ -27,6 +44,7 @@ data class ValidationConfig(
     val commentKinds: Set<String> = DEFAULT_COMMENT_KINDS,
     val elvisKinds: Set<String> = DEFAULT_ELVIS_KINDS,
     val coalesceOperators: Set<String> = DEFAULT_COALESCE_OPERATORS,
+    val rejectionValues: Set<String> = DEFAULT_REJECTION_VALUES,
 ) {
     fun withOverrides(values: Map<String, Any?>): ValidationConfig = SCHEMA.decode(this, values, VALIDATION_PACK_ID)
 
@@ -53,6 +71,26 @@ data class ValidationConfig(
         val DEFAULT_COMMENT_KINDS: Set<String> = setOf("comment", "line_comment", "multiline_comment")
         val DEFAULT_ELVIS_KINDS: Set<String> = setOf("elvis_expression")
         val DEFAULT_COALESCE_OPERATORS: Set<String> = setOf("??")
+        val DEFAULT_REJECTION_VALUES: Set<String> =
+            setOf(
+                "null",
+                "undefined",
+                "false",
+                "0",
+                "-1",
+                "\"\"",
+                "''",
+                "[]",
+                "{}",
+                "emptyList()",
+                "emptyMap()",
+                "emptySet()",
+                "listOf()",
+                "mapOf()",
+                "setOf()",
+                "arrayOf()",
+                "String.Empty",
+            )
 
         internal val SCHEMA =
             ConfigSchema.of(
@@ -86,6 +124,11 @@ data class ValidationConfig(
                     { it.coalesceOperators },
                     { config, value -> config.copy(coalesceOperators = value) },
                 ),
+                ConfigField.strings<ValidationConfig>(
+                    "rejectionValues",
+                    { it.rejectionValues },
+                    { config, value -> config.copy(rejectionValues = value) },
+                ),
             )
 
         fun from(values: Map<String, Any?>): ValidationConfig = ValidationConfig().withOverrides(values)
@@ -102,7 +145,7 @@ class ValidationRulePack(
         schema = ValidationConfig.SCHEMA,
         ruleId = VALIDATION_RULE_ID,
     ) {
-    override val reads: Set<Intent> = setOf(BOOKKEEPING_INTENT)
+    override val reads: Set<Intent> = MUTATION_INTENTS
 
     override val matchers: List<Matcher> = listOf(Matcher { view -> ValidationRule(config).match(view) })
 
@@ -138,7 +181,7 @@ private class ValidationRule(
             .filter { isElvis(it) }
             .mapNotNull { node ->
                 val right = node.children.lastOrNull { child -> child.text !in coalesceTokens } ?: return@mapNotNull null
-                if (!view.isExit(right)) return@mapNotNull null
+                if (!isRejectingExit(view, right)) return@mapNotNull null
                 if (hasKnownWrites(view, node)) return@mapNotNull null
                 Emit.of(VALIDATION_INTENT, node, confidence = 0.6)
             }.toList()
@@ -156,7 +199,56 @@ private class ValidationRule(
     ): Boolean =
         view.writes().any { write ->
             write.node.startByte >= node.startByte && write.node.endByte <= node.endByte
+        } ||
+            MUTATION_INTENTS.any { intent ->
+                view.annotations(intent).any { annotation ->
+                    annotation.startByte >= node.startByte && annotation.endByte <= node.endByte
+                }
+            }
+
+    private fun hasRejectingExit(
+        view: View,
+        body: SyntaxNode,
+    ): Boolean =
+        body.descendants().any { node ->
+            view.isExit(node) && !insideNestedScope(node, body) && isRejectingExit(view, node)
         }
+
+    private fun insideNestedScope(
+        node: SyntaxNode,
+        body: SyntaxNode,
+    ): Boolean {
+        var current = node.parent
+        while (current != null && current.startByte != body.startByte) {
+            if (current.kind in NESTED_SCOPE_KINDS) return true
+            current = current.parent
+        }
+        return false
+    }
+
+    private fun isRejectingExit(
+        view: View,
+        node: SyntaxNode,
+    ): Boolean {
+        if (!view.isExit(node)) return false
+        val text =
+            node.text
+                .trim()
+                .removeSuffix(";")
+                .trim()
+        if (text.startsWith("continue") || text.startsWith("break")) return true
+        if (!text.startsWith("return")) return false
+        val expression = returnExpression(node)
+        if (expression == null) return true
+        return expression.text.trim() in config.rejectionValues
+    }
+
+    private fun returnExpression(node: SyntaxNode): SyntaxNode? {
+        val children = node.children.filter { it.kind != ";" && it.kind !in config.commentKinds }
+        val keyword = children.indexOfFirst { it.text.trimStart().startsWith("return") }
+        if (keyword < 0) return children.lastOrNull()
+        return children.drop(keyword + 1).firstOrNull()
+    }
 
     private fun rootNode(view: View): SyntaxNode? {
         val seed =
@@ -198,8 +290,11 @@ private class ValidationRule(
         val explicit = hasValidationComment(view, guard)
         val bookkeeping = hasBookkeeping(view, body)
         val predicate = isValidationPredicate(view, condition)
-        val pure = view.isSideEffectFree(condition)
-        val readOnly = !hasKnownWrites(view, condition)
+        val rejection =
+            hasRejectingExit(view, body) ||
+                guard.elseBody?.let { hasRejectingExit(view, it) } == true
+        val pure = view.isSideEffectFree(condition) && rejection
+        val readOnly = !hasKnownWrites(view, condition) && rejection
         val constant = view.isConstant(condition)
         val validationGuard =
             (explicit || bookkeeping || predicate || pure || readOnly) &&

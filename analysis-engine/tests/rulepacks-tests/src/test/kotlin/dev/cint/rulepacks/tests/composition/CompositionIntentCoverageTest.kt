@@ -6,15 +6,18 @@ import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.logic.BOOL_COMBINATORICS_INTENT
 import dev.cint.rulepacks.intents.logic.BoolCombinatoricsRulePack
+import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
 import dev.cint.rulepacks.intents.transformation.DATA_TRANSFORMATION_INTENT
 import dev.cint.rulepacks.intents.transformation.TransformationRulePack
+import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.fixture
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
 import dev.cint.rulepacks.validation.ValidationRulePack
 import dev.cint.test.fixtures.text
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CompositionIntentCoverageTest {
@@ -27,6 +30,8 @@ class CompositionIntentCoverageTest {
                 source,
                 listOf(
                     BookkeepingRulePack(),
+                    LoggingRulePack(),
+                    MutationRulePack(),
                     ValidationRulePack(),
                     NormalizationRulePack(),
                     DataAccessRulePack(),
@@ -42,9 +47,11 @@ class CompositionIntentCoverageTest {
         val usesAssignment = derivatives.single { it.text(source).startsWith("val uses =") }
         assertTrue(SEARCH_INTENT in usesAssignment.intents)
         assertTrue(DATA_TRANSFORMATION_INTENT in usesAssignment.intents)
+        assertEquals(0.9, usesAssignment.confidence)
 
         val currentAssignment = derivatives.single { it.text(source).startsWith("val current =") }
         assertTrue(VALIDATION_INTENT in currentAssignment.intents)
+        assertEquals(0.55, currentAssignment.confidence)
 
         assertTrue(validation.any { "node ?: continue" in it })
         assertTrue(validation.any { "uses.isEmpty()" in it })
@@ -66,7 +73,7 @@ class CompositionIntentCoverageTest {
             analyzePack(
                 "kotlin",
                 source,
-                listOf(BookkeepingRulePack(), ValidationRulePack()),
+                listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack()),
             )
         val values = analysis.source(VALIDATION_INTENT)
         val predicate = values.first { it.text(source) == "uses.isEmpty()" }

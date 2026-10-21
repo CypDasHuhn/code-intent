@@ -10,6 +10,7 @@ import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.View
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
 import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
 import dev.cint.rulepacks.validation.ValidationRulePack
@@ -33,13 +34,13 @@ internal class NoOpValidationPack : RulePack {
 }
 
 internal fun validationPipeline(input: ValidationInput): List<Annotation> =
-    analyzePack(input, listOf(BookkeepingRulePack(), ValidationRulePack())).annotations
+    analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack())).annotations
 
 internal fun validationSources(input: ValidationInput): List<Annotation> =
     validationPipeline(input).filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
 
 internal fun validationAnalysis(input: ValidationInput): PackAnalysis =
-    analyzePack(input, listOf(BookkeepingRulePack(), ValidationRulePack()))
+    analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack()))
 
 internal fun parseValidationInput(
     language: String,
