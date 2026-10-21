@@ -6,24 +6,6 @@ const val FAKE_PROVIDER_ID: String = "fake"
 const val FAKE_MODEL_ID: String = "fake-intent-v1"
 const val FAKE_PROMPT_VERSION: String = "fake-prompt-v1"
 
-data class CandidateContext(
-    val path: String,
-    val version: Int,
-    val candidate: CandidateEmit,
-    val documentLength: Int,
-    val enclosingFunction: String? = null,
-    val neighboringIntents: Set<String> = emptySet(),
-    val knownIntents: Set<String> = emptySet(),
-    val promptVersion: String = FAKE_PROMPT_VERSION,
-)
-
-interface IntentSuggestionProvider {
-    val id: String
-    val model: String
-
-    fun suggest(context: CandidateContext): List<CandidateEmit>
-}
-
 class FakeIntentSuggestionProvider : IntentSuggestionProvider {
     override val id: String = FAKE_PROVIDER_ID
     override val model: String = FAKE_MODEL_ID
@@ -37,7 +19,7 @@ class FakeIntentSuggestionProvider : IntentSuggestionProvider {
                 confidence = maxOf(candidate.confidence, 0.75),
                 aiEligible = false,
                 rationale = "Fake provider enriched ${candidate.reason.name.lowercase()} candidate.",
-                promptVersion = context.promptVersion,
+                promptVersion = context.promptVersion ?: defaultPromptVersion,
                 provider = id,
                 model = model,
             ),

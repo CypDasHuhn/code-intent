@@ -9,6 +9,7 @@ data class CandidateDocument(
     val text: String,
     val knownIntents: Set<String>,
     val neighboringIntents: Set<String> = emptySet(),
+    val language: String? = null,
 )
 
 data class SuggestionOptions(
@@ -16,6 +17,9 @@ data class SuggestionOptions(
     val model: String? = null,
     val maxCandidates: Int = 5,
     val promptVersion: String? = null,
+    val excerptRadiusBytes: Int = SourceExcerpt.DEFAULT_RADIUS_BYTES,
+    val allowGlobs: List<String> = emptyList(),
+    val redactPatterns: List<String> = emptyList(),
 )
 
 class SuggestionProviderRegistry(
@@ -35,14 +39,27 @@ class SuggestionService(
         options: SuggestionOptions,
     ): List<CandidateEmit> {
         val provider = registry.find(options.providerId) ?: return candidates
+        if (!SuggestionPrivacy.allows(document.path, options.allowGlobs)) return candidates
         val documentLength = document.text.toByteArray(Charsets.UTF_8).size
-        val promptVersion = options.promptVersion ?: FAKE_PROMPT_VERSION
+        val promptVersion = options.promptVersion ?: provider.defaultPromptVersion
         val merged = linkedMapOf<String, CandidateEmit>()
         for (candidate in candidates) {
             merged[candidateId(document.path, document.text, candidate)] = candidate
         }
         for (candidate in candidates) {
             if (!candidate.aiEligible) continue
+            val excerpt =
+                SourceExcerpt
+                    .around(
+                        document.text,
+                        candidate.startByte,
+                        candidate.endByte,
+                        options.excerptRadiusBytes,
+                    ).let { source ->
+                        source.copy(
+                            text = SuggestionPrivacy.redact(source.text, options.redactPatterns),
+                        )
+                    }
             val proposals =
                 runCatching {
                     provider.suggest(
@@ -54,6 +71,8 @@ class SuggestionService(
                             neighboringIntents = document.neighboringIntents,
                             knownIntents = document.knownIntents,
                             promptVersion = promptVersion,
+                            language = document.language,
+                            sourceExcerpt = excerpt,
                         ),
                     )
                 }.getOrDefault(emptyList())
@@ -79,6 +98,8 @@ class SuggestionService(
             ),
         )
     }
+
+    fun findProvider(id: String?): IntentSuggestionProvider? = registry.find(id)
 
     fun group(
         document: CandidateDocument,

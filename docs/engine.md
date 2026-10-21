@@ -18,7 +18,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, and mutation packs |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
-| `suggest` | candidate context/provider SPI, fake provider, validation, merge, and grouping |
+| `suggest` | candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
@@ -186,6 +186,17 @@ Candidate builders default to source `candidate`; deterministic candidates use
 anchor/content hash + byte span + sorted intents + reason. Confirmed candidates
 re-enter through the existing user-annotation path on the next analysis.
 
+AI enrichment is post-analysis and optional. The server resolves
+`.cint/suggestions.yml`, injects the provider config and key lookup, and
+orchestrates one pass per document; `:suggest` supplies the provider SPI and owns
+the remote transport. The only remote provider in this slice is DeepSeek
+(`deepseek-chat`, `DEEPSEEK_CHAT_KEY`), using the JDK `HttpClient` with no
+provider SDK and no retries. AI proposals carry `source = ai:deepseek`,
+`provider`/`model`/`promptVersion`/`rationale`, and the input candidate's reason.
+Their confidence is diagnostic: `maxConfidence` defaults to `0.84` and can only
+lower that ceiling. Candidate-only is structural, not a confidence threshold:
+the output is a `CandidateEmit` and never enters the annotation store.
+
 ## Client-side meanings
 
 The engine deliberately emits only `role` and `intents`; it has no meaning
@@ -269,15 +280,40 @@ overlay is reported, and mutations are refused until it is fixed.
 
 Suggestion settings are discovered at `<root>/.cint/suggestions.yml` under a
 top-level `suggestions:` mapping. Implemented keys are `enabled` (default
-`false`), `trigger` (default `manual`), `provider`, `model`, `maxCandidates`
-(default `5`, minimum `1`), `promptVersion`, `timeoutMs` (default `4000`,
-minimum `1`), and `workerThreads` (default `2`, clamped to `1..8`). This gate
-controls the `cint/suggest` enrichment pass; deterministic pack candidates still
-publish when it is disabled. The suggestion and provider pools are bounded by
-`workerThreads`, and provider calls are interrupted after `timeoutMs`. Both
-pools stop when the server run loop exits or the JVM shutdown hook runs; the
-protocol `shutdown` request only acknowledges and leaves them usable for later
-clients. Decisions are stored in `<root>/.cint/suggestions.json`; each record
+`false`), `trigger` (default `manual`), `provider` (default `deepseek` when
+enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
+for the DeepSeek provider), `maxCandidates` (default `5`, minimum `1`),
+`promptVersion` (default `deepseek-intent-v1` for DeepSeek), `timeoutMs`
+(default `4000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
+`apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
+`https://api.deepseek.com/chat/completions`), `maxTokens` (default `512`),
+`maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
+(default `400`, minimum `0`), `allowGlobs` (default empty, which allows every
+path), and `redactPatterns` (default empty). This gate controls the
+`cint/suggest` enrichment pass; deterministic pack candidates still publish when
+it is disabled.
+
+The server resolves this file, injects the provider config and key lookup, and
+orchestrates the pass. `:suggest` owns the DeepSeek provider and its remote
+transport: it builds the `Authorization` header, uses the JDK `HttpClient`, and
+applies `timeoutMs` to the HTTP request. `baseUrl` and `apiKeyEnv` are
+project-controlled, so enabling suggestions trusts the project config. The key
+value appears only in the request header, never in the secret-free capability
+descriptor or logs. Missing keys, non-200 responses, timeouts, and malformed
+output yield no AI proposals after one attempt; there are no retries. AI
+candidates carry `source = ai:deepseek` plus `provider`/`model`/`promptVersion`/
+`rationale`, and their confidence is a diagnostic value capped at
+`maxConfidence`, not an auto-establish threshold.
+
+Only the candidate span plus `excerptRadiusBytes` per side is sent, with
+candidate metadata, known/neighboring intents, path/language, and the prompt
+version; imports and enclosing functions are not sent. `allowGlobs` gates the
+pass, and `redactPatterns` star out regex matches in the excerpt before sending
+while preserving byte length and line breaks. The suggestion and provider pools
+are bounded by `workerThreads`, and provider calls are interrupted after
+`timeoutMs`. Both pools stop when the server run loop exits or the JVM shutdown
+hook runs; the protocol `shutdown` request only acknowledges and leaves them
+usable for later clients. Decisions are stored in `<root>/.cint/suggestions.json`; each record
 carries `candidateId`, `path`, `contentHash`, `intents`, `reason`, `decision`,
 `createdAt`, and optional `anchorId` plus a `startLine`/`startCol`/`endLine`/
 `endCol` span snapshot. Missing `anchorId` and span fields default sensibly, so
@@ -322,7 +358,8 @@ is `PACK` or `LANGUAGE`, and only language-scoped fields carry concrete
 `suggestions` is a secret-free capability descriptor: `{enabled, trigger,
 provider, model, knownIntents}`. It comes from `.cint/suggestions.yml`; a
 missing file advertises `enabled: false`, `trigger: "manual"`, and null
-provider/model. The server answers with its own protocol version and does not
+provider/model; an enabled file without a provider advertises `deepseek` and
+`deepseek-chat`. The server answers with its own protocol version and does not
 negotiate the client's requested value; client suggestion features are gated on
 a returned protocol of at least 3.
 

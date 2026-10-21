@@ -421,14 +421,33 @@ Authoritative for resuming. Older sections are historical where they conflict.
   mutation (`UNSUPPORTED_PACK_OVERLAY`). It only changes pack config: no source
   annotations, contributions, evidence, confidence, or magic comments.
 - Suggestion config: `<root>/.cint/suggestions.yml` under `suggestions:` with
-  `enabled` (default false), `trigger`, `provider`, `model`, `maxCandidates`,
-  `promptVersion`, `timeoutMs` (default 4000, min 1), and `workerThreads`
-  (default 2, clamped 1..8). It gates `cint/suggest`; deterministic pack
-  candidates still publish when it is disabled. The suggestion and provider
-  pools are bounded by `workerThreads`, provider calls are interrupted after
-  `timeoutMs`, and both pools stop on server/process close, not on the protocol
-  `shutdown` request. Decisions live in `<root>/.cint/suggestions.json`; confirm
-  also writes `<root>/.cint/user-annotations.json` under the shared
+  `enabled` (default false), `trigger`, `provider` (default `deepseek` when
+  enabled and unset), `model` (default `deepseek-chat`), `maxCandidates`,
+  `promptVersion` (default `deepseek-intent-v1`), `timeoutMs` (default 4000,
+  min 1), `workerThreads` (default 2, clamped 1..8), `apiKeyEnv` (default
+  `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
+  `https://api.deepseek.com/chat/completions`), `maxTokens` (default 512),
+  `maxConfidence` (default 0.84, clamped to at most 0.84),
+  `excerptRadiusBytes` (default 400, min 0), `allowGlobs` (default empty, which
+  allows every path), and `redactPatterns` (default empty). It gates
+  `cint/suggest`; deterministic pack candidates still publish when it is
+  disabled. The server resolves config, injects the key lookup, and orchestrates
+  the pass; `:suggest` owns the DeepSeek provider and the HTTP transport (JDK
+  `HttpClient`, Authorization header, per-request timeout). The key is read from
+  `DEEPSEEK_CHAT_KEY` (or `apiKeyEnv`) and never logged or published. The
+  suggestion and provider pools are bounded by `workerThreads`, provider calls
+  are interrupted after `timeoutMs`, and both pools stop on server/process close,
+  not on the protocol `shutdown` request. Missing keys, HTTP failures, and
+  malformed AI output leave deterministic candidates untouched after one attempt
+  (no retries). Only the candidate span plus `excerptRadiusBytes` per side is
+  sent with candidate metadata, known/neighboring intents, path/language, and the
+  prompt version; imports and enclosing functions are not sent. `allowGlobs`
+  gates the pass and `redactPatterns` star out regex matches before sending while
+  preserving byte length and line breaks. AI candidates carry `ai:deepseek` plus
+  provider/model/promptVersion/rationale diagnostics; confidence is diagnostic
+  and capped, not an auto-establish threshold. Decisions live in
+  `<root>/.cint/suggestions.json`; confirm also writes
+  `<root>/.cint/user-annotations.json` under the shared
   `<root>/.cint/user-annotations.json.lock` lock directory, which the Kotlin
   writer and the nvim annotation writer both honor. Decision records carry
   optional `anchorId` plus a span snapshot, and older records without them still
@@ -467,9 +486,13 @@ Authoritative for resuming. Older sections are historical where they conflict.
   `AnalysisOutput(annotations, candidates)`. Candidates never enter the
   annotation store, composition, or `reads`; fixpoint rules keep candidates from
   the final iteration. Identity is path + anchor/content hash + byte span +
-  sorted intents + reason. Alternatives at one anchor form a group; confirming
-  any of them resolves the whole group, so siblings are no longer published or
-  confirmable. Confirm and reject are project-global and republish the URI to
+  sorted intents + reason. AI proposals use `source = ai:deepseek` and carry
+  provider/model/promptVersion/rationale diagnostics. AI confidence is
+  diagnostic and capped at `maxConfidence` (at most 0.84); candidate-only is
+  structural because AI output is a `CandidateEmit`. Alternatives at one anchor
+  form a group; confirming any of them resolves the whole group, so siblings are
+  no longer published or confirmable. Confirm and reject are project-global and
+  republish the URI to
   every client that has it open, so all owners of the same URI drop the resolved
   group or suppressed candidate; skip remains per-client/session only. Decision
   republishes still emit `cint/publishCandidates`, with empty groups when

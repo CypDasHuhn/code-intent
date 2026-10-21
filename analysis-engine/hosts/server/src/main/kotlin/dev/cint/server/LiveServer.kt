@@ -109,7 +109,7 @@ class LiveServer(
     private val packs: HostPipeline,
     private val settings: HostSettings,
     private val suggestionSettings: SuggestionSettings = SuggestionSettingsLoader.load(root),
-    private val suggestionService: SuggestionService = SuggestionService(),
+    private val suggestionService: SuggestionService = suggestionServiceFrom(suggestionSettings),
 ) {
     private val mapper: ObjectMapper = jacksonObjectMapper()
     private val configs = ConcurrentHashMap<String, IntentConfig>()
@@ -555,14 +555,17 @@ class LiveServer(
 
     private fun nextAnalysisRevision(key: DocumentKey): Long = analysisRevisions.computeIfAbsent(key) { AtomicLong(0) }.incrementAndGet()
 
-    private fun suggestionCapability(): Map<String, Any?> =
-        linkedMapOf(
+    private fun suggestionCapability(): Map<String, Any?> {
+        val selectedProvider = suggestionSettings.effectiveProvider
+        val provider = suggestionService.findProvider(selectedProvider)
+        return linkedMapOf(
             "enabled" to suggestionSettings.enabled,
             "trigger" to suggestionSettings.trigger,
-            "provider" to suggestionSettings.provider,
-            "model" to suggestionSettings.model,
+            "provider" to (selectedProvider ?: provider?.id),
+            "model" to (suggestionSettings.model ?: provider?.model),
             "knownIntents" to knownIntents(),
         )
+    }
 
     private fun knownIntents(): List<String> =
         runCatching {
@@ -810,6 +813,7 @@ class LiveServer(
                                 cached.output.annotations
                                     .flatMap { it.intents }
                                     .toSet(),
+                            language = current.language,
                         )
                     val providerFuture =
                         providerExecutor.submit(
@@ -819,10 +823,13 @@ class LiveServer(
                                     document = document,
                                     options =
                                         SuggestionOptions(
-                                            providerId = suggestionSettings.provider,
-                                            model = suggestionSettings.model,
+                                            providerId = suggestionSettings.effectiveProvider,
+                                            model = suggestionSettings.effectiveModel,
                                             maxCandidates = suggestionSettings.maxCandidates,
                                             promptVersion = suggestionSettings.promptVersion,
+                                            excerptRadiusBytes = suggestionSettings.excerptRadiusBytes,
+                                            allowGlobs = suggestionSettings.allowGlobs,
+                                            redactPatterns = suggestionSettings.redactPatterns,
                                         ),
                                 )
                             },

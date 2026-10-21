@@ -118,25 +118,35 @@ which keeps cost and privacy bounded and leaves trigger semantics with the pack.
 ```
 CandidateEmit (aiEligible)
   → ContextBuilder
-      - candidate source span + enclosing function
-      - neighboring established intents
-      - language/imports
-      - allowed intent vocabulary
+      - candidate source span + bounded source excerpt (excerptRadiusBytes)
+      - candidate metadata: intents, reason, confidence, path, language
+      - known + neighboring intent vocabulary
+      - prompt version
   → IntentSuggestionProvider (SPI)
   → CandidateValidator
-      - span inside the input candidate
+      - span inside the input candidate and document
       - intent in allowed vocabulary
-      - confidence range; max candidates
+      - raw confidence range; confidence cap <= 0.84; max candidates
   → AI CandidateEmit(s)
 ```
 
 - Provider SPI is one-shot and provider-agnostic: fake/local/remote providers.
-  This slice ships only the deterministic fake provider; there is no network
-  path.
+  The deterministic fake provider stays available for tests and offline config;
+  the DeepSeek provider performs a JDK `HttpClient` chat-completions call.
+  `:suggest` owns the provider and its remote transport; the server resolves
+  config, injects the key lookup, and orchestrates the pass. There are no
+  retries: one attempt per eligible candidate, then fallback to the
+  deterministic candidates.
+- Context is a bounded excerpt plus metadata. Imports and enclosing functions
+  are not collected or sent, and whole files are never sent.
 - Prompt is versioned and structured; code and comments are untrusted data.
 - `CandidateValidator` enforces intent vocabulary, confidence range, byte bounds
   and containment inside the input candidate, dedupes, and applies
-  `maxCandidates`. Invalid output is dropped. No tool calls, no edits.
+  `maxCandidates`. Raw out-of-range or non-finite model confidence is dropped
+  before the cap. Invalid output is dropped. No tool calls, no edits.
+- AI output is a `CandidateEmit` (`source = ai:deepseek`), so candidate-only is
+  structural. It never becomes an established annotation without Confirm, and
+  its confidence is diagnostic rather than a promotion threshold.
 - `SuggestionService` merges AI proposals with the deterministic candidate
   instead of replacing it, groups candidates by anchor (content hash + byte
   span), and keeps alternatives for one span. Confirming any alternative
@@ -223,33 +233,59 @@ state changes before publish.
 suggestions:
   enabled: false
   trigger: manual        # manual; idle is a follow-up
-  provider: fake         # provider registry id; the current slice ships "fake"
-  model: fake-intent-v1
+  provider: deepseek     # "deepseek" by default when enabled and unset; "fake" stays available
+  model: deepseek-chat
   maxCandidates: 5
-  promptVersion: fake-prompt-v1
-  timeoutMs: 4000        # provider interrupt timeout, minimum 1
+  promptVersion: deepseek-intent-v1
+  timeoutMs: 4000        # provider interrupt/HTTP timeout, minimum 1
   workerThreads: 2       # bounded suggestion/provider pools, clamped 1..8
+  apiKeyEnv: DEEPSEEK_CHAT_KEY
+  baseUrl: https://api.deepseek.com/chat/completions
+  maxTokens: 512
+  maxConfidence: 0.84    # diagnostic cap, clamped to at most 0.84
+  excerptRadiusBytes: 400
+  allowGlobs: []         # empty allows every path; globs gate the AI pass
+  redactPatterns: []     # regexes applied to the excerpt before sending
 ```
 
 A missing file defaults to disabled/manual/5 candidates, a 4000 ms timeout, and
 2 worker threads. When disabled, `initialize.suggestions.enabled` is false and
 `cint/suggest` refuses, but pack candidates still publish. Both executor pools
 are bounded by `workerThreads` and stop on server/process close, not on the
-protocol `shutdown` request. Secrets stay server-side; future local/remote
-provider configuration (keys, privacy globs, additional timeouts) is a
-follow-up. Prompt/response logging is off by default.
+protocol `shutdown` request.
+
+The server resolves `.cint/suggestions.yml` and injects the config and key lookup;
+`:suggest` owns the provider and the HTTP call. The key is read from
+`DEEPSEEK_CHAT_KEY` (or `apiKeyEnv`), appears only in the `Authorization` header,
+and is never published in the secret-free capability descriptor or logged.
+`baseUrl` and `apiKeyEnv` are project-controlled, so enabling suggestions trusts
+the project config. A missing key, non-200 response, HTTP timeout, or malformed
+output produces no AI proposals and leaves deterministic candidates untouched;
+the provider makes one attempt and does not retry.
+
+Only `excerptRadiusBytes` per side of the candidate (default 400, adjusted to
+UTF-8 boundaries) is sent, plus candidate metadata, known/neighboring intents,
+path/language, and the prompt version. `allowGlobs` gates the pass; an empty list
+allows all paths. `redactPatterns` regex matches are starred out in the excerpt
+before it is sent while preserving byte length and line breaks. Imports and
+enclosing functions are not collected or sent. Prompt/response/key logging is
+off by default.
+
+AI candidates expose diagnostics on the wire: `source = ai:deepseek`,
+`provider`, `model`, `promptVersion`, `rationale`, and the input candidate's
+reason. `maxConfidence` defaults to `0.84`, can only lower that ceiling, and is
+diagnostic; candidate-only is enforced because AI output is a `CandidateEmit`.
 
 ## Modules
 
 - `api` — `RuleEmit`, `Emit`, `CandidateEmit`, v5 rule contract.
 - `core` — scheduler partition, `AnalysisOutput`, candidate identity; no AI.
 - `rulepacks` — deterministic secondaries where domain-specific.
-- `suggest` — context model, provider SPI/registry, fake provider, validator,
-  merge, and grouping. Depends on `api` and `core`; no server/editor/provider
-  SDK.
-- provider modules — optional local/remote implementations (follow-up).
-- `server` — async orchestration, settings, protocol, persistence, fake provider
-  instance.
+- `suggest` — context model, provider SPI/registry, fake and DeepSeek providers,
+  validator, merge, and grouping. Depends on `api` and `core`; the remote
+  provider uses the JDK `HttpClient` only.
+- `server` — config/key injection, async orchestration, settings, protocol,
+  persistence, and provider construction from settings.
 - `nvim-renderer` — candidate rendering and review UI.
 - `cli` — deterministic candidates only; no AI by default.
 
@@ -269,4 +305,7 @@ follow-up. Prompt/response logging is off by default.
 - **038** — `SEARCH` and `LOOKUP` data-access pack.
 - **039** — `SERVICE_DELEGATION` and `SERVICE_INIT` service pack.
 - **040** — `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` mutation pack.
-- Follow-up — real provider, evaluation corpus, cost/latency budget, manual test.
+- **043** — DeepSeek-backed provider with bounded excerpt context, privacy
+  allow/redact controls, confirmable candidates, local fake-endpoint tests, and
+  manual gate m014 for the real-key editor/daemon path.
+- Follow-up — evaluation corpus, cost/latency budget, additional providers.

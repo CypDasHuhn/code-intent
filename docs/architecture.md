@@ -208,7 +208,10 @@ output drives convergence; candidates come from the final settled iteration.
 Candidate identity is path + anchor/content hash + byte span + sorted intents +
 reason. Payloads carry `source` (`rule:<rule-id>` or `ai:<provider>`),
 `confidence`, `reason`, `aiEligible`, span/positions, and optional
-`rationale`/`promptVersion`/`provider`/`model`.
+`rationale`/`promptVersion`/`provider`/`model`. AI confidence is diagnostic:
+`maxConfidence` defaults to `0.84` and can only lower that ceiling. Candidate-only
+is structural because the AI output type is `CandidateEmit`, never an established
+`Emit`/`Annotation`.
 
 ### AI enrichment boundary
 
@@ -219,6 +222,21 @@ exact document version, and publishes candidate-only results on
 and cannot create an established annotation. `.cint/suggestions.yml` gates the
 manual `cint/suggest` path and is disabled by default; deterministic pack
 candidates publish regardless.
+
+The remote provider is DeepSeek (`deepseek-chat`, key from
+`DEEPSEEK_CHAT_KEY`). `:suggest` owns the provider and the HTTP transport (JDK
+`HttpClient`, Authorization header, per-request timeout); the server resolves
+`.cint/suggestions.yml`, injects the config/key lookup, constructs the provider
+registry, and orchestrates the pass with no retries. The file accepts `provider`,
+`model`, `baseUrl`, `apiKeyEnv`, `maxTokens`, `maxConfidence`,
+`excerptRadiusBytes`, `allowGlobs`, and `redactPatterns` alongside the existing
+trigger and count/timeout settings. The context is
+a bounded excerpt (`excerptRadiusBytes`, default 400) plus candidate metadata,
+known/neighboring intents, path/language, and prompt version; imports and
+enclosing functions are not collected. `allowGlobs` gates the pass and
+`redactPatterns` redact the excerpt before sending. AI candidates carry
+`source = ai:deepseek` plus provider/model/promptVersion/rationale diagnostics.
+The key is never published in `initialize.suggestions` or logged.
 
 Confirmation writes an existing `.cint/user-annotations.json` record and the
 next analysis re-evaluates it as an established `user` source. Rejection
@@ -267,7 +285,7 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 | `api` | frozen v5 contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, scheduler contract, DSL |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, and mutation packs |
 | `core` | syntax facts, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
-| `suggest` | candidate context, provider SPI/registry, fake provider, validator, merge, grouping |
+| `suggest` | candidate context (bounded excerpt + metadata), provider SPI/registry, fake and DeepSeek providers, remote transport, privacy gate/redaction, validator, merge, grouping |
 | `host` | host pipeline and project config loading shared by all hosts |
 | `treesitter` | parsers and per-language syntax profiles |
 | `lsp` | spec-driven LSP oracle |
@@ -283,9 +301,11 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 - `core` has no tree-sitter, LSP, host, editor, or suggestion dependency. The
   `host` module assembles the production pack selection and applies project
   config; CLI, HTTP, and live server reuse it.
-- `suggest` depends on `api` and `core` (candidate identity/hash) only; the
-  `server` depends on `suggest` and owns orchestration, persistence, credentials,
-  and the fake provider instance. No provider SDK leaks into `core` or `api`.
+- `suggest` depends on `api` and `core` (candidate identity/hash) only. It owns
+  the provider SPI, the fake and DeepSeek providers, and the remote transport
+  (`HttpClient`). The `server` depends on `suggest` and owns config/key
+  injection, provider construction, orchestration, and persistence. No provider
+  SDK or credential value leaks into `core` or `api`.
 - Loading reads `META-INF/services/dev.cint.api.RulePack` explicitly rather
   than iterating `ServiceLoader`. That keeps per-provider failure isolation,
   API-version checks, and deterministic ordering; there is no runtime Kotlin
@@ -310,8 +330,9 @@ Explicitly out of scope, none of which constrains the API:
 - multi-language reuse of a single rulepack
 - a second (dataflow / whole-program) backend
 - splitting `dsl` into its own module
-- real local/remote AI providers; the current slice ships a deterministic fake
-  provider only
+- additional local/remote AI providers and a provider/model picker; the current
+  slice ships the deterministic fake provider and a hardcoded DeepSeek remote
+  provider
 - node-anchored candidate identity; the stable node anchor is reserved in `api`,
   while the current identity uses content hash + byte span + intents + reason
 - packs exporting named derived relations (dependency currency stays intents)
