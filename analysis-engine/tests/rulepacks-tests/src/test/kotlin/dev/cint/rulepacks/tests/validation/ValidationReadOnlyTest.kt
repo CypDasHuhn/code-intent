@@ -117,6 +117,18 @@ class ValidationReadOnlyTest {
     }
 
     @Test
+    fun validationPredicateWithThrowOnlyIsNotValidation() {
+        val source =
+            """
+            fun validate(values: List<String>) {
+                if (values.isEmpty()) throw IllegalArgumentException("empty")
+            }
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
+        assertTrue(analysis.source(VALIDATION_INTENT).none { it.text(source) == "values.isEmpty()" })
+    }
+
+    @Test
     fun throwOnlyGuardsAreNotValidation() {
         val source =
             """

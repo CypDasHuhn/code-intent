@@ -343,7 +343,7 @@ private class ValidationRule(
         val readOnly = !hasKnownWrites(view, condition) && rejection
         val constant = view.isConstant(condition)
         val validationGuard =
-            (explicit || bookkeeping || predicate || pure || readOnly) &&
+            (explicit || bookkeeping || (predicate && rejection) || pure || readOnly) &&
                 !(constant && !explicit && !bookkeeping)
         if (!validationGuard) return null
 

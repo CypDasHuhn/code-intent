@@ -22,6 +22,7 @@ class ValidationRuleGuardTest {
             listOf(
                 """
                 fun f(values: List<String>) {
+                    // cint:validation
                     if (values.isNotEmpty()) {
                         fun positive() {
                             return
@@ -32,6 +33,7 @@ class ValidationRuleGuardTest {
                 """.trimIndent(),
                 """
                 fun f(values: List<String>) {
+                    // cint:validation
                     if (values.isNotEmpty()) {
                         values.forEach { return@forEach }
                     }

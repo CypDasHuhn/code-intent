@@ -120,9 +120,9 @@ class HostConfigWiringTest {
             fun ready(): Boolean = true
             fun f(): Int {
                 if (ready()) {
-                    return 1
+                    return 0
                 }
-                return 0
+                return 1
             }
             """.trimIndent()
         val annotations =
@@ -141,7 +141,7 @@ class HostConfigWiringTest {
         assertTrue(validation.single().text(text).contains("ready()"))
         assertTrue(
             annotations.any {
-                it.role == Role.SCAFFOLD && "VALIDATION" in it.intents && it.text(text).contains("return 1")
+                it.role == Role.SCAFFOLD && "VALIDATION" in it.intents && it.text(text).contains("return 0")
             },
         )
     }
