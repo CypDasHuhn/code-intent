@@ -334,7 +334,6 @@ data class MutationLanguageConfig(
     val assignmentPatterns: Set<String> = DEFAULT_ASSIGNMENT_PATTERNS,
     val ignoreLoopCounters: Boolean = true,
     val ignoreBookkeeping: Boolean = true,
-    val ignorePureCopies: Boolean = true,
 ) {
     fun withOverrides(
         values: Map<String, Any?>,
@@ -398,11 +397,6 @@ data class MutationLanguageConfig(
                     "ignoreBookkeeping",
                     { it.ignoreBookkeeping },
                     { config, value -> config.copy(ignoreBookkeeping = value) },
-                ),
-                ConfigField.boolean<MutationLanguageConfig>(
-                    "ignorePureCopies",
-                    { it.ignorePureCopies },
-                    { config, value -> config.copy(ignorePureCopies = value) },
                 ),
             )
 

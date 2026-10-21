@@ -76,6 +76,48 @@ class LocalCopyRulePackTest {
     }
 
     @Test
+    fun fieldToFieldAndSelfCopiesDoNotEstablish() {
+        val text =
+            """
+            class C {
+                private var _db: Database? = null
+                private var _x: Int = 0
+
+                fun configure() {
+                    this._db = _db
+                    _x = _x
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(LOCAL_COPY_INTENT).isEmpty())
+        assertTrue(analysis.texts(LOCAL_COPY_INTENT).none { "_db = _db" in it || "_x = _x" in it })
+        assertTrue(analysis.candidates(LOCAL_COPY_INTENT).none { "_x = _x" in text.substring(it.startByte, it.endByte) })
+    }
+
+    @Test
+    fun declarationAndLocalCopiesAreHandledSafely() {
+        val text =
+            """
+            fun configure(db: Database) {
+                val _db = db
+                val copy = db
+                var local = db
+                local = db
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.texts(LOCAL_COPY_INTENT).any { "_db = db" in it })
+        val candidates = analysis.candidates(LOCAL_COPY_INTENT).map { text.substring(it.startByte, it.endByte) }
+        assertTrue(candidates.any { "copy = db" in it }, candidates.toString())
+        assertTrue(candidates.any { "local = db" in it }, candidates.toString())
+    }
+
+    @Test
     fun generalMutationAndPersistenceDoNotEstablish() {
         val text =
             """
@@ -141,29 +183,9 @@ class LocalCopyRulePackTest {
             )
 
         assertEquals(setOf("_db = db"), analysis.texts(LOCAL_COPY_INTENT).toSet())
+        assertEquals(setOf("_db = db"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
         assertEquals(setOf("repository.findAll()"), analysis.texts(SEARCH_INTENT).toSet())
         assertEquals(setOf("repository.findAll()"), analysis.texts(RETURN_VALUE_INTENT).toSet())
-        assertTrue(analysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
         assertTrue(analysis.source(DATA_MODIFY_INTENT).isEmpty())
-    }
-
-    @Test
-    fun pureCopySuppressionCanBeDisabledInMutationPolicy() {
-        val mutation =
-            MutationRulePack().configure(
-                mapOf("kotlin" to mapOf("ignorePureCopies" to false)),
-            )
-        val text =
-            """
-            fun f(db: Database) {
-                var _db: Database? = null
-                _db = db
-            }
-            """.trimIndent()
-
-        val analysis = analyze("kotlin", text, listOf(BookkeepingRulePack(), mutation, LocalCopyRulePack()))
-
-        assertEquals(setOf("_db = db"), analysis.texts(LOCAL_COPY_INTENT).toSet())
-        assertEquals(setOf("_db = db"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
     }
 }

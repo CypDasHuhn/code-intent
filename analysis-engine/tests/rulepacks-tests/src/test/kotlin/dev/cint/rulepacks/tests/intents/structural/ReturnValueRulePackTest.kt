@@ -63,6 +63,30 @@ class ReturnValueRulePackTest {
     }
 
     @Test
+    fun labeledAndScalarLiteralReturnsDoNotEmit() {
+        val text =
+            """
+            fun bare(values: List<Int>) {
+                values.forEach { return@forEach }
+                if (values.isEmpty()) return
+                return
+            }
+            fun nullValue(): Any? { return null }
+            fun flag(): Boolean { return true }
+            fun number(): Int { return 42 }
+            fun negative(): Int {
+                if (System.currentTimeMillis() > 0) return 0
+                return -1
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(RETURN_VALUE_INTENT).isEmpty())
+        assertTrue(analysis.candidates(RETURN_VALUE_INTENT).isEmpty())
+    }
+
+    @Test
     fun returnValueCoexistsWithSearchAndValidation() {
         val text =
             """

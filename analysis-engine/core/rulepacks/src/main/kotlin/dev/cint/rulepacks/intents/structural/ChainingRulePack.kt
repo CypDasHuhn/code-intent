@@ -80,6 +80,7 @@ private class ChainingRule(
         calls: List<CallFact>,
     ): Chain? {
         if (root.receiver == null) return null
+        if (config.excludeBooleanChains && isBooleanOrOperand(root.node)) return null
 
         val members = mutableListOf<CallFact>()
         val seen = mutableSetOf<Pair<Int, Int>>()
@@ -87,12 +88,20 @@ private class ChainingRule(
         while (current != null && seen.add(current.node.key())) {
             members += current
             val receiver = current.receiver ?: break
-            if (config.excludeBooleanChains && "||" in receiver.text) return null
-            val next =
-                calls
-                    .filter { it !== current && within(it.node, receiver) }
-                    .maxByOrNull { it.node.endByte - it.node.startByte } ?: break
-            current = next
+            if (config.excludeBooleanChains && isBooleanOrExpression(receiver)) return null
+            val contained =
+                calls.filter { call ->
+                    call !== current && (within(call.node, receiver) || within(call.site, receiver))
+                }
+            val exact =
+                contained.filter { call ->
+                    sameSpan(call.node, receiver) || sameSpan(call.site, receiver)
+                }
+            if (exact.isEmpty()) {
+                if (contained.isNotEmpty()) return null
+                break
+            }
+            current = exact.maxByOrNull { it.node.endByte - it.node.startByte } ?: break
         }
         if (members.size < config.minimumLinks) return null
 
@@ -108,13 +117,37 @@ private class ChainingRule(
         next: CallFact,
     ): Boolean {
         val receiver = member.receiver ?: return false
-        val offset = next.node.endByte - receiver.startByte
-        if (offset <= 0 || offset > receiver.text.length) return false
-        return receiver.text.substring(offset).all { it == ')' || it == ']' || it == ';' || it.isWhitespace() }
+        return sameSpan(next.node, receiver) || sameSpan(next.site, receiver)
+    }
+
+    private fun isBooleanOrOperand(node: SyntaxNode): Boolean {
+        var current = node
+        while (true) {
+            val parent = current.parent ?: return false
+            if (parent.children.any { it.text.trim() == "||" }) return true
+            current = parent
+        }
+    }
+
+    private fun isBooleanOrExpression(node: SyntaxNode): Boolean {
+        if (node.children.any { it.text.trim() == "||" }) return true
+        val text = node.text.trim()
+        if (!text.startsWith("(") || !text.endsWith(")")) return false
+        val inner =
+            node.children.firstOrNull { child ->
+                val childText = child.text.trim()
+                childText.isNotEmpty() && childText != "(" && childText != ")" && childText.length < text.length
+            } ?: return false
+        return isBooleanOrExpression(inner)
     }
 }
 
 private fun SyntaxNode.key(): Pair<Int, Int> = startByte to endByte
+
+private fun sameSpan(
+    first: SyntaxNode,
+    second: SyntaxNode,
+): Boolean = first.startByte == second.startByte && first.endByte == second.endByte
 
 private fun within(
     node: SyntaxNode,

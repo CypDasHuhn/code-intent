@@ -47,6 +47,8 @@ private class ReturnValueRule(
     }
 
     private fun returnExpression(site: ReturnFact): SyntaxNode? {
+        val statement = site.node.text.trim()
+        if (statement.startsWith("return@")) return null
         val expression = site.expression
         if (expression != null && expression.text.trim() !in setOf("", ";")) return expression
         return site.node.children.lastOrNull { child ->

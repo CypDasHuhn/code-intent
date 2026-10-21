@@ -1,12 +1,12 @@
 package dev.cint.rulepacks.tests.intents.structural
 
-import dev.cint.api.CandidateReason
+import dev.cint.rulepacks.intents.service.SERVICE_INIT_INTENT
+import dev.cint.rulepacks.intents.service.ServiceRulePack
 import dev.cint.rulepacks.intents.structural.CHAINING_INTENT
 import dev.cint.rulepacks.intents.structural.CHAINING_RULE_ID
 import dev.cint.rulepacks.intents.structural.ChainingRulePack
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
-import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -14,8 +14,8 @@ import kotlin.test.assertTrue
 private fun analyze(
     language: String,
     text: String,
-    pack: dev.cint.api.RulePack = ChainingRulePack(),
-): PackAnalysis = analyzePack(language, text, listOf(pack))
+    packs: List<dev.cint.api.RulePack> = listOf(ChainingRulePack()),
+): PackAnalysis = analyzePack(language, text, packs)
 
 class ChainingRulePackTest {
     @Test
@@ -56,12 +56,11 @@ class ChainingRulePackTest {
     }
 
     @Test
-    fun booleanOrChainsAreNotChaining() {
+    fun booleanOrOperandChainsAreNotChaining() {
         val text =
             """
-            fun valid(a: String, b: String): Boolean {
-                validate(a)
-                return a.isEmpty() || b.isEmpty()
+            fun valid(): Boolean {
+                return Factory.For().Use().Build().isReady() || Factory.For().Use().Build().isReady()
             }
             """.trimIndent()
 
@@ -69,6 +68,37 @@ class ChainingRulePackTest {
 
         assertTrue(analysis.source(CHAINING_INTENT).isEmpty())
         assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty())
+    }
+
+    @Test
+    fun booleanOrReceiverIsNotAChain() {
+        val text = "fun valid(a: Boolean, b: Boolean): Service { return (a || b).Use().Build() }"
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(CHAINING_INTENT).isEmpty())
+        assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty())
+    }
+
+    @Test
+    fun booleanOperatorsInsideArgumentsDoNotSuppressChains() {
+        val text =
+            """
+            fun stringArgument(): Service { return Factory.For("a||b").Use().Build() }
+            fun booleanArgument(flag: Boolean, other: Boolean): Service {
+                return Factory.For(flag || other).Use().Build()
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(
+            setOf(
+                "Factory.For(\"a||b\").Use().Build()",
+                "Factory.For(flag || other).Use().Build()",
+            ),
+            analysis.texts(CHAINING_INTENT).toSet(),
+        )
     }
 
     @Test
@@ -89,6 +119,33 @@ class ChainingRulePackTest {
     }
 
     @Test
+    fun indexAndArgumentCallsDoNotBecomeLinks() {
+        val kotlin =
+            """
+            fun indexed(a: List<Service>, b: () -> Int) {
+                a[b()].c()
+            }
+            fun binary(a: List<Service>, b: () -> Int) {
+                (a + b()).c()
+            }
+            """.trimIndent()
+        val javascript =
+            """
+            function f(a, b) {
+                a[b()].c();
+                (a + b()).c();
+                [foo()].map(x => x).first();
+            }
+            """.trimIndent()
+
+        for ((language, text) in listOf("kotlin" to kotlin, "javascript" to javascript)) {
+            val analysis = analyze(language, text)
+            assertTrue(analysis.source(CHAINING_INTENT).isEmpty(), "$language: ${analysis.texts(CHAINING_INTENT)}")
+            assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty(), "$language candidates")
+        }
+    }
+
+    @Test
     fun configuredMinimumControlsLinks() {
         val pack = ChainingRulePack().configure(mapOf("kotlin" to mapOf("minimumLinks" to 3)))
         val text =
@@ -97,21 +154,32 @@ class ChainingRulePackTest {
             fun b(): Service { return Factory.For().Use().Build() }
             """.trimIndent()
 
-        val analysis = analyze("kotlin", text, pack)
+        val analysis = analyze("kotlin", text, listOf(pack))
 
         assertEquals(listOf("Factory.For().Use().Build()"), analysis.texts(CHAINING_INTENT))
     }
 
     @Test
-    fun nonDirectReceiverShapesStayCandidates() {
-        val text = "function build(flag) { return (flag ? Factory.For() : Other).Use().Build(); }"
+    fun nonAsciiReceiversKeepDirectLinks() {
+        val text = "fun build(): Service { return Factory.For(\"café\").Use().Build() }"
 
-        val analysis = analyze("javascript", text)
-        val candidate = analysis.candidates(CHAINING_INTENT).single()
+        val analysis = analyze("kotlin", text)
 
-        assertTrue(analysis.source(CHAINING_INTENT).isEmpty())
-        assertEquals(CandidateReason.LOW_CONFIDENCE, candidate.reason)
-        assertEquals("rule:$CHAINING_RULE_ID", candidate.source)
-        assertEquals("(flag ? Factory.For() : Other).Use().Build()", text.substring(candidate.startByte, candidate.endByte))
+        assertEquals(listOf("Factory.For(\"café\").Use().Build()"), analysis.texts(CHAINING_INTENT))
+        assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty())
+    }
+
+    @Test
+    fun chainingCoexistsWithServiceInit() {
+        val service =
+            ServiceRulePack().configure(
+                mapOf("kotlin" to mapOf("initCalls" to listOf("For"))),
+            )
+        val text = "fun build(): Service { return DataAccessServiceFactory.For().Use().Build() }"
+
+        val analysis = analyze("kotlin", text, listOf(service, ChainingRulePack()))
+
+        assertEquals(listOf("DataAccessServiceFactory.For().Use().Build()"), analysis.texts(CHAINING_INTENT))
+        assertTrue(analysis.texts(SERVICE_INIT_INTENT).any { "DataAccessServiceFactory.For()" in it })
     }
 }

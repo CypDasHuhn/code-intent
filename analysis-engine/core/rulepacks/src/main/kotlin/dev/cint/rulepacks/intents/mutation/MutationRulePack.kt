@@ -20,7 +20,6 @@ import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.api.emit
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
-import dev.cint.rulepacks.intents.structural.isEstablishedLocalCopy
 
 const val MUTATION_PACK_ID: String = "mutation"
 const val DATA_MODIFY_INTENT: Intent = "DATA_MODIFY"
@@ -173,7 +172,6 @@ private class LocalValueModifyRule(
 
         for (write in view.writes()) {
             if (!accepts(write, language.assignmentPatterns)) continue
-            if (language.ignorePureCopies && isEstablishedLocalCopy(write)) continue
             if (isBookkeeping(write.node, bookkeeping)) continue
             if (language.ignoreLoopCounters && isLoopCounter(view, write)) continue
             val local = owners[write.node.startByte to write.node.endByte]?.kind == DeclarationKind.VARIABLE
