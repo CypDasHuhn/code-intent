@@ -100,7 +100,7 @@ class ValidationReadOnlyTest {
     }
 
     @Test
-    fun throwingRejectionGuardsAndElvisAreValidation() {
+    fun throwingGuardsAreErrorHandlingNotValidation() {
         val source =
             """
             fun f(call: String?, value: String?): String {
@@ -112,8 +112,22 @@ class ValidationReadOnlyTest {
         val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
         val values = analysis.source(VALIDATION_INTENT).map { it.text(source) }
 
-        assertTrue(values.any { "receiverNode(call) == null" in it })
-        assertTrue(values.any { "value ?: throw" in it })
+        assertTrue(values.none { "receiverNode(call) == null" in it })
+        assertTrue(values.none { "value ?: throw" in it })
+    }
+
+    @Test
+    fun throwOnlyGuardsAreNotValidation() {
+        val source =
+            """
+            fun validate(out: String, dot: String) {
+                if (out == dot) {
+                    throw IllegalArgumentException("different files")
+                }
+            }
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("kotlin", "Sample.kt", source))
+        assertTrue(analysis.source(VALIDATION_INTENT).none { it.text(source) == "out == dot" })
     }
 
     @Test
@@ -186,7 +200,7 @@ class ValidationReadOnlyTest {
             val analysis = validationAnalysis(parseValidationInput(language, "Sample", source))
             val values = analysis.source(VALIDATION_INTENT).map { it.text(source) }
 
-            assertEquals(3, values.count { "eceiverNode(call)" in it }, language)
+            assertEquals(2, values.count { "eceiverNode(call)" in it }, language)
         }
     }
 

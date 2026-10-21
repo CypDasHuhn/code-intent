@@ -100,10 +100,12 @@ Detection rulepacks and core composition:
   preceded by `// cint:bookkeeping`. The declaration and all writes to it are
   tagged Bookkeeping; reads are not.
 - `validation:validation` — an `if` guard tagged Validation when its branch
-  contains a rejecting exit (`throw`, bare `return`/`continue`/`break`, or a
+  contains a rejecting exit (bare `return`/`continue`/`break`, or a
   sentinel return) and the condition is not a known write. Elvis/coalesce forms
   use the same gate. A validation predicate, a Bookkeeping write, or a
-  `// cint:validation` comment is rejection-independent. Unbraced bodies are
+  `// cint:validation` comment is rejection-independent. `throw`/`raise` guards are
+`ERROR_HANDLING`, not `VALIDATION`, unless an explicit validation certificate
+is present. Unbraced bodies are
   supported, and jumps inside nested functions/lambdas, nested loops, or nested
   switches do not certify the outer guard. The read-only fallback accepts
   unknown read-only conditions at lower confidence; known writes and mutation

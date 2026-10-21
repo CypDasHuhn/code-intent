@@ -106,7 +106,7 @@ code findings from Rounds 1–4 are addressed.
   Property initializers and assignment RHS values propagate value intents to the
   whole declaration/assignment; lambda/argument effect intents are filtered and
   propagation/merge use the minimum confidence.
-- Validation now requires a rejecting exit for the read-only path (`throw`,
+- Validation now requires a rejecting exit for the read-only path (bare returns,
   bare/sentinel `return`, `continue`, `break`), handles unbraced bodies, and
   excludes jumps inside nested loops/switches/functions. Predicate,
   `BOOKKEEPING`, and explicit-comment paths remain rejection-independent.
@@ -125,8 +125,8 @@ forms candidate-only) and `DATA_TRANSFORMATION` (receiver/type/qualifier
 evidence, SEARCH-aware, own-intent fixpoint). Derivative use now promotes
 read-only initializers (external reads allowed; known writes/mutations block;
 unknown read-only lowers confidence) and propagates initializer intents to
-declaration/assignment spans. Validation now covers elvis/continue/break/throw
-rejection forms, unbraced guards, and read-only guards at reduced confidence,
+declaration/assignment spans. Validation now covers elvis/continue/break
+rejection forms; `throw` guards stay `ERROR_HANDLING` unless explicitly certified, unbraced guards, and read-only guards at reduced confidence,
 with nested loop/switch exits scoped correctly. Both packs are registered and
 snapshot/default-tag integrated. Reviews closed after five rounds; build,
 test-engine, lint, and test-nvim pass.

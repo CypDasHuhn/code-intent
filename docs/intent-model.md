@@ -65,16 +65,17 @@ Current behavior:
 
 - establishes when a then/else branch contains a rejecting exit and the
   condition is not a known write;
-- a rejecting exit is `throw`, bare `return`/`continue`/`break`, or a `return`
+- a rejecting exit is bare `return`/`continue`/`break`, or a `return`
   whose expression is a configured rejection sentinel (`null`, `false`, `0`,
   empty literals/collections, ...); a normal-value return does not reject;
-- `throw` and unbraced single-statement bodies count in Kotlin, JavaScript,
+- `throw` guards are `ERROR_HANDLING`, not `VALIDATION`, unless explicitly certified;
+  unbraced single-statement bodies count in Kotlin, JavaScript,
   TypeScript, and C#;
 - `continue`/`break` only reject when they belong to the guard's own loop or
   switch. A jump inside a nested loop, nested switch, or nested
   function/lambda does not certify the outer guard;
 - elvis/coalesce forms (`x ?: continue`, `x ?: return sentinel`) use the same
-  rejection, `throw`, and known-write gates;
+  rejection and known-write gates; `throw` is not a validation certificate;
 - these paths are rejection-independent by design:
   - a validation predicate (`isEmpty`, `isBlank`, `none`, `any`, `all`,
     `isValid*`, `has*`, ...),

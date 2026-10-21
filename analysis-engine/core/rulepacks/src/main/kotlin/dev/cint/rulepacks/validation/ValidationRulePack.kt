@@ -229,7 +229,6 @@ private class ValidationRule(
         body.descendants().any { node ->
             if (insideNestedScope(node, body)) return@any false
             when {
-                isThrowExit(node) -> true
                 leadingKeyword(node) == "continue" -> !insideNestedJumpScope(node, body, includeSwitch = false)
                 leadingKeyword(node) == "break" -> !insideNestedJumpScope(node, body, includeSwitch = true)
                 else -> view.isExit(node) && isRejectingExit(view, node)
@@ -266,8 +265,6 @@ private class ValidationRule(
         return false
     }
 
-    private fun isThrowExit(node: SyntaxNode): Boolean = leadingKeyword(node) == "throw"
-
     private fun sameSpan(
         first: SyntaxNode,
         second: SyntaxNode,
@@ -279,7 +276,6 @@ private class ValidationRule(
         view: View,
         node: SyntaxNode,
     ): Boolean {
-        if (isThrowExit(node)) return true
         if (!view.isExit(node)) return false
         val text =
             node.text
