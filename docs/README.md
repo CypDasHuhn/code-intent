@@ -8,6 +8,8 @@ Index of the written contract for CodeIntent.
   loading, scheduler, composition, and hosts.
 - [intent-model.md](intent-model.md) — intents, sources, derivative use,
   scaffolds, CFG, profiles, and implementation snapshot.
+- [ai-intents.md](ai-intents.md) — secondary emits, AI candidate inference,
+  review/persistence, and protocol.
 - [workflow.md](workflow.md) — roles, ticket/review pipeline, verification
   commands, manual gate, and commit rules.
 - [manual-test.md](manual-test.md) — non-automated acceptance checks and their

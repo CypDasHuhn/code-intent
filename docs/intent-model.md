@@ -122,6 +122,28 @@ so the `if` becomes `{VALIDATION, USER_FEEDBACK}`.
 `APP_EFFECT` is considered too broad: messages, sounds, inventory mutations,
 etc. have different semantics. Generic effects can be a separate taxonomy later.
 
+### Queued intents (2026-10-21)
+
+Definitions for the next taxonomy batch. Deterministic detection where
+config/explicit patterns exist; AI candidates for the ambiguous remainder.
+
+| intent | meaning | include | exclude / boundary |
+|---|---|---|---|
+| `NORMALIZATION` | canonicalize a value for downstream use | trim, case fold, parse/coerce, date/time format, path/unit normalization | rejecting input (`VALIDATION`), persistence (`DATA_MODIFY`), display-only formatting until configured |
+| `SEARCH` | retrieve data by criteria from a source | repository queries, `findBy*`/`search*`/`query*`, filters, external search APIs; empty/many results | known-key single-value mapping (`LOOKUP`), pure transformation (`NORMALIZATION`) |
+| `LOOKUP` | resolve one known value by key/constant | map/dictionary get, enum/constant maps, config keys, static tables, enum-like value to DB id | criteria-based retrieval (`SEARCH`), service forwarding (`SERVICE_DELEGATION`) |
+| `SERVICE_DELEGATION` | transfer responsibility to another service/component | controller→service, facade, adapter, thin call-through/argument adaptation | constructing/wiring (`SERVICE_INIT`), local business logic, the inner call's own intent |
+| `SERVICE_INIT` | build/configure/wire a service or resource | construction, client creation, connection setup, DI/bootstrap | initializing business data, delegation, every constructor call |
+| `DATA_MODIFY` | change that persists beyond the process | repository save/update/delete, ORM writes, durable file writes, queue/event publication | in-memory mutation (`LOCAL_VALUE_MODIFY`), bookkeeping counters |
+| `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, loop counters/noise |
+
+Overlaps are intent sets, not exclusive labels, but packs should avoid
+double-tagging unless both meanings genuinely apply. Persistence wins over local
+mutation; validation and normalization may coexist; delegation does not replace
+the delegate's business intent. Generic local mutation and most
+search/lookup/service boundaries are expected to be candidate-heavy and
+AI-enhanced rather than painted as established.
+
 ## 3. Derivative use and scaffolds
 
 ### Derivative use
