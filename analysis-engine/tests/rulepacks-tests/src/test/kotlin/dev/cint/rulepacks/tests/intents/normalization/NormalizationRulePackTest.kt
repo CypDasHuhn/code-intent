@@ -12,6 +12,7 @@ import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NORMALIZATION_INTENT
 import dev.cint.rulepacks.intents.normalization.NORMALIZATION_RULE_ID
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.logging.LOGGING_INTENT
 import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.tests.support.PackAnalysis
@@ -274,7 +275,7 @@ class NormalizationRulePackTest {
             analyze(
                 "kotlin",
                 text,
-                listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack(), NormalizationRulePack()),
+                listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ValidationRulePack(), NormalizationRulePack()),
             )
 
         val validation = analysis.source(VALIDATION_INTENT).single { "isBlank" in it.text(text) }

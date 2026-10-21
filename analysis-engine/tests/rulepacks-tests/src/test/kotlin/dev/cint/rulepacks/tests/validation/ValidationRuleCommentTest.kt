@@ -3,6 +3,7 @@ package dev.cint.rulepacks.tests.validation
 import dev.cint.api.Role
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parseValidationInput
 import dev.cint.rulepacks.tests.support.validationSources
@@ -176,7 +177,7 @@ class ValidationRuleCommentTest {
         val input = parseValidationInput("kotlin", "Sample.kt", text)
         val pack = ValidationRulePack().configure(mapOf("commentKinds" to listOf("line_comment")))
         val sources =
-            analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), pack))
+            analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), pack))
                 .annotations
                 .filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
 
@@ -199,7 +200,7 @@ class ValidationRuleCommentTest {
         val input = parseValidationInput("kotlin", "Sample.kt", text)
         val pack = ValidationRulePack().configure(mapOf("commentKinds" to listOf("line_comment")))
 
-        val annotations = analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), pack)).annotations
+        val annotations = analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), pack)).annotations
         val sources =
             annotations.filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
 
@@ -222,7 +223,7 @@ class ValidationRuleCommentTest {
         val pack = ValidationRulePack().configure(mapOf("commentKinds" to listOf("multiline_comment")))
 
         val sources =
-            analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), pack))
+            analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), pack))
                 .annotations
                 .filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
 

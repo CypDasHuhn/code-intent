@@ -6,6 +6,7 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.tests.support.parseValidationInput
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
@@ -57,7 +58,7 @@ class ValidationRuleScaffoldTest {
                     input.syntax,
                     NullOracle,
                     input.config,
-                    listOf(LoggingRulePack(), BookkeepingRulePack(), MutationRulePack(), ValidationRulePack()),
+                    listOf(LoggingRulePack(), BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ValidationRulePack()),
                 ).annotations
 
         fun scaffoldCovers(

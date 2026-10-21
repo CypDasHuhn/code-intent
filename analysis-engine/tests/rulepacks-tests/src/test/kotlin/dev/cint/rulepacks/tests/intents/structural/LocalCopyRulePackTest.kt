@@ -98,6 +98,44 @@ class LocalCopyRulePackTest {
     }
 
     @Test
+    fun declaredPropertySourcesDoNotEstablish() {
+        val text =
+            """
+            class C {
+                private var db: Database? = null
+                private var _db: Database? = null
+
+                fun configure() {
+                    this._db = db
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(LOCAL_COPY_INTENT).isEmpty())
+        assertTrue(analysis.texts(LOCAL_COPY_INTENT).none { "this._db = db" in it })
+    }
+
+    @Test
+    fun caseVariantsDoNotEstablish() {
+        val text =
+            """
+            class C {
+                private var _db: Database? = null
+
+                fun configure(DB: Database) {
+                    _db = DB
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(LOCAL_COPY_INTENT).isEmpty())
+    }
+
+    @Test
     fun declarationAndLocalCopiesAreHandledSafely() {
         val text =
             """
@@ -183,9 +221,47 @@ class LocalCopyRulePackTest {
             )
 
         assertEquals(setOf("_db = db"), analysis.texts(LOCAL_COPY_INTENT).toSet())
-        assertEquals(setOf("_db = db"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
+        assertTrue(analysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
         assertEquals(setOf("repository.findAll()"), analysis.texts(SEARCH_INTENT).toSet())
         assertEquals(setOf("repository.findAll()"), analysis.texts(RETURN_VALUE_INTENT).toSet())
         assertTrue(analysis.source(DATA_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun mutationSuppressesConfiguredLocalCopiesByDefault() {
+        val localCopy = LocalCopyRulePack().configure(mapOf("kotlin" to mapOf("prefixes" to listOf("store_"))))
+        val text =
+            """
+            fun configure(db: Database) {
+                var store_db: Database? = null
+                store_db = db
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text, listOf(BookkeepingRulePack(), MutationRulePack(), localCopy))
+
+        assertEquals(setOf("store_db = db"), analysis.texts(LOCAL_COPY_INTENT).toSet())
+        assertTrue(analysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun mutationPureCopySuppressionCanBeDisabled() {
+        val mutation =
+            MutationRulePack().configure(
+                mapOf("kotlin" to mapOf("ignorePureCopies" to false)),
+            )
+        val localCopy = LocalCopyRulePack().configure(mapOf("kotlin" to mapOf("prefixes" to listOf("store_"))))
+        val text =
+            """
+            fun configure(db: Database) {
+                var store_db: Database? = null
+                store_db = db
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text, listOf(BookkeepingRulePack(), mutation, localCopy))
+
+        assertEquals(setOf("store_db = db"), analysis.texts(LOCAL_COPY_INTENT).toSet())
+        assertEquals(setOf("store_db = db"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
     }
 }

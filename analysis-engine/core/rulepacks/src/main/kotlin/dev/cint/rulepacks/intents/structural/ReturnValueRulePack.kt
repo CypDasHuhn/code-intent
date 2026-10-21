@@ -14,6 +14,7 @@ const val RETURN_VALUE_PACK_ID: String = "return-value"
 const val RETURN_VALUE_RULE_ID: String = "$RETURN_VALUE_PACK_ID:return-value"
 
 private const val ESTABLISHED_CONFIDENCE: Double = 0.9
+private val BARE_LABELED_RETURN = Regex("""^return@[A-Za-z_][A-Za-z0-9_]*$""")
 
 class ReturnValueRulePack(
     config: ReturnValueConfig = ReturnValueConfig(),
@@ -47,17 +48,22 @@ private class ReturnValueRule(
     }
 
     private fun returnExpression(site: ReturnFact): SyntaxNode? {
-        val statement = site.node.text.trim()
-        if (statement.startsWith("return@")) return null
+        if (BARE_LABELED_RETURN.matches(site.node.text.trim())) return null
         val expression = site.expression
-        if (expression != null && expression.text.trim() !in setOf("", ";")) return expression
+        if (expression != null && isValue(expression)) return expression
         return site.node.children.lastOrNull { child ->
-            val text = child.text.trim()
-            text.isNotEmpty() &&
-                text != ";" &&
-                text != "return" &&
-                !child.kind.contains("comment")
+            isValue(child) && child.text.trim() != "return"
         }
+    }
+
+    private fun isValue(node: SyntaxNode): Boolean {
+        val text = node.text.trim()
+        return text.isNotEmpty() &&
+            text != ";" &&
+            text != "return" &&
+            !text.startsWith("@") &&
+            !node.kind.contains("label") &&
+            !node.kind.contains("comment")
     }
 
     private fun isLiteral(

@@ -17,6 +17,8 @@ const val CHAINING_RULE_ID: String = "$CHAINING_PACK_ID:chaining"
 
 private const val ESTABLISHED_CONFIDENCE: Double = 0.85
 private const val CANDIDATE_CONFIDENCE: Double = 0.4
+private val AMBIGUOUS_RECEIVER_KINDS = listOf("conditional", "ternary", "if_expression")
+private val OPERAND_BOUNDARIES = listOf("argument", "lambda", "statement", "program", "block")
 
 class ChainingRulePack(
     config: ChainingConfig = ChainingConfig(),
@@ -59,20 +61,22 @@ private class ChainingRule(
             }
         }
 
-        return selected.values.map { chain ->
-            if (chain.direct) {
-                Emit.of(CHAINING_INTENT, chain.root.node, confidence = ESTABLISHED_CONFIDENCE)
-            } else {
-                CandidateEmit.of(
-                    CHAINING_INTENT,
-                    chain.root.node,
-                    CandidateReason.LOW_CONFIDENCE,
-                    source = "rule:$CHAINING_RULE_ID",
-                    confidence = CANDIDATE_CONFIDENCE,
-                    aiEligible = true,
-                )
+        return selected.values
+            .filterNot { config.excludeBooleanChains && isBooleanOrOperand(it.root.node) }
+            .map { chain ->
+                if (chain.direct) {
+                    Emit.of(CHAINING_INTENT, chain.root.node, confidence = ESTABLISHED_CONFIDENCE)
+                } else {
+                    CandidateEmit.of(
+                        CHAINING_INTENT,
+                        chain.root.node,
+                        CandidateReason.LOW_CONFIDENCE,
+                        source = "rule:$CHAINING_RULE_ID",
+                        confidence = CANDIDATE_CONFIDENCE,
+                        aiEligible = true,
+                    )
+                }
             }
-        }
     }
 
     private fun chainFor(
@@ -80,10 +84,10 @@ private class ChainingRule(
         calls: List<CallFact>,
     ): Chain? {
         if (root.receiver == null) return null
-        if (config.excludeBooleanChains && isBooleanOrOperand(root.node)) return null
 
         val members = mutableListOf<CallFact>()
         val seen = mutableSetOf<Pair<Int, Int>>()
+        var ambiguous = false
         var current: CallFact? = root
         while (current != null && seen.add(current.node.key())) {
             members += current
@@ -98,7 +102,7 @@ private class ChainingRule(
                     sameSpan(call.node, receiver) || sameSpan(call.site, receiver)
                 }
             if (exact.isEmpty()) {
-                if (contained.isNotEmpty()) return null
+                if (isAmbiguousReceiver(receiver)) ambiguous = true
                 break
             }
             current = exact.maxByOrNull { it.node.endByte - it.node.startByte } ?: break
@@ -106,9 +110,10 @@ private class ChainingRule(
         if (members.size < config.minimumLinks) return null
 
         val direct =
-            members.zipWithNext().all { (member, next) ->
-                isDirectLink(member, next)
-            }
+            !ambiguous &&
+                members.zipWithNext().all { (member, next) ->
+                    isDirectLink(member, next)
+                }
         return Chain(root, members, direct)
     }
 
@@ -125,8 +130,21 @@ private class ChainingRule(
         while (true) {
             val parent = current.parent ?: return false
             if (parent.children.any { it.text.trim() == "||" }) return true
+            if (OPERAND_BOUNDARIES.any { parent.kind.contains(it) }) return false
             current = parent
         }
+    }
+
+    private fun isAmbiguousReceiver(node: SyntaxNode): Boolean {
+        if (AMBIGUOUS_RECEIVER_KINDS.any { node.kind.contains(it) }) return true
+        val text = node.text.trim()
+        if (!text.startsWith("(") || !text.endsWith(")")) return false
+        val inner =
+            node.children.firstOrNull { child ->
+                val childText = child.text.trim()
+                childText.isNotEmpty() && childText != "(" && childText != ")" && childText.length < text.length
+            } ?: return false
+        return isAmbiguousReceiver(inner)
     }
 
     private fun isBooleanOrExpression(node: SyntaxNode): Boolean {

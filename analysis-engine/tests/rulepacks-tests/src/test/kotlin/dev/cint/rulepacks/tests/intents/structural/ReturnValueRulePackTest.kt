@@ -4,6 +4,8 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
+import dev.cint.rulepacks.intents.structural.LOCAL_COPY_INTENT
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.intents.structural.RETURN_VALUE_INTENT
 import dev.cint.rulepacks.intents.structural.RETURN_VALUE_RULE_ID
 import dev.cint.rulepacks.intents.structural.ReturnValueRulePack
@@ -102,7 +104,14 @@ class ReturnValueRulePackTest {
             analyze(
                 "kotlin",
                 text,
-                listOf(BookkeepingRulePack(), MutationRulePack(), DataAccessRulePack(), ValidationRulePack(), ReturnValueRulePack()),
+                listOf(
+                    BookkeepingRulePack(),
+                    MutationRulePack(),
+                    LocalCopyRulePack(),
+                    DataAccessRulePack(),
+                    ValidationRulePack(),
+                    ReturnValueRulePack(),
+                ),
             )
         val returned = analysis.source(RETURN_VALUE_INTENT).first { it.text(text) == "repository.findAll()" }
         val searched = analysis.source(SEARCH_INTENT).single { it.text(text) == "repository.findAll()" }

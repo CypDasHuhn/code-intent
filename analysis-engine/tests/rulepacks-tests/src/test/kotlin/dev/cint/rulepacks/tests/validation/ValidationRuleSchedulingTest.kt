@@ -10,6 +10,7 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.parseValidationInput
 import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
 import dev.cint.rulepacks.validation.ValidationRulePack
@@ -20,7 +21,7 @@ import kotlin.test.assertTrue
 class ValidationRuleSchedulingTest {
     @Test
     fun validationSchedulesAfterBookkeepingAndMutation() {
-        val plan = RuleScheduler().plan(listOf(ValidationRulePack(), BookkeepingRulePack(), MutationRulePack()))
+        val plan = RuleScheduler().plan(listOf(ValidationRulePack(), BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack()))
         val validation = plan.strata.flatten().single { it.id == VALIDATION_RULE_ID }
         val validationIndex = plan.strata.indexOfFirst { stratum -> stratum.any { it.id == VALIDATION_RULE_ID } }
         val bookkeepingIndex = plan.strata.indexOfFirst { stratum -> stratum.any { it.id == "bookkeeping:bookkeeping" } }

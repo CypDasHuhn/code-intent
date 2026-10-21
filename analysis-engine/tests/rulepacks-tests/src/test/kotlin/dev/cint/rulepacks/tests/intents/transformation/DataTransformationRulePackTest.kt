@@ -14,6 +14,7 @@ import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NORMALIZATION_INTENT
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.intents.transformation.DATA_TRANSFORMATION_INTENT
 import dev.cint.rulepacks.intents.transformation.DATA_TRANSFORMATION_RULE_ID
 import dev.cint.rulepacks.intents.transformation.TransformationRulePack
@@ -301,6 +302,7 @@ class DataTransformationRulePackTest {
                     BookkeepingRulePack(),
                     DataAccessRulePack(),
                     MutationRulePack(),
+                    LocalCopyRulePack(),
                     ValidationRulePack(),
                     NormalizationRulePack(),
                     TransformationRulePack(),
@@ -400,7 +402,7 @@ class DataTransformationRulePackTest {
             analyze(
                 "javascript",
                 text,
-                listOf(BookkeepingRulePack(), DataAccessRulePack(), MutationRulePack(), TransformationRulePack()),
+                listOf(BookkeepingRulePack(), DataAccessRulePack(), MutationRulePack(), LocalCopyRulePack(), TransformationRulePack()),
             )
         val call =
             analysis.annotations.single {

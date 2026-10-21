@@ -8,6 +8,7 @@ import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.NoOpValidationPack
 import dev.cint.rulepacks.tests.support.ValidationInput
 import dev.cint.rulepacks.tests.support.parseValidationInput
@@ -103,7 +104,7 @@ class ValidationRulePackTest {
 
         val withoutValidation = returns(input, listOf(BookkeepingRulePack()))
         val withNoOpValidation = returns(input, listOf(BookkeepingRulePack(), NoOpValidationPack()))
-        val withValidation = returns(input, listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack()))
+        val withValidation = returns(input, listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ValidationRulePack()))
 
         assertEquals(setOf(UNTAGGED_INTENT), withoutValidation.intents)
         assertEquals(setOf(UNTAGGED_INTENT), withNoOpValidation.intents)

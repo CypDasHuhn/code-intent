@@ -1,5 +1,6 @@
 package dev.cint.rulepacks.tests.intents.structural
 
+import dev.cint.api.CandidateReason
 import dev.cint.rulepacks.intents.service.SERVICE_INIT_INTENT
 import dev.cint.rulepacks.intents.service.ServiceRulePack
 import dev.cint.rulepacks.intents.structural.CHAINING_INTENT
@@ -134,7 +135,6 @@ class ChainingRulePackTest {
             function f(a, b) {
                 a[b()].c();
                 (a + b()).c();
-                [foo()].map(x => x).first();
             }
             """.trimIndent()
 
@@ -143,6 +143,71 @@ class ChainingRulePackTest {
             assertTrue(analysis.source(CHAINING_INTENT).isEmpty(), "$language: ${analysis.texts(CHAINING_INTENT)}")
             assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty(), "$language candidates")
         }
+    }
+
+    @Test
+    fun multiLinkChainsKeepAnIndexOrBinaryBase() {
+        val text =
+            """
+            fun indexed(a: List<Service>, b: () -> Int): Service {
+                return a[b()].c().d()
+            }
+            fun binary(a: List<Service>, b: () -> Int): Service {
+                return (a + b()).c().d()
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(
+            setOf("a[b()].c().d()", "(a + b()).c().d()"),
+            analysis.texts(CHAINING_INTENT).toSet(),
+        )
+        assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty())
+    }
+
+    @Test
+    fun arrayLiteralBaseDoesNotFabricateALink() {
+        val pack = ChainingRulePack().configure(mapOf("javascript" to mapOf("minimumLinks" to 3)))
+        val text = "function f() { [foo()].map(x => x).first(); }"
+
+        val analysis = analyze("javascript", text, listOf(pack))
+
+        assertTrue(analysis.source(CHAINING_INTENT).isEmpty())
+        assertTrue(analysis.candidates(CHAINING_INTENT).isEmpty())
+    }
+
+    @Test
+    fun ambiguousConditionalReceiverStaysCandidate() {
+        val text = "function build(flag) { return (flag ? Factory.For() : Other).Use().Build(); }"
+
+        val analysis = analyze("javascript", text)
+        val candidate = analysis.candidates(CHAINING_INTENT).single()
+
+        assertTrue(analysis.source(CHAINING_INTENT).isEmpty())
+        assertEquals(CandidateReason.LOW_CONFIDENCE, candidate.reason)
+        assertEquals("rule:$CHAINING_RULE_ID", candidate.source)
+        assertEquals("(flag ? Factory.For() : Other).Use().Build()", text.substring(candidate.startByte, candidate.endByte))
+    }
+
+    @Test
+    fun chainsInsideOrOperandArgumentsAreNotSuppressed() {
+        val text =
+            """
+            fun use(value: Service): Boolean = true
+            fun fallback(): Boolean = false
+            fun argument(): Boolean {
+                return use(builder.For().Use().Build()) || fallback()
+            }
+            fun lambda(): Boolean {
+                return run { builder.For().Use().Build() } || fallback()
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(2, analysis.source(CHAINING_INTENT).size)
+        assertTrue(analysis.texts(CHAINING_INTENT).all { "builder.For().Use().Build()" in it })
     }
 
     @Test
