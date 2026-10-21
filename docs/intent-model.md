@@ -15,8 +15,8 @@ intents into visual meanings.
 - Tag/intent names are screaming snake case: `LOGGING`, `ERROR_HANDLING`,
   `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`, `LOOKUP`,
   `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`,
-  `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`, `USER_FEEDBACK` (planned),
-  `UNTAGGED`.
+  `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`, `RETURN_VALUE`, `CHAINING`,
+  `LOCAL_COPY`, `USER_FEEDBACK` (planned), `UNTAGGED`.
 - Source annotations remain code-shaped: `@Bookkeeping`, `@UserFeedback`,
   `// cint:bookkeeping`, `// cint:validation`.
 - The engine has no colors or visual policy. `tags[intent].meaning` and
@@ -161,9 +161,9 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, loop counters/noise |
 | `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` (and `every`/`some`) over predicates, two or more distinct classified predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, negation-only guards, plain literals, `is`/`has` prefix collisions such as `issue`/`hashCode` |
 | `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy`, `all`/`any`/`none`; in-place JS mutators such as `sort`/`reverse` may co-occur with `LOCAL_VALUE_MODIFY` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`); unclassified/unknown receivers stay candidates |
-| `RETURN_VALUE` | explicitly return a computed value | return statements with an expression | bare `return`, returning a literal only unless configured |
-| `CHAINING` | fluent/chained call shape | two or more links, e.g. `Factory.For().Use().Build()` | boolean `||` chains (`BOOL_COMBINATORICS`), single calls |
-| `LOCAL_COPY` | copy a parameter into a field/local | `_db = db`, `this.x = x` with parameter source | general local mutation (`LOCAL_VALUE_MODIFY`), persistence (`DATA_MODIFY`) |
+| `RETURN_VALUE` | explicitly return a computed value | `return expr`, including value-bearing labeled returns (`return@map expr`); emitted on the returned expression | bare `return`, bare `return@label`, literal/constant-only returns unless `includeLiterals` is enabled; never suppresses other intents |
+| `CHAINING` | fluent/chained call shape | at least two exact call links, e.g. `Factory.For().Use().Build()`; the outer call is the primary emit | boolean `||` operands and parenthesized OR receivers (`BOOL_COMBINATORICS`), single calls; ambiguous conditional/ternary receivers are candidates |
+| `LOCAL_COPY` | copy a parameter into a field/local | field-like target (`_db`, `m_`/`s_`/`f_` or configured prefix, or owner-qualified) from a bare non-field identifier; assignments and declaration/property initializers, including class/constructor copies | general local mutation (`LOCAL_VALUE_MODIFY`), persistence (`DATA_MODIFY`); field/self copies, declared-property sources, and case variants do not establish; non-established simple shapes (including field/self and ambiguous owner-qualified targets) are candidates when enabled |
 
 Bundled ownership and deployment:
 
@@ -178,7 +178,10 @@ Bundled ownership and deployment:
   intent, and factory/connection/DI work belongs to init.
 - `mutation:data-modify` and `mutation:local-value-modify` own `DATA_MODIFY` and
   `LOCAL_VALUE_MODIFY`; persistence needs durable receiver/path evidence, and
-  local writes exclude bookkeeping and loop counters.
+  local writes exclude bookkeeping and loop counters. `local-value-modify` also
+  reads `LOCAL_COPY` (so the local-copy owner must be in the plan) and
+  suppresses a write's local mutation by default when that write is an
+  established `LOCAL_COPY`.
 - `bool-combinatorics:bool-combinatorics` owns `BOOL_COMBINATORICS`. It is
   deliberately selective: simple conditions stay untagged, and borderline
   compound booleans (`a && b`) are low-confidence candidates. Nested booleans
@@ -191,6 +194,24 @@ Bundled ownership and deployment:
   (including call chains not classified as search/transformation) stay
   candidates unless a configured qualifier matches. Ambiguous helpers
   (`transform`, `process`, `reshape`, `convert`, ...) are candidates.
+- `return-value:return-value` owns `RETURN_VALUE`; it reads no other intent and
+  is purely additive. It emits on the returned expression span, not on the
+  `return` keyword, so domain/search/validation intents on the same expression
+  are preserved. Bare labeled returns are skipped; a labeled return with a value
+  emits that value.
+- `chaining:chaining` owns `CHAINING`; it reads no other intent. A link requires
+  the next inner call to cover the receiver's exact node/site span, so calls
+  buried in indexes, arguments, or binary expressions do not become links.
+  Chains at or above `minimumLinks` (default 2) emit once at the outer call;
+  ambiguous conditional/ternary bases stay low-confidence candidates.
+- `local-copy:local-copy` owns `LOCAL_COPY`; it reads no other intent.
+  Established copies require a field-like LHS and a non-field-like RHS whose
+  normalized names match exactly and case-sensitively (configured prefix then
+  leading underscores are stripped). Declarations and class/constructor
+  property initializers are considered, not only assignments. Parameter proof is
+  heuristic: declared properties are excluded, but same-named locals, loop/catch
+  bindings, or globals are not fully resolved. Field/self copies and ambiguous
+  owner-qualified targets do not establish and remain candidates when enabled.
 
 Overlaps are intent sets, not exclusive labels, but packs should avoid
 double-tagging unless both meanings genuinely apply. Persistence wins over local
@@ -215,6 +236,37 @@ Concrete overlaps and precedence:
   transformed collection can carry both; neither replaces the other.
 - **`DATA_TRANSFORMATION` / `NORMALIZATION`** — `NORMALIZATION` canonicalizes a
   single value; a later collection shaping call is still a transformation.
+- **`RETURN_VALUE` / any other intent** — `RETURN_VALUE` is additive. A returned
+  expression can simultaneously carry `SEARCH`, `VALIDATION`, `DATA_MODIFY`,
+  `CHAINING`, and so on; the return pack never removes or replaces those
+  intents.
+- **`CHAINING` / `SERVICE_INIT`, `SERVICE_DELEGATION`, `SEARCH`,
+  `DATA_TRANSFORMATION`** — a fluent construction/fetch/transform chain may carry
+  `CHAINING` alongside the domain intent on the same outer call.
+  `CHAINING` describes syntax shape; it does not imply ownership transfer,
+  construction, retrieval, or shaping by itself.
+- **`CHAINING` / `BOOL_COMBINATORICS`** — direct operands of `||` and
+  parenthesized OR receivers are not `CHAINING`; `||` inside a string literal,
+  call argument, or recognized lambda boundary does not suppress a real chain.
+- **`LOCAL_COPY` / `LOCAL_VALUE_MODIFY`** — the mutation pack reads
+  `LOCAL_COPY`. With `ignorePureCopies` default-on, an established copy at the
+  write suppresses that write's generic local mutation. Setting
+  `ignorePureCopies: false` restores co-occurrence; candidate copies never
+  suppress because they are not annotations. Persistence (`DATA_MODIFY`) is
+  unaffected.
+
+Structural scratchpad examples:
+
+```kotlin
+return _adminUserId.Value            // RETURN_VALUE (+ domain intents on the value)
+Factory.For().Use().Build()          // CHAINING (+ SERVICE_INIT where applicable)
+val _db = db                         // LOCAL_COPY declaration copy
+_db = db                             // LOCAL_COPY; LOCAL_VALUE_MODIFY suppressed by default
+this._db = _db                       // field/self shape: candidate, not established
+this.database = db                   // ambiguous field target: candidate
+return@map it + 1                    // RETURN_VALUE on `it + 1`
+return@forEach                       // no RETURN_VALUE
+```
 
 ## 3. Derivative use and scaffolds
 
@@ -496,7 +548,7 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
   `ERROR_HANDLING`, `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`,
   `LOOKUP`, `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`,
   `LOCAL_VALUE_MODIFY`, `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`,
-  `UNTAGGED`.
+  `RETURN_VALUE`, `CHAINING`, `LOCAL_COPY`, `UNTAGGED`.
 
 ## 9. Open decisions
 
@@ -530,8 +582,9 @@ Key engine files:
   `RuleScheduler.kt` — stratification and fixpoint.
 - `analysis-engine/core/core/.../runtime/composition/` — `ScaffoldComposition`,
   `DerivativeComposition`, `ReturnComposition`, and the terminal composition.
-- `analysis-engine/core/core/.../facts/flow/ControlFlow.kt` — function-local CFG and
-  return sites.
+- `analysis-engine/core/core/.../facts/flow/ControlFlow.kt` — function-local CFG
+  and return sites, including labeled `return@...` sites for value-bearing
+  returns.
 - `analysis-engine/core/core/.../syntax/Syntax.kt` and `ProfileSyntaxModel.kt` —
   language-neutral syntax facts and profile-driven node kinds.
 - `analysis-engine/core/core/.../runtime/rulepack/` — explicit
@@ -541,11 +594,12 @@ Key engine files:
 - `analysis-engine/core/rulepacks/.../logging/`, `errorhandling/`,
   `bookkeeping/`, and `validation/` — bundled detection packs;
   `intents/normalization/`, `intents/dataaccess/`, `intents/service/`,
-  `intents/mutation/`, `intents/logic/`, and `intents/transformation/` supply
-  the newer `NORMALIZATION`, `SEARCH`/`LOOKUP`, `SERVICE_DELEGATION`/
-  `SERVICE_INIT`, `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`, `BOOL_COMBINATORICS`, and
-  `DATA_TRANSFORMATION` packs; `support/BundledRulePackSelection.kt` supplies
-  the per-language error-handling packs.
+  `intents/mutation/`, `intents/logic/`, `intents/transformation/`, and
+  `intents/structural/` supply the newer `NORMALIZATION`, `SEARCH`/`LOOKUP`,
+  `SERVICE_DELEGATION`/`SERVICE_INIT`, `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`,
+  `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`, and `RETURN_VALUE`/`CHAINING`/
+  `LOCAL_COPY` packs; `support/BundledRulePackSelection.kt` supplies the
+  per-language error-handling packs.
 - `analysis-engine/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
   JavaScript, TypeScript, Vue, and C# node-kind profiles.
 - `analysis-engine/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and

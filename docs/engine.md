@@ -16,7 +16,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | module | responsibility |
 |--------|----------------|
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, boolean-combinatorics, and data-transformation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, boolean-combinatorics, data-transformation, return-value, chaining, and local-copy packs |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
 | `suggest` | candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
@@ -44,9 +44,9 @@ descriptors. The loader parses those descriptors explicitly, validates each
 provider's API version and ownership, and degrades per provider instead of
 aborting the whole load. The bundled descriptor registers logging,
 error-handling, bookkeeping, validation, normalization, data-access, service,
-mutation, bool-combinatorics, and data-transformation packs;
-`BundledRulePackSelection` constructs the per-language error-handling rules. The
-tests-only modules are not production dependencies.
+mutation, bool-combinatorics, data-transformation, return-value, chaining, and
+local-copy packs; `BundledRulePackSelection` constructs the per-language
+error-handling rules. The tests-only modules are not production dependencies.
 
 ## Languages
 
@@ -138,7 +138,12 @@ Detection rulepacks and core composition:
 - `mutation:local-value-modify` — writes to declaration-local variables and
   configured mutable collection operations on proven collection receivers.
   Member/external assignments, unproven `add`/`put`/`remove` calls, loop
-  counters, and bookkeeping writes stay out of the established set.
+  counters, and bookkeeping writes stay out of the established set. The rule
+  reads `LOCAL_COPY` (and `BOOKKEEPING`); with `ignorePureCopies` default-on, a
+  write carrying established `LOCAL_COPY` is skipped entirely, while setting it
+  false restores `LOCAL_COPY` + `LOCAL_VALUE_MODIFY` co-occurrence. Candidate
+  copies do not suppress because only established annotations enter the reads
+  graph.
 - `bool-combinatorics:bool-combinatorics` — complex boolean shape from guard
   conditions, return expressions, and initializers. Established when the
   expression has multiple/mixed `&&`/`||`, a negated compound, a configured
@@ -154,6 +159,35 @@ Detection rulepacks and core composition:
   `SEARCH`/`DATA_TRANSFORMATION`; bare calls, unknown types, unclassified call
   receivers, and offline-oracle receivers stay candidates. In-place JS mutators
   may overlap `LOCAL_VALUE_MODIFY`.
+- `return-value:return-value` — explicit value returns from CFG return sites.
+  Emission lands on the returned expression, so it is additive with `SEARCH`,
+  `VALIDATION`, `DATA_MODIFY`, `CHAINING`, and other intents at the same span.
+  Bare `return` and bare `return@label` do not qualify; a labeled return with a
+  value emits that value. Constant/literal-only expressions are excluded unless
+  `includeLiterals` (alias `allowLiterals`) is enabled. The rule reads no other
+  intent.
+- `chaining:chaining` — fluent call shape with at least `minimumLinks` (default
+  2, alias `minLinks`). The walker keeps a call only when it covers the
+  receiver's exact node/site span, so array/index/binary bases contribute only
+  their real call links (for example `a[b()].c().d()` collects the `c`→`d`
+  links and emits the full expression, while `a[b()].c()` is below the minimum).
+  The outermost call emits once and inner calls are members. Boolean `||`
+  operands and parenthesized OR
+  receivers are excluded when `excludeBooleanChains` is on (default); `||`
+  inside strings, arguments, or a recognized lambda boundary does not suppress a chain.
+  Conditional/ternary bases stay `LOW_CONFIDENCE` candidates. The rule reads no
+  other intent.
+- `local-copy:local-copy` — parameter-to-field/local copies from assignments and
+  declaration/property initializers, including class/constructor-scoped
+  properties. Established requires a field-like LHS (owner-qualified, leading
+  underscore, or configured prefix), a non-field RHS, and case-sensitive
+  equality after stripping the configured prefix and leading underscores, with
+  declared properties excluded as sources. Field/self copies do not establish.
+  Enclosing-function parameter names are parsed as supporting evidence, but this
+  remains a local heuristic rather than binding resolution; field/self,
+  ambiguous owner-qualified, and differently named local shapes are candidates
+  (`candidates`/`includeCandidates` default on). Literals and call expressions
+  do not qualify. General mutation and persistence are excluded.
 - `core:return-category` — classifies each `return` from the function CFG. A
   return on a certified guard's true edge inherits that guard's source intents
   (for example `VALIDATION`); a rejection sentinel on the other edge inherits
@@ -286,12 +320,27 @@ mutation:
     mutableTypes: [MutableList, MutableMap, ArrayList]
     mutableReceiverNames: [items, values, cache]
     assignmentPatterns: [assignment, increment, decrement]
+    ignorePureCopies: true
+
+return-value:
+  kotlin:
+    includeLiterals: false
+
+chaining:
+  kotlin:
+    minimumLinks: 2
+    excludeBooleanChains: true
+
+local-copy:
+  kotlin:
+    prefixes: [m_, s_, f_]
+    candidates: true
 ```
 
 Bundled pack ids are `logging`, `error-handling`, `bookkeeping`, `validation`,
-`normalization`, `data-access`, `service`, `mutation`, `bool-combinatorics`, and
-`data-transformation`; each carries per-language fields for its own detection
-vocabulary.
+`normalization`, `data-access`, `service`, `mutation`, `bool-combinatorics`,
+`data-transformation`, `return-value`, `chaining`, and `local-copy`; each carries
+per-language fields for its own detection vocabulary.
 
 Missing values use the owning pack's defaults. Unknown packs and keys are
 reported. Purity annotations remain explicit: an annotation means pure and
