@@ -87,7 +87,7 @@ class ServiceOverlapTest {
         val analysis = analyzePack("kotlin", source, packs)
 
         assertTrue(analysis.source(SERVICE_DELEGATION_INTENT).isEmpty())
-        assertEquals(1, analysis.candidates(SERVICE_DELEGATION_INTENT).size)
+        assertEquals(2, analysis.candidates(SERVICE_DELEGATION_INTENT).size)
         assertTrue(analysis.source("SEARCH").isNotEmpty())
         assertTrue(analysis.source("DATA_MODIFY").isNotEmpty())
         assertTrue(analysis.source("ERROR_HANDLING").isNotEmpty())

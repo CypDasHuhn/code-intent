@@ -22,6 +22,7 @@ data class ServiceLanguageConfig(
     val connectionQualifiers: Set<String> = emptySet(),
     val diAnnotations: Set<String> = emptySet(),
     val diCalls: Set<String> = emptySet(),
+    val diQualifiers: Set<String> = emptySet(),
 )
 
 data class ServiceConfig(
@@ -112,6 +113,11 @@ data class ServiceConfig(
                     "diCalls",
                     { it.diCalls },
                     { config, value -> config.copy(diCalls = value) },
+                ),
+                ConfigField.strings<ServiceLanguageConfig>(
+                    "diQualifiers",
+                    { it.diQualifiers },
+                    { config, value -> config.copy(diQualifiers = value) },
                 ),
             )
 
@@ -210,10 +216,30 @@ data class ServiceConfig(
                 "DriverManager",
                 "DataSource",
                 "ConnectionFactory",
+                "Connection",
+                "connection",
+                "conn",
+                "_connection",
                 "Pool",
                 "HttpClient",
                 "Client",
                 "client",
+            )
+
+        private val COMMON_DI_QUALIFIERS =
+            setOf(
+                "context",
+                "ctx",
+                "container",
+                "provider",
+                "serviceProvider",
+                "services",
+                "injector",
+                "locator",
+                "beanFactory",
+                "applicationContext",
+                "resolver",
+                "registry",
             )
 
         private val COMMON_DI_ANNOTATIONS =
@@ -244,7 +270,6 @@ data class ServiceConfig(
                         "createService",
                         "newService",
                         "createConnection",
-                        "connect",
                     ),
                 initQualifiers = COMMON_INIT_QUALIFIERS,
                 initTypes = COMMON_INIT_TYPES,
@@ -273,6 +298,7 @@ data class ServiceConfig(
                 connectionQualifiers = COMMON_CONNECTION_QUALIFIERS,
                 diAnnotations = COMMON_DI_ANNOTATIONS,
                 diCalls = setOf("inject", "resolve", "getInstance", "getService"),
+                diQualifiers = COMMON_DI_QUALIFIERS,
             )
 
         private val LANGUAGE_DEFAULTS: Map<String, ServiceLanguageConfig> =
@@ -288,10 +314,7 @@ data class ServiceConfig(
                                     "buildClient",
                                     "createService",
                                     "newService",
-                                    "getConnection",
-                                    "openConnection",
                                     "createConnection",
-                                    "connect",
                                 ),
                             initMethods =
                                 setOf(
@@ -310,6 +333,7 @@ data class ServiceConfig(
                                     "connect",
                                 ),
                             diCalls = setOf("getBean", "getService", "getInstance", "inject", "resolve"),
+                            diQualifiers = COMMON_DI_QUALIFIERS,
                         ),
                     "javascript" to javascript,
                     "typescript" to javascript,
@@ -326,9 +350,6 @@ data class ServiceConfig(
                                     "BuildClient",
                                     "CreateService",
                                     "CreateConnection",
-                                    "GetConnection",
-                                    "OpenConnection",
-                                    "Connect",
                                     "Initialize",
                                     "Configure",
                                     "AddHttpClient",
@@ -360,6 +381,7 @@ data class ServiceConfig(
                                     "OpenSession",
                                 ),
                             diCalls = setOf("GetService", "GetRequiredService", "Resolve", "Inject", "GetInstance"),
+                            diQualifiers = COMMON_DI_QUALIFIERS + setOf("_services"),
                         ),
                 )
             }

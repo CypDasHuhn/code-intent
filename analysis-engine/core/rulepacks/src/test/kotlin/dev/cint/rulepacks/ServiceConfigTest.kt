@@ -16,6 +16,7 @@ class ServiceConfigTest {
         assertEquals(ServiceConfig.defaults(), config.languages)
         assertTrue("service" in config.forLanguage("kotlin").serviceNames)
         assertTrue("HttpClient" in config.forLanguage("kotlin").initTypes)
+        assertTrue("container" in config.forLanguage("kotlin").diQualifiers)
         assertTrue("find" !in config.forLanguage("kotlin").initMethods)
     }
 
@@ -37,6 +38,30 @@ class ServiceConfigTest {
         assertEquals(setOf("openPool"), kotlin.initCalls)
         assertTrue("HttpClient" in kotlin.initTypes)
         assertTrue("service" in config.forLanguage("csharp").serviceNames)
+    }
+
+    @Test
+    fun overridesPreserveFieldsNotNamedInTheOverride() {
+        val base =
+            ServiceConfig.from(
+                mapOf(
+                    "kotlin" to
+                        mapOf(
+                            "serviceNames" to listOf("primary"),
+                            "delegationCalls" to listOf("forwardPrimary"),
+                        ),
+                ),
+            )
+        val configured =
+            base.withOverrides(
+                mapOf(
+                    "kotlin" to mapOf("delegationCalls" to listOf("forwardSecondary")),
+                ),
+            )
+
+        val kotlin = configured.forLanguage("kotlin")
+        assertEquals(setOf("primary"), kotlin.serviceNames)
+        assertEquals(setOf("forwardSecondary"), kotlin.delegationCalls)
     }
 
     @Test
@@ -98,7 +123,7 @@ class ServiceConfigTest {
     }
 
     @Test
-    fun packConfigureUsesTypedOverridesAndAdditiveConfiguration() {
+    fun packConfigureReturnsAServicePackForReplaceAndAdditiveConfiguration() {
         val configured =
             ServiceRulePack().configure(
                 mapOf("kotlin" to mapOf("serviceNames" to listOf("primary"))),

@@ -13,9 +13,9 @@ import dev.cint.api.FunctionFact
 import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RuleEmit
+import dev.cint.api.ScopeKind
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.api.emit
 
 const val SERVICE_DELEGATION_INTENT: Intent = "SERVICE_DELEGATION"
 const val SERVICE_INIT_INTENT: Intent = "SERVICE_INIT"
@@ -34,7 +34,7 @@ class ServiceRulePack(
     override fun rules(): List<Rule> = listOf(ServiceDelegationRule(config), ServiceInitRule(config))
 
     override fun configure(values: Map<String, Any?>): ConfigurableRulePack =
-        if (values.isEmpty()) this else ServiceRulePack(ServiceConfig.from(values))
+        if (values.isEmpty()) this else ServiceRulePack(config.withOverrides(values))
 
     override fun configureAdditive(values: Map<String, Any?>): ConfigurableRulePack =
         if (values.isEmpty()) this else ServiceRulePack(config.withAdditiveOverrides(values))
@@ -45,6 +45,18 @@ class ServiceRulePack(
 private data class Evidence(
     val source: String,
     val confidence: Double,
+    val candidateOnly: Boolean = false,
+)
+
+private data class Creation(
+    val node: SyntaxNode,
+    val type: String?,
+)
+
+private data class ForwardingUnit(
+    val serviceCalls: List<Pair<CallFact, Evidence>>,
+    val pureForwarding: Pair<CallFact, Evidence>?,
+    val singleEffectCall: CallFact?,
 )
 
 private class ServiceDelegationRule(
@@ -63,42 +75,48 @@ private class ServiceDelegationRule(
             if (units.isEmpty()) continue
 
             val calls = functionCalls(view, function)
-            val matched =
-                calls.mapNotNull { call ->
-                    delegationEvidence(view, call, language)?.let { call to it }
-                }
-            val patterned = matchesControllerOrFacade(view, function, language)
-            val evidence =
-                matched.ifEmpty {
-                    if (patterned) {
-                        outermost(calls).map { it to Evidence(HEURISTIC_SOURCE, 0.6) }
-                    } else {
-                        emptyList()
-                    }
-                }
-            if (evidence.isEmpty()) continue
-
-            val forwarding =
-                outermost(evidence.map { it.first }).firstNotNullOfOrNull { call ->
-                    evidence.firstOrNull { it.first === call }
-                } ?: continue
-
-            if (isThin(view, units)) {
-                result += forwarding.first.emit(SERVICE_DELEGATION_INTENT, forwarding.second.source, forwarding.second.confidence)
-            } else if (mostlyDelegating(units.size, evidence.size)) {
+            val forwarding = units.map { analyzeUnit(view, it, calls, language) }
+            val established = forwarding.singleOrNull()?.pureForwarding
+            if (units.size == 1 && established != null) {
                 result +=
-                    CandidateEmit.call(
-                        SERVICE_DELEGATION_INTENT,
-                        forwarding.first,
-                        CandidateReason.LOW_CONFIDENCE,
-                        source = "rule:$SERVICE_DELEGATION_RULE_ID",
-                        confidence = 0.4,
-                    )
+                    Emit.of(SERVICE_DELEGATION_INTENT, established.first.node, established.second.source, established.second.confidence)
+                continue
+            }
+
+            val forwardingUnits = forwarding.count { it.serviceCalls.isNotEmpty() }
+            if (forwardingUnits > 0 && forwardingUnits * 2 >= units.size) {
+                result += candidates(forwarding)
+                continue
+            }
+
+            if (forwarding.none { it.serviceCalls.isNotEmpty() } && matchesControllerOrFacade(view, function, language)) {
+                val call = forwarding.singleOrNull()?.singleEffectCall
+                if (call != null && initCallEvidence(view, call, language) == null) {
+                    result += delegationCandidate(call)
+                }
             }
         }
 
         return result
     }
+
+    private fun candidates(forwarding: List<ForwardingUnit>): List<RuleEmit> {
+        val seen = mutableSetOf<Pair<Int, Int>>()
+        return forwarding.flatMap { unit ->
+            unit.serviceCalls.mapNotNull { (call, _) ->
+                if (seen.add(call.node.startByte to call.node.endByte)) delegationCandidate(call) else null
+            }
+        }
+    }
+
+    private fun delegationCandidate(call: CallFact): CandidateEmit =
+        CandidateEmit.of(
+            SERVICE_DELEGATION_INTENT,
+            call.node,
+            CandidateReason.LOW_CONFIDENCE,
+            source = "rule:$SERVICE_DELEGATION_RULE_ID",
+            confidence = 0.4,
+        )
 }
 
 private class ServiceInitRule(
@@ -112,48 +130,69 @@ private class ServiceInitRule(
         val language = config.forLanguage(view.language())
         val result = mutableListOf<RuleEmit>()
         val emitted = mutableSetOf<Pair<Int, Int>>()
+        val creations = creationNodes(view)
+        val annotatedFunctions = mutableSetOf<Pair<Int, Int>>()
+        val lifecycleFunctions = mutableSetOf<Pair<Int, Int>>()
 
         for (call in view.calls()) {
             val evidence = initCallEvidence(view, call, language) ?: continue
             if (emitted.add(call.node.startByte to call.node.endByte)) {
-                result += call.emit(SERVICE_INIT_INTENT, evidence.source, evidence.confidence)
+                result += initEmit(call.node, evidence)
+            }
+        }
+
+        for (creation in creations) {
+            if (!typeMatches(creation.type ?: continue, language.initTypes, emptySet())) continue
+            if (emitted.add(creation.node.startByte to creation.node.endByte)) {
+                result += Emit.of(SERVICE_INIT_INTENT, creation.node, Emit.DEFAULT_SOURCE, 0.85)
             }
         }
 
         for (declaration in view.declarations()) {
-            declarationAnnotationEvidence(declaration, language)?.let { evidence ->
-                if (emitted.add(declaration.node.startByte to declaration.node.endByte)) {
-                    result += declaration.emit(SERVICE_INIT_INTENT, evidence.source, evidence.confidence)
+            val annotationNodes = configuredAnnotationNodes(declaration, language)
+            for (node in annotationNodes) {
+                if (emitted.add(node.startByte to node.endByte)) {
+                    result += Emit.of(SERVICE_INIT_INTENT, node, "annotation", 0.95)
                 }
             }
-            declarationLifecycleEvidence(declaration, language)?.let { evidence ->
-                if (emitted.add(declaration.node.startByte to declaration.node.endByte)) {
-                    result += declaration.emit(SERVICE_INIT_INTENT, evidence.source, evidence.confidence)
-                }
-            }
-            val initializer =
-                view
-                    .properties()
-                    .firstOrNull {
-                        it.node.startByte == declaration.node.startByte &&
-                            it.node.endByte == declaration.node.endByte
-                    }?.initializer
-            creationEvidence(view, initializer, language)?.let { evidence ->
-                if (emitted.add(evidence.first.startByte to evidence.first.endByte)) {
-                    result += Emit.of(SERVICE_INIT_INTENT, evidence.first, evidence.second.source, evidence.second.confidence)
-                }
+            if (annotationNodes.isNotEmpty() && declaration.kind == DeclarationKind.FUNCTION) {
+                annotatedFunctions += declaration.node.startByte to declaration.node.endByte
             }
         }
 
-        val lifecycleNames = language.initMethods
+        for ((node, evidence) in constructorInjectionEvidence(view, language)) {
+            if (emitted.add(node.startByte to node.endByte)) {
+                result += Emit.of(SERVICE_INIT_INTENT, node, evidence.source, evidence.confidence)
+            }
+        }
+
+        for (declaration in view.declarations()) {
+            if (declaration.kind != DeclarationKind.FUNCTION) continue
+            val name = declaration.name ?: continue
+            if (name !in language.initMethods) continue
+            val span = declaration.node.startByte to declaration.node.endByte
+            lifecycleFunctions += span
+            if (span in annotatedFunctions) continue
+            val function = view.functions().firstOrNull { it.node.startByte == span.first && it.node.endByte == span.second } ?: continue
+            val hasEvidence = functionHasInitEvidence(view, function, language, creations)
+            val evidence =
+                if (hasEvidence) {
+                    Evidence(HEURISTIC_SOURCE, 0.8)
+                } else {
+                    Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
+                }
+            val node = declaration.nameNode ?: declaration.node
+            if (emitted.add(node.startByte to node.endByte)) {
+                result += initEmit(node, evidence)
+            }
+        }
+
         for (function in view.functions()) {
             val name = function.name ?: continue
-            if (name in lifecycleNames) continue
+            val span = function.node.startByte to function.node.endByte
+            if (name in language.initMethods || span in annotatedFunctions || span in lifecycleFunctions) continue
             if (name == enclosingClassName(view, function)) continue
-            val evidence =
-                functionCalls(view, function).firstNotNullOfOrNull { call ->
-                    initCallEvidence(view, call, language)
-                } ?: continue
+            if (!mostlyInit(view, function, language, creations)) continue
             result +=
                 CandidateEmit
                     .of(
@@ -168,71 +207,262 @@ private class ServiceInitRule(
         return result
     }
 
-    private fun declarationAnnotationEvidence(
-        declaration: DeclarationFact,
-        language: ServiceLanguageConfig,
-    ): Evidence? {
-        if (language.diAnnotations.none { declaration.hasAnnotation(it) }) return null
-        return Evidence("annotation", 0.95)
+    private fun initEmit(
+        node: SyntaxNode,
+        evidence: Evidence,
+    ): RuleEmit =
+        if (evidence.candidateOnly) {
+            CandidateEmit.of(
+                SERVICE_INIT_INTENT,
+                node,
+                CandidateReason.LOW_CONFIDENCE,
+                source = "rule:$SERVICE_INIT_RULE_ID",
+                confidence = evidence.confidence,
+            )
+        } else {
+            Emit.of(SERVICE_INIT_INTENT, node, evidence.source, evidence.confidence)
+        }
+}
+
+private fun configuredAnnotationNodes(
+    declaration: DeclarationFact,
+    language: ServiceLanguageConfig,
+): List<SyntaxNode> =
+    declaration.annotationNodes.filter { node ->
+        val name = annotationName(node.text)
+        language.diAnnotations.any { configured -> name == configured.substringAfterLast('.') }
     }
 
-    private fun declarationLifecycleEvidence(
-        declaration: DeclarationFact,
-        language: ServiceLanguageConfig,
-    ): Evidence? {
-        if (declaration.kind != DeclarationKind.FUNCTION) return null
-        val name = declaration.name ?: return null
-        if (name !in language.initMethods) return null
-        return Evidence(HEURISTIC_SOURCE, 0.8)
+private fun annotationName(text: String): String =
+    text
+        .trim()
+        .trim('[', ']')
+        .removePrefix("@")
+        .substringBefore('(')
+        .trim()
+        .substringAfterLast('.')
+        .substringAfterLast(':')
+
+private fun constructorInjectionEvidence(
+    view: View,
+    language: ServiceLanguageConfig,
+): List<Pair<SyntaxNode, Evidence>> {
+    val result = mutableListOf<Pair<SyntaxNode, Evidence>>()
+    val seenScopes = mutableSetOf<Pair<Int, Int>>()
+
+    for (scope in view.scopes()) {
+        if (scope.kind != ScopeKind.CLASS) continue
+        val classNode = scope.owner ?: scope.node
+        if (!seenScopes.add(classNode.startByte to classNode.endByte)) continue
+        val params = PRIMARY_CONSTRUCTOR.find(classNode.text)?.groupValues?.get(1) ?: continue
+        for (parameter in splitParameters(params)) {
+            val match = PROPERTY_PARAMETER.find(parameter) ?: continue
+            val type = match.groupValues[2]
+            if (!isWiringType(type, language)) continue
+            result += (findTextNode(classNode, parameter) ?: classNode) to Evidence(HEURISTIC_SOURCE, 0.8)
+        }
     }
 
-    private fun creationEvidence(
-        view: View,
-        initializer: SyntaxNode?,
-        language: ServiceLanguageConfig,
-    ): Pair<SyntaxNode, Evidence>? {
-        if (initializer == null) return null
-        val hasInitCall =
-            view.calls().any { call ->
-                within(call.node, initializer) && initCallEvidence(view, call, language) != null
-            }
-        if (hasInitCall) return null
-        val type = NEW_TYPE.find(initializer.text)?.groupValues?.get(1) ?: return null
-        if (!typeMatches(type, language.initTypes, emptySet())) return null
-        return initializer to Evidence(Emit.DEFAULT_SOURCE, 0.85)
+    for (function in view.functions()) {
+        val classNode = view.enclosingScope(function.node)?.owner ?: continue
+        val className = classNameOf(classNode) ?: continue
+        if (function.name != className) continue
+        val params = FUNCTION_PARAMETERS.find(function.node.text)?.groupValues?.get(1) ?: continue
+        for (parameter in splitParameters(params)) {
+            val type = parameterType(parameter) ?: continue
+            if (!isWiringType(type, language)) continue
+            result += (findTextNode(function.node, parameter) ?: function.node) to Evidence(HEURISTIC_SOURCE, 0.8)
+        }
     }
 
-    private fun initCallEvidence(
-        view: View,
-        call: CallFact,
-        language: ServiceLanguageConfig,
-    ): Evidence? {
-        val callee = call.callee ?: return null
-        val path = call.path ?: callee
-        if (callee in language.initCalls || pathMatches(path, language.initCalls)) {
-            return Evidence(Emit.DEFAULT_SOURCE, 0.9)
-        }
-        if (language.initQualifiers.any { path == it || path.startsWith("$it.") }) {
-            return Evidence(Emit.DEFAULT_SOURCE, 0.85)
-        }
-        if (callee in language.diCalls) return Evidence(Emit.DEFAULT_SOURCE, 0.8)
-        if (callee in language.connectionCalls) return Evidence(Emit.DEFAULT_SOURCE, 0.8)
-        if (language.connectionQualifiers.any { path == it || path.startsWith("$it.") }) {
-            return Evidence(Emit.DEFAULT_SOURCE, 0.8)
-        }
-        if (call.receiver == null && typeMatches(callee, language.initTypes, emptySet())) {
-            return Evidence(Emit.DEFAULT_SOURCE, 0.9)
-        }
-        val receiver = call.receiver ?: return null
-        val type = view.receiverType(call)?.fqName ?: view.typeAt(receiver)?.fqName ?: return null
-        if (!typeMatches(type, language.initTypes, emptySet())) return null
-        return Evidence(Emit.DEFAULT_SOURCE, 0.85)
-    }
+    return result.distinctBy { it.first.startByte to it.first.endByte }
+}
 
-    companion object {
-        private val NEW_TYPE = Regex("""\bnew\s+([A-Za-z_][A-Za-z0-9_.]*)""")
+private fun functionHasInitEvidence(
+    view: View,
+    function: FunctionFact,
+    language: ServiceLanguageConfig,
+    creations: List<Creation>,
+): Boolean =
+    functionCalls(view, function).any { call ->
+        val evidence = initCallEvidence(view, call, language)
+        evidence != null && !evidence.candidateOnly
+    } ||
+        creations.any { within(it.node, function.node) && typeMatches(it.type ?: return@any false, language.initTypes, emptySet()) }
+
+private fun mostlyInit(
+    view: View,
+    function: FunctionFact,
+    language: ServiceLanguageConfig,
+    creations: List<Creation>,
+): Boolean {
+    val units = bodyUnits(view, function)
+    if (units.isEmpty()) return false
+    val calls = functionCalls(view, function)
+    val initUnits =
+        units.count { unit ->
+            calls.any { within(it.node, unit) && initCallEvidence(view, it, language) != null } ||
+                creations.any { within(it.node, unit) && typeMatches(it.type ?: return@any false, language.initTypes, emptySet()) }
+        }
+    return initUnits > 0 && initUnits * 2 >= units.size
+}
+
+private fun creationNodes(view: View): List<Creation> {
+    val seen = mutableSetOf<Pair<Int, Int>>()
+    val candidates =
+        view
+            .declarations()
+            .flatMap { it.node.descendants().toList() }
+            .mapNotNull { node ->
+                if (isLiteralOrComment(node)) return@mapNotNull null
+                val text = node.text.trim()
+                val type = explicitCreationType(text) ?: if (TARGET_CREATION.containsMatchIn(text)) targetType(node) else null
+                if (type == null) null else Creation(node, type)
+            }.filter { seen.add(it.node.startByte to it.node.endByte) }
+
+    return candidates.filterNot { candidate ->
+        candidates.any { other ->
+            other !== candidate &&
+                within(other.node, candidate.node) &&
+                (other.node.startByte != candidate.node.startByte || other.node.endByte != candidate.node.endByte)
+        }
     }
 }
+
+private fun isLiteralOrComment(node: SyntaxNode): Boolean {
+    var current: SyntaxNode? = node
+    while (current != null) {
+        val text = current.text.trim()
+        if (text.startsWith("\"") || text.startsWith("'") || text.startsWith("`") || text.startsWith("//") || text.startsWith("/*")) {
+            return true
+        }
+        current = current.parent
+    }
+    return false
+}
+
+private fun explicitCreationType(text: String): String? {
+    val match = EXPLICIT_CREATION.find(text) ?: return null
+    var index = match.range.last + 1
+    while (index < text.length && text[index].isWhitespace()) index++
+    if (index < text.length && text[index] == '<') {
+        var depth = 0
+        while (index < text.length) {
+            when (text[index]) {
+                '<' -> {
+                    depth++
+                }
+
+                '>' -> {
+                    depth--
+                    if (depth == 0) {
+                        index++
+                        break
+                    }
+                }
+            }
+            index++
+        }
+        while (index < text.length && text[index].isWhitespace()) index++
+    }
+    if (index < text.length && text[index] == '(') {
+        var depth = 0
+        while (index < text.length) {
+            when (text[index]) {
+                '(' -> {
+                    depth++
+                }
+
+                ')' -> {
+                    depth--
+                    if (depth == 0) {
+                        index++
+                        break
+                    }
+                }
+            }
+            index++
+        }
+    }
+    val rest = text.substring(index).trim()
+    return if (rest.isEmpty() || rest == ";" || rest.startsWith("{")) match.groupValues[1] else null
+}
+
+private fun targetType(node: SyntaxNode): String? {
+    var current: SyntaxNode = node
+    while (true) {
+        val parent = current.parent ?: return null
+        val offset = (node.startByte - parent.startByte).coerceIn(0, parent.text.length)
+        val before = parent.text.substring(0, offset)
+        ASSIGNED_TYPE.findAll(before).lastOrNull()?.let { return it.groupValues[1] }
+        current = parent
+    }
+}
+
+private fun initCallEvidence(
+    view: View,
+    call: CallFact,
+    language: ServiceLanguageConfig,
+): Evidence? {
+    val callee = call.callee ?: return null
+    val path = call.path ?: callee
+    if (callee in language.initCalls || pathMatches(path, language.initCalls)) {
+        return Evidence(Emit.DEFAULT_SOURCE, 0.9)
+    }
+    if (language.initQualifiers.any { path == it || path.startsWith("$it.") }) {
+        return Evidence(Emit.DEFAULT_SOURCE, 0.85)
+    }
+    if (call.receiver == null && typeMatches(callee, language.initTypes, emptySet())) {
+        return Evidence(Emit.DEFAULT_SOURCE, 0.9)
+    }
+    val receiverName =
+        call.receiver
+            ?.text
+            ?.substringAfterLast('.')
+            ?.trim('_')
+    val receiverType =
+        call.receiver?.let { receiver ->
+            view.receiverType(call)?.fqName ?: view.typeAt(receiver)?.fqName
+        }
+    val connectionCall = callee in language.connectionCalls || pathMatches(path, language.connectionCalls)
+    if (connectionCall) {
+        return if (isConnectionReceiver(path, receiverName, receiverType, language)) {
+            Evidence(Emit.DEFAULT_SOURCE, 0.85)
+        } else {
+            Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
+        }
+    }
+    val diCall = callee in language.diCalls || pathMatches(path, language.diCalls)
+    if (diCall) {
+        return if (isDiReceiver(path, receiverName, receiverType, language)) {
+            Evidence(Emit.DEFAULT_SOURCE, 0.85)
+        } else {
+            Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
+        }
+    }
+    return null
+}
+
+private fun isConnectionReceiver(
+    path: String,
+    receiverName: String?,
+    receiverType: String?,
+    language: ServiceLanguageConfig,
+): Boolean =
+    language.connectionQualifiers.any { path.startsWith("$it.") || receiverName == it } ||
+        (
+            receiverType != null &&
+                typeMatches(receiverType, language.initTypes + language.serviceTypes, language.serviceSuffixes)
+        )
+
+private fun isDiReceiver(
+    path: String,
+    receiverName: String?,
+    receiverType: String?,
+    language: ServiceLanguageConfig,
+): Boolean =
+    language.diQualifiers.any { path.startsWith("$it.") || receiverName == it } ||
+        (receiverType != null && typeMatches(receiverType, language.serviceTypes, language.serviceSuffixes))
 
 private fun bodyUnits(
     view: View,
@@ -257,22 +487,72 @@ private fun containsCall(
     node: SyntaxNode,
 ): Boolean = view.calls().any { within(it.node, node) }
 
-private fun isThin(
+private fun analyzeUnit(
     view: View,
-    units: List<SyntaxNode>,
-): Boolean {
-    if (units.size != 1) return false
-    val unit = units.single()
-    if (view.writes().any { within(it.node, unit) }) return false
-    if (view.guards().any { within(it.node, unit) }) return false
-    if (view.tries().any { within(it.node, unit) }) return false
-    return true
+    unit: SyntaxNode,
+    calls: List<CallFact>,
+    language: ServiceLanguageConfig,
+): ForwardingUnit {
+    val unitCalls = calls.filter { within(it.node, unit) }
+    val serviceEvidence =
+        unitCalls.mapNotNull { call ->
+            delegationEvidence(view, call, language)?.let { call to it }
+        }
+    val serviceCalls =
+        outermost(serviceEvidence.map { it.first }).mapNotNull { call ->
+            serviceEvidence.firstOrNull { it.first === call }
+        }
+    val clean = isClean(view, unit)
+    val outermost = if (clean) outermost(unitCalls) else emptyList()
+    val single = outermost.singleOrNull()
+    val evidence = single?.let { call -> serviceEvidence.firstOrNull { it.first === call } }
+    val pure =
+        if (single != null &&
+            evidence != null &&
+            unitCalls.none { it !== single && within(it.node, single.node) } &&
+            single.trailingLambda == null &&
+            isWholeExpression(unit, single)
+        ) {
+            evidence
+        } else {
+            null
+        }
+    val singleEffect =
+        single?.takeIf {
+            unitCalls.none { call -> call !== single && within(call.node, single.node) } &&
+                single.trailingLambda == null &&
+                isWholeExpression(unit, single)
+        }
+    return ForwardingUnit(serviceCalls, pure, singleEffect)
 }
 
-private fun mostlyDelegating(
-    units: Int,
-    evidence: Int,
-): Boolean = units > 0 && evidence > 0 && evidence * 2 >= units
+private fun isClean(
+    view: View,
+    unit: SyntaxNode,
+): Boolean =
+    view.writes().none { within(it.node, unit) } &&
+        view.guards().none { within(it.node, unit) } &&
+        view.tries().none { within(it.node, unit) }
+
+private fun isWholeExpression(
+    unit: SyntaxNode,
+    call: CallFact,
+): Boolean {
+    val start = (call.node.startByte - unit.startByte).coerceIn(0, unit.text.length)
+    val end = (call.node.endByte - unit.startByte).coerceIn(start, unit.text.length)
+    val prefix =
+        unit.text
+            .substring(0, start)
+            .trim()
+            .removePrefix("=>")
+            .trim()
+    val suffix = unit.text.substring(end).trim()
+    val wrapper =
+        prefix.isEmpty() ||
+            prefix.split(Regex("""\s+""")).all { it in setOf("return", "throw", "yield", "await") } ||
+            (prefix.endsWith("=") && !prefix.endsWith("==") && !prefix.endsWith("!=") && !prefix.endsWith("<=") && !prefix.endsWith(">="))
+    return wrapper && suffix.all { it == ';' || it == ')' }
+}
 
 private fun functionCalls(
     view: View,
@@ -304,6 +584,7 @@ private fun delegationEvidence(
     call: CallFact,
     language: ServiceLanguageConfig,
 ): Evidence? {
+    if (initCallEvidence(view, call, language) != null) return null
     val callee = call.callee ?: return null
     val path = call.path ?: callee
     if (callee in language.delegationCalls || pathMatches(path, language.delegationCalls)) {
@@ -338,10 +619,33 @@ private fun enclosingClassName(
     function: FunctionFact,
 ): String? {
     val owner = view.enclosingScope(function.node)?.owner ?: return null
-    return owner.childByField("name")?.text ?: TYPE_NAME.find(owner.text)?.groupValues?.get(1)
+    return classNameOf(owner)
 }
 
-private val TYPE_NAME = Regex("""\b(?:class|object|interface|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)""")
+private fun classNameOf(node: SyntaxNode): String? = node.childByField("name")?.text ?: TYPE_NAME.find(node.text)?.groupValues?.get(1)
+
+private fun isWiringType(
+    type: String,
+    language: ServiceLanguageConfig,
+): Boolean = typeMatches(type, language.serviceTypes + language.initTypes, language.serviceSuffixes)
+
+private fun splitParameters(params: String): List<String> = params.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
+private fun parameterType(parameter: String): String? {
+    val withoutAttribute = parameter.replace(Regex("""^\s*\[[^\]]*]\s*"""), "")
+    return PARAMETER_TYPE.find(withoutAttribute)?.groupValues?.get(1)
+}
+
+private fun findTextNode(
+    container: SyntaxNode,
+    text: String,
+): SyntaxNode? {
+    val target = text.trim()
+    return container
+        .descendants()
+        .filter { it.text.trim() == target }
+        .minByOrNull { it.endByte - it.startByte }
+}
 
 private fun typeMatches(
     actual: String,
@@ -363,3 +667,15 @@ private fun pathMatches(
     names.any { name ->
         path == name || path.endsWith(".$name")
     }
+
+private val TYPE_NAME = Regex("""\b(?:class|object|interface|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)""")
+private val PRIMARY_CONSTRUCTOR = Regex("""\b(?:class|record)\s+\w+(?:<[^>]*>)?\s*\(([^)]*)\)""", RegexOption.DOT_MATCHES_ALL)
+private val PROPERTY_PARAMETER =
+    Regex(
+        """(?:^|\s)(?:private|public|protected|internal|open|override|lateinit)?\s*(?:val|var)\s+(\w+)\s*:\s*([A-Za-z_][A-Za-z0-9_.<>?]*)""",
+    )
+private val FUNCTION_PARAMETERS = Regex("""^[^(]*\(([^)]*)\)""")
+private val PARAMETER_TYPE = Regex("""(?:^|\s)([A-Za-z_][A-Za-z0-9_.<>?]*)\s+\w+\s*$""")
+private val EXPLICIT_CREATION = Regex("""^new\s+([A-Za-z_][A-Za-z0-9_.]*)""")
+private val TARGET_CREATION = Regex("""^new\s*\(""")
+private val ASSIGNED_TYPE = Regex("""([A-Za-z_][A-Za-z0-9_.]*(?:<[^=]*>)?)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*$""")

@@ -1,6 +1,10 @@
 package dev.cint.rulepacks.tests.intents.service
 
 import dev.cint.api.CandidateReason
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.TypeFact
+import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.rulepacks.intents.service.SERVICE_DELEGATION_INTENT
 import dev.cint.rulepacks.intents.service.SERVICE_INIT_INTENT
 import dev.cint.rulepacks.intents.service.SERVICE_INIT_RULE_ID
 import dev.cint.rulepacks.intents.service.ServiceRulePack
@@ -10,9 +14,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+private class InitOracle(
+    private val fact: TypeFact?,
+) : TypeOracle {
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? = fact
+}
+
 class ServiceInitRulePackTest {
     @Test
-    fun constructionFactoryConnectionAndLifecycleEmitInit() {
+    fun constructionFactoryConnectionAndLifecycleWithEvidenceEmitInit() {
         val source =
             """
             class ClientHolder {
@@ -31,29 +44,33 @@ class ServiceInitRulePackTest {
         assertTrue(texts.any { it.contains("HttpClient()") })
         assertTrue(texts.any { it.contains("DriverManager.getConnection(url)") })
         assertTrue(texts.any { it.contains("client.connect()") })
-        assertTrue(texts.any { it.contains("fun initialize()") })
+        assertTrue(texts.any { it == "initialize" })
         assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
     }
 
     @Test
-    fun dependencyInjectionAnnotationEmitsInit() {
+    fun dependencyInjectionAnnotationsWithArgumentsEmitInit() {
         val source =
             """
             class ServiceHolder {
-                @Inject
+                @Bean(name = "client")
+                fun client(): HttpClient = HttpClient()
+
+                @Autowired(required = false)
                 lateinit var service: UserService
             }
             """.trimIndent()
 
         val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
-        val init = analysis.source(SERVICE_INIT_INTENT).single()
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
 
-        assertTrue(init.text(source).contains("@Inject"))
-        assertEquals("annotation", init.source)
+        assertTrue(texts.any { it.contains("@Bean(name = \"client\")") })
+        assertTrue(texts.any { it.contains("@Autowired(required = false)") })
+        assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
     }
 
     @Test
-    fun lifecycleMethodIsInitWithoutCallEvidence() {
+    fun lifecycleNameAloneIsOnlyACandidate() {
         val source =
             """
             fun initialize() {
@@ -63,10 +80,154 @@ class ServiceInitRulePackTest {
             """.trimIndent()
 
         val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+        val candidate = analysis.candidates(SERVICE_INIT_INTENT).single()
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
+        assertEquals("initialize", source.substring(candidate.startByte, candidate.endByte))
+        assertEquals(CandidateReason.LOW_CONFIDENCE, candidate.reason)
+    }
+
+    @Test
+    fun kotlinConstructorInjectionEmitsInitWiring() {
+        val source =
+            """
+            class UserController(
+                private val userService: UserService,
+                private val name: String
+            ) {}
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.contains("userService: UserService") })
+        assertTrue(texts.none { it.contains("name: String") })
+    }
+
+    @Test
+    fun csharpConstructorInjectionEmitsInitWiring() {
+        val source =
+            """
+            public class UserController
+            {
+                private readonly IUserService _service;
+
+                public UserController(IUserService service)
+                {
+                    _service = service;
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("csharp", source, listOf(ServiceRulePack()))
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.contains("IUserService service") })
+    }
+
+    @Test
+    fun newConstructionWorksOutsideDeclarationInitializersInAllLanguages() {
+        val cases =
+            listOf(
+                "javascript" to
+                    """
+                    function make() {
+                        return new HttpClient();
+                    }
+                    function send() {
+                        use(new HttpClient());
+                    }
+                    function reset(client) {
+                        client = new HttpClient();
+                    }
+                    """.trimIndent(),
+                "typescript" to
+                    """
+                    class ClientHolder {
+                        make(): HttpClient {
+                            return new HttpClient();
+                        }
+                    }
+                    """.trimIndent(),
+                "csharp" to
+                    """
+                    class ClientHolder
+                    {
+                        HttpClient Make()
+                        {
+                            return new HttpClient();
+                        }
+
+                        void Send()
+                        {
+                            Use(new HttpClient());
+                        }
+
+                        void Reset()
+                        {
+                            this.client = new HttpClient();
+                        }
+                    }
+                    """.trimIndent(),
+            )
+
+        for ((language, source) in cases) {
+            val analysis = analyzePack(language, source, listOf(ServiceRulePack()))
+            val init = analysis.source(SERVICE_INIT_INTENT)
+
+            assertTrue(init.any { it.text(source) == "new HttpClient()" }, language)
+            assertTrue(init.filter { it.text(source) == "new HttpClient()" }.isNotEmpty(), language)
+        }
+    }
+
+    @Test
+    fun csharpTargetTypedNewUsesTheCreationNode() {
+        val source =
+            """
+            class ClientHolder
+            {
+                void Make()
+                {
+                    HttpClient client = new();
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("csharp", source, listOf(ServiceRulePack()))
         val init = analysis.source(SERVICE_INIT_INTENT).single()
 
-        assertTrue(init.text(source).contains("fun initialize()"))
-        assertEquals("heuristic", init.source)
+        assertEquals("new()", init.text(source))
+        assertEquals(source.indexOf("new()"), init.startByte)
+        assertEquals(source.indexOf("new()") + "new()".length, init.endByte)
+    }
+
+    @Test
+    fun creationSpanIsTheCreationNodeNotTheWholeInitializer() {
+        val source =
+            """
+            const client = new HttpClient();
+            """.trimIndent()
+
+        val analysis = analyzePack("javascript", source, listOf(ServiceRulePack()))
+        val init = analysis.source(SERVICE_INIT_INTENT).single()
+
+        assertEquals("new HttpClient()", init.text(source))
+        assertEquals(source.indexOf("new HttpClient()"), init.startByte)
+        assertEquals(source.indexOf("new HttpClient()") + "new HttpClient()".length, init.endByte)
+    }
+
+    @Test
+    fun strayNewTextInStringsAndCommentsIsNotInit() {
+        val source =
+            """
+            fun label(): String = "new HttpClient()"
+            // new HttpClient()
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
+        assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
     }
 
     @Test
@@ -94,9 +255,9 @@ class ServiceInitRulePackTest {
         val source =
             """
             fun makeTransport(): Transport {
-                val socket = Socket(host, port)
-                socket.connect()
-                return socket
+                val connection = Socket(host, port)
+                connection.connect()
+                return connection
             }
             """.trimIndent()
 
@@ -110,21 +271,87 @@ class ServiceInitRulePackTest {
     }
 
     @Test
-    fun factoryAndConnectionSetupDoNotCreateCandidatesForLifecycleFunctions() {
+    fun unqualifiedGenericInitCallsAreCandidates() {
         val source =
             """
             fun connect() {
-                val connection = DriverManager.getConnection(url)
-                connection.connect()
+                window.connect()
+            }
+
+            fun configure() {
+                resolve(path)
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+        val candidateTexts =
+            analysis.candidates(SERVICE_INIT_INTENT).map { source.substring(it.startByte, it.endByte) }.toSet()
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
+        assertTrue("window.connect()" in candidateTexts)
+        assertTrue("resolve(path)" in candidateTexts)
+    }
+
+    @Test
+    fun qualifiedGenericInitCallsAreEstablished() {
+        val source =
+            """
+            fun wire() {
+                container.resolve(path)
+                ctx.getBean("client")
             }
             """.trimIndent()
 
         val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
         val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
 
-        assertTrue(texts.any { it.contains("fun connect()") })
-        assertTrue(texts.any { it.contains("DriverManager.getConnection(url)") })
-        assertTrue(texts.any { it.contains("connection.connect()") })
+        assertTrue(texts.any { it.contains("container.resolve(path)") })
+        assertTrue(texts.any { it.contains("ctx.getBean(\"client\")") })
+    }
+
+    @Test
+    fun useAndTeardownCallsAreNotInit() {
+        val source =
+            """
+            fun cleanup() {
+                connection.close()
+                server.stop()
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
         assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
+    }
+
+    @Test
+    fun connectionSetupIsInitOnlyAndNotDelegation() {
+        val source =
+            """
+            fun connect() {
+                client.connect()
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).any { it.text(source) == "client.connect()" })
+        assertTrue(analysis.source(SERVICE_DELEGATION_INTENT).isEmpty())
+    }
+
+    @Test
+    fun callOnConfiguredInitTypeIsNotInitUnlessItIsConstructionOrSetup() {
+        val source =
+            """
+            fun load(url: String) {
+                httpClient.get(url)
+            }
+            """.trimIndent()
+        val oracle = InitOracle(TypeFact("HttpClient", "lsp", 0.9))
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()), oracle)
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
     }
 }
