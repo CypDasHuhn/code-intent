@@ -169,6 +169,7 @@ data class ServiceConfig(
                 "Gateway",
                 "Client",
                 "Provider",
+                "Factory",
                 "Controller",
             )
 

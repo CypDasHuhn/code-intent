@@ -46,14 +46,19 @@ statement count as one statement, not multiple forwarding units.
 
 Configured construction types, factory/init calls, qualified connection setup,
 dependency-injection annotations (including annotations with arguments), and
-constructor injection emit established `SERVICE_INIT`. Lifecycle method names
-alone are candidate-only; they are established only when the function also has
-strong construction/connection/DI evidence.
+constructor injection emit established `SERVICE_INIT`. Kotlin property
+parameters, classic C# constructors, and C# primary/record parameters are
+recognized, including generic parameter lists that contain commas. Lifecycle
+method names alone are candidate-only; they are established only when the
+function also has strong construction/connection/DI evidence.
 
 `new`/object creation is detected wherever it occurs (initializer, return,
 assignment, or argument), including C# target-typed `new()`, and the emitted span
-is the creation node itself. Call-based init spans use the call node rather than
-an outer chained call site.
+is the creation node itself. Nested constructions keep the outer configured
+creation, and leading file comments do not suppress scanning. Creation evidence
+is scoped to the enclosing function so nested helpers do not certify an outer
+lifecycle method. Call-based init spans use the call node rather than an outer
+chained call site.
 
 Config fields: `initCalls`, `initQualifiers`, `initTypes`, `initMethods`,
 `connectionCalls`, `connectionQualifiers`, `diAnnotations`, `diCalls`,

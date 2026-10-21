@@ -341,6 +341,133 @@ class ServiceInitRulePackTest {
     }
 
     @Test
+    fun leadingFileCommentsDoNotDisableCreationDetection() {
+        val cases =
+            listOf(
+                "javascript" to
+                    """
+                    // license header
+                    function make() {
+                        return new HttpClient();
+                    }
+                    """.trimIndent(),
+                "javascript" to
+                    """
+                    /* license header */
+                    function make() {
+                        return new HttpClient();
+                    }
+                    """.trimIndent(),
+                "csharp" to
+                    """
+                    // license header
+                    class ClientHolder
+                    {
+                        HttpClient Make()
+                        {
+                            return new HttpClient();
+                        }
+                    }
+                    """.trimIndent(),
+            )
+
+        for ((language, source) in cases) {
+            val analysis = analyzePack(language, source, listOf(ServiceRulePack()))
+            assertTrue(
+                analysis.source(SERVICE_INIT_INTENT).any { it.text(source) == "new HttpClient()" },
+                language,
+            )
+        }
+    }
+
+    @Test
+    fun nestedCreationKeepsAnOuterConfiguredConstruction() {
+        val source =
+            """
+            class ClientHolder
+            {
+                HttpClient Make()
+                {
+                    return new HttpClient(new HttpClientHandler());
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("csharp", source, listOf(ServiceRulePack()))
+
+        assertTrue(
+            analysis.source(SERVICE_INIT_INTENT).any { annotation ->
+                annotation.text(source).startsWith("new HttpClient(")
+            },
+        )
+    }
+
+    @Test
+    fun nestedHelperCreationDoesNotCertifyAnOuterLifecycleFunction() {
+        val source =
+            """
+            function initialize() {
+                function make() {
+                    return new HttpClient();
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("javascript", source, listOf(ServiceRulePack()))
+        val established = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+        val candidates = analysis.candidates(SERVICE_INIT_INTENT).map { source.substring(it.startByte, it.endByte) }
+
+        assertTrue(established.none { it == "initialize" })
+        assertTrue("initialize" in candidates)
+    }
+
+    @Test
+    fun csharpPrimaryAndRecordParametersEmitConstructorInjection() {
+        val source =
+            """
+            class ApiClient(IHttpClientFactory factory) {}
+
+            record UserClient(IHttpClientFactory Factory) {}
+            """.trimIndent()
+
+        val analysis = analyzePack("csharp", source, listOf(ServiceRulePack()))
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.contains("IHttpClientFactory factory") })
+        assertTrue(texts.any { it.contains("IHttpClientFactory Factory") })
+    }
+
+    @Test
+    fun genericParameterListsWithCommasKeepAllConstructorInjectionParameters() {
+        val cases =
+            listOf(
+                "kotlin" to
+                    """
+                    class RegistryHolder(
+                        private val registry: Map<String, UserService>,
+                        private val repository: UserRepository
+                    ) {}
+                    """.trimIndent(),
+                "csharp" to
+                    """
+                    class RegistryHolder
+                    {
+                        public RegistryHolder(Dictionary<string, IService> services, IUserRepository repository)
+                        {
+                        }
+                    }
+                    """.trimIndent(),
+            )
+
+        for ((language, source) in cases) {
+            val analysis = analyzePack(language, source, listOf(ServiceRulePack()))
+            val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+            assertTrue(texts.any { it.contains("UserService") || it.contains("IService") }, language)
+            assertTrue(texts.any { it.contains("UserRepository") || it.contains("IUserRepository") }, language)
+        }
+    }
+
+    @Test
     fun callOnConfiguredInitTypeIsNotInitUnlessItIsConstructionOrSetup() {
         val source =
             """

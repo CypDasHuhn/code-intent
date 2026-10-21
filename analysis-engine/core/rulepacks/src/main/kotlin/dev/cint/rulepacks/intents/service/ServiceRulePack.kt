@@ -256,8 +256,14 @@ private fun constructorInjectionEvidence(
         if (!seenScopes.add(classNode.startByte to classNode.endByte)) continue
         val params = PRIMARY_CONSTRUCTOR.find(classNode.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
-            val match = PROPERTY_PARAMETER.find(parameter) ?: continue
-            val type = match.groupValues[2]
+            val declaration = parameter.substringBefore('=').trim()
+            val property = PROPERTY_PARAMETER.find(declaration)
+            val type =
+                when {
+                    property != null -> property.groupValues[2].trim()
+                    view.language().equals("csharp", ignoreCase = true) -> parameterType(declaration)
+                    else -> null
+                } ?: continue
             if (!isWiringType(type, language)) continue
             result += (findTextNode(classNode, parameter) ?: classNode) to Evidence(HEURISTIC_SOURCE, 0.8)
         }
@@ -288,7 +294,7 @@ private fun functionHasInitEvidence(
         val evidence = initCallEvidence(view, call, language)
         evidence != null && !evidence.candidateOnly
     } ||
-        creations.any { within(it.node, function.node) && typeMatches(it.type ?: return@any false, language.initTypes, emptySet()) }
+        creations.any { creationWithin(view, it, function) && typeMatches(it.type ?: return@any false, language.initTypes, emptySet()) }
 
 private fun mostlyInit(
     view: View,
@@ -302,36 +308,43 @@ private fun mostlyInit(
     val initUnits =
         units.count { unit ->
             calls.any { within(it.node, unit) && initCallEvidence(view, it, language) != null } ||
-                creations.any { within(it.node, unit) && typeMatches(it.type ?: return@any false, language.initTypes, emptySet()) }
+                creations.any {
+                    within(it.node, unit) &&
+                        creationWithin(view, it, function) &&
+                        typeMatches(it.type ?: return@any false, language.initTypes, emptySet())
+                }
         }
     return initUnits > 0 && initUnits * 2 >= units.size
 }
 
 private fun creationNodes(view: View): List<Creation> {
     val seen = mutableSetOf<Pair<Int, Int>>()
-    val candidates =
-        view
-            .declarations()
-            .flatMap { it.node.descendants().toList() }
-            .mapNotNull { node ->
-                if (isLiteralOrComment(node)) return@mapNotNull null
-                val text = node.text.trim()
-                val type = explicitCreationType(text) ?: if (TARGET_CREATION.containsMatchIn(text)) targetType(node) else null
-                if (type == null) null else Creation(node, type)
-            }.filter { seen.add(it.node.startByte to it.node.endByte) }
-
-    return candidates.filterNot { candidate ->
-        candidates.any { other ->
-            other !== candidate &&
-                within(other.node, candidate.node) &&
-                (other.node.startByte != candidate.node.startByte || other.node.endByte != candidate.node.endByte)
-        }
-    }
+    return view
+        .declarations()
+        .flatMap { declaration -> declaration.node.descendants().map { declaration.node to it } }
+        .mapNotNull { (container, node) ->
+            if (isLiteralOrComment(node, container)) return@mapNotNull null
+            val text = node.text.trim()
+            val type = explicitCreationType(text) ?: if (TARGET_CREATION.containsMatchIn(text)) targetType(node) else null
+            if (type == null) null else Creation(node, type)
+        }.filter { seen.add(it.node.startByte to it.node.endByte) }
 }
 
-private fun isLiteralOrComment(node: SyntaxNode): Boolean {
+private fun creationWithin(
+    view: View,
+    creation: Creation,
+    function: FunctionFact,
+): Boolean =
+    within(creation.node, function.node) &&
+        sameFunction(view.enclosingFunction(creation.node), function.node)
+
+private fun isLiteralOrComment(
+    node: SyntaxNode,
+    boundary: SyntaxNode,
+): Boolean {
     var current: SyntaxNode? = node
     while (current != null) {
+        if (current.startByte == boundary.startByte && current.endByte == boundary.endByte) return false
         val text = current.text.trim()
         if (text.startsWith("\"") || text.startsWith("'") || text.startsWith("`") || text.startsWith("//") || text.startsWith("/*")) {
             return true
@@ -627,13 +640,72 @@ private fun classNameOf(node: SyntaxNode): String? = node.childByField("name")?.
 private fun isWiringType(
     type: String,
     language: ServiceLanguageConfig,
-): Boolean = typeMatches(type, language.serviceTypes + language.initTypes, language.serviceSuffixes)
+): Boolean =
+    TYPE_TOKEN
+        .findAll(type)
+        .any { match -> typeMatches(match.value, language.serviceTypes + language.initTypes, language.serviceSuffixes) }
 
-private fun splitParameters(params: String): List<String> = params.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+private fun splitParameters(params: String): List<String> {
+    val result = mutableListOf<String>()
+    var angle = 0
+    var parens = 0
+    var brackets = 0
+    var braces = 0
+    var start = 0
+    for (index in params.indices) {
+        when (params[index]) {
+            '<' -> {
+                angle++
+            }
+
+            '>' -> {
+                if (angle > 0) angle--
+            }
+
+            '(' -> {
+                parens++
+            }
+
+            ')' -> {
+                if (parens > 0) parens--
+            }
+
+            '[' -> {
+                brackets++
+            }
+
+            ']' -> {
+                if (brackets > 0) brackets--
+            }
+
+            '{' -> {
+                braces++
+            }
+
+            '}' -> {
+                if (braces > 0) braces--
+            }
+
+            ',' -> {
+                if (angle == 0 && parens == 0 && brackets == 0 && braces == 0) {
+                    result += params.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+    }
+    result += params.substring(start).trim()
+    return result.filter { it.isNotEmpty() }
+}
 
 private fun parameterType(parameter: String): String? {
     val withoutAttribute = parameter.replace(Regex("""^\s*\[[^\]]*]\s*"""), "")
-    return PARAMETER_TYPE.find(withoutAttribute)?.groupValues?.get(1)
+    val withoutDefault = withoutAttribute.substringBefore('=').trim()
+    return PARAMETER_TYPE
+        .find(withoutDefault)
+        ?.groupValues
+        ?.get(1)
+        ?.trim()
 }
 
 private fun findTextNode(
@@ -672,10 +744,11 @@ private val TYPE_NAME = Regex("""\b(?:class|object|interface|record|struct)\s+([
 private val PRIMARY_CONSTRUCTOR = Regex("""\b(?:class|record)\s+\w+(?:<[^>]*>)?\s*\(([^)]*)\)""", RegexOption.DOT_MATCHES_ALL)
 private val PROPERTY_PARAMETER =
     Regex(
-        """(?:^|\s)(?:private|public|protected|internal|open|override|lateinit)?\s*(?:val|var)\s+(\w+)\s*:\s*([A-Za-z_][A-Za-z0-9_.<>?]*)""",
+        """(?:^|\s)(?:private|public|protected|internal|open|override|lateinit)?\s*(?:val|var)\s+(\w+)\s*:\s*(.+?)\s*$""",
     )
 private val FUNCTION_PARAMETERS = Regex("""^[^(]*\(([^)]*)\)""")
-private val PARAMETER_TYPE = Regex("""(?:^|\s)([A-Za-z_][A-Za-z0-9_.<>?]*)\s+\w+\s*$""")
+private val PARAMETER_TYPE = Regex("""^(.+?)\s+[A-Za-z_][A-Za-z0-9_]*$""")
 private val EXPLICIT_CREATION = Regex("""^new\s+([A-Za-z_][A-Za-z0-9_.]*)""")
 private val TARGET_CREATION = Regex("""^new\s*\(""")
+private val TYPE_TOKEN = Regex("""[A-Za-z_][A-Za-z0-9_.]*""")
 private val ASSIGNED_TYPE = Regex("""([A-Za-z_][A-Za-z0-9_.]*(?:<[^=]*>)?)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*$""")
