@@ -214,14 +214,23 @@ state changes before publish.
 
 ## Renderer UX
 
-- Candidate style is non-destructive: dotted underline, muted sign/text, never
-  conceal.
-- Status count, e.g. `CodeIntent: 3 unsure`.
-- `:CintSuggest` runs a pass; `:CintReview` lists candidates with evidence,
-  rationale, and provenance.
-- `[Confirm] [Reject] [Skip]`, plus choosing among alternative intents for one
-  span. Confirming an alternative resolves the whole anchor group; the siblings
+- Outside review mode, candidate style is non-destructive: dotted underline,
+  muted sign/text, never conceal. Status count, e.g. `CodeIntent: 3 unsure`.
+- `:CintSuggest` runs a pass. `:CintReview` toggles buffer-local review mode: each
+  candidate range gets a visible review highlight and a true virtual line above
+  it with intent name(s), confidence, source/reason, and a concise rationale.
+  Toggling off restores the passive rendering.
+- `:CintReviewAccept [intent]` confirms the candidate range under the caret. With
+  alternatives, the intent argument picks the matching alternative; without it,
+  the highest-confidence candidate wins. `:CintReviewDeny` rejects every
+  alternative in that candidate's group so the group clears. Both report a
+  missing candidate, keep review mode active, and rely on the server republish to
+  update marks.
+- Confirming an alternative resolves the whole anchor group; the siblings
   disappear with the republished (possibly empty) candidate list.
+- `:CintSuggest` gate errors distinguish a protocol below 3, a missing
+  suggestions descriptor, and `suggestions.enabled: false` in
+  `.cint/suggestions.yml`. The last case is never auto-enabled.
 - AI unavailable, timed out, or over budget → no candidates, deterministic tags
   unaffected. A timeout cancels the pass without publishing partial results.
 

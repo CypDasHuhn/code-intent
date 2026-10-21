@@ -197,6 +197,22 @@ Their confidence is diagnostic: `maxConfidence` defaults to `0.84` and can only
 lower that ceiling. Candidate-only is structural, not a confidence threshold:
 the output is a `CandidateEmit` and never enters the annotation store.
 
+### Renderer review UI
+
+The nvim renderer keeps candidates passive (dotted underline and a muted `?`
+sign) until `:CintReview` toggles buffer-local review mode. In review mode every
+candidate range uses a visible review highlight and a virtual line above the
+range with intent name(s), confidence, source/reason, and a concise rationale.
+`:CintReviewAccept [intent]` confirms the candidate under the caret, choosing the
+highest-confidence candidate or the alternative matching `intent`.
+`:CintReviewDeny` rejects every alternative in that anchor group. Both commands
+keep review mode active and let the server republish update the marks; toggling
+review off restores passive rendering. When no candidate covers the caret, or a
+requested intent is absent, the renderer notifies instead of sending a decision.
+`:CintSuggest` reports a protocol below 3, a missing suggestions descriptor, and
+`suggestions.enabled: false` in `.cint/suggestions.yml` as distinct errors; it
+never enables AI.
+
 ## Client-side meanings
 
 The engine deliberately emits only `role` and `intents`; it has no meaning
