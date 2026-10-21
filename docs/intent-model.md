@@ -311,6 +311,10 @@ Declaration and assignment propagation:
 - plain assignment statements and property initializers follow the same
   read-only gate.
 
+- writes to a local whose reads flow into a classified span inherit the same
+  derivative-use intents; a local collection populated in a loop and returned
+  through `merged.values.toList()` becomes `RETURN_VALUE` on the declaration and
+  its writes.
 Functions whose references all occur inside derivative-use declarations are
 promoted only when they are explicitly pure. Purity is explicit (`@Pure`,
 `@Contract(pure = true)`) or user-declared; there is no body purity inference.
