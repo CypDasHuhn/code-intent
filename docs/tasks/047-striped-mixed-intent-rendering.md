@@ -1,6 +1,6 @@
 ---
 name: striped mixed-intent rendering experiment
-status: todo
+status: done
 depends-on: [016]
 reviewers: [correctness, architecture]
 ---
@@ -48,3 +48,13 @@ effect is `ABABAB` striping across the span.
   noisy and expensive, so treat it as an experiment.
 - The renderer already skips color/highlight for multi-intent scaffolds; this
   gives those spans a visible treatment.
+
+
+## Outcome (2026-10-21)
+
+Implemented `:CintStripes` as an active-span-only experiment. The renderer picks
+the smallest multi-intent span covering the cursor, splits it into word/token
+segments (capped at 40), cycles the intent colors, and clears on cursor exit.
+It is off by default, leaves single-intent spans unchanged, and avoids
+whole-buffer mark growth. `stripes_spec` covers alternation, clearing, single
+intents, and the segment cap.
