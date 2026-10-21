@@ -222,7 +222,7 @@ state changes before publish.
   Toggling off restores the passive rendering.
 - `:CintReviewAccept [intent]` confirms the candidate range under the caret. With
   alternatives, the intent argument picks the matching alternative; without it,
-  the highest-confidence candidate wins. `:CintReviewDeny` rejects every
+  a picker lists the candidates under the caret (highest confidence first). `:CintReviewDeny` rejects every
   alternative in that candidate's group so the group clears. Both report a
   missing candidate, keep review mode active, and rely on the server republish to
   update marks.
