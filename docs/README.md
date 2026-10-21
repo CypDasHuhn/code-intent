@@ -18,6 +18,8 @@ Index of the written contract for CodeIntent.
   post-restructure state; earlier sections are historical.
 - [rulepack-support-plan.md](rulepack-support-plan.md) — rulepack semantic
   foundation and sequencing plan.
+- [service-intents.md](service-intents.md) — service delegation and init pack
+  scaffold, configuration, candidates, and overlap policy.
 
 ## Work tracking
 
