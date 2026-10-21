@@ -52,7 +52,10 @@ class ValidationRuleCommentTest {
 
         for ((language, text) in cases) {
             val input = parseValidationInput(language, "Sample", text)
-            assertTrue(validationSources(input).isEmpty(), "$language string content tagged validation")
+            assertTrue(
+                validationSources(input).none { it.source == "comment" },
+                "$language string content tagged validation",
+            )
         }
     }
 
@@ -101,7 +104,7 @@ class ValidationRuleCommentTest {
 
         val input = parseValidationInput("kotlin", "Sample.kt", text)
 
-        assertTrue(validationSources(input).isEmpty())
+        assertTrue(validationSources(input).none { it.source == "comment" })
     }
 
     @Test
@@ -140,7 +143,7 @@ class ValidationRuleCommentTest {
 
         val input = parseValidationInput("kotlin", "Sample.kt", text)
 
-        assertTrue(validationSources(input).isEmpty())
+        assertTrue(validationSources(input).none { it.source == "comment" })
     }
 
     @Test
@@ -154,7 +157,7 @@ class ValidationRuleCommentTest {
 
         val input = parseValidationInput("kotlin", "Sample.kt", text)
 
-        assertTrue(validationSources(input).isEmpty())
+        assertTrue(validationSources(input).none { it.source == "comment" })
     }
 
     @Test
@@ -199,7 +202,7 @@ class ValidationRuleCommentTest {
         val sources =
             annotations.filter { it.role == Role.SOURCE_INTENT && it.rule == VALIDATION_RULE_ID }
 
-        assertTrue(sources.isEmpty(), "block comment bypassed line-only commentKinds")
+        assertTrue(sources.none { it.source == "comment" }, "block comment bypassed line-only commentKinds")
     }
 
     @Test

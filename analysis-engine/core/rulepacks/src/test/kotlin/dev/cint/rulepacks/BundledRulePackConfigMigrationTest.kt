@@ -16,6 +16,8 @@ private val bundledIds =
         "normalization",
         "data-access",
         "service",
+        "bool-combinatorics",
+        "data-transformation",
     )
 
 class BundledRulePackConfigMigrationTest {

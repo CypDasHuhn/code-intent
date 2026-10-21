@@ -6,3 +6,5 @@ dev.cint.rulepacks.intents.mutation.MutationRulePack
 dev.cint.rulepacks.intents.normalization.NormalizationRulePack
 dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 dev.cint.rulepacks.intents.service.ServiceRulePack
+dev.cint.rulepacks.intents.logic.BoolCombinatoricsRulePack
+dev.cint.rulepacks.intents.transformation.TransformationRulePack

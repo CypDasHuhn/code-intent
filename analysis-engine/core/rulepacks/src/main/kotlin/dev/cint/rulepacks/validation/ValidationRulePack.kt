@@ -25,6 +25,8 @@ data class ValidationConfig(
     val predicatePrefixes: List<String> = DEFAULT_PREDICATE_PREFIXES,
     val magicComment: String = "validation",
     val commentKinds: Set<String> = DEFAULT_COMMENT_KINDS,
+    val elvisKinds: Set<String> = DEFAULT_ELVIS_KINDS,
+    val coalesceOperators: Set<String> = DEFAULT_COALESCE_OPERATORS,
 ) {
     fun withOverrides(values: Map<String, Any?>): ValidationConfig = SCHEMA.decode(this, values, VALIDATION_PACK_ID)
 
@@ -49,6 +51,8 @@ data class ValidationConfig(
             )
         val DEFAULT_PREDICATE_PREFIXES: List<String> = listOf("is", "has", "Is", "Has")
         val DEFAULT_COMMENT_KINDS: Set<String> = setOf("comment", "line_comment", "multiline_comment")
+        val DEFAULT_ELVIS_KINDS: Set<String> = setOf("elvis_expression")
+        val DEFAULT_COALESCE_OPERATORS: Set<String> = setOf("??")
 
         internal val SCHEMA =
             ConfigSchema.of(
@@ -71,6 +75,16 @@ data class ValidationConfig(
                     "commentKinds",
                     { it.commentKinds },
                     { config, value -> config.copy(commentKinds = value) },
+                ),
+                ConfigField.strings<ValidationConfig>(
+                    "elvisKinds",
+                    { it.elvisKinds },
+                    { config, value -> config.copy(elvisKinds = value) },
+                ),
+                ConfigField.strings<ValidationConfig>(
+                    "coalesceOperators",
+                    { it.coalesceOperators },
+                    { config, value -> config.copy(coalesceOperators = value) },
                 ),
             )
 
@@ -113,7 +127,50 @@ private class ValidationRule(
                 gapCandidate(view, guard)?.let { result += it }
             }
         }
-        return result
+        result += elvisEmits(view)
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+
+    private fun elvisEmits(view: View): List<Emit> {
+        val root = rootNode(view) ?: return emptyList()
+        return root
+            .descendants()
+            .filter { isElvis(it) }
+            .mapNotNull { node ->
+                val right = node.children.lastOrNull { child -> child.text !in coalesceTokens } ?: return@mapNotNull null
+                if (!view.isExit(right)) return@mapNotNull null
+                if (hasKnownWrites(view, node)) return@mapNotNull null
+                Emit.of(VALIDATION_INTENT, node, confidence = 0.6)
+            }.toList()
+    }
+
+    private fun isElvis(node: SyntaxNode): Boolean =
+        node.kind in config.elvisKinds ||
+            (node.kind == "binary_expression" && node.children.any { it.text in coalesceTokens })
+
+    private val coalesceTokens: Set<String> get() = config.coalesceOperators + "?:"
+
+    private fun hasKnownWrites(
+        view: View,
+        node: SyntaxNode,
+    ): Boolean =
+        view.writes().any { write ->
+            write.node.startByte >= node.startByte && write.node.endByte <= node.endByte
+        }
+
+    private fun rootNode(view: View): SyntaxNode? {
+        val seed =
+            view.calls().firstOrNull()?.node
+                ?: view.declarations().firstOrNull()?.node
+                ?: view.functions().firstOrNull()?.node
+                ?: view.properties().firstOrNull()?.node
+                ?: view
+                    .references()
+                    .values
+                    .firstOrNull { it.isNotEmpty() }
+                    ?.first()
+                ?: return null
+        return generateSequence(seed) { it.parent }.last()
     }
 
     private fun gapCandidate(
@@ -142,9 +199,10 @@ private class ValidationRule(
         val bookkeeping = hasBookkeeping(view, body)
         val predicate = isValidationPredicate(view, condition)
         val pure = view.isSideEffectFree(condition)
+        val readOnly = !hasKnownWrites(view, condition)
         val constant = view.isConstant(condition)
         val validationGuard =
-            (explicit || bookkeeping || predicate || pure) &&
+            (explicit || bookkeeping || predicate || pure || readOnly) &&
                 !(constant && !explicit && !bookkeeping)
         if (!validationGuard) return null
 
@@ -153,6 +211,7 @@ private class ValidationRule(
                 explicit -> 1.0
                 bookkeeping -> 0.9
                 predicate -> 0.7
+                pure -> 0.6
                 else -> 0.5
             }
         val source = if (explicit) "comment" else Emit.DEFAULT_SOURCE
