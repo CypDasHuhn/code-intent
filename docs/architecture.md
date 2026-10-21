@@ -45,10 +45,11 @@ core composition; they are not part of the plugin API. A plugin cannot remove,
 hide, or reclassify anything.
 
 The built-in detectors (logging, error handling, bookkeeping, validation,
-normalization, data access, service boundaries, and mutation) are **bundled
-rulepacks that use the same API as any third-party pack.** Core contains no
-hardcoded intent detection. This is what keeps the hull from decaying back into
-a monolithic block implementation.
+normalization, data access, service boundaries, mutation, boolean
+combinatorics, and data transformation) are **bundled rulepacks that use the
+same API as any third-party pack.** Core contains no hardcoded intent detection.
+This is what keeps the hull from decaying back into a monolithic block
+implementation.
 
 ## 2. Intents, rules, ownership
 
@@ -125,11 +126,20 @@ Worked example of strata:
 stratum 0:  logging, error-handling-<language>, bookkeeping,
             normalization:normalization, data-access:search,
             data-access:lookup, service:delegation, service:init,
-            mutation:data-modify (no dependencies)
-stratum 1:  validation, mutation:local-value-modify
-            (read BOOKKEEPING)
+            mutation:data-modify, bool-combinatorics (no dependencies)
+stratum 1:  mutation:local-value-modify (reads BOOKKEEPING),
+            data-transformation (reads SEARCH; its self-read is ignored)
+stratum 2:  validation (reads BOOKKEEPING, DATA_MODIFY,
+            LOCAL_VALUE_MODIFY)
 terminal:   core composition    (scaffold, derivative-use, return-category)
 ```
+
+`data-transformation` also reads its own intent so the scheduler permits an
+internal fixpoint over chained transforms while still ignoring the self-edge. It
+requires the `SEARCH` owner to be present in the bundled set. Transformation
+evidence is qualifier/type/`SEARCH`/transformation based; unknown or
+unclassified receivers, including offline runs with a null oracle, stay
+candidates rather than established spans.
 
 **Termination invariant:** monotone rules + acyclic rule-level dependencies +
 a finite intent universe ⇒ evaluation terminates. Because no stratum can
@@ -283,7 +293,7 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 | module | responsibility |
 |---|---|
 | `api` | frozen v5 contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, scheduler contract, DSL |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, and mutation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, boolean-combinatorics, and data-transformation packs |
 | `core` | syntax facts, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
 | `suggest` | candidate context (bounded excerpt + metadata), provider SPI/registry, fake and DeepSeek providers, remote transport, privacy gate/redaction, validator, merge, grouping |
 | `host` | host pipeline and project config loading shared by all hosts |
@@ -311,8 +321,8 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
   API-version checks, and deterministic ordering; there is no runtime Kotlin
   compiler or classloader swapping. The bundled descriptor registers logging,
   error-handling, bookkeeping, validation, normalization, data-access, service,
-  and mutation packs; host selection constructs the per-language error-handling
-  rules.
+  mutation, bool-combinatorics, and data-transformation packs; host selection
+  constructs the per-language error-handling rules.
 - **Graceful degradation:** a missing, corrupt, or version-mismatched pack is
   reported and skipped; the engine keeps analyzing with what loaded.
 - **Reload.** A pack change is normally a dev-time action, never a per-edit one;

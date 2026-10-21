@@ -16,6 +16,8 @@ private val bundledIds =
         "normalization",
         "data-access",
         "service",
+        "bool-combinatorics",
+        "data-transformation",
     )
 private val bundledLanguages = setOf("kotlin", "javascript", "typescript", "csharp")
 private val bundledIntents =
@@ -31,6 +33,8 @@ private val bundledIntents =
         "LOOKUP",
         "SERVICE_DELEGATION",
         "SERVICE_INIT",
+        "BOOL_COMBINATORICS",
+        "DATA_TRANSFORMATION",
     )
 
 class BundledRulePackRegistrationTest {

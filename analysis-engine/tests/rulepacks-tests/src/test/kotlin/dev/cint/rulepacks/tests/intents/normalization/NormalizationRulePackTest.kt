@@ -8,6 +8,7 @@ import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NORMALIZATION_INTENT
 import dev.cint.rulepacks.intents.normalization.NORMALIZATION_RULE_ID
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
@@ -273,7 +274,7 @@ class NormalizationRulePackTest {
             analyze(
                 "kotlin",
                 text,
-                listOf(BookkeepingRulePack(), ValidationRulePack(), NormalizationRulePack()),
+                listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack(), NormalizationRulePack()),
             )
 
         val validation = analysis.source(VALIDATION_INTENT).single { "isBlank" in it.text(text) }

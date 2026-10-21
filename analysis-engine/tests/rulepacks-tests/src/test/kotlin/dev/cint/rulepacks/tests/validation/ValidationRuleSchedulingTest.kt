@@ -7,6 +7,9 @@ import dev.cint.core.runtime.engine.AnalysisContext
 import dev.cint.core.runtime.scheduler.RuleScheduler
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
+import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
+import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.tests.support.parseValidationInput
 import dev.cint.rulepacks.validation.VALIDATION_RULE_ID
 import dev.cint.rulepacks.validation.ValidationRulePack
@@ -16,14 +19,17 @@ import kotlin.test.assertTrue
 
 class ValidationRuleSchedulingTest {
     @Test
-    fun validationSchedulesAfterBookkeeping() {
-        val plan = RuleScheduler().plan(listOf(ValidationRulePack(), BookkeepingRulePack()))
+    fun validationSchedulesAfterBookkeepingAndMutation() {
+        val plan = RuleScheduler().plan(listOf(ValidationRulePack(), BookkeepingRulePack(), MutationRulePack()))
+        val validation = plan.strata.flatten().single { it.id == VALIDATION_RULE_ID }
+        val validationIndex = plan.strata.indexOfFirst { stratum -> stratum.any { it.id == VALIDATION_RULE_ID } }
+        val bookkeepingIndex = plan.strata.indexOfFirst { stratum -> stratum.any { it.id == "bookkeeping:bookkeeping" } }
 
         assertEquals(
-            listOf(listOf("bookkeeping:bookkeeping"), listOf(VALIDATION_RULE_ID)),
-            plan.strata.map { stratum -> stratum.map { it.id } },
+            setOf(BOOKKEEPING_INTENT, DATA_MODIFY_INTENT, LOCAL_VALUE_MODIFY_INTENT),
+            validation.reads,
         )
-        assertEquals(setOf(BOOKKEEPING_INTENT), plan.strata[1].single().reads)
+        assertTrue(validationIndex > bookkeepingIndex)
     }
 
     @Test

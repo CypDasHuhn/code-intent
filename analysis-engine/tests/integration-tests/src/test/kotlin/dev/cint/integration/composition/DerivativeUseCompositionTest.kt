@@ -32,21 +32,22 @@ class DerivativeUseCompositionTest {
             analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
-        assertEquals(3, derivatives.size)
+        assertEquals(4, derivatives.size)
         assertTrue(derivatives.all { it.intents == setOf("LOGGING") })
+        assertTrue(derivatives.any { it.text(text).contains("private val log") })
         assertTrue(derivatives.any { it.text(text).contains("fun make") })
         assertTrue(derivatives.any { it.text(text).contains("val source") })
         assertTrue(derivatives.any { it.text(text).contains("val message") })
     }
 
     @Test
-    fun newPipelineDoesNotPromoteImpureLocalsOrFunctions() {
+    fun newPipelineDoesNotPromoteKnownWrites() {
         val text =
             """
             private val log = LoggerFactory.getLogger(Foo::class.java)
-            fun make(): String = "x"
+            private var counter = 0
             fun f() {
-                val source = make()
+                val source = run { counter++; "x" }
                 val message = source
                 log.warn(message)
                 log.warn(source)
@@ -56,9 +57,140 @@ class DerivativeUseCompositionTest {
             analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
 
         val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
-        assertTrue(derivatives.any { it.text(text).contains("val message") })
         assertTrue(derivatives.none { it.text(text).contains("val source") })
-        assertTrue(derivatives.none { it.text(text).contains("fun make") })
+    }
+
+    @Test
+    fun newPipelinePromotesUnknownReadOnlyInitializersWithLowerConfidence() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun fetch(): String = external()
+            fun external(): String = "x"
+            fun f() {
+                val message = fetch()
+                log.warn(message)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message")
+            }
+        assertEquals(setOf("LOGGING"), derivative.intents)
+        assertTrue(derivative.confidence < 0.7)
+    }
+
+    @Test
+    fun newPipelineAllowsExternalReadsWithoutCalls() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f() {
+                val message = config.message
+                log.warn(message)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message")
+            }
+        assertEquals(setOf("LOGGING"), derivative.intents)
+        assertEquals(0.7, derivative.confidence)
+    }
+
+    @Test
+    fun initializerPropagationBlocksWritesAndMutationCalls() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            private var counter = 0
+            fun f(items: List<String>, repository: Repository) {
+                val withWrite = run { counter++; repository.findAll() }
+                val nestedMutation = items.map { repository.save(it) }
+                val directMutation = repository.save(repository.findAll())
+                log.warn(withWrite)
+                log.warn(nestedMutation)
+                log.warn(directMutation)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+        val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
+
+        assertTrue(derivatives.none { it.text(text).contains("val withWrite") })
+        assertTrue(derivatives.none { it.text(text).contains("val nestedMutation") })
+        assertTrue(derivatives.none { it.text(text).contains("val directMutation") })
+    }
+
+    @Test
+    fun initializerPropagationIgnoresEffectsNestedInsideLambdas() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f(repository: Repository) {
+                val users = repository.findAll().onEach { log.info(it) }
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val users")
+            }
+
+        assertTrue("SEARCH" in derivative.intents)
+        assertTrue("LOGGING" !in derivative.intents)
+    }
+
+    @Test
+    fun initializerPropagationIgnoresArgumentEffects() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun format(first: Any?, second: Any?): String = second.toString()
+            fun f(repository: Repository) {
+                val message = format(log.info("x"), repository.findAll())
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message")
+            }
+
+        assertTrue("SEARCH" in derivative.intents)
+        assertTrue("LOGGING" !in derivative.intents)
+    }
+
+    @Test
+    fun assignmentPropagationPaintsTheAssignmentSpan() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            fun f(repository: Repository) {
+                var target: String? = null
+                target = repository.findAll().map { it.name }
+                log.warn(target)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+
+        val assignment =
+            annotations
+                .filter { it.role == Role.DERIVATIVE_USE }
+                .filter { it.text(text).contains("target = repository.findAll") }
+
+        assertEquals(1, assignment.size)
+        assertTrue("SEARCH" in assignment.single().intents)
+        assertTrue("DATA_TRANSFORMATION" in assignment.single().intents)
     }
 
     @Test

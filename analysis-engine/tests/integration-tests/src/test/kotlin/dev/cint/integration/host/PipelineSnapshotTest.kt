@@ -53,6 +53,7 @@ private val snapshotFixtures =
         SnapshotFixture("javascript/Sample.js", "javascript"),
         SnapshotFixture("kotlin/Bookkeeping.kt", "kotlin"),
         SnapshotFixture("kotlin/Catches.kt", "kotlin"),
+        SnapshotFixture("kotlin/Composition.kt", "kotlin"),
         SnapshotFixture("kotlin/ErrorHandling.kt", "kotlin"),
         SnapshotFixture("kotlin/Heuristics.kt", "kotlin"),
         SnapshotFixture("kotlin/LoggerInteractions.kt", "kotlin"),

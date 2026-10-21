@@ -15,16 +15,52 @@ import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
+import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 
 const val VALIDATION_INTENT: Intent = "VALIDATION"
 const val VALIDATION_PACK_ID: String = "validation"
 const val VALIDATION_RULE_ID: String = "$VALIDATION_PACK_ID:validation"
+
+private val MUTATION_INTENTS = setOf(DATA_MODIFY_INTENT, LOCAL_VALUE_MODIFY_INTENT, BOOKKEEPING_INTENT)
+
+private val NESTED_SCOPE_KINDS =
+    setOf(
+        "function_declaration",
+        "local_function_statement",
+        "method_declaration",
+        "constructor_declaration",
+        "lambda_literal",
+        "annotated_lambda",
+        "lambda_expression",
+        "arrow_function",
+        "function_expression",
+    )
+
+private val LOOP_KINDS =
+    setOf(
+        "while_statement",
+        "for_statement",
+        "for_in_statement",
+        "foreach_statement",
+        "do_statement",
+    )
+
+private val SWITCH_KINDS =
+    setOf(
+        "switch_statement",
+        "switch_expression",
+        "when_expression",
+    )
 
 data class ValidationConfig(
     val predicates: Set<String> = DEFAULT_PREDICATES,
     val predicatePrefixes: List<String> = DEFAULT_PREDICATE_PREFIXES,
     val magicComment: String = "validation",
     val commentKinds: Set<String> = DEFAULT_COMMENT_KINDS,
+    val elvisKinds: Set<String> = DEFAULT_ELVIS_KINDS,
+    val coalesceOperators: Set<String> = DEFAULT_COALESCE_OPERATORS,
+    val rejectionValues: Set<String> = DEFAULT_REJECTION_VALUES,
 ) {
     fun withOverrides(values: Map<String, Any?>): ValidationConfig = SCHEMA.decode(this, values, VALIDATION_PACK_ID)
 
@@ -49,6 +85,28 @@ data class ValidationConfig(
             )
         val DEFAULT_PREDICATE_PREFIXES: List<String> = listOf("is", "has", "Is", "Has")
         val DEFAULT_COMMENT_KINDS: Set<String> = setOf("comment", "line_comment", "multiline_comment")
+        val DEFAULT_ELVIS_KINDS: Set<String> = setOf("elvis_expression")
+        val DEFAULT_COALESCE_OPERATORS: Set<String> = setOf("??")
+        val DEFAULT_REJECTION_VALUES: Set<String> =
+            setOf(
+                "null",
+                "undefined",
+                "false",
+                "0",
+                "-1",
+                "\"\"",
+                "''",
+                "[]",
+                "{}",
+                "emptyList()",
+                "emptyMap()",
+                "emptySet()",
+                "listOf()",
+                "mapOf()",
+                "setOf()",
+                "arrayOf()",
+                "String.Empty",
+            )
 
         internal val SCHEMA =
             ConfigSchema.of(
@@ -72,6 +130,21 @@ data class ValidationConfig(
                     { it.commentKinds },
                     { config, value -> config.copy(commentKinds = value) },
                 ),
+                ConfigField.strings<ValidationConfig>(
+                    "elvisKinds",
+                    { it.elvisKinds },
+                    { config, value -> config.copy(elvisKinds = value) },
+                ),
+                ConfigField.strings<ValidationConfig>(
+                    "coalesceOperators",
+                    { it.coalesceOperators },
+                    { config, value -> config.copy(coalesceOperators = value) },
+                ),
+                ConfigField.strings<ValidationConfig>(
+                    "rejectionValues",
+                    { it.rejectionValues },
+                    { config, value -> config.copy(rejectionValues = value) },
+                ),
             )
 
         fun from(values: Map<String, Any?>): ValidationConfig = ValidationConfig().withOverrides(values)
@@ -88,7 +161,7 @@ class ValidationRulePack(
         schema = ValidationConfig.SCHEMA,
         ruleId = VALIDATION_RULE_ID,
     ) {
-    override val reads: Set<Intent> = setOf(BOOKKEEPING_INTENT)
+    override val reads: Set<Intent> = MUTATION_INTENTS
 
     override val matchers: List<Matcher> = listOf(Matcher { view -> ValidationRule(config).match(view) })
 
@@ -113,7 +186,133 @@ private class ValidationRule(
                 gapCandidate(view, guard)?.let { result += it }
             }
         }
-        return result
+        result += elvisEmits(view)
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+
+    private fun elvisEmits(view: View): List<Emit> {
+        val root = rootNode(view) ?: return emptyList()
+        return root
+            .descendants()
+            .filter { isElvis(it) }
+            .mapNotNull { node ->
+                val right = node.children.lastOrNull { child -> child.text !in coalesceTokens } ?: return@mapNotNull null
+                if (!isRejectingExit(view, right)) return@mapNotNull null
+                if (hasKnownWrites(view, node)) return@mapNotNull null
+                Emit.of(VALIDATION_INTENT, node, confidence = 0.6)
+            }.toList()
+    }
+
+    private fun isElvis(node: SyntaxNode): Boolean =
+        node.kind in config.elvisKinds ||
+            (node.kind == "binary_expression" && node.children.any { it.text in coalesceTokens })
+
+    private val coalesceTokens: Set<String> get() = config.coalesceOperators + "?:"
+
+    private fun hasKnownWrites(
+        view: View,
+        node: SyntaxNode,
+    ): Boolean =
+        view.writes().any { write ->
+            write.node.startByte >= node.startByte && write.node.endByte <= node.endByte
+        } ||
+            MUTATION_INTENTS.any { intent ->
+                view.annotations(intent).any { annotation ->
+                    annotation.startByte >= node.startByte && annotation.endByte <= node.endByte
+                }
+            }
+
+    private fun hasRejectingExit(
+        view: View,
+        body: SyntaxNode,
+    ): Boolean =
+        body.descendants().any { node ->
+            if (insideNestedScope(node, body)) return@any false
+            when {
+                isThrowExit(node) -> true
+                leadingKeyword(node) == "continue" -> !insideNestedJumpScope(node, body, includeSwitch = false)
+                leadingKeyword(node) == "break" -> !insideNestedJumpScope(node, body, includeSwitch = true)
+                else -> view.isExit(node) && isRejectingExit(view, node)
+            }
+        }
+
+    private fun insideNestedScope(
+        node: SyntaxNode,
+        body: SyntaxNode,
+    ): Boolean {
+        if (sameSpan(node, body)) return false
+        var current = node.parent
+        while (current != null) {
+            if (sameSpan(current, body)) return false
+            if (current.kind in NESTED_SCOPE_KINDS) return true
+            current = current.parent
+        }
+        return false
+    }
+
+    private fun insideNestedJumpScope(
+        node: SyntaxNode,
+        body: SyntaxNode,
+        includeSwitch: Boolean,
+    ): Boolean {
+        if (sameSpan(node, body)) return false
+        var current = node.parent
+        while (current != null) {
+            if (current.kind in LOOP_KINDS) return true
+            if (includeSwitch && current.kind in SWITCH_KINDS) return true
+            if (sameSpan(current, body)) return false
+            current = current.parent
+        }
+        return false
+    }
+
+    private fun isThrowExit(node: SyntaxNode): Boolean = leadingKeyword(node) == "throw"
+
+    private fun sameSpan(
+        first: SyntaxNode,
+        second: SyntaxNode,
+    ): Boolean = first.startByte == second.startByte && first.endByte == second.endByte
+
+    private fun leadingKeyword(node: SyntaxNode): String = node.text.trimStart().takeWhile { it.isLetter() }
+
+    private fun isRejectingExit(
+        view: View,
+        node: SyntaxNode,
+    ): Boolean {
+        if (isThrowExit(node)) return true
+        if (!view.isExit(node)) return false
+        val text =
+            node.text
+                .trim()
+                .removeSuffix(";")
+                .trim()
+        if (text.startsWith("continue") || text.startsWith("break")) return true
+        if (!text.startsWith("return")) return false
+        val expression = returnExpression(node)
+        if (expression == null) return true
+        return expression.text.trim() in config.rejectionValues
+    }
+
+    private fun returnExpression(node: SyntaxNode): SyntaxNode? {
+        val children = node.children.filter { it.kind != ";" && it.kind !in config.commentKinds }
+        val keyword = children.indexOfFirst { it.text.trimStart().startsWith("return") }
+        if (keyword < 0) return children.lastOrNull()
+        return children.drop(keyword + 1).firstOrNull()
+    }
+
+    private fun rootNode(view: View): SyntaxNode? {
+        val seed =
+            view.calls().firstOrNull()?.node
+                ?: view.declarations().firstOrNull()?.node
+                ?: view.functions().firstOrNull()?.node
+                ?: view.properties().firstOrNull()?.node
+                ?: view
+                    .references()
+                    .values
+                    .firstOrNull { it.isNotEmpty() }
+                    ?.first()
+                ?: return null
+        return generateSequence(seed) { it.parent }.last()
     }
 
     private fun gapCandidate(
@@ -141,10 +340,14 @@ private class ValidationRule(
         val explicit = hasValidationComment(view, guard)
         val bookkeeping = hasBookkeeping(view, body)
         val predicate = isValidationPredicate(view, condition)
-        val pure = view.isSideEffectFree(condition)
+        val rejection =
+            hasRejectingExit(view, body) ||
+                guard.elseBody?.let { hasRejectingExit(view, it) } == true
+        val pure = view.isSideEffectFree(condition) && rejection
+        val readOnly = !hasKnownWrites(view, condition) && rejection
         val constant = view.isConstant(condition)
         val validationGuard =
-            (explicit || bookkeeping || predicate || pure) &&
+            (explicit || bookkeeping || predicate || pure || readOnly) &&
                 !(constant && !explicit && !bookkeeping)
         if (!validationGuard) return null
 
@@ -153,6 +356,7 @@ private class ValidationRule(
                 explicit -> 1.0
                 bookkeeping -> 0.9
                 predicate -> 0.7
+                pure -> 0.6
                 else -> 0.5
             }
         val source = if (explicit) "comment" else Emit.DEFAULT_SOURCE
