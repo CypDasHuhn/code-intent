@@ -8,6 +8,7 @@ import dev.cint.rulepacks.intents.logic.BOOL_COMBINATORICS_INTENT
 import dev.cint.rulepacks.intents.logic.BoolCombinatoricsRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.intents.transformation.DATA_TRANSFORMATION_INTENT
 import dev.cint.rulepacks.intents.transformation.TransformationRulePack
 import dev.cint.rulepacks.logging.LoggingRulePack
@@ -32,6 +33,7 @@ class CompositionIntentCoverageTest {
                     BookkeepingRulePack(),
                     LoggingRulePack(),
                     MutationRulePack(),
+                    LocalCopyRulePack(),
                     ValidationRulePack(),
                     NormalizationRulePack(),
                     DataAccessRulePack(),
@@ -73,7 +75,7 @@ class CompositionIntentCoverageTest {
             analyzePack(
                 "kotlin",
                 source,
-                listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack()),
+                listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ValidationRulePack()),
             )
         val values = analysis.source(VALIDATION_INTENT)
         val predicate = values.first { it.text(source) == "uses.isEmpty()" }

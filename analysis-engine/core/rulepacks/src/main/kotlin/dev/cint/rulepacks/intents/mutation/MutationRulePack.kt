@@ -20,6 +20,7 @@ import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.api.emit
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.intents.structural.LOCAL_COPY_INTENT
 
 const val MUTATION_PACK_ID: String = "mutation"
 const val DATA_MODIFY_INTENT: Intent = "DATA_MODIFY"
@@ -161,7 +162,7 @@ private class LocalValueModifyRule(
 ) : Rule {
     override val id: String = LOCAL_VALUE_MODIFY_RULE_ID
     override val owns: Intent = LOCAL_VALUE_MODIFY_INTENT
-    override val reads: Set<Intent> = setOf(BOOKKEEPING_INTENT)
+    override val reads: Set<Intent> = setOf(BOOKKEEPING_INTENT, LOCAL_COPY_INTENT)
 
     override fun run(view: View): List<RuleEmit> {
         val language = config.forLanguage(view.language())
@@ -172,6 +173,7 @@ private class LocalValueModifyRule(
 
         for (write in view.writes()) {
             if (!accepts(write, language.assignmentPatterns)) continue
+            if (language.ignorePureCopies && LOCAL_COPY_INTENT in view.intentsAt(write.node)) continue
             if (isBookkeeping(write.node, bookkeeping)) continue
             if (language.ignoreLoopCounters && isLoopCounter(view, write)) continue
             val local = owners[write.node.startByte to write.node.endByte]?.kind == DeclarationKind.VARIABLE

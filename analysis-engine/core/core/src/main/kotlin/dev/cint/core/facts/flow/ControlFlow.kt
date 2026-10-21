@@ -36,6 +36,22 @@ class ControlFlowBuilder(
             val body = function.body ?: continue
             walkBody(body, emptyList(), null, null, returns)
         }
+        val known = returns.mapTo(mutableSetOf()) { key(it.node) }
+        var labeled = false
+        for (node in tree.root.descendants()) {
+            if (!syntax.isReturn(node) || !node.text.trimStart().startsWith("return@")) continue
+            if (!known.add(key(node))) continue
+            labeled = true
+            returns +=
+                ReturnSite(
+                    node = node,
+                    expression = syntax.exitExpression(node),
+                    guards = emptyList(),
+                    loop = null,
+                    handler = null,
+                )
+        }
+        if (labeled) returns.sortBy { it.node.startByte }
         return ControlFlow(returns)
     }
 

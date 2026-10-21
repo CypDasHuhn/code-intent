@@ -18,6 +18,9 @@ private val bundledIds =
         "service",
         "bool-combinatorics",
         "data-transformation",
+        "return-value",
+        "chaining",
+        "local-copy",
     )
 
 class BundledRulePackConfigMigrationTest {

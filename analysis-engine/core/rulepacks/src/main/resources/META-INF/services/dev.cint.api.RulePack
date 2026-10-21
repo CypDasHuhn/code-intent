@@ -8,3 +8,6 @@ dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 dev.cint.rulepacks.intents.service.ServiceRulePack
 dev.cint.rulepacks.intents.logic.BoolCombinatoricsRulePack
 dev.cint.rulepacks.intents.transformation.TransformationRulePack
+dev.cint.rulepacks.intents.structural.ReturnValueRulePack
+dev.cint.rulepacks.intents.structural.ChainingRulePack
+dev.cint.rulepacks.intents.structural.LocalCopyRulePack

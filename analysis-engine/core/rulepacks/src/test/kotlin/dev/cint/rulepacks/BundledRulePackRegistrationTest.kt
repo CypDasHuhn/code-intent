@@ -18,6 +18,9 @@ private val bundledIds =
         "service",
         "bool-combinatorics",
         "data-transformation",
+        "return-value",
+        "chaining",
+        "local-copy",
     )
 private val bundledLanguages = setOf("kotlin", "javascript", "typescript", "csharp")
 private val bundledIntents =
@@ -35,6 +38,9 @@ private val bundledIntents =
         "SERVICE_INIT",
         "BOOL_COMBINATORICS",
         "DATA_TRANSFORMATION",
+        "RETURN_VALUE",
+        "CHAINING",
+        "LOCAL_COPY",
     )
 
 class BundledRulePackRegistrationTest {

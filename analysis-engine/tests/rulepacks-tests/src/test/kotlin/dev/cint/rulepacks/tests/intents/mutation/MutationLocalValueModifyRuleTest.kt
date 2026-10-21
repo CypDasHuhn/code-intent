@@ -6,6 +6,7 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_RULE_ID
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test
@@ -286,5 +287,5 @@ class MutationLocalValueModifyRuleTest {
         language: String,
         text: String,
         pack: RulePack = MutationRulePack(),
-    ): PackAnalysis = analyzePack(language, text, listOf(BookkeepingRulePack(), pack))
+    ): PackAnalysis = analyzePack(language, text, listOf(BookkeepingRulePack(), pack, LocalCopyRulePack()))
 }
