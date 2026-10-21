@@ -592,3 +592,97 @@ half of the persistence finding; both need a fix or an explicit named deferral.
   suppression rewrite.
 - The docs correction noted in the concurs section (`docs/engine.md:230-233`)
   is a scribe change, not a source edit.
+
+## Round 5
+
+Verdict: The three Round 4 fixes are present and the targeted behavior is
+correct. The skip is committed inside `publishCandidates`' per-document lock
+with a barrier test that races a didChange publish; nvim's annotation commands
+now take the same `.cint/user-annotations.json.lock` directory as the Kotlin
+writer; and reject/confirm republish candidate state to every owner of the URI,
+not just the deciding client. One defect remains in the new portable lock: the
+Kotlin acquisition can throw when a holder releases between the failed
+`createDirectory` and the mtime read, and the stale-lock steal/release protocol
+can delete another process's live lock. The loop cannot close until that lock
+race is fixed.
+
+### Findings
+
+1. **`analysis-engine/core/core/src/main/kotlin/dev/cint/core/user/UserAnnotationsFile.kt:73-91`
+   — the directory lock has an unhandled release race and an unsafe stale-lock
+   steal.**
+
+   After `Files.createDirectory(lockPath)` throws `FileAlreadyExistsException`,
+   the code immediately calls `Files.getLastModifiedTime(lockPath)`. If the
+   holder releases the lock between those two calls, the mtime read throws
+   `NoSuchFileException`, aborting `add`/`save` even though the lock is now free.
+   Separately, a lock older than 10 seconds is deleted and reacquired while its
+   owner may still be in the critical section. When that original owner finishes,
+   its `finally` unconditionally deletes `lockPath`, which may now be the
+   successor's lock, allowing a third writer to enter concurrently. The nvim
+   implementation mirrors the same stale-removal protocol
+   (`nvim-renderer/lua/cint/ops/annotations.lua:14-51`), so the two languages can
+   enter this state together.
+
+   Fix: treat a missing lock directory as a retry (catch `NoSuchFileException`
+   around the mtime read), and make lock ownership explicit so a stale steal
+   cannot let the original owner remove the successor's lock (for example a
+   unique token inside the lock directory verified before removal, or an OS
+   advisory lock/library with well-defined stale semantics). Add a contention
+   test that races release/acquire and a stale-owner test; the current
+   `UserAnnotationsFileTest` serializes all callers with the in-process lock and
+   therefore never exercises either window.
+
+### Concurs / Dissents
+
+- **Skip atomic with publish:** concurs. `commitSkip` is applied to
+  `sessionSkipped` inside the candidate lock before the list is computed and
+  written, and `successfulSkipIsAtomicWithThePublish` races a didChange publish
+  and asserts the candidate stays hidden. The successful and stale paths no
+  longer have the Round 4 post-publish window.
+- **nvim annotation lock directory:** concurs. All nvim annotation writers
+  (`annotate`, `annotate_range`, `unannotate`, `unannotate_range`) now acquire
+  and release the same lock directory as `UserAnnotationsFile`, and the nvim
+  spec verifies that an annotation command waits for a held lock and removes the
+  lock afterwards. The remaining issue is the lock implementation itself
+  (finding 1), not the missing participation.
+- **Cross-client candidate republish:** concurs. Reject and confirm now call
+  `republishUri(uri)`, which publishes to every owner's `DocState`;
+  `rejectRepublishesCandidateStateToOtherOwners` verifies the second client sees
+  the reduced candidate set, and the cross-client group test verifies the second
+  client's alternative group is emptied after the first client's confirm.
+- **Cross-client group resolution:** concurs. Confirms still check persisted
+  decisions and live user annotations under the per-anchor lock, so a second
+  client cannot confirm an already-resolved sibling; the removed-annotation
+  path re-proposes the group on the next analysis.
+- **Protocol shutdown:** concurs. The `shutdown` request only acknowledges and
+  the pools are torn down at run-loop exit/shutdown-hook time;
+  `protocolShutdownDoesNotDisableSuggestionsForLaterClients` proves a later
+  suggestion still runs.
+- **Lock ordering/deadlock:** concurs that the reviewed ordering has no cycle:
+  the in-process annotation lock precedes the directory lock, anchors precede
+  annotation/store work, and candidate publication releases its lock before any
+  cross-owner republish. Finding 1 is a correctness race inside the directory
+  lock, not a lock-order inversion.
+- **Test adequacy:** the three new server/nvim tests cover the requested fixes.
+  Missing: a release/acquire contention test for the directory lock and a
+  stale-owner test; the Kotlin concurrent-add test never contends on the file
+  lock because the in-process mutex serializes its threads. `docs/engine.md:230-233`
+  still says the `shutdown` request tears the pools down and should be corrected.
+
+**Loop status:** the loop cannot close yet. Fixing finding 1 (or explicitly
+deferring the directory-lock robustness to a named ticket) is the only remaining
+correctness work from this review; the three Round 4 fixes themselves are
+accepted.
+
+### Residual observations (not filed)
+
+- `anchorLocks` and the lock-file path directories are never pruned; long-lived
+  sessions accumulate one entry per anchor.
+- `inFlightFutures.remove(key)` still has the narrow remove-newer-future window,
+  and nvim's lock file uses the same stale threshold as Kotlin, so a slow
+  critical section can trigger the finding-1 steal on either side.
+- `SuggestionStore.suppressedIds()` remains unused, and the `shutdown` docs
+  mismatch is a scribe edit.
+- The walkthrough was read-only; no build, test, lint or formatter command was
+  run by this role.

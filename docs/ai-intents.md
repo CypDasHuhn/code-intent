@@ -150,15 +150,16 @@ CandidateEmit (aiEligible)
 ## Candidate lifecycle
 
 - `candidate` — proposed, shown non-destructively.
-- `confirmed` — user accepted; written to `.cint/user-annotations.json` and
-  re-analyzed as an established `user` source. Confirming one alternative
-  resolves the whole anchor group, so the sibling alternatives stop being
-  published and are no longer confirmable. A confirm record is kept in
-  `.cint/suggestions.json` as audit history. If the user annotation is removed,
-  the next analysis re-proposes the candidate unless it was rejected.
+- `confirmed` — user accepted; written to `.cint/user-annotations.json` under
+  the shared `.cint/user-annotations.json.lock` directory (also used by the nvim
+  annotation writer) and re-analyzed as an established `user` source. Confirming
+  one alternative resolves the whole anchor group, so the sibling alternatives
+  stop being published and are no longer confirmable. A confirm record is kept
+  in `.cint/suggestions.json` as audit history. If the user annotation is
+  removed, the next analysis re-proposes the candidate unless it was rejected.
 - `rejected` — persisted as suppression in `.cint/suggestions.json`, keyed by
   path + anchor/content hash + byte span + sorted intents + reason.
-- `skipped` — hidden for the current server session only; not persisted.
+- `skipped` — hidden for the requesting client/session only; not persisted.
 - `stale` — anchor no longer matches; the decision is refused and the candidate
   is dropped.
 
@@ -187,7 +188,10 @@ Protocol 3 additions:
 - `cint/candidates/decide` — `{uri, version, candidateId, decision}` with
   confirm/reject/skip; the server validates version and anchor hash, persists,
   re-analyzes on confirm, and republishes. Confirming one alternative resolves
-  the whole anchor group, so siblings are not published afterward.
+  the whole anchor group, so siblings are not published afterward. Confirm and
+  reject are project-global and republish the URI to every client that has it
+  open, so all owners of the same URI drop the resolved group or suppressed
+  candidate; skip remains per-client/session and is not persisted.
 
 Candidates carry `candidateId`, `path`, `contentHash`, `source`
 (`rule:<id>` or `ai:<provider>`), confidence, reason, `aiEligible`, span/bytes,
@@ -230,10 +234,10 @@ suggestions:
 A missing file defaults to disabled/manual/5 candidates, a 4000 ms timeout, and
 2 worker threads. When disabled, `initialize.suggestions.enabled` is false and
 `cint/suggest` refuses, but pack candidates still publish. Both executor pools
-are bounded by `workerThreads` and are shut down on server shutdown. Secrets
-stay server-side; future local/remote provider configuration (keys, privacy
-globs, additional timeouts) is a follow-up. Prompt/response logging is off by
-default.
+are bounded by `workerThreads` and stop on server/process close, not on the
+protocol `shutdown` request. Secrets stay server-side; future local/remote
+provider configuration (keys, privacy globs, additional timeouts) is a
+follow-up. Prompt/response logging is off by default.
 
 ## Modules
 

@@ -413,10 +413,13 @@ Authoritative for resuming. Older sections are historical where they conflict.
   (default 2, clamped 1..8). It gates `cint/suggest`; deterministic pack
   candidates still publish when it is disabled. The suggestion and provider
   pools are bounded by `workerThreads`, provider calls are interrupted after
-  `timeoutMs`, and both pools shut down with the server. Decisions live in
-  `<root>/.cint/suggestions.json`; confirm also writes
-  `<root>/.cint/user-annotations.json`. Decision records carry optional
-  `anchorId` plus a span snapshot, and older records without them still load.
+  `timeoutMs`, and both pools stop on server/process close, not on the protocol
+  `shutdown` request. Decisions live in `<root>/.cint/suggestions.json`; confirm
+  also writes `<root>/.cint/user-annotations.json` under the shared
+  `<root>/.cint/user-annotations.json.lock` lock directory, which the Kotlin
+  writer and the nvim annotation writer both honor. Decision records carry
+  optional `anchorId` plus a span snapshot, and older records without them still
+  load.
 - Socket dir: `cint-<uid>`. Log: `stdpath("log")/cint-live.log`.
 - JSON-RPC protocol 3: `initialize` (returns pack/field descriptors in `config`
   and a secret-free `suggestions` descriptor), `cint/publishTags`,
@@ -453,9 +456,12 @@ Authoritative for resuming. Older sections are historical where they conflict.
   the final iteration. Identity is path + anchor/content hash + byte span +
   sorted intents + reason. Alternatives at one anchor form a group; confirming
   any of them resolves the whole group, so siblings are no longer published or
-  confirmable. Decision republishes still emit `cint/publishCandidates`, with
-  empty groups when nothing remains. Removing the confirmed user annotation
-  lets the next analysis re-propose the candidate unless it was rejected.
+  confirmable. Confirm and reject are project-global and republish the URI to
+  every client that has it open, so all owners of the same URI drop the resolved
+  group or suppressed candidate; skip remains per-client/session only. Decision
+  republishes still emit `cint/publishCandidates`, with empty groups when
+  nothing remains. Removing the confirmed user annotation lets the next analysis
+  re-propose the candidate unless it was rejected.
 - Rulepack loading reads `META-INF/services/dev.cint.api.RulePack` explicitly,
   validates API version/ownership, and degrades per provider. The per-language
   error-handling packs are constructed by `BundledRulePackSelection` because

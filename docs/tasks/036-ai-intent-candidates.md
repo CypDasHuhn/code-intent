@@ -1,6 +1,6 @@
 ---
 name: ai intent candidates via secondary emits
-status: in-progress
+status: done
 depends-on: [035]
 reviewers: [correctness, api-fidelity]
 ---
@@ -62,3 +62,19 @@ See [../ai-intents.md](../ai-intents.md).
 - Fixpoint rules keep candidates from the final settled iteration only.
 - Candidate identity uses path + anchor/content hash + intent + reason.
 - Keep the frozen `Annotation` shape unchanged.
+
+## Outcome (2026-10-21)
+
+Implemented the v5 `RuleEmit` split and the candidate channel: established
+`Emit`s and secondary `CandidateEmit`s share one rule output list; candidates
+never enter the annotation store, composition, purity, reads, or convergence.
+Live protocol 3 adds `initialize.suggestions`, `cint/publishCandidates`,
+`cint/suggest`, `cint/suggest/cancel`, and `cint/candidates/decide`, with
+per-document analysis revisions, candidate groups/alternatives, a config-gated
+`:suggest` service, async cancellation, and `.cint/suggestions.json` decisions.
+Confirm writes a normal user annotation; reject suppresses per occurrence;
+skip is client-local. The renderer adds non-destructive candidate marks,
+`:CintSuggest`, `:CintReview`, confirm/reject/skip, and repaint on confirm.
+Correctness, api-fidelity, and architecture reviews closed with the Round 5
+lock-acquisition/release hardening explicitly deferred to ticket 041. `just
+build`, `just test-engine`, `just lint`, and `just test-nvim` pass.

@@ -579,3 +579,66 @@ is fixed or explicitly deferred.
   annotations now are; multiple daemons on one root remain last-writer-wins.
 - Static review only; no build, test, formatter, or source edit was run by this
   role, per `docs/workflow.md`. The handover is assumed green.
+
+## Round 5
+
+Verdict: Round 4 finding 1 is fixed. `republishUri` now republishes candidate
+state to every writer with the affected URI open after a confirm or reject,
+while skip remains connection-local; the cross-client confirm and reject tests
+assert the other writer's candidate list actually updates, not just that a
+sibling decision is rejected. Skip is committed inside the candidate publish
+under its expected-state guard, so a stale skip cannot hide a candidate. The
+user-annotation lock was hardened into a shared directory lock used by both the
+server and Neovim, with concurrent and lock-wait tests. I found no new
+module-boundary or lifecycle leak in this commit, and the loop can close.
+
+### Findings
+
+- None.
+
+### Concurs / Dissents
+
+- Concurs with Round 4 finding 1: `republishUri(uri)` iterates every writer that
+  has that URI open and calls `publish` for it, so confirm/reject clears the
+  resolved group for the other client as well. `secondClientCannotConfirm...`
+  now asserts the second client's `groups` is empty, and the new reject test
+  asserts the second client's remaining candidate list. Skip still republishes
+  only the requesting writer.
+- Concurs with the skip atomicity change: `commitSkip` is applied inside
+  `publishCandidates` after the analysis/state guards, and the successful-skip
+  test interleaves a document change with the publish. A stale skip returns
+  `stale` and does not enter `sessionSkipped`.
+- Concurs with user-annotation locking: the server's `UserAnnotationsFile` and
+  the Neovim `annotations.lua` now share the same
+  `.cint/user-annotations.json.lock` directory protocol, with stale-lock
+  cleanup, timeout, release in `finally`, and tests on both sides. The earlier
+  lost-update path is closed.
+- Concurs that no new module-boundary leak was introduced: `republishUri` stays
+  in the server, `:suggest` still owns grouping/validation/merge, `:core` still
+  owns the candidate identity/channel, and no candidate path enters the
+  annotation store, composition, fixpoint, or `reads`. Executor teardown remains
+  process/run-loop scoped, so client `shutdown` no longer disables the daemon.
+- Concurs that the v5/candidate shape remains suitable for 037-040: pack
+  candidates, AI alternatives, and cross-client decisions all use the same
+  anchored candidate group.
+- Dissents: none.
+
+### Residuals (not filed)
+
+- `docs/engine.md:232` still says the pools shut down on the protocol `shutdown`
+  request; the code now intentionally shuts them down only with the server.
+- `anchorLocks` still has no eviction; it retains one lock object per confirmed
+  anchor for the daemon lifetime.
+- The lock directory protocol is duplicated between Kotlin and Lua (path, stale
+  age, timeout); it is consistent today but must be kept in sync manually.
+- `SuggestionOptions.model` remains unused, `maxCandidates` remains per input
+  candidate, same-intent multi-provider proposals still collapse, and the
+  candidate context still lacks source/language/imports/enclosing-function data
+  for a real provider.
+- Candidate identity construction remains duplicated between
+  `SuggestionService.candidateId` and `LiveServer.candidateId`.
+- The futures maps are still populated after `submit`, so a fast completion can
+  leave a completed entry until document cleanup.
+- `SuggestionStore` decisions remain only in-process locked across daemons.
+- Static review only; no build, test, formatter, or source edit was run by this
+  role, per `docs/workflow.md`. The handover is assumed green.

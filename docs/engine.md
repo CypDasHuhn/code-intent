@@ -228,14 +228,19 @@ top-level `suggestions:` mapping. Implemented keys are `enabled` (default
 minimum `1`), and `workerThreads` (default `2`, clamped to `1..8`). This gate
 controls the `cint/suggest` enrichment pass; deterministic pack candidates still
 publish when it is disabled. The suggestion and provider pools are bounded by
-`workerThreads`, provider calls are interrupted after `timeoutMs`, and both
-pools are shut down on server shutdown, the `shutdown` request, or the shutdown
-hook. Decisions are stored in `<root>/.cint/suggestions.json`; each record
+`workerThreads`, and provider calls are interrupted after `timeoutMs`. Both
+pools stop when the server run loop exits or the JVM shutdown hook runs; the
+protocol `shutdown` request only acknowledges and leaves them usable for later
+clients. Decisions are stored in `<root>/.cint/suggestions.json`; each record
 carries `candidateId`, `path`, `contentHash`, `intents`, `reason`, `decision`,
 `createdAt`, and optional `anchorId` plus a `startLine`/`startCol`/`endLine`/
 `endCol` span snapshot. Missing `anchorId` and span fields default sensibly, so
 older records still load. A confirm also writes the existing
-`<root>/.cint/user-annotations.json` record.
+`<root>/.cint/user-annotations.json` record. That file is guarded by the
+`<root>/.cint/user-annotations.json.lock` lock directory, which is shared by the
+Kotlin writer and the nvim annotation writer. Writers acquire the directory
+exclusively for the read-modify-write and remove it afterward; readers only read
+`user-annotations.json`, which is replaced atomically.
 
 ## LSP sharing
 
@@ -334,8 +339,11 @@ channel (see below). Config mutations remain unchanged:
   `{accepted: false, stale: true}` / `{accepted: false, missing: true}`.
   Confirm adds a user annotation and records the candidate's `anchorId` and span,
   which resolves the whole anchor group: sibling alternatives are no longer
-  published or confirmable. Reject persists suppression for that candidate, and
-  skip hides it for the session. A republish after a decision still emits
+  published or confirmable. Reject persists suppression for that candidate.
+  Skip remains per-client/session and is not persisted. Confirm and reject are
+  project-global: the server republishes the URI to every client that has it
+  open, so all owners of the same URI drop the resolved group or suppressed
+  candidate. A republish after a decision still emits
   `cint/publishCandidates`, with empty `candidates`/`groups` when nothing
   remains. If the user annotation is later removed, the next analysis
   re-proposes the candidate unless it is rejected.
