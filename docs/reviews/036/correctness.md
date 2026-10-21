@@ -474,3 +474,121 @@ this reviewer.
   suppression rewrite.
 - The walkthrough remains read-only; no build, test, lint or formatter command
   was run by this role, per `docs/workflow.md`.
+
+## Round 4
+
+Verdict: Round 3 findings are addressed on the paths the implementor targeted.
+A stale skip no longer adds to `sessionSkipped`, `UserAnnotationsFile.add` is
+serialized with an in-process lock plus a lock file, cross-client confirms check
+persisted decisions/annotations under an anchor lock, and the protocol
+`shutdown` request no longer tears down the reusable suggestion executors. The
+new tests cover all four cases. One race remains in the skip fix: `sessionSkipped`
+is updated after `publishCandidates` has released its per-document lock, so a
+concurrent publish can republish the just-skipped candidate after the accepted
+skip. The nvim annotation writer also does not participate in the new lock file,
+so cross-writer annotation loss is still possible. The loop cannot close until
+the skip commit is atomic; the cross-writer lock gap should be fixed or
+explicitly deferred.
+
+### Findings
+
+1. **`analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:930-946`
+   — the skip is committed to `sessionSkipped` after `publishCandidates` releases
+   the candidate lock, so a concurrent publish can make an accepted skip
+   reappear.**
+
+   `publishCandidates` filters the skip through `extraSkips` and writes the
+   candidate list under `synchronized(candidateLocks[key])`, then returns. The
+   handler adds `candidateId` to `sessionSkipped` only afterwards (line 946).
+   Between the lock release and that update, an async suggest, config republish
+   or decision can acquire the candidate lock, see no session skip, and publish
+   the candidate again. The skip's response is still `accepted=true`, but the
+   last candidate message the client receives can contain the skipped candidate,
+   which then stays visible until another publish. The new
+   `staleSkipDoesNotHideTheCandidate` test only covers the failed-CAS path and
+   does not exercise this successful-skip window.
+
+   Fix: commit the skip inside the same per-document critical section as the
+   publish (for example have `publishCandidates` take a `commitSkip` argument and
+   add it to `sessionSkipped` before releasing the lock, or have the skip branch
+   hold the candidate lock around both the state update and publish). Add a test
+   that blocks after the successful publish but before the state update, performs
+   another publish, and asserts the candidate is not re-exposed after the skip
+   response.
+
+2. **`analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:963-990`
+   with `analysis-engine/core/core/src/main/kotlin/dev/cint/core/user/UserAnnotationsFile.kt:28-58`
+   and `nvim-renderer/lua/cint/ops/annotations.lua:89-107`
+   — the lock file only serializes writers that call `UserAnnotationsFile`; the
+   nvim annotation writer still does an uncoordinated load-modify-save of the
+   same file.**
+
+   The server-side confirms now serialize correctly, including concurrent
+   confirms from separate server threads. However, `:CintAnnotate`/`:CintUnannotate`
+   in nvim still reads the JSON, modifies it, and renames a temp file without
+   taking `user-annotations.json.lock`. A confirm in the live server and an
+   annotation command in nvim can therefore still lose one write, which is the
+   cross-writer half of the Round 3 finding. The new `UserAnnotationsFileTest`
+   only exercises concurrent Kotlin callers in one JVM and does not exercise the
+   cross-process nvim path.
+
+   Fix: have the nvim writer take the same lock file (or route nvim annotation
+   writes through the live server), or explicitly defer cross-process
+   coordination to a named follow-up with the data-loss window documented. Add
+   a cross-process or nvim-plus-server test if the lock is extended.
+
+### Concurs / Dissents
+
+- **Round 3 finding 1 (stale skip):** partially concurs. The failed-CAS path no
+  longer hides the candidate, `extraSkips` applies the skip only to the publish
+  that succeeds, and the new barrier test pins the stale response plus the
+  surviving candidate. Dissents on the success path: the session state is
+  committed after the candidate lock is released (finding 1 above).
+- **Round 3 finding 2 (concurrent annotations):** concurs for
+  `UserAnnotationsFile.add`. The in-process lock and exclusive lock file
+  serialize Kotlin writers, `add`/`save` use the same order, reads see the
+  atomic rename, and `UserAnnotationsFileTest.concurrentAddsPreserveEveryAnnotation`
+  covers concurrent in-process adds. Dissents only on the nvim writer, which does
+  not take the lock (finding 2 above).
+- **Cross-client group resolution:** concurs. Confirms check
+  `anchorResolvedGlobally` under a per-anchor lock before writing the annotation
+  and decision; the second client's test gets `missing` for an already-resolved
+  sibling and only one annotation/decision survives. Persisted state is checked
+  on every publish through `resolvedAnchors`, so a removed annotation
+  re-proposes the group. The anchor lock is in-memory per `LiveServer`, which is
+  correct for the one-daemon-per-root model; multiple server instances on one
+  root would still race between the check and write.
+- **Protocol shutdown:** concurs. The `shutdown` branch now only responds and the
+  pools are torn down by the run-loop exit/shutdown hook instead; the new test
+  opens a later client and successfully performs an AI suggestion after
+  `shutdown`. The docs still need a correction because `docs/engine.md:230-233`
+  says the `shutdown` request shuts the pools down, which is no longer true.
+- **Lock ordering/deadlocks:** concur that the new ordering is safe. Annotation
+  writers take the in-process root lock then the file lock; anchors take the
+  anchor lock then the annotation/store locks; candidate publication takes the
+  per-document candidate lock then the store/annotation read path. No path takes
+  those in the reverse order, and the per-writer socket lock is only held for the
+  write itself. No deadlock was found in the reviewed paths.
+- **Test adequacy:** the four new server tests and the concurrent-add unit test
+  cover the requested Round 3 fixes. Missing: a successful-skip/post-publish race
+  test (finding 1), a cross-process/nvim annotation writer test (finding 2), and
+  a multi-candidate group re-proposal-after-annotation-removal test (the current
+  re-proposal test is single-candidate only).
+
+**Loop status:** the loop cannot close yet. Finding 1 is a remaining correctness
+race in the newly added skip commit, and finding 2 is the unresolved cross-writer
+half of the persistence finding; both need a fix or an explicit named deferral.
+
+### Residual observations (not filed)
+
+- `anchorLocks` grows without cleanup for each seen anchor id, and
+  `inFlightFutures.remove(key)` can still remove a newer pass's future in the
+  narrow window after the in-flight entry is removed; neither was observed to
+  break a decision in the reviewed tests.
+- `UserAnnotationsFile.add` still treats a malformed file as empty and overwrites
+  it on confirm without a backup; this is now a deliberate tolerant path and is
+  pinned by `malformedUserAnnotationsDoNotBreakCandidatePublicationOrConfirm`.
+- `SuggestionStore.suppressedIds()` remains unused after the decision-based
+  suppression rewrite.
+- The docs correction noted in the concurs section (`docs/engine.md:230-233`)
+  is a scribe change, not a source edit.

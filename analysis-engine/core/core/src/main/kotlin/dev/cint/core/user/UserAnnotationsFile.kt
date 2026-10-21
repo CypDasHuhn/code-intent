@@ -1,11 +1,11 @@
 package dev.cint.core.user
 
-import java.nio.channels.FileChannel
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.nio.file.StandardOpenOption
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 object UserAnnotationsFile {
     const val DIRECTORY: String = ".cint"
@@ -69,14 +69,27 @@ object UserAnnotationsFile {
         val directory = path(root).parent
         Files.createDirectories(directory)
         val lockPath = directory.resolve("$FILE_NAME.lock")
-        return FileChannel
-            .open(
-                lockPath,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.WRITE,
-            ).use { channel ->
-                channel.lock().use { block() }
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (true) {
+            try {
+                Files.createDirectory(lockPath)
+                break
+            } catch (_: FileAlreadyExistsException) {
+                val age = System.currentTimeMillis() - Files.getLastModifiedTime(lockPath).toMillis()
+                if (age > TimeUnit.SECONDS.toMillis(10)) {
+                    runCatching { Files.delete(lockPath) }
+                }
+                if (System.nanoTime() > deadline) {
+                    throw IllegalStateException("timed out waiting for $lockPath")
+                }
+                Thread.sleep(10)
             }
+        }
+        return try {
+            block()
+        } finally {
+            runCatching { Files.deleteIfExists(lockPath) }
+        }
     }
 
     private fun write(

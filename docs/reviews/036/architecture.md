@@ -488,3 +488,94 @@ explicitly deferred.
   is not currently user-visible.
 - Static review only; no build, test, formatter, or source edit was run by this
   role, per `docs/workflow.md`. The handover is assumed green.
+
+## Round 4
+
+Verdict: Round 3 finding 1 is fixed. The protocol `shutdown` handler no longer
+tears down suggestion executors; teardown happens only when the run loop exits
+or the JVM shutdown hook runs, and the new test confirms a later client can
+still suggest against the same server. User-annotation writes now have both an
+in-process lock and an OS file lock, with a concurrent-add test, and anchor
+locks plus `anchorResolvedGlobally` prevent duplicate confirms and make a
+second client's confirm of an already-resolved sibling fail. One new
+cross-client consistency finding remains: confirm/reject republishes only the
+requesting connection, so other connections with the same document keep showing
+the resolved group until their next analysis. The loop cannot close until that
+is fixed or explicitly deferred.
+
+### Findings
+
+1. **`analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:966,1008`
+   with `analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:448-455`
+   and `docs/engine.md:332-339`, `docs/ai-intents.md:189-190,209`
+   — confirm/reject decisions are global but candidate-state republish is only
+   sent to the requesting writer, so other clients keep stale resolved groups.**
+
+   `handleCandidateDecision` writes the global user annotation/decision and then
+   calls `publish(writer, doc)` for the connection that made the decision.
+   `republishOpenDocs()` exists for config changes but is not used here. A second
+   connection that has the same URI open still has its previous
+   `publishedCandidates` list, so a confirmed group's sibling alternatives remain
+   visible even though `anchorResolvedGlobally` will reject confirming them. The
+   new cross-client test asserts only the `missing` response for the second
+   client; it does not assert that the second client's candidate list clears.
+   The docs say the siblings "are no longer published" and "disappear with the
+   republished (possibly empty) candidate list," which is not true for the other
+   connection. Reject has the same stale-list problem, since rejection is also
+   global.
+
+   Fix: after a global confirm/reject, republish candidate state to every writer
+   with that URI open (keeping skip connection-local), or invalidate other
+   clients' candidate state and force a candidate publish on their next request.
+   Add a test that confirms in one connection and asserts the other connection's
+   next/latest `cint/publishCandidates` no longer contains the group, and the
+   same for reject.
+
+### Concurs / Dissents
+
+- Concurs with Round 3 finding 1: `shutdown` now only responds, while
+  `shutdownSuggestions()` runs from the run loop exit and the JVM shutdown hook.
+  `protocolShutdownDoesNotDisableSuggestionsForLaterClients` exercises a later
+  client on the same server and gets `ai:fake`.
+- Concurs with the anchor-lock hardening: `anchorLocks` serializes confirms per
+  anchor, `anchorResolvedGlobally` checks persisted confirmations plus matching
+  user annotations, and the second-client test shows a sibling confirm returns
+  `missing`. Different-anchor concurrent confirms persist both annotations, and
+  a stale skip no longer hides the candidate because `extraSkips` is applied
+  before the session skip is recorded.
+- Concurs with user-annotation locking: `UserAnnotationsFile.add` uses a
+  per-root in-process lock and an OS file lock around read-modify-write, and the
+  new `UserAnnotationsFileTest` verifies all concurrent additions survive. This
+  closes the earlier lost-update residual.
+- Concurs that there is no new module-boundary leak: `:suggest` remains the
+  home of grouping/validation/merge, `:core` owns the shared candidate identity
+  and candidate channel, the server owns orchestration/persistence, and the
+  deterministic hull is unchanged (`AnalysisOutput`, no candidate entry into
+  `AnnotationStore`, composition, fixpoint identity, or `reads`).
+- Concurs that the v5 shape remains usable for 037-040: rules return established
+  and candidate emits in one list, candidate groups carry alternatives, and the
+  server can represent deterministic plus AI candidates with the same payload.
+- Dissents: finding 1.
+
+### Residuals (not filed)
+
+- `docs/engine.md:232` is now stale: it still says both pools are shut down on
+  the `shutdown` request, while the code deliberately leaves the server running.
+  `docs/ai-intents.md` and `docs/notes.md` already say "with the server."
+- `anchorLocks` is never evicted; a long-lived daemon retains one lock object per
+  confirmed anchor even after the decision/annotation is removed.
+- `SuggestionOptions.model` is still unused; the advertised model and the
+  provider/candidate model can disagree (still only the fake provider exists).
+- `maxCandidates` remains per input candidate rather than per document/pass.
+- Same-intent proposals from different providers still collapse because
+  candidate identity/dedupe excludes source/provider.
+- `CandidateContext` still lacks a source excerpt, language/imports, and an
+  enclosing-function value; `neighboringIntents` is document-wide.
+- Candidate identity construction remains duplicated between
+  `SuggestionService.candidateId` and `LiveServer.candidateId`.
+- The futures maps are still populated after `submit`; a fast completion can
+  leave a completed future entry until document cleanup.
+- `SuggestionStore` decisions are not cross-process file-locked the way user
+  annotations now are; multiple daemons on one root remain last-writer-wins.
+- Static review only; no build, test, formatter, or source edit was run by this
+  role, per `docs/workflow.md`. The handover is assumed green.

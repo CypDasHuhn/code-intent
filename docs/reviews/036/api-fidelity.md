@@ -443,3 +443,84 @@ case is enforced or the contract is explicitly scoped to one client.
   total.
 - Static review only; no build, test, formatter, or source edit was run by this
   role, per `docs/workflow.md`. The committed handover is assumed green.
+
+## Round 4
+
+Verdict: Round-3 finding 8 is closed. Confirm now takes a per-anchor lock, checks
+the persisted confirm decisions against the current user annotations before
+writing, and only records/continues when the anchor is not already resolved.
+A second client therefore gets `missing` when it tries to confirm a sibling
+after another client resolved the group, and the cross-client test confirms only
+one annotation remains. Concurrent confirms for different anchors both persist,
+and `UserAnnotationsFile` now serializes add/save with an in-process lock, a
+sidecar file lock, and an atomic write. The decision record format is unchanged
+(version 1, additive `anchorId`/span fields), the lock file is a sidecar rather
+than a record format change, skip/confirm/reject wire responses are otherwise
+unchanged, and `shutdown` still returns `true` while leaving the suggestion pools
+usable for later clients. No new source findings remain. The loop can close; the
+remaining items are a scribe follow-up for the lock file, cross-client
+resolution/skip scope, and the now-stale `shutdown` sentence in `docs/engine.md`.
+
+### Findings
+
+None.
+
+### Concurs / Dissents
+
+- Concurs finding 8: `handleCandidateDecision` obtains
+  `anchorLocks.computeIfAbsent(candidate.anchorId)`, checks
+  `anchorResolvedGlobally(anchorId)` inside that lock, and only then writes the
+  user annotation and confirm decision. `anchorResolvedGlobally` requires a
+  persisted confirm for that anchor whose path/span/intents still match a user
+  annotation, so a sibling confirm from another client returns `missing`.
+  `secondClientCannotConfirmAnAlreadyResolvedSibling` covers the two-client case
+  and asserts a single LOGGING annotation. Reject stays candidate-scoped and
+  skip stays session-only, as before.
+- Concurs: concurrent confirms for different anchors both persist. The
+  per-anchor locks do not serialize unrelated anchors, while
+  `SuggestionStore.record` and the new `UserAnnotationsFile` locking serialize
+  the shared files; `concurrentConfirmsForDifferentAnchorsBothPersist` asserts
+  both annotations and distinct spans survive, and
+  `UserAnnotationsFileTest.concurrentAddsPreserveEveryAnnotation` covers the
+  file-level add path.
+- Concurs: decision and lock-file shapes remain compatible. `SuggestionStore`
+  is unchanged at `version: 1`; `anchorId` and span fields stay optional with
+  null/zero defaults on load, and old candidateId-based suppression still works.
+  The new `user-annotations.json.lock` sidecar carries no record shape and
+  readers continue to read only `user-annotations.json` under the atomic
+  rename.
+- Concurs: skip/confirm/reject wire semantics are unchanged. Skip still returns
+  the accepted/stale result and only hides the candidate for the session, with
+  the new ordering preventing a stale skip from hiding a newer candidate.
+  Confirm still returns `accepted`/`stale`/`missing` as before, with `missing`
+  now also covering a globally resolved sibling. Reject still persists
+  suppression and republishes.
+- Concurs: the shutdown protocol shape remains `shutdown -> true`. Removing the
+  suggestion-pool shutdown from that request matches the test that a later
+  client can still use suggestions; pools are still stopped on real server
+  shutdown, the shutdown hook, and `shutdownNow`.
+- Concurs: no API v5, artifact, module-boundary, or protocol-version change is
+  introduced by this hardening commit. The candidate channel, annotation shape,
+  and protocol-3 fields reviewed in the earlier rounds are untouched.
+- Dissents: none.
+
+### Scribe follow-up (not a source finding)
+
+- `docs/engine.md:232` still says the suggestion pools are shut down on the
+  `shutdown` request; the committed behavior deliberately keeps them alive for
+  later clients and only stops them on real server shutdown/shutdown hook.
+- Document the sidecar `.cint/user-annotations.json.lock` file, the global
+  cross-client anchor resolution, and clarify that skip remains per-owner/session
+  while confirm/reject are project-persistent.
+
+### Residuals (not filed)
+
+- `anchorLocks` is not pruned, and old confirm records without an `anchorId` are
+  not checked by `anchorResolvedGlobally` (they still resolve through the
+  candidateId/user-annotation branch on the next publish).
+- Anchor locking is process-local beyond the user-annotations file lock; the
+  intended single-daemon-per-project model remains the safety boundary.
+- Provider interruption remains cooperative, grouping/anchor hashing is still
+  implemented in both modules, and `maxCandidates` remains per input candidate.
+- Static review only; no build, test, formatter, or source edit was run by this
+  role, per `docs/workflow.md`. The committed handover is assumed green.

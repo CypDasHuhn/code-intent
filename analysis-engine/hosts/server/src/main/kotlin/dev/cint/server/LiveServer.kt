@@ -147,6 +147,9 @@ class LiveServer(
     @Volatile
     internal var candidateDecisionBarrierForTest: (() -> Unit)? = null
 
+    @Volatile
+    internal var candidatePublishBarrierForTest: (() -> Unit)? = null
+
     fun run() {
         val parent = socketPath.parent
         if (parent != null) {
@@ -456,6 +459,16 @@ class LiveServer(
         }
     }
 
+    private fun republishUri(uri: String) {
+        for ((writer, clientDocs) in docs.entries.toList()) {
+            val doc = clientDocs[uri] ?: continue
+            runCatching { publish(writer, doc) }
+                .onFailure { error ->
+                    System.err.println("cint decision republish: ${error.message ?: error.javaClass.name}")
+                }
+        }
+    }
+
     private fun docsFor(writer: BufferedWriter): ConcurrentHashMap<String, DocState> = docs.computeIfAbsent(writer) { ConcurrentHashMap() }
 
     private fun clearDocument(
@@ -562,7 +575,7 @@ class LiveServer(
         candidates: List<CandidateEmit>,
         analysisRevision: Long,
         expectedStateRevision: Long? = null,
-        extraSkips: Set<String> = emptySet(),
+        commitSkip: String? = null,
     ): Int? {
         val key = DocumentKey(writer, doc.uri)
         val lock = candidateLocks.computeIfAbsent(key) { Any() }
@@ -576,6 +589,10 @@ class LiveServer(
                 (expectedStateRevision != null && expectedStateRevision != currentState)
             ) {
                 return null
+            }
+            if (commitSkip != null) {
+                sessionSkipped.computeIfAbsent(key) { ConcurrentHashMap.newKeySet() } += commitSkip
+                candidatePublishBarrierForTest?.invoke()
             }
             val path = relativePath(doc.uri)
             val currentSessionSkips = sessionSkipped[key].orEmpty()
@@ -626,7 +643,7 @@ class LiveServer(
                 val kept =
                     group.candidates.mapNotNull { candidate ->
                         val candidateId = candidateId(path, group.contentHash, candidate)
-                        if (candidateId in rejected || candidateId in currentSessionSkips || candidateId in extraSkips) {
+                        if (candidateId in rejected || candidateId in currentSessionSkips) {
                             null
                         } else {
                             PublishedCandidate(
@@ -938,12 +955,11 @@ class LiveServer(
                         current.map { it.candidate },
                         analysisRevision,
                         expectedStateRevision = baseStateRevision,
-                        extraSkips = setOf(candidateId),
+                        commitSkip = candidateId,
                     )
                 if (published == null) {
                     return respond(writer, id, mapOf("accepted" to false, "stale" to true))
                 }
-                sessionSkipped.computeIfAbsent(key) { ConcurrentHashMap.newKeySet() } += candidateId
             }
 
             "reject" -> {
@@ -963,7 +979,7 @@ class LiveServer(
                         endCol = candidate.candidate.span.endCol,
                     ),
                 )
-                publish(writer, doc)
+                republishUri(uri)
             }
 
             "confirm" -> {
@@ -1005,7 +1021,7 @@ class LiveServer(
                 if (!confirmed) {
                     return respond(writer, id, mapOf("accepted" to false, "missing" to true))
                 }
-                publish(writer, doc)
+                republishUri(uri)
             }
         }
         respond(writer, id, mapOf("accepted" to true, "stale" to false, "decision" to decision))

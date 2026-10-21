@@ -671,6 +671,50 @@ class LiveSuggestionsTest {
     }
 
     @Test
+    fun successfulSkipIsAtomicWithThePublish() {
+        val root = Files.createTempDirectory("cint-live-suggest-skip-atomic")
+        try {
+            val harness = harness(root)
+            val peer = Peer(harness.server)
+            val uri = root.resolve("Sample.kt").toString()
+            peer.open(uri, gapSource, version = 1)
+            val candidateId = candidate(peer.latest("cint/publishCandidates"), "VALIDATION")["candidateId"].asText()
+
+            val started = CountDownLatch(1)
+            val release = CountDownLatch(1)
+            harness.server.candidatePublishBarrierForTest = {
+                started.countDown()
+                release.await(5, TimeUnit.SECONDS)
+            }
+            val skipThread =
+                Thread {
+                    peer.decide(uri, version = 1, id = 2, candidateId = candidateId, decision = "skip")
+                }
+            skipThread.start()
+            assertTrue(started.await(2, TimeUnit.SECONDS))
+
+            val changeThread = Thread { peer.change(uri, gapSource, version = 2) }
+            changeThread.start()
+            Thread.sleep(100)
+            harness.server.candidatePublishBarrierForTest = null
+            release.countDown()
+            skipThread.join(5_000)
+            changeThread.join(5_000)
+
+            assertTrue(peer.lastResponse(2).path("accepted").asBoolean())
+            assertTrue(
+                peer
+                    .latest("cint/publishCandidates")
+                    .path("params")
+                    .path("candidates")
+                    .isEmpty,
+            )
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun staleSkipDoesNotHideTheCandidate() {
         val root = Files.createTempDirectory("cint-live-suggest-stale-skip")
         try {
@@ -796,12 +840,44 @@ class LiveSuggestionsTest {
             val sibling = secondAlternatives.first { it["source"].asText() == "rule:validation:validation" }
 
             harness.decide(uri, version = 1, id = 3, candidateId = chosen["candidateId"].asText(), decision = "confirm")
+            assertTrue(
+                second
+                    .latest("cint/publishCandidates")
+                    .path("params")
+                    .path("groups")
+                    .isEmpty,
+            )
             second.decide(uri, version = 1, id = 4, candidateId = sibling["candidateId"].asText(), decision = "confirm")
 
             assertTrue(second.lastResponse(4).path("missing").asBoolean())
             val annotations = UserAnnotationsJson.parse(Files.readString(UserAnnotationsFile.path(root)))
             assertEquals(1, annotations.size)
             assertEquals(setOf("LOGGING"), annotations.single().intents)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectRepublishesCandidateStateToOtherOwners() {
+        val root = Files.createTempDirectory("cint-live-suggest-cross-client-reject")
+        try {
+            val harness = harness(root)
+            val first = Peer(harness.server)
+            val second = Peer(harness.server)
+            val uri = root.resolve("Sample.kt").toString()
+            first.open(uri, twoGapSource, version = 1)
+            second.open(uri, twoGapSource, version = 1)
+            val firstCandidates = candidates(first.latest("cint/publishCandidates"), "VALIDATION")
+            val secondCandidates = candidates(second.latest("cint/publishCandidates"), "VALIDATION")
+            assertEquals(2, firstCandidates.size)
+            assertEquals(2, secondCandidates.size)
+
+            first.decide(uri, version = 1, id = 2, candidateId = firstCandidates[0]["candidateId"].asText(), decision = "reject")
+
+            val republished = candidates(second.latest("cint/publishCandidates"), "VALIDATION")
+            assertEquals(1, republished.size)
+            assertEquals(secondCandidates[1]["candidateId"].asText(), republished.single()["candidateId"].asText())
         } finally {
             root.toFile().deleteRecursively()
         }
