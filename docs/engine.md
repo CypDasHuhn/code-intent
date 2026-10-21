@@ -209,7 +209,7 @@ alternative matching `intent`).
 keep review mode active and let the server republish update the marks; toggling
 review off restores passive rendering. When no candidate covers the caret, or a
 requested intent is absent, the renderer notifies instead of sending a decision.
-`:CintSuggest` reports a protocol below 3, a missing suggestions descriptor, and
+`:CintIntentLabels` toggles virtual intent labels above every annotation. `:CintSuggest` reports a protocol below 3, a missing suggestions descriptor, and
 `suggestions.enabled: false` in `.cint/suggestions.yml` as distinct errors; it
 never enables AI.
 
