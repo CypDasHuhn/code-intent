@@ -10,6 +10,7 @@ import dev.cint.api.RuleEmit
 import dev.cint.api.SingleIntentPack
 import dev.cint.api.View
 import dev.cint.api.emit
+import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 
 const val DATA_TRANSFORMATION_INTENT: Intent = "DATA_TRANSFORMATION"
 const val DATA_TRANSFORMATION_PACK_ID: String = "data-transformation"
@@ -17,8 +18,6 @@ const val DATA_TRANSFORMATION_RULE_ID: String = "$DATA_TRANSFORMATION_PACK_ID:da
 
 private const val ESTABLISHED_CONFIDENCE: Double = 0.9
 private const val CANDIDATE_CONFIDENCE: Double = 0.4
-
-private val CALL_RECEIVER_KINDS = setOf("call_expression", "invocation_expression")
 
 class TransformationRulePack(
     config: TransformationConfig = TransformationConfig(),
@@ -30,6 +29,8 @@ class TransformationRulePack(
         schema = TransformationConfig.SCHEMA,
         ruleId = DATA_TRANSFORMATION_RULE_ID,
     ) {
+    override val reads: Set<Intent> = setOf(SEARCH_INTENT)
+
     override val matchers: List<Matcher> =
         listOf(Matcher { view -> TransformationRule(config.forLanguage(view.language())).match(view) })
 
@@ -86,7 +87,8 @@ private class TransformationRule(
     ): Boolean {
         val receiver = call.receiver ?: return false
         if (qualifierMatches(receiver.text)) return true
-        if (receiver.kind in CALL_RECEIVER_KINDS || receiver.text.contains('(')) return true
+        val receiverIntents = view.intentsAt(receiver)
+        if (SEARCH_INTENT in receiverIntents || DATA_TRANSFORMATION_INTENT in receiverIntents) return true
         val type = view.receiverType(call) ?: return false
         return typeMatches(type.fqName)
     }

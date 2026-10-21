@@ -139,6 +139,108 @@ class ValidationReadOnlyTest {
     }
 
     @Test
+    fun unbracedRejectingBodiesAreValidationAcrossLanguages() {
+        val cases =
+            listOf(
+                "javascript" to
+                    """
+                    function f(call, items) {
+                        if (receiverNode(call) != null) return false;
+                        for (const item of items) {
+                            if (receiverNode(call) != null) continue;
+                            if (receiverNode(call) != null) throw new Error("invalid");
+                        }
+                        return true;
+                    }
+                    function receiverNode(value) { return value; }
+                    """.trimIndent(),
+                "typescript" to
+                    """
+                    function f(call: string, items: string[]): boolean {
+                        if (receiverNode(call) != null) return false;
+                        for (const item of items) {
+                            if (receiverNode(call) != null) continue;
+                            if (receiverNode(call) != null) throw new Error("invalid");
+                        }
+                        return true;
+                    }
+                    function receiverNode(value: string): string { return value; }
+                    """.trimIndent(),
+                "csharp" to
+                    """
+                    class C {
+                        bool F(string call, string[] items) {
+                            if (ReceiverNode(call) != null) return false;
+                            foreach (var item in items) {
+                                if (ReceiverNode(call) != null) continue;
+                                if (ReceiverNode(call) != null) throw new System.Exception();
+                            }
+                            return true;
+                        }
+                        string ReceiverNode(string value) { return value; }
+                    }
+                    """.trimIndent(),
+            )
+
+        for ((language, source) in cases) {
+            val analysis = validationAnalysis(parseValidationInput(language, "Sample", source))
+            val values = analysis.source(VALIDATION_INTENT).map { it.text(source) }
+
+            assertEquals(3, values.count { "eceiverNode(call)" in it }, language)
+        }
+    }
+
+    @Test
+    fun ordinaryRaiseCallsAreNotThrowRejections() {
+        val cases =
+            listOf(
+                "kotlin" to
+                    """
+                    fun raise() {}
+                    fun f(flag: Boolean): Boolean {
+                        if (flag) raise()
+                        return true
+                    }
+                    """.trimIndent(),
+                "javascript" to
+                    """
+                    function raise() {}
+                    function f(flag) {
+                        if (flag) raise();
+                        return true;
+                    }
+                    """.trimIndent(),
+            )
+
+        for ((language, source) in cases) {
+            val analysis = validationAnalysis(parseValidationInput(language, "Sample", source))
+            assertTrue(analysis.source(VALIDATION_INTENT).none { it.text(source) == "flag" }, language)
+        }
+    }
+
+    @Test
+    fun breakInsideNestedSwitchDoesNotRejectTheOuterGuard() {
+        val source =
+            """
+            function f(call, value) {
+                if (receiverNode(call) != null) {
+                    switch (value) {
+                        case "x":
+                            break;
+                    }
+                    consume(call);
+                }
+                return true;
+            }
+            function receiverNode(value) { return value; }
+            function consume(value) {}
+            """.trimIndent()
+        val analysis = validationAnalysis(parseValidationInput("javascript", "Sample.js", source))
+
+        assertTrue(analysis.source(VALIDATION_INTENT).none { it.text(source) == "receiverNode(call) != null" })
+    }
+
+    @Test
     fun knownWritesDoNotBecomeReadOnlyValidationGuards() {
         val source =
             """

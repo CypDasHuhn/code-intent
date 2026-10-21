@@ -160,8 +160,13 @@ class DerivativeUseCompositionTest {
             """.trimIndent()
         val annotations =
             analyzePipeline(text, listOf(ReplayPack("source", replaySource(text))))
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message")
+            }
 
-        assertTrue(annotations.none { it.role == Role.DERIVATIVE_USE && it.text(text).contains("val message") })
+        assertTrue("SEARCH" in derivative.intents)
+        assertTrue("LOGGING" !in derivative.intents)
     }
 
     @Test

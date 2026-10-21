@@ -9,6 +9,7 @@ import dev.cint.api.WriteKind
 import dev.cint.core.runtime.context.RuleContext
 
 private val MUTATION_INTENTS = setOf("DATA_MODIFY", "LOCAL_VALUE_MODIFY", "BOOKKEEPING")
+private val EFFECT_INTENTS = MUTATION_INTENTS + setOf("LOGGING", "ERROR_HANDLING")
 private val LAMBDA_KINDS =
     setOf(
         "lambda_literal",
@@ -27,6 +28,11 @@ private val ARGUMENT_KINDS =
         "argument",
         "arguments",
     )
+
+private data class ValueIntents(
+    val intents: Set<String>,
+    val confidence: Double,
+)
 
 private const val DERIVATIVE_CONFIDENCE: Double = 0.7
 private const val DERIVATIVE_UNKNOWN_READ_ONLY_CONFIDENCE: Double = 0.55
@@ -76,8 +82,8 @@ internal fun derivativeContributions(
     for ((node, _, _, initializer1) in ctx.properties) {
         val initializer = initializer1 ?: continue
         readOnlyConfidence(ctx, initializer, pureAnnotations) ?: continue
-        val annotations = valueSourceAnnotations(ctx, initializer)
-        val intents = annotations.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
+        val valueIntents = valueSourceIntents(ctx, initializer)
+        val intents = valueIntents.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) continue
 
         result +=
@@ -86,7 +92,7 @@ internal fun derivativeContributions(
                 intents,
                 DERIVATIVE_RULE,
                 "treesitter",
-                annotations.minOf { it.confidence },
+                valueIntents.minOf { it.confidence },
             )
     }
 
@@ -94,8 +100,8 @@ internal fun derivativeContributions(
         if (write.kind != WriteKind.ASSIGNMENT) continue
         val value = assignmentValue(write.node) ?: continue
         readOnlyConfidence(ctx, value, pureAnnotations) ?: continue
-        val annotations = valueSourceAnnotations(ctx, value)
-        val intents = annotations.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
+        val valueIntents = valueSourceIntents(ctx, value)
+        val intents = valueIntents.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) continue
 
         result +=
@@ -104,7 +110,7 @@ internal fun derivativeContributions(
                 intents,
                 DERIVATIVE_RULE,
                 "treesitter",
-                annotations.minOf { it.confidence },
+                valueIntents.minOf { it.confidence },
             )
     }
 
@@ -159,15 +165,27 @@ private fun merge(contributions: List<Contribution>): List<Contribution> {
     return merged.values.toList()
 }
 
-private fun valueSourceAnnotations(
+private fun valueSourceIntents(
     ctx: RuleContext,
     node: SyntaxNode,
-): List<Annotation> =
+): List<ValueIntents> =
     node
         .descendants()
-        .filterNot { insideLambda(it) || insideCallArgument(it) }
-        .flatMap { ctx.covering(it).filter { annotation -> annotation.role == Role.SOURCE_INTENT } }
-        .distinct()
+        .flatMap { descendant ->
+            val nestedEffect = insideLambda(descendant) || insideCallArgument(descendant)
+            ctx
+                .covering(descendant)
+                .filter { annotation -> annotation.role == Role.SOURCE_INTENT }
+                .mapNotNull { annotation ->
+                    val intents =
+                        if (nestedEffect) {
+                            annotation.intents - EFFECT_INTENTS
+                        } else {
+                            annotation.intents
+                        }
+                    if (intents.isEmpty()) null else ValueIntents(intents, annotation.confidence)
+                }
+        }.distinct()
         .toList()
 
 private fun allSourceAnnotations(

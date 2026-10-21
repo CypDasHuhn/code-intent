@@ -29,7 +29,7 @@ import kotlin.test.assertTrue
 private fun analyze(
     language: String,
     text: String,
-    packs: List<dev.cint.api.RulePack> = listOf(TransformationRulePack()),
+    packs: List<dev.cint.api.RulePack> = listOf(DataAccessRulePack(), TransformationRulePack()),
 ): PackAnalysis = analyzePack(language, text, packs)
 
 private class FixedOracle(
@@ -59,7 +59,7 @@ class DataTransformationRulePackTest {
         val rule = pack.rules().single()
         assertEquals("data-transformation:data-transformation", rule.id)
         assertEquals("DATA_TRANSFORMATION", rule.owns)
-        assertTrue(rule.reads.isEmpty())
+        assertEquals(setOf(SEARCH_INTENT), rule.reads)
     }
 
     @Test
@@ -166,7 +166,7 @@ class DataTransformationRulePackTest {
             }
             """.trimIndent()
 
-        val analysis = analyze("kotlin", text, listOf(pack))
+        val analysis = analyze("kotlin", text, listOf(DataAccessRulePack(), pack))
 
         assertEquals(listOf("values.shape { it.length }"), analysis.texts(DATA_TRANSFORMATION_INTENT))
         assertTrue(analysis.candidates(DATA_TRANSFORMATION_INTENT).isEmpty())
@@ -183,7 +183,7 @@ class DataTransformationRulePackTest {
             }
             """.trimIndent()
 
-        val analysis = analyze("kotlin", text, listOf(pack))
+        val analysis = analyze("kotlin", text, listOf(DataAccessRulePack(), pack))
 
         assertEquals(
             setOf("values.shape { it.length }", "values.map { it.length }"),
@@ -219,14 +219,18 @@ class DataTransformationRulePackTest {
         assertTrue(SEARCH_INTENT in filter.intents)
         assertTrue(DATA_TRANSFORMATION_INTENT in filter.intents)
 
-        val normalizationText = "fun f(value: String) = value.trim().map { it.length }"
+        val normalizationText = "fun f(values: String) = values.trim().map { it.length }"
         val normalizationAnalysis =
-            analyze("kotlin", normalizationText, listOf(NormalizationRulePack(), TransformationRulePack()))
+            analyze(
+                "kotlin",
+                normalizationText,
+                listOf(DataAccessRulePack(), NormalizationRulePack(), TransformationRulePack()),
+            )
         assertTrue(
             normalizationAnalysis.annotations.any {
                 it.role == Role.SOURCE_INTENT &&
                     NORMALIZATION_INTENT in it.intents &&
-                    it.text(normalizationText) == "value.trim()"
+                    it.text(normalizationText) == "values.trim()"
             },
         )
         assertTrue(
@@ -248,7 +252,14 @@ class DataTransformationRulePackTest {
             analyze(
                 "kotlin",
                 validationText,
-                listOf(BookkeepingRulePack(), MutationRulePack(), ValidationRulePack(), NormalizationRulePack(), TransformationRulePack()),
+                listOf(
+                    BookkeepingRulePack(),
+                    DataAccessRulePack(),
+                    MutationRulePack(),
+                    ValidationRulePack(),
+                    NormalizationRulePack(),
+                    TransformationRulePack(),
+                ),
             )
         assertTrue(validationAnalysis.source(VALIDATION_INTENT).any { "values.map" in it.text(validationText) })
         assertTrue(validationAnalysis.source(DATA_TRANSFORMATION_INTENT).any { ".map" in it.text(validationText) })
@@ -264,7 +275,11 @@ class DataTransformationRulePackTest {
             }
             """.trimIndent()
         val bookkeepingAnalysis =
-            analyze("kotlin", bookkeepingText, listOf(BookkeepingRulePack(), TransformationRulePack()))
+            analyze(
+                "kotlin",
+                bookkeepingText,
+                listOf(BookkeepingRulePack(), DataAccessRulePack(), TransformationRulePack()),
+            )
         assertTrue(bookkeepingAnalysis.source(BOOKKEEPING_INTENT).any { "total = values.map" in it.text(bookkeepingText) })
         assertTrue(bookkeepingAnalysis.source(DATA_TRANSFORMATION_INTENT).any { "values.map" in it.text(bookkeepingText) })
     }
@@ -286,7 +301,7 @@ class DataTransformationRulePackTest {
         val input = parsePackInput("kotlin", text)
         val oracle = FixedOracle(TypeFact("com.example.Entity", "lsp", 0.9))
 
-        val unqualified = analyzePack(input, listOf(TransformationRulePack()), oracle)
+        val unqualified = analyzePack(input, listOf(DataAccessRulePack(), TransformationRulePack()), oracle)
         assertTrue(unqualified.source(DATA_TRANSFORMATION_INTENT).isEmpty())
         assertTrue("entity.map" in unqualified.candidateText(text))
 
@@ -294,9 +309,31 @@ class DataTransformationRulePackTest {
             TransformationRulePack().configure(
                 mapOf("kotlin" to mapOf("qualifiers" to listOf("entity"))),
             )
-        val qualified = analyzePack(input, listOf(qualifiedPack), oracle)
+        val qualified = analyzePack(input, listOf(DataAccessRulePack(), qualifiedPack), oracle)
         assertEquals(listOf("entity.map { it.id }"), qualified.texts(DATA_TRANSFORMATION_INTENT))
         assertTrue(qualified.candidates(DATA_TRANSFORMATION_INTENT).isEmpty())
+    }
+
+    @Test
+    fun unclassifiedCallReceiversStayCandidates() {
+        val text = "fun f(service: Service) = service.loadEntity().map { it.id }"
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(DATA_TRANSFORMATION_INTENT).isEmpty())
+        assertEquals(1, analysis.candidates(DATA_TRANSFORMATION_INTENT).size)
+        assertTrue("service.loadEntity().map" in analysis.candidateText(text))
+    }
+
+    @Test
+    fun searchClassifiedCallReceiversEstablish() {
+        val text = "fun f(repository: Repository) = repository.findAll().map { it.name }"
+
+        val analysis = analyze("kotlin", text)
+
+        assertTrue(analysis.source(SEARCH_INTENT).any { it.text(text) == "repository.findAll()" })
+        assertTrue(analysis.source(DATA_TRANSFORMATION_INTENT).any { ".map" in it.text(text) })
+        assertTrue(analysis.candidates(DATA_TRANSFORMATION_INTENT).isEmpty())
     }
 
     @Test
@@ -314,7 +351,12 @@ class DataTransformationRulePackTest {
     fun transformationAndLocalMutationOverlapOnMutatingCollectionCalls() {
         val text = "function f(values) { values.sort(); }"
 
-        val analysis = analyze("javascript", text, listOf(BookkeepingRulePack(), MutationRulePack(), TransformationRulePack()))
+        val analysis =
+            analyze(
+                "javascript",
+                text,
+                listOf(BookkeepingRulePack(), DataAccessRulePack(), MutationRulePack(), TransformationRulePack()),
+            )
         val call =
             analysis.annotations.single {
                 it.role == Role.SOURCE_INTENT && it.text(text) == "values.sort()"

@@ -46,6 +46,13 @@ private val LOOP_KINDS =
         "do_statement",
     )
 
+private val SWITCH_KINDS =
+    setOf(
+        "switch_statement",
+        "switch_expression",
+        "when_expression",
+    )
+
 data class ValidationConfig(
     val predicates: Set<String> = DEFAULT_PREDICATES,
     val predicatePrefixes: List<String> = DEFAULT_PREDICATE_PREFIXES,
@@ -223,7 +230,8 @@ private class ValidationRule(
             if (insideNestedScope(node, body)) return@any false
             when {
                 isThrowExit(node) -> true
-                isContinueOrBreak(node) -> !insideNestedLoop(node, body)
+                leadingKeyword(node) == "continue" -> !insideNestedJumpScope(node, body, includeSwitch = false)
+                leadingKeyword(node) == "break" -> !insideNestedJumpScope(node, body, includeSwitch = true)
                 else -> view.isExit(node) && isRejectingExit(view, node)
             }
         }
@@ -232,29 +240,38 @@ private class ValidationRule(
         node: SyntaxNode,
         body: SyntaxNode,
     ): Boolean {
+        if (sameSpan(node, body)) return false
         var current = node.parent
-        while (current != null && current.startByte != body.startByte) {
+        while (current != null) {
+            if (sameSpan(current, body)) return false
             if (current.kind in NESTED_SCOPE_KINDS) return true
             current = current.parent
         }
         return false
     }
 
-    private fun insideNestedLoop(
+    private fun insideNestedJumpScope(
         node: SyntaxNode,
         body: SyntaxNode,
+        includeSwitch: Boolean,
     ): Boolean {
+        if (sameSpan(node, body)) return false
         var current = node.parent
-        while (current != null && current.startByte != body.startByte) {
+        while (current != null) {
             if (current.kind in LOOP_KINDS) return true
+            if (includeSwitch && current.kind in SWITCH_KINDS) return true
+            if (sameSpan(current, body)) return false
             current = current.parent
         }
         return false
     }
 
-    private fun isThrowExit(node: SyntaxNode): Boolean = leadingKeyword(node) in setOf("throw", "raise")
+    private fun isThrowExit(node: SyntaxNode): Boolean = leadingKeyword(node) == "throw"
 
-    private fun isContinueOrBreak(node: SyntaxNode): Boolean = leadingKeyword(node) in setOf("continue", "break")
+    private fun sameSpan(
+        first: SyntaxNode,
+        second: SyntaxNode,
+    ): Boolean = first.startByte == second.startByte && first.endByte == second.endByte
 
     private fun leadingKeyword(node: SyntaxNode): String = node.text.trimStart().takeWhile { it.isLetter() }
 
