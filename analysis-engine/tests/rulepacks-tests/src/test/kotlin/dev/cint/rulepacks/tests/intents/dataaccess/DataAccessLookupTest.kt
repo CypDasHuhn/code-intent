@@ -34,7 +34,7 @@ class DataAccessLookupTest {
             fun f(id: String) {
                 val status = statusById.getValue(id)
                 val fallback = statusByCode.getOrDefault("active", 0)
-                val direct = lookup(id)
+                val direct = statusById.lookup(id)
                 val tableValue = lookupTable.resolve(id)
             }
             """.trimIndent()
@@ -43,7 +43,7 @@ class DataAccessLookupTest {
 
         assertTrue(texts.any { it.startsWith("statusById.getValue") })
         assertTrue(texts.any { it.startsWith("statusByCode.getOrDefault") })
-        assertTrue(texts.any { it == "lookup(id)" })
+        assertTrue(texts.any { it.startsWith("statusById.lookup") })
         assertTrue(texts.any { it.startsWith("lookupTable.resolve") })
     }
 
@@ -118,7 +118,7 @@ class DataAccessLookupTest {
                 void F(string id, Dictionary<string, int> dictionary) {
                     var byId = StatusById[id];
                     var value = dictionary[id];
-                    var direct = Lookup(id);
+                    var direct = StatusById.Lookup(id);
                 }
             }
             """.trimIndent()
@@ -127,7 +127,7 @@ class DataAccessLookupTest {
 
         assertTrue(texts.any { it == "StatusById[id]" })
         assertTrue(texts.any { it == "dictionary[id]" })
-        assertTrue(texts.any { it == "Lookup(id)" })
+        assertTrue(texts.any { it.startsWith("StatusById.Lookup") })
     }
 
     @Test
@@ -136,7 +136,7 @@ class DataAccessLookupTest {
             """
             fun f(id: String) {
                 val status = statusById[id]
-                val direct = lookup(id)
+                val direct = statusById.lookup(id)
             }
             """.trimIndent()
 
@@ -144,5 +144,102 @@ class DataAccessLookupTest {
 
         assertTrue(analysis.source(LOOKUP_INTENT).isNotEmpty())
         analysis.assertNoSource(SEARCH_INTENT)
+    }
+
+    @Test
+    fun enumValueAndConstantCallsEmitLookup() {
+        val text =
+            """
+            fun f(code: String) {
+                val status = Status.valueOf("ACTIVE")
+                val mode = Mode.fromCode(code)
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text)
+
+        assertTrue(analysis.texts(LOOKUP_INTENT).any { it.startsWith("Status.valueOf") })
+        assertTrue(analysis.texts(LOOKUP_INTENT).any { it.startsWith("Mode.fromCode") })
+    }
+
+    @Test
+    fun stringValueOfStaysOutOfLookup() {
+        val text =
+            """
+            fun f(value: Int) {
+                val rendered = String.valueOf(value)
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text)
+
+        analysis.assertNoSource(LOOKUP_INTENT)
+        assertTrue(analysis.candidateTexts(LOOKUP_INTENT).isEmpty())
+    }
+
+    @Test
+    fun javascriptAndTypescriptIndexLookupEmitLookup() {
+        val javascript =
+            """
+            function f(id) {
+                const status = statusById[id];
+                const value = map.get(id);
+                const bitmapValue = bitmap[id];
+            }
+            """.trimIndent()
+        val javascriptTexts = dataAccess("javascript", javascript).texts(LOOKUP_INTENT)
+        assertTrue(javascriptTexts.any { it == "statusById[id]" })
+        assertTrue(javascriptTexts.any { it.startsWith("map.get") })
+        assertTrue(javascriptTexts.none { it == "bitmap[id]" })
+
+        val typescript =
+            """
+            function f(id: string) {
+                const status = statusById[id];
+                const value = map.get(id);
+            }
+            """.trimIndent()
+        val typescriptTexts = dataAccess("typescript", typescript).texts(LOOKUP_INTENT)
+        assertTrue(typescriptTexts.any { it == "statusById[id]" })
+        assertTrue(typescriptTexts.any { it.startsWith("map.get") })
+    }
+
+    @Test
+    fun additiveKnownMapOverlayKeepsDefaults() {
+        val pack =
+            DataAccessRulePack().configureAdditive(
+                mapOf("kotlin" to mapOf("knownMaps" to listOf("myTable"))),
+            )
+        val text =
+            """
+            fun f(repo: UserRepository, id: String) {
+                val mine = myTable[id]
+                val status = statusById[id]
+                repo.findAll()
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text, pack)
+
+        val lookupTexts = analysis.texts(LOOKUP_INTENT)
+        assertTrue(lookupTexts.any { it == "myTable[id]" })
+        assertTrue(lookupTexts.any { it == "statusById[id]" })
+        assertTrue(analysis.texts(SEARCH_INTENT).any { it.startsWith("repo.findAll") })
+    }
+
+    @Test
+    fun knownMapWritesAreNotLookup() {
+        val text =
+            """
+            fun f(id: String, status: Int) {
+                statusById[id] = status
+                statusById[id] += 1
+                statusById[id]++
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text)
+
+        analysis.assertNoSource(LOOKUP_INTENT)
     }
 }

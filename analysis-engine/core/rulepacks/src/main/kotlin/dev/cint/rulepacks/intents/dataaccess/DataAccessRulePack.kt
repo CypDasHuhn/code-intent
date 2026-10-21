@@ -93,7 +93,8 @@ private class DataAccessRule(
 
                 isBoundaryLookup(callee, language) ||
                     isAmbiguous(callee, language) ||
-                    containsName(language.lookupCalls, callee) -> result += candidate(LOOKUP_INTENT, call)
+                    containsName(language.lookupCalls, callee) ||
+                    isEnumCandidate(view, call, callee, language) -> result += candidate(LOOKUP_INTENT, call)
             }
         }
         result += knownMapIndexes(view, language)
@@ -119,9 +120,11 @@ private class DataAccessRule(
         language: DataAccessLanguageConfig,
     ): Boolean {
         if (isAmbiguous(callee, language)) return false
-        if (language.searchPrefixes.any { callee.startsWith(it, ignoreCase = true) }) return true
-        if (!containsName(language.searchCalls, callee)) return false
-        val receiver = call.receiver ?: return true
+        val configured =
+            language.searchPrefixes.any { callee.startsWith(it, ignoreCase = true) } ||
+                containsName(language.searchCalls, callee)
+        if (!configured) return false
+        val receiver = call.receiver ?: return false
         return matchesName(receiver.text, language.searchQualifiers) ||
             typeMatches(view.receiverType(call), language.searchTypes)
     }
@@ -139,15 +142,40 @@ private class DataAccessRule(
         callee: String,
         language: DataAccessLanguageConfig,
     ): Boolean {
-        val receiver = call.receiver
+        val receiver = call.receiver ?: return false
         val knownReceiver =
-            receiver != null &&
-                (isKnownMap(receiver.text, language) || matchesName(receiver.text, language.lookupQualifiers))
-        val typed = receiver != null && typeMatches(view.receiverType(call), language.lookupTypes)
-        if (containsName(language.lookupCalls, callee)) {
-            return receiver == null || knownReceiver || typed
+            isKnownMap(receiver.text, language) || matchesName(receiver.text, language.lookupQualifiers)
+        val typed = typeMatches(view.receiverType(call), language.lookupTypes)
+        val enumReceiver = isEnumReceiver(view, call, language)
+        return when {
+            containsName(language.enumCalls, callee) -> enumReceiver || knownReceiver || typed
+            containsName(language.lookupCalls, callee) -> knownReceiver || typed
+            else -> isAmbiguous(callee, language) && (knownReceiver || typed)
         }
-        return isAmbiguous(callee, language) && (knownReceiver || typed)
+    }
+
+    private fun isEnumCandidate(
+        view: View,
+        call: CallFact,
+        callee: String,
+        language: DataAccessLanguageConfig,
+    ): Boolean =
+        containsName(language.enumCalls, callee) &&
+            (call.receiver == null || isEnumReceiver(view, call, language))
+
+    private fun isEnumReceiver(
+        view: View,
+        call: CallFact,
+        language: DataAccessLanguageConfig,
+    ): Boolean {
+        val receiver = call.receiver ?: return false
+        if (matchesName(receiver.text, language.enumTypes)) return true
+        val type = view.receiverType(call)
+        if (typeMatches(type, language.enumTypes)) return true
+        if (matchesTypeSuffix(type, language.enumTypeSuffixes)) return true
+        val name = receiverName(receiver.text)
+        if (name.isEmpty() || !name.first().isUpperCase()) return false
+        return language.enumTypeSuffixes.any { hasTokenSuffix(tokenize(name), tokenize(it)) }
     }
 
     private fun isBoundaryLookup(
@@ -172,9 +200,11 @@ private class DataAccessRule(
     ): List<Emit> {
         if (language.indexKinds.isEmpty()) return emptyList()
         val root = rootNode(view) ?: return emptyList()
+        val writes = view.writes().map { it.node }
         return root
             .descendants()
             .filter { it.kind in language.indexKinds }
+            .filterNot { node -> writes.any { it.contains(node) } }
             .mapNotNull { node ->
                 val receiver = indexReceiver(node) ?: return@mapNotNull null
                 if (!isKnownMap(receiver, language) && !matchesName(receiver, language.lookupQualifiers)) {
@@ -183,6 +213,8 @@ private class DataAccessRule(
                 Emit.of(LOOKUP_INTENT, node)
             }.toList()
     }
+
+    private fun SyntaxNode.contains(node: SyntaxNode): Boolean = startByte <= node.startByte && endByte >= node.endByte
 
     private fun indexReceiver(node: SyntaxNode): String? {
         val bracket = node.text.indexOf('[')
@@ -198,28 +230,95 @@ private class DataAccessRule(
         language: DataAccessLanguageConfig,
     ): Boolean =
         matchesName(receiver, language.knownMaps) ||
-            language.knownMapSuffixes.any { receiverName(receiver).endsWith(it, ignoreCase = true) }
+            language.knownMapSuffixes.any { hasTokenSuffix(receiverNameTokens(receiver), tokenize(it)) }
 
     private fun matchesName(
         receiver: String,
         names: Set<String>,
     ): Boolean {
-        val normalized = receiver.trim()
-        val segments = receiverSegments(normalized)
+        val segments = receiverSegments(receiver)
+        val allTokens = segments.flatten()
         return names.any { expected ->
-            val name = expected.trim()
-            normalized.equals(name, ignoreCase = true) ||
-                segments.any { it.equals(name, ignoreCase = true) || it.endsWith(name, ignoreCase = true) }
+            val expectedTokens = tokenize(expected)
+            when {
+                expectedTokens.isEmpty() -> {
+                    false
+                }
+
+                expectedTokens.size == 1 -> {
+                    allTokens.any { it == expectedTokens.single() }
+                }
+
+                else -> {
+                    segments.any { containsTokens(it, expectedTokens) } ||
+                        containsTokens(allTokens, expectedTokens)
+                }
+            }
         }
     }
 
-    private fun receiverName(receiver: String): String = receiverSegments(receiver).lastOrNull().orEmpty()
+    private fun containsTokens(
+        tokens: List<String>,
+        expected: List<String>,
+    ): Boolean = tokens.windowed(expected.size).any { it == expected }
 
-    private fun receiverSegments(receiver: String): List<String> =
+    private fun hasTokenSuffix(
+        tokens: List<String>,
+        suffix: List<String>,
+    ): Boolean = suffix.isNotEmpty() && tokens.size >= suffix.size && tokens.takeLast(suffix.size) == suffix
+
+    private fun receiverName(receiver: String): String =
         receiver
             .split('.')
-            .map { it.substringBefore('(').substringBefore('[').trim() }
+            .lastOrNull()
+            ?.substringBefore('(')
+            ?.substringBefore('[')
+            ?.trim()
+            .orEmpty()
+
+    private fun receiverNameTokens(receiver: String): List<String> = receiverSegments(receiver).lastOrNull().orEmpty()
+
+    private fun receiverSegments(receiver: String): List<List<String>> =
+        receiver
+            .split('.')
+            .map { tokenize(it.substringBefore('(').substringBefore('[')) }
             .filter { it.isNotEmpty() }
+
+    private fun tokenize(value: String): List<String> {
+        val tokens = mutableListOf<String>()
+        val current = StringBuilder()
+
+        fun flush() {
+            if (current.isNotEmpty()) {
+                tokens += current.toString().lowercase()
+                current.clear()
+            }
+        }
+
+        for (index in value.indices) {
+            val character = value[index]
+            if (!character.isLetterOrDigit()) {
+                flush()
+                continue
+            }
+            if (current.isNotEmpty()) {
+                val previous = value[index - 1]
+                val next = value.getOrNull(index + 1)
+                val boundary =
+                    ((previous.isLowerCase() || previous.isDigit()) && character.isUpperCase()) ||
+                        (
+                            previous.isUpperCase() &&
+                                character.isUpperCase() &&
+                                next != null &&
+                                next.isLowerCase()
+                        )
+                if (boundary) flush()
+            }
+            current.append(character)
+        }
+        flush()
+        return tokens
+    }
 
     private fun containsName(
         names: Set<String>,
@@ -232,12 +331,23 @@ private class DataAccessRule(
     ): Boolean {
         if (type == null) return false
         val actual = type.fqName
-        val simple = actual.substringAfterLast('.')
-        return configured.any { expected ->
-            actual.equals(expected, ignoreCase = true) ||
-                actual.endsWith(".$expected", ignoreCase = true) ||
-                simple.equals(expected.substringAfterLast('.'), ignoreCase = true)
+        return configured.any { raw ->
+            val expected = raw.trim()
+            when {
+                expected.isEmpty() -> false
+                expected.contains('.') -> actual == expected || actual.endsWith(".$expected")
+                else -> hasTokenSuffix(tokenize(actual.substringAfterLast('.')), tokenize(expected))
+            }
         }
+    }
+
+    private fun matchesTypeSuffix(
+        type: TypeRef?,
+        suffixes: Set<String>,
+    ): Boolean {
+        val actual = type?.fqName?.substringAfterLast('.') ?: return false
+        val tokens = tokenize(actual)
+        return suffixes.any { hasTokenSuffix(tokens, tokenize(it)) }
     }
 
     private fun rootNode(view: View): SyntaxNode? {

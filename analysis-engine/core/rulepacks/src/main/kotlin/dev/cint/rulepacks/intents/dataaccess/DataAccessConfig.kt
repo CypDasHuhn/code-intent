@@ -12,6 +12,9 @@ data class DataAccessLanguageConfig(
     val lookupCalls: Set<String> = emptySet(),
     val lookupQualifiers: Set<String> = emptySet(),
     val lookupTypes: Set<String> = emptySet(),
+    val enumCalls: Set<String> = emptySet(),
+    val enumTypes: Set<String> = emptySet(),
+    val enumTypeSuffixes: Set<String> = emptySet(),
     val knownMaps: Set<String> = emptySet(),
     val knownMapSuffixes: Set<String> = emptySet(),
     val ambiguousCalls: Set<String> = emptySet(),
@@ -48,6 +51,16 @@ data class DataAccessConfig(
                 "createQuery",
                 "createNativeQuery",
                 "executeQuery",
+                "findMany",
+                "findUnique",
+                "findUniqueOrThrow",
+                "findFirstOrThrow",
+                "getResultList",
+                "getSingleResult",
+                "firstOrDefault",
+                "singleOrDefault",
+                "toListAsync",
+                "findAsync",
                 "scan",
             )
         private val SEARCH_PREFIXES = setOf("findBy", "search", "query", "findAllBy")
@@ -69,6 +82,8 @@ data class DataAccessConfig(
                 "jdbc",
                 "collection",
                 "service",
+                "prisma",
+                "context",
             )
         private val SEARCH_TYPES =
             setOf(
@@ -86,8 +101,6 @@ data class DataAccessConfig(
                 "getOrDefault",
                 "getOrElse",
                 "lookup",
-                "valueOf",
-                "fromCode",
                 "forKey",
                 "getByKey",
             )
@@ -118,6 +131,9 @@ data class DataAccessConfig(
                 "Config",
                 "Properties",
             )
+        private val ENUM_CALLS = setOf("valueOf", "fromCode", "fromValue", "fromName", "fromString", "fromKey")
+        private val ENUM_TYPES = emptySet<String>()
+        private val ENUM_TYPE_SUFFIXES = setOf("Enum", "Status", "State", "Kind", "Mode", "Code", "Type")
         private val KNOWN_MAPS =
             setOf(
                 "statusById",
@@ -147,6 +163,9 @@ data class DataAccessConfig(
                 lookupCalls = LOOKUP_CALLS,
                 lookupQualifiers = LOOKUP_QUALIFIERS,
                 lookupTypes = LOOKUP_TYPES,
+                enumCalls = ENUM_CALLS,
+                enumTypes = ENUM_TYPES,
+                enumTypeSuffixes = ENUM_TYPE_SUFFIXES,
                 knownMaps = KNOWN_MAPS,
                 knownMapSuffixes = KNOWN_MAP_SUFFIXES,
                 ambiguousCalls = AMBIGUOUS_CALLS,
@@ -199,6 +218,21 @@ data class DataAccessConfig(
                     "lookupTypes",
                     { it.lookupTypes },
                     { config, value -> config.copy(lookupTypes = value) },
+                ),
+                ConfigField.strings<DataAccessLanguageConfig>(
+                    "enumCalls",
+                    { it.enumCalls },
+                    { config, value -> config.copy(enumCalls = value) },
+                ),
+                ConfigField.strings<DataAccessLanguageConfig>(
+                    "enumTypes",
+                    { it.enumTypes },
+                    { config, value -> config.copy(enumTypes = value) },
+                ),
+                ConfigField.strings<DataAccessLanguageConfig>(
+                    "enumTypeSuffixes",
+                    { it.enumTypeSuffixes },
+                    { config, value -> config.copy(enumTypeSuffixes = value) },
                 ),
                 ConfigField.strings<DataAccessLanguageConfig>(
                     "knownMaps",

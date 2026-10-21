@@ -26,6 +26,9 @@ class DataAccessConfigTest {
         assertTrue("findBy" in kotlin.searchPrefixes)
         assertTrue("repository" in kotlin.searchQualifiers)
         assertTrue("getValue" in kotlin.lookupCalls)
+        assertTrue("valueOf" in kotlin.enumCalls)
+        assertTrue("valueOf" !in kotlin.lookupCalls)
+        assertTrue("Status" in kotlin.enumTypeSuffixes)
         assertTrue("statusById" in kotlin.knownMaps)
         assertTrue("ById" in kotlin.knownMapSuffixes)
         assertEquals(setOf("indexing_expression"), kotlin.indexKinds)
@@ -128,5 +131,26 @@ class DataAccessConfigTest {
             },
         )
         assertTrue(descriptor.fields.any { it.key == "knownMaps" && it.scope == ConfigFieldScope.LANGUAGE })
+    }
+
+    @Test
+    fun enumAdditiveOverridesUnionSets() {
+        val config =
+            DataAccessConfig.SCHEMA.decodeAdditive(
+                DataAccessConfig(),
+                mapOf(
+                    "kotlin" to
+                        mapOf(
+                            "enumCalls" to listOf("parseEnum"),
+                            "enumTypes" to listOf("com.acme.Status"),
+                        ),
+                ),
+                DATA_ACCESS_PACK_ID,
+            )
+
+        val kotlin = config.forLanguage("kotlin")
+        assertTrue("valueOf" in kotlin.enumCalls)
+        assertTrue("parseEnum" in kotlin.enumCalls)
+        assertEquals(setOf("com.acme.Status"), kotlin.enumTypes)
     }
 }

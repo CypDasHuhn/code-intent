@@ -20,7 +20,9 @@ set of strings and additive overlays union with the defaults.
   that make a configured call a search call.
 - `lookupCalls`: strong key/value calls (`getValue`, `getOrDefault`, `lookup`, ...).
 - `lookupQualifiers`, `lookupTypes`: receiver names/types treated as dictionaries,
-  maps, enums, configs, tables, or lookup registries.
+  maps, configs, tables, or lookup registries.
+- `enumCalls`, `enumTypes`, `enumTypeSuffixes`: enum/constant single-value
+  resolution (`Status.valueOf`, `Mode.fromCode`) and explicit enum types.
 - `knownMaps`, `knownMapSuffixes`: names/suffixes of static tables used for
   known-key resolution.
 - `ambiguousCalls`, `ambiguousPrefixes`: calls such as `get`, `find`, and
@@ -30,14 +32,23 @@ set of strings and additive overlays union with the defaults.
 - `indexKinds`: language node kinds for index/subscript/element access.
 
 Method and qualifier matching is case-insensitive, so the same defaults serve
-Kotlin/JavaScript/TypeScript camelCase and C# PascalCase.
+Kotlin/JavaScript/TypeScript camelCase and C# PascalCase. Identifier matching is
+token-based: camel/snake boundaries form tokens, so `userRepository` matches the
+`repository` qualifier and `statusById` matches the `ById` suffix, while
+`mutable`, `bitmap`, `predict`, and `restore` do not collide with `table`, `Map`,
+`dict`, or `store`.
 
 ## Classification policy
 
-- A configured search call, `findBy*`/`search*`/`query*` prefix, or a configured
-  call on a search receiver/type emits established `SEARCH`.
+- A configured search call or `findBy*`/`search*`/`query*` prefix emits
+  established `SEARCH` only on a configured search receiver/type. Bare or
+  unresolved calls become candidates.
 - Index access on a known map/table or lookup qualifier, and configured lookup
-  calls on a known receiver/type, emit established `LOOKUP`.
+  calls on a known receiver/type, emit established `LOOKUP`. Bare lookup calls
+  are candidates, not established.
+- Enum/constant calls (`valueOf`, `fromCode`, `fromValue`, ...) establish
+  `LOOKUP` for enum-like receivers/types; `String.valueOf` stays out of this pack
+  and belongs to the `NORMALIZATION` boundary.
 - `findById`-style calls are explicitly `SEARCH`: they retrieve by criteria from
   a repository or other multi-record source that may return empty. The lookup
   rule emits a `LOOKUP` candidate on the same span as a reviewable boundary
@@ -47,6 +58,9 @@ Kotlin/JavaScript/TypeScript camelCase and C# PascalCase.
   and the established output stays conservative.
 - A known-map `get` is established `LOOKUP` because the key identifies one known
   value; the search rule still adds a `SEARCH` candidate for the boundary.
+- Index access that is the target of an assignment, compound assignment, or
+  increment/decrement is a write and emits no `LOOKUP`; the future `DATA_MODIFY`
+  pack owns that boundary.
 - Unknown index access is not LOOKUP.
 
 ## Overlap policy
@@ -66,9 +80,11 @@ legitimately co-occur on different spans in the same function or call chain.
 
 ## Registration
 
-The pack is intentionally not registered in this scaffold. Add this line to
+The pack is intentionally not registered in this scaffold: no host, CLI, server,
+or bundled-discovery path emits `SEARCH`/`LOOKUP` yet. Integration is deferred
+under ticket 038 and recorded in the manual gate (m013). Add this line to
 `analysis-engine/core/rulepacks/src/main/resources/META-INF/services/dev.cint.api.RulePack`
-when wiring it into bundled discovery:
+during that integration work:
 
 ```text
 dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack

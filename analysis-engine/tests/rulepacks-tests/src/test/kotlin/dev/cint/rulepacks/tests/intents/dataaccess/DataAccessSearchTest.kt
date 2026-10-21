@@ -131,4 +131,57 @@ class DataAccessSearchTest {
         analysis.assertNoSource(SEARCH_INTENT)
         assertTrue(analysis.candidateTexts(SEARCH_INTENT).any { it.startsWith("things.filter") })
     }
+
+    @Test
+    fun commonPerLanguageRetrievalIdiomsEmitSearch() {
+        val kotlin =
+            """
+            fun f(query: Query, entityManager: EntityManager) {
+                query.getResultList()
+                entityManager.createQuery("select u from User u").getSingleResult()
+            }
+            """.trimIndent()
+        val kotlinTexts = dataAccess("kotlin", kotlin).texts(SEARCH_INTENT)
+        assertTrue(kotlinTexts.any { it.startsWith("query.getResultList") })
+        assertTrue(kotlinTexts.any { it.startsWith("entityManager.createQuery") })
+        assertTrue(
+            kotlinTexts.any {
+                it.startsWith("entityManager.createQuery") && it.contains("getSingleResult")
+            },
+        )
+
+        val javascript =
+            """
+            function f(prisma) {
+                prisma.user.findMany({});
+                prisma.user.findUnique({ where: { id: 1 } });
+            }
+            """.trimIndent()
+        val javascriptTexts = dataAccess("javascript", javascript).texts(SEARCH_INTENT)
+        assertTrue(javascriptTexts.any { it.startsWith("prisma.user.findMany") })
+        assertTrue(javascriptTexts.any { it.startsWith("prisma.user.findUnique") })
+
+        val typescript =
+            """
+            function f(prisma: PrismaClient) {
+                prisma.user.findMany({});
+            }
+            """.trimIndent()
+        assertTrue(dataAccess("typescript", typescript).texts(SEARCH_INTENT).any { it.startsWith("prisma.user.findMany") })
+
+        val csharp =
+            """
+            class C {
+                void F(Context context) {
+                    context.Users.FirstOrDefault();
+                    context.Users.SingleOrDefault();
+                    context.Users.ToListAsync();
+                }
+            }
+            """.trimIndent()
+        val csharpTexts = dataAccess("csharp", csharp).texts(SEARCH_INTENT)
+        assertTrue(csharpTexts.any { it.startsWith("context.Users.FirstOrDefault") })
+        assertTrue(csharpTexts.any { it.startsWith("context.Users.SingleOrDefault") })
+        assertTrue(csharpTexts.any { it.startsWith("context.Users.ToListAsync") })
+    }
 }
