@@ -44,7 +44,7 @@ The engine is split into two kinds of code with a hard line between them.
 core composition; they are not part of the plugin API. A plugin cannot remove,
 hide, or reclassify anything.
 
-The built-in detectors (logging, error handling, bookkeeping, validation) are
+The built-in detectors (logging, error handling, bookkeeping, validation, and mutation) are
 **bundled rulepacks that use the same API as any third-party pack.** Core
 contains no hardcoded intent detection. This is what keeps the hull from
 decaying back into a monolithic block implementation.
@@ -121,9 +121,10 @@ free-for-all.
 Worked example of strata:
 
 ```
-stratum 0:  logging, error-handling-<language>, bookkeeping
-            (no dependencies)
-stratum 1:  validation         (reads BOOKKEEPING)
+stratum 0:  logging, error-handling-<language>, bookkeeping,
+            mutation:data-modify (no dependencies)
+stratum 1:  validation, mutation:local-value-modify
+            (read BOOKKEEPING)
 terminal:   core composition    (scaffold, derivative-use, return-category)
 ```
 
@@ -252,7 +253,8 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
   lists/sets union, string-set maps recurse, scalars from the overlay win). A
   non-opt-in pack keeps its project/default values; the server reports
   `UNSUPPORTED_PACK_OVERLAY`, rejects the mutation, and rolls the overlay back.
-  All bundled packs use `SingleIntentPack` and support overlay. Live config
+  Most bundled packs use `SingleIntentPack`; the mutation pack uses a custom
+  `ConfigurableRulePack` with the same additive overlay support. Live config
   commands write it through the server, which reloads packs in place.
 
 ## 9. Modules and loading
@@ -260,7 +262,7 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 | module | responsibility |
 |---|---|
 | `api` | frozen v5 contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, scheduler contract, DSL |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, and mutation packs |
 | `core` | syntax facts, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
 | `suggest` | candidate context, provider SPI/registry, fake provider, validator, merge, grouping |
 | `host` | host pipeline and project config loading shared by all hosts |

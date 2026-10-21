@@ -439,8 +439,9 @@ Key engine files:
 - `analysis-engine/core/host/.../HostPipeline.kt`, `HostConfig.kt`, and
   `ProjectConfigLoader.kt` — production pack selection and project config.
 - `analysis-engine/core/rulepacks/.../logging|errorhandling|bookkeeping|validation/`
-  — bundled detection packs; `support/BundledRulePackSelection.kt` supplies the
-  per-language error-handling packs.
+  — bundled detection packs; `intents/mutation/` supplies the multi-rule
+  `DATA_MODIFY`/`LOCAL_VALUE_MODIFY` pack; `support/BundledRulePackSelection.kt`
+  supplies the per-language error-handling packs.
 - `analysis-engine/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
   JavaScript, TypeScript, Vue, and C# node-kind profiles.
 - `analysis-engine/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and

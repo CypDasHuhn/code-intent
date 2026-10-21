@@ -16,7 +16,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | module | responsibility |
 |--------|----------------|
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, and validation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, and mutation packs |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
 | `suggest` | candidate context/provider SPI, fake provider, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
@@ -102,6 +102,14 @@ Detection rulepacks and core composition:
   the validation intent or config. Bare exits stay neutral.
 - `error-handling-<language>:error-handling` — `throw` and configured checks
   (`require`, `assert`, ...). Call spans include trailing lambda arguments.
+- `mutation:data-modify` — configured persistence calls on repository/ORM,
+  file, queue, event, and object-store receivers. A receiver must prove a
+  durable qualifier, type, or templated client; bare configured calls and
+  unknown wrappers stay candidates.
+- `mutation:local-value-modify` — writes to declaration-local variables and
+  configured mutable collection operations on proven collection receivers.
+  Member/external assignments, unproven `add`/`put`/`remove` calls, loop
+  counters, and bookkeeping writes stay out of the established set.
 - `core:return-category` — classifies each `return` from the function CFG. A
   return on a certified guard's true edge inherits that guard's source intents
   (for example `VALIDATION`); a rejection sentinel on the other edge inherits
@@ -189,6 +197,18 @@ error-handling-kotlin:
 validation:
   predicates: [none, any, all, isEmpty, isBlank, contains, matches]
   predicatePrefixes: [is, has]
+
+mutation:
+  kotlin:
+    persistenceCalls: [save, update, delete, put, sendMessage, convertAndSend]
+    persistencePaths: [Files.write, File.WriteAllTextAsync]
+    persistenceQualifiers: [repository, dao, bucket, kafka]
+    persistenceTypes: [Repository, EntityManager, Session, Table, Queue]
+    persistencePrefixes: [persist, publish, send, write, flush, commit]
+    mutableOperations: [add, put, remove, clear]
+    mutableTypes: [MutableList, MutableMap, ArrayList]
+    mutableReceiverNames: [items, values, cache]
+    assignmentPatterns: [assignment, increment, decrement]
 ```
 
 Missing values use the owning pack's defaults. Unknown packs and keys are
@@ -216,8 +236,8 @@ project config with additive semantics: string lists and sets union with the
 effective pack value, string-set maps recurse, and scalars from the overlay win.
 Packs that do not opt in keep their project/default values; the loader reports
 `UNSUPPORTED_PACK_OVERLAY`, and the server rejects the mutation and rolls the
-overlay back. All bundled packs use `SingleIntentPack` and therefore support
-additive overlay. The overlay only changes pack config; it never creates source
+overlay back. Most bundled packs use `SingleIntentPack`; the mutation pack uses
+a custom `ConfigurableRulePack` with the same additive semantics. The overlay only changes pack config; it never creates source
 annotations, contributions, evidence, confidence, or magic comments. A malformed
 overlay is reported, and mutations are refused until it is fixed.
 

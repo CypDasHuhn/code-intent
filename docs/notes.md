@@ -402,8 +402,9 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - User config overlay: `<root>/.cint/config.overlay.yml`, auto-discovered and
   applied after project config. Additive merge is opt-in per pack via
   `ConfigurableRulePack.configureAdditive`/`ConfigSchema.decodeAdditive` (string
-  lists/sets union, string-set maps recurse, scalars from the overlay win); all
-  bundled packs use `SingleIntentPack` and support it, while a non-opt-in pack
+  lists/sets union, string-set maps recurse, scalars from the overlay win); most
+  bundled packs use `SingleIntentPack`, while the mutation pack supplies the same
+  additive path through a custom `ConfigurableRulePack`; a non-opt-in pack
   keeps its project/default values and the server rejects and rolls back the
   mutation (`UNSUPPORTED_PACK_OVERLAY`). It only changes pack config: no source
   annotations, contributions, evidence, confidence, or magic comments.
@@ -466,7 +467,8 @@ Authoritative for resuming. Older sections are historical where they conflict.
   validates API version/ownership, and degrades per provider. The per-language
   error-handling packs are constructed by `BundledRulePackSelection` because
   they share one intent name; service descriptors cover the single-instance
-  logging, bookkeeping, and validation packs.
+  logging, bookkeeping, validation, and mutation packs. Mutation owns
+  `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` as two rules in one pack.
 - Syntax is data: `SyntaxModel`/`ProfileSyntaxModel` plus
   `languages/treesitter/src/main/resources/syntax/*.yaml` for Kotlin, JavaScript,
   TypeScript, Vue, and C#. `LanguageFrontend` lives in core; `frontend` registers

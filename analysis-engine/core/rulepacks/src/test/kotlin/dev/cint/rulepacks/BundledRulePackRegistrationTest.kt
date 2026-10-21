@@ -6,9 +6,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private val bundledIds = setOf("logging", "error-handling", "bookkeeping", "validation")
+private val bundledIds = setOf("logging", "error-handling", "bookkeeping", "mutation", "validation")
 private val bundledLanguages = setOf("kotlin", "javascript", "typescript", "csharp")
-private val bundledIntents = setOf("LOGGING", "ERROR_HANDLING", "BOOKKEEPING", "VALIDATION")
+private val bundledIntents =
+    setOf(
+        "LOGGING",
+        "ERROR_HANDLING",
+        "BOOKKEEPING",
+        "DATA_MODIFY",
+        "LOCAL_VALUE_MODIFY",
+        "VALIDATION",
+    )
 
 class BundledRulePackRegistrationTest {
     @Test
