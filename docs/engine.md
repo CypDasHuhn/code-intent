@@ -197,6 +197,18 @@ error-handling-kotlin:
 validation:
   predicates: [none, any, all, isEmpty, isBlank, contains, matches]
   predicatePrefixes: [is, has]
+
+mutation:
+  kotlin:
+    persistenceCalls: [save, update, delete, put, sendMessage, convertAndSend]
+    persistencePaths: [Files.write, File.WriteAllTextAsync]
+    persistenceQualifiers: [repository, dao, bucket, kafka]
+    persistenceTypes: [Repository, EntityManager, Session, Table, Queue]
+    persistencePrefixes: [persist, publish, send, write, flush, commit]
+    mutableOperations: [add, put, remove, clear]
+    mutableTypes: [MutableList, MutableMap, ArrayList]
+    mutableReceiverNames: [items, values, cache]
+    assignmentPatterns: [assignment, increment, decrement]
 ```
 
 Missing values use the owning pack's defaults. Unknown packs and keys are

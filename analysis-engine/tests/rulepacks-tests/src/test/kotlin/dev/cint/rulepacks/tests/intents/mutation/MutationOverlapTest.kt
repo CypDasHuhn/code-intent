@@ -171,6 +171,7 @@ class MutationOverlapTest {
 
         assertEquals(setOf("repository.findByStatus(status)"), analysis.texts("SEARCH").toSet())
         assertEquals(setOf("repository.save(found)"), analysis.texts(DATA_MODIFY_INTENT).toSet())
+        assertTrue(analysis.candidates(DATA_MODIFY_INTENT).isEmpty())
     }
 
     @Test

@@ -37,7 +37,10 @@ class MutationConfigTest {
         assertTrue("OutputStream" !in config.persistenceTypes)
         assertTrue("Writer" !in config.persistenceTypes)
         assertTrue("Collection" !in config.persistenceTypes)
-        assertTrue("Table" !in config.persistenceTypes)
+        assertTrue("Session" in config.persistenceTypes)
+        assertTrue("Table" in config.persistenceTypes)
+        assertTrue("Queue" in config.persistenceTypes)
+        assertTrue("queue" !in config.mutableReceiverNames)
     }
 
     @Test

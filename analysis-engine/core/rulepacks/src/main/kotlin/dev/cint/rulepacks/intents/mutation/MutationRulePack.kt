@@ -36,24 +36,6 @@ private const val CANDIDATE_CONFIDENCE: Double = 0.4
 private val LOOP_COUNTER_NAMES =
     setOf("i", "j", "k", "n", "idx", "index", "counter", "pos", "position")
 
-private val DATA_CANDIDATE_PREFIXES =
-    setOf(
-        "save",
-        "persist",
-        "publish",
-        "emit",
-        "dispatch",
-        "enqueue",
-        "produce",
-        "upload",
-        "putObject",
-        "putItem",
-        "copyObject",
-        "writeObject",
-        "deleteObject",
-        "removeObject",
-    )
-
 private val LOCAL_CANDIDATE_EXACT =
     setOf(
         "mutate",
@@ -211,7 +193,7 @@ private class LocalValueModifyRule(
                     result += call.emit(LOCAL_VALUE_MODIFY_INTENT, confidence = LOCAL_CONFIDENCE)
                 }
 
-                callee in language.mutableOperations || localCandidate(callee) -> {
+                callee in language.mutableOperations || isLocalCandidate(callee) -> {
                     result +=
                         CandidateEmit.call(
                             LOCAL_VALUE_MODIFY_INTENT,
@@ -291,15 +273,6 @@ private class LocalValueModifyRule(
                 simple.endsWith(suffix)
         }
     }
-
-    private fun localCandidate(callee: String): Boolean {
-        if (callee in LOCAL_CANDIDATE_EXACT) return true
-        return LOCAL_CANDIDATE_PREFIXES.any { prefix ->
-            callee.length > prefix.length &&
-                callee.startsWith(prefix) &&
-                callee[prefix.length].isUpperCase()
-        }
-    }
 }
 
 private class PersistenceMatch(
@@ -328,17 +301,43 @@ private class PersistenceMatch(
         if (established(view, call)) return false
         val receiver = call.receiver
         if (receiver == null) {
+            return configuredCandidate(callee, call.path)
+        }
+        if (isReadCall(callee)) return false
+        if (persistentReceiver(view, call)) {
+            return mutationShaped(callee, call.path)
+        }
+        val type = view.receiverType(call)
+        if (type != null && isInMemoryType(type.fqName)) return false
+        val mutableReceiver =
+            config.mutableReceiverNames.any { name ->
+                name.equals(receiverName(receiver), ignoreCase = true)
+            }
+        if (mutableReceiver) return false
+        if (callee in config.mutableOperations) {
             return config.persistenceCalls.any { matchesName(callee, call.path, it) }
         }
-        if (receiverName(receiver) in config.mutableReceiverNames) return false
-        val type = view.receiverType(call)
-        if (type != null && !matchesType(type.fqName, config.persistenceTypes)) return false
-        if (persistentReceiver(view, call)) return true
-        if (callee in config.mutableOperations) return false
-        return DATA_CANDIDATE_PREFIXES.any { prefix ->
-            callee.length > prefix.length && callee.startsWith(prefix, ignoreCase = true)
-        }
+        if (!configuredCandidate(callee, call.path)) return false
+        if (isLocalCandidate(callee) && config.persistenceCalls.none { it == callee }) return false
+        return true
     }
+
+    private fun configuredCandidate(
+        callee: String,
+        path: String?,
+    ): Boolean =
+        config.persistenceCalls.any { matchesName(callee, path, it) } ||
+            config.persistencePrefixes.any { prefix ->
+                prefix.isNotEmpty() && callee.startsWith(prefix, ignoreCase = true)
+            }
+
+    private fun mutationShaped(
+        callee: String,
+        path: String?,
+    ): Boolean =
+        configuredCandidate(callee, path) ||
+            callee in config.mutableOperations ||
+            isLocalCandidate(callee)
 
     fun persistentReceiver(
         view: View,
@@ -411,6 +410,59 @@ private class PersistenceMatch(
             .removePrefix("self.")
 }
 
+private val READ_CALL_PREFIXES =
+    setOf(
+        "find",
+        "get",
+        "query",
+        "search",
+        "load",
+        "read",
+        "count",
+        "exists",
+        "has",
+        "fetch",
+        "list",
+        "select",
+        "scan",
+        "head",
+        "contains",
+    )
+
+private fun isReadCall(callee: String): Boolean = READ_CALL_PREFIXES.any { prefix -> callee.startsWith(prefix, ignoreCase = true) }
+
+private fun isLocalCandidate(callee: String): Boolean {
+    val lower = callee.lowercase()
+    if (lower in LOCAL_CANDIDATE_EXACT.map { it.lowercase() }) return true
+    return LOCAL_CANDIDATE_PREFIXES.any { prefix ->
+        val normalized = prefix.lowercase()
+        callee.length > normalized.length &&
+            lower.startsWith(normalized) &&
+            callee[normalized.length].isUpperCase()
+    }
+}
+
+private val IN_MEMORY_TYPE_SUFFIXES =
+    setOf(
+        "Channel",
+        "Writer",
+        "OutputStream",
+        "InputStream",
+        "Collection",
+        "List",
+        "Map",
+        "Set",
+        "Deque",
+        "Stack",
+        "StringBuilder",
+        "Buffer",
+    )
+
+private fun isInMemoryType(actual: String): Boolean {
+    val simple = actual.substringAfterLast('.')
+    return IN_MEMORY_TYPE_SUFFIXES.any { simple.endsWith(it) }
+}
+
 private val DURABLE_RECEIVER_SUFFIXES = setOf("Template", "Client", "Producer")
 
 private fun declarationWrites(view: View): Map<Pair<Int, Int>, DeclarationFact> =
@@ -445,7 +497,13 @@ private fun isLoopCounter(
 
 private fun writeTarget(write: WriteFact): String? {
     write.reference?.text?.let { return it.substringAfterLast('.').trim() }
-    return WRITE_TARGET.find(write.node.text.trim())?.value?.substringAfterLast('.')
+    val text =
+        write.node.text
+            .trim()
+            .removePrefix("++")
+            .removePrefix("--")
+            .trim()
+    return WRITE_TARGET.find(text)?.value?.substringAfterLast('.')
 }
 
 private val WRITE_TARGET = Regex("""^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*""")

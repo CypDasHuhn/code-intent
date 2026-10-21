@@ -244,6 +244,120 @@ class MutationDataModifyRuleTest {
         assertEquals(setOf("legacyPersist(item)"), analyze("kotlin", text, pack).texts(DATA_MODIFY_INTENT).toSet())
     }
 
+    @Test
+    fun receiverfulPersistenceWrappersYieldCandidates() {
+        val text =
+            """
+            fun f(user: User) {
+                handler.send(user)
+                handler.write(user)
+                handler.flush()
+                handler.commit()
+                handler.updateProfile(user)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+        val candidates = analysis.candidates(DATA_MODIFY_INTENT)
+
+        assertEquals(4, candidates.size)
+        assertTrue(candidates.all { it.source == "rule:$DATA_MODIFY_RULE_ID" })
+        assertTrue(analysis.source(DATA_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun configuredPersistencePrefixesDriveCandidates() {
+        val pack =
+            MutationRulePack().configure(
+                mapOf("kotlin" to mapOf("persistencePrefixes" to listOf("frobnicate"))),
+            )
+        val text =
+            """
+            fun f(user: User) {
+                handler.frobnicateRecord(user)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text, pack)
+
+        assertEquals(1, analysis.candidates(DATA_MODIFY_INTENT).size)
+        assertTrue(analysis.source(DATA_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun readsOnPersistentReceiversDoNotBecomeDataCandidates() {
+        val text =
+            """
+            fun f(status: Status, key: String) {
+                repository.findByStatus(status)
+                repository.count()
+                file.exists()
+                bucket.get(key)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        analysis.assertNoSource(DATA_MODIFY_INTENT)
+        assertTrue(analysis.candidates(DATA_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun typedSessionTableAndQueueCallsAreEstablished() {
+        val cases =
+            mapOf(
+                "session.save(item)" to "org.hibernate.Session",
+                "table.put(key, item)" to "com.example.Table",
+                "queue.send(item)" to "java.util.concurrent.BlockingQueue",
+            )
+
+        for ((call, type) in cases) {
+            val text = "fun f(item: Item, key: String) { $call }"
+            val analysis =
+                analyzePack(
+                    "kotlin",
+                    text,
+                    listOf(BookkeepingRulePack(), MutationRulePack()),
+                    FixedOracle(TypeFact(type)),
+                )
+
+            assertEquals(setOf(call), analysis.texts(DATA_MODIFY_INTENT).toSet(), type)
+        }
+    }
+
+    @Test
+    fun untypedQueueSendIsAtLeastADataCandidate() {
+        val text =
+            """
+            fun f(item: Item) {
+                queue.send(item)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        analysis.assertNoSource(DATA_MODIFY_INTENT)
+        assertEquals(1, analysis.candidates(DATA_MODIFY_INTENT).size)
+    }
+
+    @Test
+    fun messagingClientAndTemplateMethodsAreEstablished() {
+        val text =
+            """
+            fun f(message: Message) {
+                sqsClient.sendMessage(message)
+                rabbitTemplate.convertAndSend(exchange, message)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(
+            setOf("sqsClient.sendMessage(message)", "rabbitTemplate.convertAndSend(exchange, message)"),
+            analysis.texts(DATA_MODIFY_INTENT).toSet(),
+        )
+    }
+
     private fun analyze(
         language: String,
         text: String,

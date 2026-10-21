@@ -44,6 +44,10 @@ private val DEFAULT_PERSISTENCE_CALLS =
         "emit",
         "send",
         "sendAsync",
+        "sendMessage",
+        "sendMessageAsync",
+        "convertAndSend",
+        "sendAndReceive",
         "write",
         "writeText",
         "writeBytes",
@@ -161,6 +165,7 @@ private val DEFAULT_PERSISTENCE_TYPES =
         "JpaRepository",
         "MongoRepository",
         "EntityManager",
+        "Session",
         "Database",
         "File",
         "FileInfo",
@@ -171,6 +176,8 @@ private val DEFAULT_PERSISTENCE_TYPES =
         "Producer",
         "FileSystem",
         "Bucket",
+        "Queue",
+        "Table",
         "DbContext",
         "DbSet",
         "Connection",
@@ -201,6 +208,7 @@ private val DEFAULT_PERSISTENCE_PREFIXES =
         "upload",
         "copyObject",
         "writeObject",
+        "sync",
     )
 
 private val DEFAULT_MUTABLE_OPERATIONS =
@@ -293,7 +301,6 @@ private val DEFAULT_MUTABLE_RECEIVER_NAMES =
         "dictionary",
         "set",
         "sets",
-        "queue",
         "stack",
         "deque",
         "collection",

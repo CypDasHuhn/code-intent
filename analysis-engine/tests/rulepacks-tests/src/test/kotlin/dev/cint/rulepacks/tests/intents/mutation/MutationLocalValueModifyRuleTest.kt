@@ -226,6 +226,62 @@ class MutationLocalValueModifyRuleTest {
         assertEquals(setOf("items.delete(item)"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
     }
 
+    @Test
+    fun prefixLoopCountersAreNotPainted() {
+        val kotlinText =
+            """
+            fun f() {
+                var i = 3
+                var total = 0
+                while (i > 0) {
+                    --i
+                    ++i
+                    total += i
+                }
+            }
+            """.trimIndent()
+        val kotlin = analyze("kotlin", kotlinText)
+
+        assertEquals(setOf("total += i"), kotlin.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
+
+        val csharpText =
+            """
+            class C {
+                void F() {
+                    int i = 0;
+                    int total = 0;
+                    while (i < 3) {
+                        ++i;
+                        total += i;
+                    }
+                }
+            }
+            """.trimIndent()
+        val csharp = analyze("csharp", csharpText)
+
+        assertTrue(csharp.texts(LOCAL_VALUE_MODIFY_INTENT).none { "++i" in it || "--i" in it })
+    }
+
+    @Test
+    fun csharpLocalWrappersYieldCandidates() {
+        val text =
+            """
+            class C {
+                void F() {
+                    handler.UpdateProfile();
+                    handler.Mutate();
+                    handler.MergeState();
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyze("csharp", text)
+        val candidates = analysis.candidates(LOCAL_VALUE_MODIFY_INTENT)
+
+        assertEquals(3, candidates.size)
+        assertTrue(analysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
+    }
+
     private fun analyze(
         language: String,
         text: String,
