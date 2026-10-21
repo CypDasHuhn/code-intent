@@ -4,6 +4,7 @@ import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DataAccessLookupTest {
@@ -241,5 +242,83 @@ class DataAccessLookupTest {
         val analysis = dataAccess("kotlin", text)
 
         analysis.assertNoSource(LOOKUP_INTENT)
+    }
+
+    @Test
+    fun enumStyleReceiversWithoutKnownSuffixBecomeCandidates() {
+        val text =
+            """
+            fun f(code: String) {
+                Color.valueOf("RED")
+                Role.fromCode(code)
+                Currency.valueOf(code)
+                Priority.fromCode(code)
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text)
+
+        analysis.assertNoSource(LOOKUP_INTENT)
+        val candidates = analysis.candidateTexts(LOOKUP_INTENT)
+        assertTrue(candidates.any { it.startsWith("Color.valueOf") })
+        assertTrue(candidates.any { it.startsWith("Role.fromCode") })
+        assertTrue(candidates.any { it.startsWith("Currency.valueOf") })
+        assertTrue(candidates.any { it.startsWith("Priority.fromCode") })
+    }
+
+    @Test
+    fun configuredEnumTypesEstablishNonSuffixEnums() {
+        val pack =
+            DataAccessRulePack().configure(
+                mapOf("kotlin" to mapOf("enumTypes" to listOf("Color"))),
+            )
+        val text =
+            """
+            fun f(code: String) {
+                Color.valueOf("RED")
+                Role.fromCode(code)
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text, pack)
+
+        assertTrue(analysis.texts(LOOKUP_INTENT).any { it.startsWith("Color.valueOf") })
+        assertTrue(analysis.candidateTexts(LOOKUP_INTENT).any { it.startsWith("Role.fromCode") })
+    }
+
+    @Test
+    fun knownMapReadsInsideWriteExpressionsStayLookup() {
+        val text =
+            """
+            fun f(id: String, value: Int, copy: Int, active: String) {
+                copy = statusById[id]
+                copy += statusByCode[active]
+                codeMap[id].field = value
+                translationTable[statusById[id]] = value
+            }
+            """.trimIndent()
+
+        val texts = dataAccess("kotlin", text).texts(LOOKUP_INTENT)
+
+        assertTrue(texts.any { it == "statusById[id]" })
+        assertTrue(texts.any { it == "statusByCode[active]" })
+        assertTrue(texts.any { it == "codeMap[id]" })
+        assertTrue(texts.none { it.startsWith("translationTable[") })
+        assertEquals(2, texts.count { it == "statusById[id]" })
+    }
+
+    @Test
+    fun mixedWriteTargetExcludesOnlyAssignedIndex() {
+        val text =
+            """
+            fun f(id: String) {
+                statusById[id] = otherMap[id]
+            }
+            """.trimIndent()
+
+        val texts = dataAccess("kotlin", text).texts(LOOKUP_INTENT)
+
+        assertTrue(texts.none { it == "statusById[id]" })
+        assertTrue(texts.any { it == "otherMap[id]" })
     }
 }

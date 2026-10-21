@@ -15,6 +15,7 @@ data class DataAccessLanguageConfig(
     val enumCalls: Set<String> = emptySet(),
     val enumTypes: Set<String> = emptySet(),
     val enumTypeSuffixes: Set<String> = emptySet(),
+    val enumExclusions: Set<String> = emptySet(),
     val knownMaps: Set<String> = emptySet(),
     val knownMapSuffixes: Set<String> = emptySet(),
     val ambiguousCalls: Set<String> = emptySet(),
@@ -134,6 +135,23 @@ data class DataAccessConfig(
         private val ENUM_CALLS = setOf("valueOf", "fromCode", "fromValue", "fromName", "fromString", "fromKey")
         private val ENUM_TYPES = emptySet<String>()
         private val ENUM_TYPE_SUFFIXES = setOf("Enum", "Status", "State", "Kind", "Mode", "Code", "Type")
+        private val ENUM_EXCLUSIONS =
+            setOf(
+                "String",
+                "Integer",
+                "Long",
+                "Boolean",
+                "Double",
+                "Float",
+                "Byte",
+                "Short",
+                "Char",
+                "Character",
+                "BigDecimal",
+                "BigInteger",
+                "UUID",
+                "Object",
+            )
         private val KNOWN_MAPS =
             setOf(
                 "statusById",
@@ -166,6 +184,7 @@ data class DataAccessConfig(
                 enumCalls = ENUM_CALLS,
                 enumTypes = ENUM_TYPES,
                 enumTypeSuffixes = ENUM_TYPE_SUFFIXES,
+                enumExclusions = ENUM_EXCLUSIONS,
                 knownMaps = KNOWN_MAPS,
                 knownMapSuffixes = KNOWN_MAP_SUFFIXES,
                 ambiguousCalls = AMBIGUOUS_CALLS,
@@ -176,7 +195,7 @@ data class DataAccessConfig(
 
         private val LANGUAGE_DEFAULTS: Map<String, DataAccessLanguageConfig> =
             linkedMapOf(
-                "kotlin" to common(setOf("indexing_expression")),
+                "kotlin" to common(setOf("indexing_expression", "indexing_suffix")),
                 "javascript" to common(setOf("subscript_expression")),
                 "typescript" to common(setOf("subscript_expression")),
                 "csharp" to common(setOf("element_access_expression")),
@@ -233,6 +252,11 @@ data class DataAccessConfig(
                     "enumTypeSuffixes",
                     { it.enumTypeSuffixes },
                     { config, value -> config.copy(enumTypeSuffixes = value) },
+                ),
+                ConfigField.strings<DataAccessLanguageConfig>(
+                    "enumExclusions",
+                    { it.enumExclusions },
+                    { config, value -> config.copy(enumExclusions = value) },
                 ),
                 ConfigField.strings<DataAccessLanguageConfig>(
                     "knownMaps",

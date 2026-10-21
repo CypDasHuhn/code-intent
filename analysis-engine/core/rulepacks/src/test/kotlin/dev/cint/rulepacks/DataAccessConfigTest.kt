@@ -29,9 +29,10 @@ class DataAccessConfigTest {
         assertTrue("valueOf" in kotlin.enumCalls)
         assertTrue("valueOf" !in kotlin.lookupCalls)
         assertTrue("Status" in kotlin.enumTypeSuffixes)
+        assertTrue("String" in kotlin.enumExclusions)
         assertTrue("statusById" in kotlin.knownMaps)
         assertTrue("ById" in kotlin.knownMapSuffixes)
-        assertEquals(setOf("indexing_expression"), kotlin.indexKinds)
+        assertEquals(setOf("indexing_expression", "indexing_suffix"), kotlin.indexKinds)
         assertEquals(setOf("element_access_expression"), config.forLanguage("csharp").indexKinds)
     }
 

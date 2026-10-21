@@ -21,8 +21,10 @@ set of strings and additive overlays union with the defaults.
 - `lookupCalls`: strong key/value calls (`getValue`, `getOrDefault`, `lookup`, ...).
 - `lookupQualifiers`, `lookupTypes`: receiver names/types treated as dictionaries,
   maps, configs, tables, or lookup registries.
-- `enumCalls`, `enumTypes`, `enumTypeSuffixes`: enum/constant single-value
-  resolution (`Status.valueOf`, `Mode.fromCode`) and explicit enum types.
+- `enumCalls`, `enumTypes`, `enumTypeSuffixes`, `enumExclusions`: enum/constant
+  single-value resolution (`Status.valueOf`, `Mode.fromCode`), explicit enum
+  types, and non-enum type names such as `String` that must not fall back to an
+  enum candidate.
 - `knownMaps`, `knownMapSuffixes`: names/suffixes of static tables used for
   known-key resolution.
 - `ambiguousCalls`, `ambiguousPrefixes`: calls such as `get`, `find`, and
@@ -47,8 +49,11 @@ token-based: camel/snake boundaries form tokens, so `userRepository` matches the
   calls on a known receiver/type, emit established `LOOKUP`. Bare lookup calls
   are candidates, not established.
 - Enum/constant calls (`valueOf`, `fromCode`, `fromValue`, ...) establish
-  `LOOKUP` for enum-like receivers/types; `String.valueOf` stays out of this pack
-  and belongs to the `NORMALIZATION` boundary.
+  `LOOKUP` for configured enum types and enum-like receivers/types recognized by
+  the suffix vocabulary. Other uppercase, non-excluded enum-style receivers
+  (`Color.valueOf`, `Role.fromCode`) become `LOOKUP` candidates until configured.
+  `String.valueOf` stays out of this pack and belongs to the `NORMALIZATION`
+  boundary.
 - `findById`-style calls are explicitly `SEARCH`: they retrieve by criteria from
   a repository or other multi-record source that may return empty. The lookup
   rule emits a `LOOKUP` candidate on the same span as a reviewable boundary
@@ -58,9 +63,11 @@ token-based: camel/snake boundaries form tokens, so `userRepository` matches the
   and the established output stays conservative.
 - A known-map `get` is established `LOOKUP` because the key identifies one known
   value; the search rule still adds a `SEARCH` candidate for the boundary.
-- Index access that is the target of an assignment, compound assignment, or
-  increment/decrement is a write and emits no `LOOKUP`; the future `DATA_MODIFY`
-  pack owns that boundary.
+- Index access that is the assigned target of an assignment, compound
+  assignment, or increment/decrement emits no `LOOKUP`; the future `DATA_MODIFY`
+  pack owns that boundary. Reads on the right-hand side (`copy = statusById[id]`)
+  and nested reads inside a target (`codeMap[id].field = value`,
+  `translationTable[statusById[id]] = value`) still emit `LOOKUP`.
 - Unknown index access is not LOOKUP.
 
 ## Overlap policy

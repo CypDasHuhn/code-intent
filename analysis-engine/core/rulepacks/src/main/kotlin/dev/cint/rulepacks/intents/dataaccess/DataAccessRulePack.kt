@@ -13,6 +13,8 @@ import dev.cint.api.RuleEmit
 import dev.cint.api.SyntaxNode
 import dev.cint.api.TypeRef
 import dev.cint.api.View
+import dev.cint.api.WriteFact
+import dev.cint.api.WriteKind
 import dev.cint.api.emit
 
 const val SEARCH_INTENT: Intent = "SEARCH"
@@ -161,7 +163,20 @@ private class DataAccessRule(
         language: DataAccessLanguageConfig,
     ): Boolean =
         containsName(language.enumCalls, callee) &&
-            (call.receiver == null || isEnumReceiver(view, call, language))
+            (call.receiver == null || isEnumReceiver(view, call, language) || isEnumStyleReceiver(view, call, language))
+
+    private fun isEnumStyleReceiver(
+        view: View,
+        call: CallFact,
+        language: DataAccessLanguageConfig,
+    ): Boolean {
+        val receiver = call.receiver ?: return false
+        val name = receiverName(receiver.text)
+        if (name.isEmpty() || !name.first().isUpperCase()) return false
+        if (matchesName(receiver.text, language.enumExclusions)) return false
+        val type = view.receiverType(call)
+        return type == null || !matchesTypeSuffix(type, language.enumExclusions)
+    }
 
     private fun isEnumReceiver(
         view: View,
@@ -200,26 +215,46 @@ private class DataAccessRule(
     ): List<Emit> {
         if (language.indexKinds.isEmpty()) return emptyList()
         val root = rootNode(view) ?: return emptyList()
-        val writes = view.writes().map { it.node }
+        val writeTargets = view.writes().mapNotNull(::writeTarget)
         return root
             .descendants()
-            .filter { it.kind in language.indexKinds }
-            .filterNot { node -> writes.any { it.contains(node) } }
-            .mapNotNull { node ->
+            .filter { node -> isIndexNode(node, language) }
+            .filterNot { node ->
+                val start = indexStart(node)
+                writeTargets.any { it.startByte == start && it.endByte == node.endByte }
+            }.mapNotNull { node ->
                 val receiver = indexReceiver(node) ?: return@mapNotNull null
                 if (!isKnownMap(receiver, language) && !matchesName(receiver, language.lookupQualifiers)) {
                     return@mapNotNull null
                 }
-                Emit.of(LOOKUP_INTENT, node)
+                Emit.range(LOOKUP_INTENT, indexStartNode(node), node)
             }.toList()
     }
 
-    private fun SyntaxNode.contains(node: SyntaxNode): Boolean = startByte <= node.startByte && endByte >= node.endByte
+    private fun writeTarget(write: WriteFact): SyntaxNode? =
+        when (write.kind) {
+            WriteKind.ASSIGNMENT -> write.node.childByField("left") ?: write.node.children.firstOrNull()
+            WriteKind.INCREMENT -> write.node.children.firstOrNull { child -> child.text.trim().none { it == '+' || it == '-' } }
+            else -> null
+        }
+
+    private fun isIndexNode(
+        node: SyntaxNode,
+        language: DataAccessLanguageConfig,
+    ): Boolean =
+        node.kind in language.indexKinds &&
+            !(node.kind == "indexing_suffix" && node.parent?.kind in language.indexKinds)
+
+    private fun indexStartNode(node: SyntaxNode): SyntaxNode =
+        if (node.kind == "indexing_suffix" && node.text.startsWith("[")) node.parent ?: node else node
+
+    private fun indexStart(node: SyntaxNode): Int = indexStartNode(node).startByte
 
     private fun indexReceiver(node: SyntaxNode): String? {
-        val bracket = node.text.indexOf('[')
+        val source = indexStartNode(node).text
+        val bracket = source.indexOf('[')
         if (bracket <= 0) return null
-        return node.text
+        return source
             .substring(0, bracket)
             .trim()
             .ifEmpty { null }
