@@ -16,10 +16,8 @@ private val bundledIds =
         "normalization",
         "data-access",
         "service",
-        "bool-combinatorics",
         "data-transformation",
         "return-value",
-        "chaining",
         "local-copy",
     )
 private val bundledLanguages = setOf("kotlin", "javascript", "typescript", "csharp")
@@ -36,10 +34,8 @@ private val bundledIntents =
         "LOOKUP",
         "SERVICE_DELEGATION",
         "SERVICE_INIT",
-        "BOOL_COMBINATORICS",
         "DATA_TRANSFORMATION",
         "RETURN_VALUE",
-        "CHAINING",
         "LOCAL_COPY",
     )
 

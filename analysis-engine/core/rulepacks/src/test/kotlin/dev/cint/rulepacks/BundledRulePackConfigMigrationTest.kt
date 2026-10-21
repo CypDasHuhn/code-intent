@@ -16,10 +16,8 @@ private val bundledIds =
         "normalization",
         "data-access",
         "service",
-        "bool-combinatorics",
         "data-transformation",
         "return-value",
-        "chaining",
         "local-copy",
     )
 

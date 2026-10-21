@@ -15,7 +15,7 @@ intents into visual meanings.
 - Tag/intent names are screaming snake case: `LOGGING`, `ERROR_HANDLING`,
   `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`, `LOOKUP`,
   `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`,
-  `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`, `RETURN_VALUE`, `CHAINING`,
+  `BOOL_COMBINATORICS` (currently disabled in the bundled selection), `DATA_TRANSFORMATION`, `RETURN_VALUE`, `CHAINING` (currently disabled),
   `LOCAL_COPY`, `USER_FEEDBACK` (planned), `UNTAGGED`.
 - Source annotations remain code-shaped: `@Bookkeeping`, `@UserFeedback`,
   `// cint:bookkeeping`, `// cint:validation`.

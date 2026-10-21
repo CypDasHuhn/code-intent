@@ -39,9 +39,7 @@ class BundledRulePackLoadingTest {
         assertEquals(
             listOf(
                 "bookkeeping",
-                "bool-combinatorics",
                 "bundled-test",
-                "chaining",
                 "data-access",
                 "data-transformation",
                 "error-handling",
@@ -60,9 +58,7 @@ class BundledRulePackLoadingTest {
         assertEquals(
             setOf(
                 "bookkeeping:bookkeeping",
-                "bool-combinatorics:bool-combinatorics",
                 "bundled-test:logging",
-                "chaining:chaining",
                 "data-access:lookup",
                 "data-access:search",
                 "data-transformation:data-transformation",

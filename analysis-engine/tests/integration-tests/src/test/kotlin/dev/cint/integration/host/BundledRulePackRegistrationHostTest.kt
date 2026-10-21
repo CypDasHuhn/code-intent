@@ -15,10 +15,8 @@ private val bundledIds =
         "normalization",
         "data-access",
         "service",
-        "bool-combinatorics",
         "data-transformation",
         "return-value",
-        "chaining",
         "local-copy",
     )
 private val bundledLanguages = setOf("kotlin", "javascript", "typescript", "csharp")
@@ -49,10 +47,8 @@ class BundledRulePackRegistrationHostTest {
             assertTrue("LOOKUP" in pipeline.intents(listOf(language)), language)
             assertTrue("SERVICE_DELEGATION" in pipeline.intents(listOf(language)), language)
             assertTrue("SERVICE_INIT" in pipeline.intents(listOf(language)), language)
-            assertTrue("BOOL_COMBINATORICS" in pipeline.intents(listOf(language)), language)
             assertTrue("DATA_TRANSFORMATION" in pipeline.intents(listOf(language)), language)
             assertTrue("RETURN_VALUE" in pipeline.intents(listOf(language)), language)
-            assertTrue("CHAINING" in pipeline.intents(listOf(language)), language)
             assertTrue("LOCAL_COPY" in pipeline.intents(listOf(language)), language)
         }
     }

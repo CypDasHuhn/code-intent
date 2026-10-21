@@ -16,7 +16,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | module | responsibility |
 |--------|----------------|
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, boolean-combinatorics, data-transformation, return-value, chaining, and local-copy packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, data-transformation, return-value, and local-copy packs (boolean-combinatorics and chaining are implemented but currently disabled) |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
 | `suggest` | candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
@@ -44,7 +44,7 @@ descriptors. The loader parses those descriptors explicitly, validates each
 provider's API version and ownership, and degrades per provider instead of
 aborting the whole load. The bundled descriptor registers logging,
 error-handling, bookkeeping, validation, normalization, data-access, service,
-mutation, bool-combinatorics, data-transformation, return-value, chaining, and
+mutation, data-transformation, return-value, and
 local-copy packs; `BundledRulePackSelection` constructs the per-language
 error-handling rules. The tests-only modules are not production dependencies.
 
