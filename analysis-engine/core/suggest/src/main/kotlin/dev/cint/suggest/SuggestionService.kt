@@ -1,6 +1,7 @@
 package dev.cint.suggest
 
 import dev.cint.api.CandidateEmit
+import dev.cint.api.CandidateReason
 import dev.cint.core.candidate.CandidateIdentity
 
 data class CandidateDocument(
@@ -16,6 +17,7 @@ data class SuggestionOptions(
     val providerId: String? = null,
     val model: String? = null,
     val maxCandidates: Int = 5,
+    val maxEnrichmentCandidates: Int = 5,
     val promptVersion: String? = null,
     val excerptRadiusBytes: Int = SourceExcerpt.DEFAULT_RADIUS_BYTES,
     val allowGlobs: List<String> = emptyList(),
@@ -46,8 +48,12 @@ class SuggestionService(
         for (candidate in candidates) {
             merged[candidateId(document.path, document.text, candidate)] = candidate
         }
-        for (candidate in candidates) {
-            if (!candidate.aiEligible) continue
+        val enrichable =
+            candidates
+                .filter { it.aiEligible }
+                .sortedWith(compareBy({ reasonRank(it.reason) }, { it.startByte }, { it.endByte }))
+                .take(options.maxEnrichmentCandidates.coerceAtLeast(0))
+        for (candidate in enrichable) {
             val excerpt =
                 SourceExcerpt
                     .around(
@@ -124,4 +130,11 @@ class SuggestionService(
             candidate.intents,
             candidate.reason.name,
         )
+
+    private fun reasonRank(reason: CandidateReason): Int =
+        when (reason) {
+            CandidateReason.GAP -> 0
+            CandidateReason.LOW_CONFIDENCE -> 1
+            CandidateReason.PACK_DOMAIN -> 2
+        }
 }

@@ -826,6 +826,7 @@ class LiveServer(
                                             providerId = suggestionSettings.effectiveProvider,
                                             model = suggestionSettings.effectiveModel,
                                             maxCandidates = suggestionSettings.maxCandidates,
+                                            maxEnrichmentCandidates = suggestionSettings.maxEnrichmentCandidates,
                                             promptVersion = suggestionSettings.promptVersion,
                                             excerptRadiusBytes = suggestionSettings.excerptRadiusBytes,
                                             allowGlobs = suggestionSettings.allowGlobs,

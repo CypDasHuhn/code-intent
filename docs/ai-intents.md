@@ -142,7 +142,10 @@ CandidateEmit (aiEligible)
 - Prompt is versioned and structured; code and comments are untrusted data.
 - `CandidateValidator` enforces intent vocabulary, confidence range, byte bounds
   and containment inside the input candidate, dedupes, and applies
-  `maxCandidates`. Raw out-of-range or non-finite model confidence is dropped
+  `maxCandidates`. Only the top `maxEnrichmentCandidates` deterministic
+  candidates (GAP first, then LOW_CONFIDENCE, then PACK_DOMAIN) are sent to the
+  provider per pass, so a file with many deterministic candidates cannot exhaust
+  the timeout. Raw out-of-range or non-finite model confidence is dropped
   before the cap. Invalid output is dropped. No tool calls, no edits.
 - AI output is a `CandidateEmit` (`source = ai:deepseek`), so candidate-only is
   structural. It never becomes an established annotation without Confirm, and
@@ -245,8 +248,9 @@ suggestions:
   provider: deepseek     # "deepseek" by default when enabled and unset; "fake" stays available
   model: deepseek-chat
   maxCandidates: 5
+  maxEnrichmentCandidates: 5  # deterministic candidates sent to AI per pass
   promptVersion: deepseek-intent-v1
-  timeoutMs: 4000        # provider interrupt/HTTP timeout, minimum 1
+  timeoutMs: 10000       # whole pass/provider interrupt/HTTP timeout, minimum 1
   workerThreads: 2       # bounded suggestion/provider pools, clamped 1..8
   apiKeyEnv: DEEPSEEK_CHAT_KEY
   baseUrl: https://api.deepseek.com/chat/completions

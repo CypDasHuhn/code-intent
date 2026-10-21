@@ -24,7 +24,7 @@ data class DeepSeekProviderConfig(
     val model: String = DEEPSEEK_MODEL_ID,
     val maxTokens: Int = DEEPSEEK_MAX_TOKENS,
     val maxConfidence: Double = DEEPSEEK_MAX_CONFIDENCE,
-    val timeoutMs: Long = 4_000L,
+    val timeoutMs: Long = 10_000L,
 )
 
 class DeepSeekIntentSuggestionProvider(

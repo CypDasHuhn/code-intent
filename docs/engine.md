@@ -380,9 +380,10 @@ Suggestion settings are discovered at `<root>/.cint/suggestions.yml` under a
 top-level `suggestions:` mapping. Implemented keys are `enabled` (default
 `false`), `trigger` (default `manual`), `provider` (default `deepseek` when
 enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
-for the DeepSeek provider), `maxCandidates` (default `5`, minimum `1`),
+for the DeepSeek provider), `maxCandidates` (default `5`, minimum `1`), `maxEnrichmentCandidates`
+(default `5`, minimum `0`),
 `promptVersion` (default `deepseek-intent-v1` for DeepSeek), `timeoutMs`
-(default `4000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
+(default `10000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
 `apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
 `https://api.deepseek.com/chat/completions`), `maxTokens` (default `512`),
 `maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
