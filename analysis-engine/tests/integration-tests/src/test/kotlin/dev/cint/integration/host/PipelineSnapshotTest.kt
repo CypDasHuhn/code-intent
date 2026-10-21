@@ -56,6 +56,7 @@ private val snapshotFixtures =
         SnapshotFixture("kotlin/ErrorHandling.kt", "kotlin"),
         SnapshotFixture("kotlin/Heuristics.kt", "kotlin"),
         SnapshotFixture("kotlin/LoggerInteractions.kt", "kotlin"),
+        SnapshotFixture("kotlin/Mutation.kt", "kotlin"),
         SnapshotFixture("kotlin/PurityAssist.kt", "kotlin"),
         SnapshotFixture("kotlin/Scaffolds.kt", "kotlin"),
         SnapshotFixture("typescript/Sample.ts", "typescript"),

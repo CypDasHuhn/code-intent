@@ -21,6 +21,26 @@ class MutationConfigTest {
     }
 
     @Test
+    fun defaultsExcludeInMemoryReceiversAndIncludeDurableWrites() {
+        val config = MutationConfig.from(emptyMap()).forLanguage("kotlin")
+
+        assertTrue("put" in config.persistenceCalls)
+        assertTrue("putObject" in config.persistenceCalls)
+        assertTrue("File.WriteAllTextAsync" in config.persistencePaths)
+        assertTrue("stream" !in config.persistenceQualifiers)
+        assertTrue("channel" !in config.persistenceQualifiers)
+        assertTrue("writer" !in config.persistenceQualifiers)
+        assertTrue("context" !in config.persistenceQualifiers)
+        assertTrue("session" !in config.persistenceQualifiers)
+        assertTrue("table" !in config.persistenceQualifiers)
+        assertTrue("Stream" !in config.persistenceTypes)
+        assertTrue("OutputStream" !in config.persistenceTypes)
+        assertTrue("Writer" !in config.persistenceTypes)
+        assertTrue("Collection" !in config.persistenceTypes)
+        assertTrue("Table" !in config.persistenceTypes)
+    }
+
+    @Test
     fun overridesReplaceOnlyTheNamedValues() {
         val config =
             MutationConfig.from(
@@ -29,6 +49,7 @@ class MutationConfigTest {
                         mapOf(
                             "persistenceCalls" to listOf("persistRecord"),
                             "mutableOperations" to listOf("frobnicate"),
+                            "mutableReceiverNames" to listOf("widget"),
                             "ignoreLoopCounters" to false,
                         ),
                 ),
@@ -83,6 +104,7 @@ class MutationConfigTest {
                         mapOf(
                             "persistenceCalls" to listOf("persistRecord"),
                             "mutableOperations" to listOf("frobnicate"),
+                            "mutableReceiverNames" to listOf("widget"),
                             "ignoreLoopCounters" to false,
                         ),
                 ),
@@ -93,6 +115,7 @@ class MutationConfigTest {
         assertTrue("persistRecord" in kotlin.persistenceCalls)
         assertTrue("add" in kotlin.mutableOperations)
         assertTrue("frobnicate" in kotlin.mutableOperations)
+        assertTrue("widget" in kotlin.mutableReceiverNames)
         assertEquals(false, kotlin.ignoreLoopCounters)
     }
 

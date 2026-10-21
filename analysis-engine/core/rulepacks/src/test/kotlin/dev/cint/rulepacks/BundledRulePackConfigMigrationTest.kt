@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-private val bundledIds = setOf("logging", "error-handling", "bookkeeping", "validation")
+private val bundledIds = setOf("logging", "error-handling", "bookkeeping", "mutation", "validation")
 
 class BundledRulePackConfigMigrationTest {
     @Test

@@ -2,6 +2,10 @@ package dev.cint.rulepacks.tests.intents.mutation
 
 import dev.cint.api.CandidateReason
 import dev.cint.api.RulePack
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.TypeFact
+import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_RULE_ID
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
@@ -10,6 +14,15 @@ import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+private class FixedOracle(
+    private val fact: TypeFact?,
+) : TypeOracle {
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? = fact
+}
 
 class MutationDataModifyRuleTest {
     @Test
@@ -78,7 +91,9 @@ class MutationDataModifyRuleTest {
             }
             """.trimIndent()
 
-        analyze("kotlin", text).assertNoSource(DATA_MODIFY_INTENT)
+        val analysis = analyze("kotlin", text)
+        analysis.assertNoSource(DATA_MODIFY_INTENT)
+        assertTrue(analysis.candidates(DATA_MODIFY_INTENT).isEmpty())
     }
 
     @Test
@@ -126,9 +141,112 @@ class MutationDataModifyRuleTest {
         assertTrue(analysis.source(DATA_MODIFY_INTENT).isEmpty())
     }
 
+    @Test
+    fun receiverlessCallsAreCandidatesUnlessAPathIsConfigured() {
+        val text =
+            """
+            fun f(user: User, id: String) {
+                save(user)
+                update(id)
+                send(user)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        analysis.assertNoSource(DATA_MODIFY_INTENT)
+        assertEquals(3, analysis.candidates(DATA_MODIFY_INTENT).size)
+
+        val configured =
+            MutationRulePack().configure(
+                mapOf("kotlin" to mapOf("persistencePaths" to listOf("save"))),
+            )
+        assertEquals(
+            setOf("save(user)"),
+            analyze("kotlin", text, configured).texts(DATA_MODIFY_INTENT).toSet(),
+        )
+    }
+
+    @Test
+    fun inMemoryStreamsAndCollectionsAreNotDataModify() {
+        val text =
+            """
+            fun f(channel: SendChannel<Int>, out: ByteArrayOutputStream, writer: StringWriter) {
+                channel.send(1)
+                out.write(bytes)
+                writer.append("x")
+            }
+            """.trimIndent()
+
+        val analysis =
+            analyzePack(
+                "kotlin",
+                text,
+                listOf(BookkeepingRulePack(), MutationRulePack()),
+                FixedOracle(TypeFact("kotlinx.coroutines.channels.SendChannel")),
+            )
+
+        analysis.assertNoSource(DATA_MODIFY_INTENT)
+        assertTrue(analysis.candidates(DATA_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun durablePutAndMessagingTemplatesAreEstablished() {
+        val text =
+            """
+            fun f(item: Item, event: Event) {
+                bucket.put("key", item)
+                kafkaTemplate.send(event)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(
+            setOf("bucket.put(\"key\", item)", "kafkaTemplate.send(event)"),
+            analysis.texts(DATA_MODIFY_INTENT).toSet(),
+        )
+    }
+
+    @Test
+    fun csharpAsyncFileWritesAreEstablished() {
+        val text =
+            """
+            class C {
+                async Task F() {
+                    await File.WriteAllTextAsync(path, text);
+                    await File.AppendAllTextAsync(path, text);
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyze("csharp", text)
+
+        assertEquals(
+            setOf("File.WriteAllTextAsync(path, text)", "File.AppendAllTextAsync(path, text)"),
+            analysis.texts(DATA_MODIFY_INTENT).toSet(),
+        )
+    }
+
+    @Test
+    fun configuredPersistencePathsEstablishReceiverlessCalls() {
+        val pack =
+            MutationRulePack().configure(
+                mapOf("kotlin" to mapOf("persistencePaths" to listOf("legacyPersist"))),
+            )
+        val text =
+            """
+            fun f(item: Item) {
+                legacyPersist(item)
+            }
+            """.trimIndent()
+
+        assertEquals(setOf("legacyPersist(item)"), analyze("kotlin", text, pack).texts(DATA_MODIFY_INTENT).toSet())
+    }
+
     private fun analyze(
         language: String,
         text: String,
         pack: RulePack = MutationRulePack(),
-    ): PackAnalysis = analyzePack(language, text, listOf(pack))
+    ): PackAnalysis = analyzePack(language, text, listOf(BookkeepingRulePack(), pack))
 }

@@ -7,6 +7,10 @@ import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.View
 import dev.cint.api.emit
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.TypeFact
+import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.rulepacks.bookkeeping.BookkeepingConfig
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
@@ -16,6 +20,13 @@ import dev.cint.test.fixtures.text
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+
+private class RepositoryOracle : TypeOracle {
+    override fun typeAt(
+        file: SourceFile,
+        byteOffset: Int,
+    ): TypeFact? = TypeFact("org.springframework.data.repository.Repository")
+}
 
 class MutationOverlapTest {
     @Test
@@ -41,6 +52,111 @@ class MutationOverlapTest {
     }
 
     @Test
+    fun configuredBookkeepingMarkersKeepTheirPrecedence() {
+        val annotationText =
+            """
+            class C {
+                @Tracked
+                var skipped = 0
+
+                fun f() {
+                    skipped++
+                }
+            }
+            """.trimIndent()
+        val annotationPack =
+            BookkeepingRulePack(BookkeepingConfig(annotation = "Tracked", magicComment = "tracked"))
+        val annotationAnalysis = analyzePack("kotlin", annotationText, listOf(annotationPack, MutationRulePack()))
+
+        assertTrue(annotationAnalysis.texts("BOOKKEEPING").contains("skipped++"))
+        assertTrue(annotationAnalysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
+
+        val commentText =
+            """
+            class C {
+                // cint:tracked
+                var skipped = 0
+
+                fun f() {
+                    skipped++
+                }
+            }
+            """.trimIndent()
+        val commentAnalysis = analyzePack("kotlin", commentText, listOf(annotationPack, MutationRulePack()))
+
+        assertTrue(commentAnalysis.texts("BOOKKEEPING").contains("skipped++"))
+        assertTrue(commentAnalysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun bookkeepingSuppressionCanBeDisabled() {
+        val text =
+            """
+            class C {
+                @Bookkeeping
+                var skipped = 0
+
+                fun f() {
+                    skipped++
+                }
+            }
+            """.trimIndent()
+        val pack =
+            MutationRulePack().configure(
+                mapOf("kotlin" to mapOf("ignoreBookkeeping" to false)),
+            )
+
+        val analysis = analyzePack("kotlin", text, listOf(BookkeepingRulePack(), pack))
+        val localSpans =
+            analysis.texts(LOCAL_VALUE_MODIFY_INTENT) +
+                analysis.candidates(LOCAL_VALUE_MODIFY_INTENT).map { text.substring(it.startByte, it.endByte) }
+
+        assertTrue("skipped++" in localSpans)
+    }
+
+    @Test
+    fun mutableOperationOnAPersistenceTypeEstablishesOnlyDataModify() {
+        val text =
+            """
+            fun f(item: Item, items: MutableList<Item>) {
+                items.delete(item)
+            }
+            """.trimIndent()
+
+        val analysis =
+            analyzePack(
+                "kotlin",
+                text,
+                listOf(BookkeepingRulePack(), MutationRulePack()),
+                RepositoryOracle(),
+            )
+
+        assertEquals(setOf("items.delete(item)"), analysis.texts(DATA_MODIFY_INTENT).toSet())
+        assertTrue(analysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
+    }
+
+    @Test
+    fun configuredDerivedDeleteCanCoOccurWithSearch() {
+        val text =
+            """
+            fun f(status: Status) {
+                repository.deleteByStatus(status)
+            }
+            """.trimIndent()
+        val mutation =
+            MutationRulePack().configure(
+                mapOf("kotlin" to mapOf("persistenceCalls" to listOf("deleteByStatus"))),
+            )
+        val search = CallIntentPack("search", "SEARCH", setOf("repository.deleteByStatus(status)"))
+
+        val analysis = analyzePack("kotlin", text, listOf(BookkeepingRulePack(), mutation, search))
+
+        val annotation = analysis.source(DATA_MODIFY_INTENT).single()
+        assertEquals(setOf(DATA_MODIFY_INTENT, "SEARCH"), annotation.intents)
+        assertEquals(setOf("repository.deleteByStatus(status)"), analysis.texts("SEARCH").toSet())
+    }
+
+    @Test
     fun searchAndDataModifyCoexistIndependently() {
         val text =
             """
@@ -51,7 +167,7 @@ class MutationOverlapTest {
             """.trimIndent()
         val search = CallIntentPack("search", "SEARCH", setOf("repository.findByStatus(status)"))
 
-        val analysis = analyzePack("kotlin", text, listOf(MutationRulePack(), search))
+        val analysis = analyzePack("kotlin", text, listOf(BookkeepingRulePack(), MutationRulePack(), search))
 
         assertEquals(setOf("repository.findByStatus(status)"), analysis.texts("SEARCH").toSet())
         assertEquals(setOf("repository.save(found)"), analysis.texts(DATA_MODIFY_INTENT).toSet())
@@ -68,7 +184,7 @@ class MutationOverlapTest {
         val delegation =
             CallIntentPack("service", "SERVICE_DELEGATION", setOf("repository.save(user)"))
 
-        val analysis = analyzePack("kotlin", text, listOf(MutationRulePack(), delegation))
+        val analysis = analyzePack("kotlin", text, listOf(BookkeepingRulePack(), MutationRulePack(), delegation))
 
         val annotation = analysis.source(DATA_MODIFY_INTENT).single()
         assertEquals(setOf(DATA_MODIFY_INTENT, "SERVICE_DELEGATION"), annotation.intents)
