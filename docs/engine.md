@@ -16,7 +16,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | module | responsibility |
 |--------|----------------|
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, and mutation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, boolean-combinatorics, and data-transformation packs |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
 | `suggest` | candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
@@ -44,8 +44,9 @@ descriptors. The loader parses those descriptors explicitly, validates each
 provider's API version and ownership, and degrades per provider instead of
 aborting the whole load. The bundled descriptor registers logging,
 error-handling, bookkeeping, validation, normalization, data-access, service,
-and mutation packs; `BundledRulePackSelection` constructs the per-language
-error-handling rules. The tests-only modules are not production dependencies.
+mutation, bool-combinatorics, and data-transformation packs;
+`BundledRulePackSelection` constructs the per-language error-handling rules. The
+tests-only modules are not production dependencies.
 
 ## Languages
 
@@ -98,11 +99,17 @@ Detection rulepacks and core composition:
 - `bookkeeping:bookkeeping` — a property annotated with `@Bookkeeping` or
   preceded by `// cint:bookkeeping`. The declaration and all writes to it are
   tagged Bookkeeping; reads are not.
-- `validation:validation` — an `if` guard tagged Validation when its branch has a
-  Bookkeeping write, the condition is a validity predicate, the condition is
-  side-effect-free, or a `// cint:validation` comment precedes it. The annotation
-  is also a return certificate, so core can categorize returns without knowing
-  the validation intent or config. Bare exits stay neutral.
+- `validation:validation` — an `if` guard tagged Validation when its branch
+  contains a rejecting exit (`throw`, bare `return`/`continue`/`break`, or a
+  sentinel return) and the condition is not a known write. Elvis/coalesce forms
+  use the same gate. A validation predicate, a Bookkeeping write, or a
+  `// cint:validation` comment is rejection-independent. Unbraced bodies are
+  supported, and jumps inside nested functions/lambdas, nested loops, or nested
+  switches do not certify the outer guard. The read-only fallback accepts
+  unknown read-only conditions at lower confidence; known writes and mutation
+  intents block it. The annotation is also a return certificate, so core can
+  categorize returns without knowing the validation intent or config. Bare
+  exits stay neutral.
 - `error-handling-<language>:error-handling` — `throw` and configured checks
   (`require`, `assert`, ...). Call spans include trailing lambda arguments.
 - `normalization:normalization` — configured normalizer calls and prefixes
@@ -132,17 +139,38 @@ Detection rulepacks and core composition:
   configured mutable collection operations on proven collection receivers.
   Member/external assignments, unproven `add`/`put`/`remove` calls, loop
   counters, and bookkeeping writes stay out of the established set.
+- `bool-combinatorics:bool-combinatorics` — complex boolean shape from guard
+  conditions, return expressions, and initializers. Established when the
+  expression has multiple/mixed `&&`/`||`, a negated compound, a configured
+  quantifier (`all`/`any`/`none`, `every`/`some`, `All`/`Any`), or two or more
+  distinct classified predicates. Simple comparisons, `if (x != null)`, trivial
+  `a && b`, negation-only guards, and prefix collisions like `issue`/`hashCode`
+  stay untagged or candidate.
+- `data-transformation:data-transformation` — configured collection-shaping
+  calls (map/filter/fold/reduce/distinct/sorted/groupBy/quantifiers, and
+  language equivalents). It reads `SEARCH` and its own intent so search-owned
+  receivers and chained transformations settle first. Established only with a
+  configured qualifier, a known collection type, or a receiver already carrying
+  `SEARCH`/`DATA_TRANSFORMATION`; bare calls, unknown types, unclassified call
+  receivers, and offline-oracle receivers stay candidates. In-place JS mutators
+  may overlap `LOCAL_VALUE_MODIFY`.
 - `core:return-category` — classifies each `return` from the function CFG. A
   return on a certified guard's true edge inherits that guard's source intents
   (for example `VALIDATION`); a rejection sentinel on the other edge inherits
   them too. A normal return is `UNTAGGED` and blocks whole-function scaffolds
   instead of staying neutral. Core reads the generic certificate flag on source
   annotations, not validation-specific config.
-- `core:derivative-use` — a local whose initializer is explicitly pure (literal,
-  local read, or an annotated pure call) and whose reads flow into classified
-  statements, or an annotated pure function whose references all occur inside
-  other derivative-use declarations. Unannotated calls and operators are assumed
-  to have side effects and are not derivative.
+- `core:derivative-use` — a local whose initializer is read-only (no known
+  writes or `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`/`BOOKKEEPING` mutation) and whose
+  reads flow into classified statements. Known read-only initializers derive at
+  `0.7`; unknown read-only initializers derive at `0.55`. External reads are
+  allowed, while known writes/mutations block promotion. A read-only property
+  initializer or assignment RHS propagates its source intents to the whole
+  declaration/assignment statement; effects inside lambdas/call arguments are
+  dropped while value intents (`SEARCH`, `DATA_TRANSFORMATION`) are kept, and
+  confidence is the minimum source confidence. Annotated/user-pure functions
+  whose references all occur inside other derivative-use declarations are still
+  promoted only when explicitly pure.
 - `core:scaffold` — bottom-up control-flow classification. An `if`/`catch` gets
   the union of its guard and body intents. Side-effect-free guards (constants,
   comparisons, reads) are neutral; effectful guards add `UNTAGGED`. Mixed
@@ -261,12 +289,15 @@ mutation:
 ```
 
 Bundled pack ids are `logging`, `error-handling`, `bookkeeping`, `validation`,
-`normalization`, `data-access`, `service`, and `mutation`; each carries
-per-language fields for its own detection vocabulary.
+`normalization`, `data-access`, `service`, `mutation`, `bool-combinatorics`, and
+`data-transformation`; each carries per-language fields for its own detection
+vocabulary.
 
 Missing values use the owning pack's defaults. Unknown packs and keys are
-reported. Purity is explicit: an annotation means pure; its absence means
-impure. There is no body inference.
+reported. Purity annotations remain explicit: an annotation means pure and
+absence means no purity claim; there is no body inference. Purity still gates
+function-reference derivative promotion, while local initializer promotion uses
+the read-only policy above.
 
 An optional user overlay at `<root>/.cint/config.overlay.yml` is auto-discovered
 on load and after live config mutations. It is keyed by pack id; `PACK`-scoped

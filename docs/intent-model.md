@@ -15,7 +15,8 @@ intents into visual meanings.
 - Tag/intent names are screaming snake case: `LOGGING`, `ERROR_HANDLING`,
   `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`, `LOOKUP`,
   `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`,
-  `USER_FEEDBACK` (planned), `UNTAGGED`.
+  `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`, `USER_FEEDBACK` (planned),
+  `UNTAGGED`.
 - Source annotations remain code-shaped: `@Bookkeeping`, `@UserFeedback`,
   `// cint:bookkeeping`, `// cint:validation`.
 - The engine has no colors or visual policy. `tags[intent].meaning` and
@@ -56,35 +57,55 @@ possible.
 - No automatic inference from variable names. Explicit declaration is the
   source of truth.
 
-### `VALIDATION` (implemented, still being narrowed)
+### `VALIDATION` (implemented, rejection-shaped)
 
 Validation means **rejecting/skipping input**, not every early return.
 
-Current v1 behavior:
+Current behavior:
 
-- recognizes a then-branch with a direct `return` / `continue` / `break`;
-- tags the guard condition `VALIDATION` when one of:
-  - the branch contains a `BOOKKEEPING` write,
-  - the condition is a validation predicate (`isEmpty`, `isBlank`, `none`,
-    `any`, `all`, `isValid*`, `has*`, ...),
-  - the condition is side-effect-free,
-  - `// cint:validation` precedes the guard;
+- establishes when a then/else branch contains a rejecting exit and the
+  condition is not a known write;
+- a rejecting exit is `throw`, bare `return`/`continue`/`break`, or a `return`
+  whose expression is a configured rejection sentinel (`null`, `false`, `0`,
+  empty literals/collections, ...); a normal-value return does not reject;
+- `throw` and unbraced single-statement bodies count in Kotlin, JavaScript,
+  TypeScript, and C#;
+- `continue`/`break` only reject when they belong to the guard's own loop or
+  switch. A jump inside a nested loop, nested switch, or nested
+  function/lambda does not certify the outer guard;
+- elvis/coalesce forms (`x ?: continue`, `x ?: return sentinel`) use the same
+  rejection, `throw`, and known-write gates;
+- these paths are rejection-independent by design:
+  - a validation predicate (`isEmpty`, `isBlank`, `none`, `any`, `all`,
+    `isValid*`, `has*`, ...),
+  - a `BOOKKEEPING` write in the branch,
+  - an explicit `// cint:validation` comment;
+- a constant-only condition still needs explicit or bookkeeping evidence;
+- a read-only condition with a rejecting exit is established at lower
+  confidence. Unknown read-only status stays validation with reduced confidence
+  instead of being dropped. Known writes and mutation intents (`DATA_MODIFY`,
+  `LOCAL_VALUE_MODIFY`, `BOOKKEEPING`) block the read-only path;
 - contributes an ambient `VALIDATION` scaffold over the guard so plumbing
   locals read inside the guard become `DERIVATIVE_USE` with `VALIDATION`;
 - bare early exits are neutral; `return false` and bare `return` do not make a
   scaffold `UNTAGGED`;
 - the enclosing `if` composes e.g. `{VALIDATION, BOOKKEEPING}`.
 
+Confidence is diagnostic: explicit comment `1.0`, bookkeeping `0.9`, predicate
+`0.7`, side-effect-free condition `0.6`, read-only fallback `0.5`, elvis `0.6`.
+
 Known problem:
 
-- side-effect-free conditions are too broad. A search/lookup guard such as
-  `if (current.kind == ...) return current` is not validation.
+- local shape still cannot fully separate a genuine rejection from a cache-hit,
+  found-value, or ordinary early return. The rejection and nested-scope gates
+  remove the broadest false positives, but a guard that returns a rejection
+  sentinel for a business reason can still be over-tagged.
 - There is a gradient: validation early return, cache-hit return, simple value
   return, found-value return. The line cannot be drawn reliably with local
   shape heuristics.
 
-The current design direction is to stop treating shape as a certificate and to
-use candidate/confirmed states (see §7). Possible final rules:
+The design direction is to stop treating shape as a certificate and to use
+candidate/confirmed states (see §7). Possible final rules:
 
 - explicit annotation/comment;
 - a genuinely validating predicate plus a rejection effect;
@@ -138,8 +159,8 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | `SERVICE_INIT` | build/configure/wire a service or resource | construction, client creation, connection setup, DI/bootstrap | initializing business data, delegation, every constructor call |
 | `DATA_MODIFY` | change that persists beyond the process | repository save/update/delete, ORM writes, durable file writes, queue/event publication | in-memory mutation (`LOCAL_VALUE_MODIFY`), bookkeeping counters |
 | `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, loop counters/noise |
-| `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` over predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, plain literals |
-| `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`) |
+| `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` (and `every`/`some`) over predicates, two or more distinct classified predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, negation-only guards, plain literals, `is`/`has` prefix collisions such as `issue`/`hashCode` |
+| `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy`, `all`/`any`/`none`; in-place JS mutators such as `sort`/`reverse` may co-occur with `LOCAL_VALUE_MODIFY` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`); unclassified/unknown receivers stay candidates |
 | `RETURN_VALUE` | explicitly return a computed value | return statements with an expression | bare `return`, returning a literal only unless configured |
 | `CHAINING` | fluent/chained call shape | two or more links, e.g. `Factory.For().Use().Build()` | boolean `||` chains (`BOOL_COMBINATORICS`), single calls |
 | `LOCAL_COPY` | copy a parameter into a field/local | `_db = db`, `this.x = x` with parameter source | general local mutation (`LOCAL_VALUE_MODIFY`), persistence (`DATA_MODIFY`) |
@@ -158,6 +179,18 @@ Bundled ownership and deployment:
 - `mutation:data-modify` and `mutation:local-value-modify` own `DATA_MODIFY` and
   `LOCAL_VALUE_MODIFY`; persistence needs durable receiver/path evidence, and
   local writes exclude bookkeeping and loop counters.
+- `bool-combinatorics:bool-combinatorics` owns `BOOL_COMBINATORICS`. It is
+  deliberately selective: simple conditions stay untagged, and borderline
+  compound booleans (`a && b`) are low-confidence candidates. Nested booleans
+  inside a non-quantifier call are not roots.
+- `data-transformation:data-transformation` owns `DATA_TRANSFORMATION` and reads
+  `SEARCH` plus its own intent, so retrieved receivers and chained transforms
+  settle before the next conversion. Established output requires qualifier,
+  known collection type, or a receiver already classified `SEARCH` or
+  `DATA_TRANSFORMATION`. Unknown, unclassified, and offline-oracle receivers
+  (including call chains not classified as search/transformation) stay
+  candidates unless a configured qualifier matches. Ambiguous helpers
+  (`transform`, `process`, `reshape`, `convert`, ...) are candidates.
 
 Overlaps are intent sets, not exclusive labels, but packs should avoid
 double-tagging unless both meanings genuinely apply. Persistence wins over local
@@ -166,24 +199,66 @@ the delegate's business intent. Generic local mutation and most
 search/lookup/service boundaries are expected to be candidate-heavy and
 AI-enhanced rather than painted as established.
 
+Concrete overlaps and precedence:
+
+- **`SEARCH` / `DATA_TRANSFORMATION`** — retrieval that also shapes results can
+  carry both. `SEARCH` describes fetching; `DATA_TRANSFORMATION` describes the
+  shaping of what was fetched.
+- **`BOOL_COMBINATORICS` / `DATA_TRANSFORMATION`** — `all`/`any`/`none` (and
+  `every`/`some`, `All`/`Any`) are configured transformations and boolean
+  quantifiers, so a quantified predicate may carry both. Reductions such as
+  `fold`/`reduce` remain transformations even when they produce a scalar.
+- **`DATA_TRANSFORMATION` / `LOCAL_VALUE_MODIFY`** — in-place collection
+  mutators (`sort`, `reverse`, `splice`) may be both; the transformation pack
+  does not suppress the mutation pack, and vice versa.
+- **`DATA_TRANSFORMATION` / `VALIDATION`** — a validating predicate applied to a
+  transformed collection can carry both; neither replaces the other.
+- **`DATA_TRANSFORMATION` / `NORMALIZATION`** — `NORMALIZATION` canonicalizes a
+  single value; a later collection shaping call is still a transformation.
+
 ## 3. Derivative use and scaffolds
 
 ### Derivative use
 
 A property/local is `DERIVATIVE_USE` when its reads flow into classified spans.
 
-- Only explicitly pure initializers qualify: literals, local reads, and calls
-  to annotated pure functions.
-- A local is only promoted when all reads are classified; mixed/untagged reads
-  prevent promotion. There is no impure-local promotion: an unannotated call or
-  operator is assumed to have side effects until a purity engine exists.
+Local derivative promotion uses a **read-only** policy, not purity:
+
+- promotion is blocked by known writes/mutations: a `WriteFact` inside the
+  initializer, or a `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`, or `BOOKKEEPING` source
+  annotation inside it.
+- external reads are allowed. Known read-only initializers derive at `0.7`:
+  literals/constants, identifiers, side-effect-free expressions, annotated pure
+  calls, and user-pure calls.
+- an initializer without that evidence is treated as **unknown read-only** and
+  derives at `0.55`. This lowers confidence; it does not promote a candidate to
+  established and it does not certify purity.
+- a local is only promoted when all reads are classified; mixed/untagged reads
+  prevent promotion.
 - Intents at a read are resolved from the smallest containing annotation, which
   is what lets reads inside an error-handling lambda inherit `ERROR_HANDLING`.
-- Functions whose references all occur inside derivative-use declarations are
-  promoted only when they are explicitly pure.
-- Purity is explicit (`@Pure`, `@Contract(pure = true)`) or literal/local; there
-  is no real purity inference yet, so unannotated calls and operators are
-  treated as impure.
+
+Declaration and assignment propagation:
+
+- when a property initializer or assignment RHS is read-only and carries source
+  intents, the whole declaration/assignment statement inherits them as
+  `DERIVATIVE_USE`, so `val uses = <SEARCH expression>` paints the assignment,
+  not only the RHS.
+- intents from descendants inside lambdas or call arguments lose effect intents
+  (`LOGGING`, `ERROR_HANDLING`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`,
+  `BOOKKEEPING`) but keep value intents such as `SEARCH` and
+  `DATA_TRANSFORMATION`.
+- the propagated contribution uses the minimum source confidence, and merged
+  contributions on the same span also take the minimum, so a high-confidence
+  effect cannot inflate a weaker intent.
+- plain assignment statements and property initializers follow the same
+  read-only gate.
+
+Functions whose references all occur inside derivative-use declarations are
+promoted only when they are explicitly pure. Purity is explicit (`@Pure`,
+`@Contract(pure = true)`) or user-declared; there is no body purity inference.
+Unannotated calls are not assumed pure — for local initializers they are
+unknown read-only (`0.55`).
 
 ### Scaffolds
 
@@ -420,7 +495,8 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 - Tag names and profiles are uppercase. Client defaults include `LOGGING`,
   `ERROR_HANDLING`, `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`,
   `LOOKUP`, `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`,
-  `LOCAL_VALUE_MODIFY`, `UNTAGGED`.
+  `LOCAL_VALUE_MODIFY`, `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`,
+  `UNTAGGED`.
 
 ## 9. Open decisions
 
@@ -464,12 +540,12 @@ Key engine files:
   `ProjectConfigLoader.kt` — production pack selection and project config.
 - `analysis-engine/core/rulepacks/.../logging/`, `errorhandling/`,
   `bookkeeping/`, and `validation/` — bundled detection packs;
-  `intents/normalization/`, `intents/dataaccess/`, `intents/service/`, and
-  `intents/mutation/` supply the newer `NORMALIZATION`, `SEARCH`/`LOOKUP`,
-  `SERVICE_DELEGATION`/`SERVICE_INIT`, and
-  `DATA_MODIFY`/`LOCAL_VALUE_MODIFY` packs;
-  `support/BundledRulePackSelection.kt` supplies the per-language
-  error-handling packs.
+  `intents/normalization/`, `intents/dataaccess/`, `intents/service/`,
+  `intents/mutation/`, `intents/logic/`, and `intents/transformation/` supply
+  the newer `NORMALIZATION`, `SEARCH`/`LOOKUP`, `SERVICE_DELEGATION`/
+  `SERVICE_INIT`, `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`, `BOOL_COMBINATORICS`, and
+  `DATA_TRANSFORMATION` packs; `support/BundledRulePackSelection.kt` supplies
+  the per-language error-handling packs.
 - `analysis-engine/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
   JavaScript, TypeScript, Vue, and C# node-kind profiles.
 - `analysis-engine/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and
@@ -494,6 +570,9 @@ Fixtures:
 - `testing-grounds/kotlin/Mutation.kt` — persistence, local writes, collection
   operations.
 - `testing-grounds/kotlin/ServiceIntents.kt` — delegation and service init.
+- `testing-grounds/kotlin/Composition.kt` — mixed composition fixture: boolean
+  combinatorics, transformations, search, validation, and declaration
+  propagation.
 
 Tests and tooling:
 

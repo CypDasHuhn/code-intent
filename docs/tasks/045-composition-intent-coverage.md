@@ -1,6 +1,6 @@
 ---
 name: composition intent coverage and read-only semantics
-status: todo
+status: done
 depends-on: [037, 038, 040]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -80,3 +80,53 @@ The motivating fixture is
   transformation helpers.
 - `BOOL_COMBINATORICS` is deliberately selective: prefer missing a simple
   condition over painting every `if`. AI can raise borderline cases later.
+
+## Implementation notes (in progress)
+
+Status stays in progress until the reviewers close the Round 4 docs finding; the
+code findings from Rounds 1–4 are addressed.
+
+- Registered `bool-combinatorics:bool-combinatorics` (`BOOL_COMBINATORICS`) and
+  `data-transformation:data-transformation` (`DATA_TRANSFORMATION`) in the
+  bundled descriptor, host selection, migration/loading lists, and client
+  defaults.
+- `BOOL_COMBINATORICS` scans guard conditions, return expressions, and
+  initializers; establishes on multiple/mixed operators, negated compounds,
+  configured quantifiers, or two distinct classified predicates; keeps simple
+  `a && b`, negation-only, prefix-collision, and nested non-quantifier forms
+  untagged or candidate.
+- `DATA_TRANSFORMATION` reads `SEARCH` and its own intent for chained
+  transforms. Established output requires a configured qualifier, a known
+  collection type, or a `SEARCH`/transformation-classified receiver; bare calls,
+  unknown/unclassified receivers, and null-oracle offline receivers stay
+  candidates. In-place JS mutators may overlap `LOCAL_VALUE_MODIFY`.
+- Derivative local promotion is read-only rather than explicitly pure: known
+  read-only `0.7`, unknown read-only `0.55`, external reads allowed, and known
+  writes/mutations (`DATA_MODIFY`, `LOCAL_VALUE_MODIFY`, `BOOKKEEPING`) block.
+  Property initializers and assignment RHS values propagate value intents to the
+  whole declaration/assignment; lambda/argument effect intents are filtered and
+  propagation/merge use the minimum confidence.
+- Validation now requires a rejecting exit for the read-only path (`throw`,
+  bare/sentinel `return`, `continue`, `break`), handles unbraced bodies, and
+  excludes jumps inside nested loops/switches/functions. Predicate,
+  `BOOKKEEPING`, and explicit-comment paths remain rejection-independent.
+- Regression tests pin the motivating `testing-grounds/kotlin/Composition.kt`
+  fixture, read-only/unknown guards, writes and mutation-call initializers,
+  bool/data-transformation overlaps, unbraced cross-language rejection, nested
+  loop/switch scoping, and transformation receiver/chain evidence.
+- Docs updated: `docs/intent-model.md`, `docs/engine.md`,
+  `docs/architecture.md`. The nvim README does not enumerate the default tag set.
+
+
+## Outcome (2026-10-21)
+
+Implemented `BOOL_COMBINATORICS` (complex boolean expressions only, borderline
+forms candidate-only) and `DATA_TRANSFORMATION` (receiver/type/qualifier
+evidence, SEARCH-aware, own-intent fixpoint). Derivative use now promotes
+read-only initializers (external reads allowed; known writes/mutations block;
+unknown read-only lowers confidence) and propagates initializer intents to
+declaration/assignment spans. Validation now covers elvis/continue/break/throw
+rejection forms, unbraced guards, and read-only guards at reduced confidence,
+with nested loop/switch exits scoped correctly. Both packs are registered and
+snapshot/default-tag integrated. Reviews closed after five rounds; build,
+test-engine, lint, and test-nvim pass.
