@@ -5,6 +5,7 @@ import dev.cint.api.Contribution
 import dev.cint.api.Role
 import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
+import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.core.runtime.context.RuleContext
 
@@ -40,6 +41,7 @@ internal fun derivativeContributions(
                 .filter { it.startByte in scope.startByte until scope.endByte }
                 .filter { it.startByte != nameNode.startByte }
                 .filterNot { it.startByte >= initializer.startByte && it.endByte <= initializer.endByte }
+                .filterNot { reference -> isWriteTarget(ctx, reference) }
         if (uses.isEmpty()) continue
 
         val useIntents = uses.map { ctx.intentsAt(it) }
@@ -61,6 +63,17 @@ internal fun derivativeContributions(
                 "treesitter",
                 confidence,
             )
+        for (write in ctx.writes) {
+            if (writeTargetName(write) != name) continue
+            result +=
+                write.node.raw(
+                    Role.DERIVATIVE_USE,
+                    intents,
+                    DERIVATIVE_RULE,
+                    "treesitter",
+                    confidence,
+                )
+        }
     }
 
     for ((node, _, _, initializer1) in ctx.properties) {
@@ -183,6 +196,32 @@ private fun assignmentValue(node: SyntaxNode): SyntaxNode? {
     return node.children
         .drop(operator + 1)
         .firstOrNull { it.kind != ";" && it.kind !in COMMENT_KINDS }
+}
+
+private fun isWriteTarget(
+    ctx: RuleContext,
+    reference: SyntaxNode,
+): Boolean =
+    ctx.writes.any { write ->
+        val target = write.reference
+        if (target != null) {
+            target.startByte == reference.startByte && target.endByte == reference.endByte
+        } else {
+            reference.startByte >= write.node.startByte && reference.endByte <= write.node.endByte
+        }
+    }
+
+private fun writeTargetName(write: WriteFact): String? {
+    write.reference?.text?.let { return it.substringBefore('[').substringBefore('.').trim() }
+    val text = write.node.text.trim()
+    val target =
+        text
+            .substringBefore('=')
+            .substringBefore('+')
+            .substringBefore('-')
+            .trim()
+    if (target.isEmpty()) return null
+    return target.substringBefore('[').substringBefore('.').trim()
 }
 
 private fun derivativePlaceIntents(

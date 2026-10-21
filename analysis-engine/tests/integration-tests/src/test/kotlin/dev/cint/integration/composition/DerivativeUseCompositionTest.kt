@@ -7,6 +7,7 @@ import dev.cint.integration.composition.support.ReplayRule
 import dev.cint.integration.composition.support.analyzePipeline
 import dev.cint.integration.composition.support.emitFor
 import dev.cint.integration.composition.support.replaySource
+import dev.cint.test.fixtures.testPacks
 import dev.cint.test.fixtures.text
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
@@ -251,5 +252,24 @@ class DerivativeUseCompositionTest {
             }
 
         assertEquals(setOf("ERROR_HANDLING"), derivative.intents)
+    }
+
+    @Test
+    fun returnedLocalWritesInheritReturnValueDerivativeUse() {
+        val text =
+            """
+            fun merge(items: List<String>): List<String> {
+                val merged = linkedMapOf<String, String>()
+                for (item in items) {
+                    merged[item] = item
+                }
+                return merged.values.toList()
+            }
+            """.trimIndent()
+        val annotations = analyzePipeline(text, testPacks())
+
+        val derivatives = annotations.filter { it.role == Role.DERIVATIVE_USE }
+        assertTrue(derivatives.any { "RETURN_VALUE" in it.intents && it.text(text).contains("val merged") })
+        assertTrue(derivatives.any { "RETURN_VALUE" in it.intents && it.text(text).contains("merged[item] = item") })
     }
 }
