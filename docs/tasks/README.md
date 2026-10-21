@@ -56,6 +56,7 @@ host and client cutover at the end.
 | 042 | [intent pack fidelity hardening](042-intent-pack-fidelity-hardening.md) | todo | 037, 038, 039, 040 | Deferred structural write targets, DI shapes, factory boundary, persistence typing, and read-prefix ordering. |
 | 043 | [DeepSeek intent provider](043-deepseek-intent-provider.md) | done | 036 | Real DeepSeek-backed AI intent candidates, confirmable only. |
 | 044 | [analysis oracle caching and budgeting](044-analysis-oracle-caching.md) | todo | 040 | Memoize receiver types, cache LSP results, gate/limit oracle queries. |
+| 045 | [composition intent coverage and read-only semantics](045-composition-intent-coverage.md) | todo | 037, 038, 040 | Propagate initializer intents, add BOOL_COMBINATORICS/DATA_TRANSFORMATION, read-only guards. |
 
 ## Resolved decisions
 
