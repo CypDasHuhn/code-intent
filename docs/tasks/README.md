@@ -48,11 +48,12 @@ host and client cutover at the end.
 | 034 | [engine module layout](034-engine-module-layout.md) | done | 024, 027 | Move Gradle modules under analysis-engine/modules. |
 | 035 | [protocolized config overlay](035-protocolized-config-overlay.md) | done | 030 | Config descriptors over the live protocol plus additive user symbol overlay. |
 | 036 | [AI intent candidates via secondary emits](036-ai-intent-candidates.md) | done | 035 | v5 rule output split, candidate channel, fake AI provider, review UX. |
-| 037 | [normalization intent](037-normalization-intent.md) | todo | 036 | `NORMALIZATION` pack and candidate triggers. |
-| 038 | [search and lookup intents](038-search-lookup-intents.md) | todo | 036 | `SEARCH` and `LOOKUP` data-access pack. |
-| 039 | [service delegation and init intents](039-service-intents.md) | todo | 036 | `SERVICE_DELEGATION` and `SERVICE_INIT` service pack. |
-| 040 | [data and local mutation intents](040-mutation-intents.md) | todo | 036 | `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` mutation pack. |
+| 037 | [normalization intent](037-normalization-intent.md) | done | 036 | `NORMALIZATION` pack and candidate triggers. |
+| 038 | [search and lookup intents](038-search-lookup-intents.md) | done | 036 | `SEARCH` and `LOOKUP` data-access pack. |
+| 039 | [service delegation and init intents](039-service-intents.md) | done | 036 | `SERVICE_DELEGATION` and `SERVICE_INIT` service pack. |
+| 040 | [data and local mutation intents](040-mutation-intents.md) | done | 036 | `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` mutation pack. |
 | 041 | [annotation lock protocol hardening](041-annotation-lock-hardening.md) | todo | 036 | Fix shared annotation lock acquisition/release races. |
+| 042 | [intent pack fidelity hardening](042-intent-pack-fidelity-hardening.md) | todo | 037, 038, 039, 040 | Deferred structural write targets, DI shapes, factory boundary, persistence typing, and read-prefix ordering. |
 
 ## Resolved decisions
 

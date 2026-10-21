@@ -1,6 +1,6 @@
 ---
 name: search and lookup intents
-status: todo
+status: done
 depends-on: [036]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -47,3 +47,18 @@ Add two data-access intents:
 - SEARCH and LOOKUP may legitimately co-occur; keep them as a set, not a
   mutually exclusive enum.
 - Document the overlap policy with `SERVICE_DELEGATION` and `DATA_MODIFY`.
+
+## Outcome (2026-10-21)
+
+Implemented `DataAccessRulePack` with `data-access:search` (`SEARCH`) and
+`data-access:lookup` (`LOOKUP`), plus `DataAccessConfig` for search/lookup calls,
+qualifiers, types, known maps, enum resolution, ambiguous/boundary calls, and
+index kinds. `DataAccessSearchTest`, `DataAccessLookupTest`,
+`DataAccessNegativeTest`, `DataAccessOverlapTest`, `DataAccessTypeTest`, and
+`DataAccessConfigTest` cover configured classification, write targets, token
+matching, enum/lookup boundaries, overlap, and additive config. The pack is
+registered in `META-INF/services/dev.cint.api.RulePack`; the bundled loader,
+registration, and host tests assert both intents, and the renderer maps them.
+The current pipeline snapshot has no data-access spans because its fixtures do
+not contain search/lookup cases. Structural increment/decrement target selection
+was deferred to ticket 042.

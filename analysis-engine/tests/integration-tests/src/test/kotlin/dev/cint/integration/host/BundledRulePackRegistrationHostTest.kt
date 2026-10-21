@@ -5,7 +5,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private val bundledIds = setOf("logging", "error-handling", "bookkeeping", "mutation", "validation")
+private val bundledIds =
+    setOf(
+        "logging",
+        "error-handling",
+        "bookkeeping",
+        "mutation",
+        "validation",
+        "normalization",
+        "data-access",
+        "service",
+    )
 private val bundledLanguages = setOf("kotlin", "javascript", "typescript", "csharp")
 
 class BundledRulePackRegistrationHostTest {
@@ -29,6 +39,11 @@ class BundledRulePackRegistrationHostTest {
             assertTrue("ERROR_HANDLING" in pipeline.intents(listOf(language)), language)
             assertTrue("DATA_MODIFY" in pipeline.intents(listOf(language)), language)
             assertTrue("LOCAL_VALUE_MODIFY" in pipeline.intents(listOf(language)), language)
+            assertTrue("NORMALIZATION" in pipeline.intents(listOf(language)), language)
+            assertTrue("SEARCH" in pipeline.intents(listOf(language)), language)
+            assertTrue("LOOKUP" in pipeline.intents(listOf(language)), language)
+            assertTrue("SERVICE_DELEGATION" in pipeline.intents(listOf(language)), language)
+            assertTrue("SERVICE_INIT" in pipeline.intents(listOf(language)), language)
         }
     }
 

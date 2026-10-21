@@ -151,6 +151,18 @@ kinds directly. The bundled packs live in `analysis-engine/core/rulepacks`:
 - `validation:validation` — certifies guards by a bookkeeping write, a validity
   predicate, a side-effect-free condition, or `// cint:validation`; the guard
   annotation also carries the return-certificate flag used by core composition.
+- `normalization:normalization` — configured normalizer calls/prefixes gated by a
+  configured qualifier or oracle type. Display formatting and unconfigured chain
+  tails are candidates.
+- `data-access:search` / `data-access:lookup` — repository/query searches and
+  known-map/enum value resolution. Bare/ambiguous calls are candidates; write
+  targets and unknown indexes are not lookup.
+- `service:delegation` / `service:init` — thin forwarding to configured service
+  calls, and construction/client/connection/DI bootstrap. Mixed delegation
+  bodies and lifecycle names without evidence are candidates.
+- `mutation:data-modify` / `mutation:local-value-modify` — configured durable
+  persistence versus declaration-local writes and proven mutable collections.
+  Persistence still requires durable receiver/type evidence.
 
 Core composition adds `core:scaffold`, `core:derivative-use`, and
 `core:return-category`; it consumes intent sets without knowing pack identity.
@@ -467,8 +479,10 @@ Authoritative for resuming. Older sections are historical where they conflict.
   validates API version/ownership, and degrades per provider. The per-language
   error-handling packs are constructed by `BundledRulePackSelection` because
   they share one intent name; service descriptors cover the single-instance
-  logging, bookkeeping, validation, and mutation packs. Mutation owns
-  `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` as two rules in one pack.
+  logging, bookkeeping, validation, normalization, data-access, service, and
+  mutation packs. Mutation owns `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` as two
+  rules; data access owns `SEARCH`/`LOOKUP`; service owns
+  `SERVICE_DELEGATION`/`SERVICE_INIT`.
 - Syntax is data: `SyntaxModel`/`ProfileSyntaxModel` plus
   `languages/treesitter/src/main/resources/syntax/*.yaml` for Kotlin, JavaScript,
   TypeScript, Vue, and C#. `LanguageFrontend` lives in core; `frontend` registers

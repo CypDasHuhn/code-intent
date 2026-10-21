@@ -1,6 +1,6 @@
 ---
 name: normalization intent
-status: todo
+status: done
 depends-on: [036]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -44,3 +44,17 @@ string.
 
 - Prefer a config-driven pack over hardcoded language names.
 - Mark broad/weak cases `aiEligible` rather than widening the default set.
+
+## Outcome (2026-10-21)
+
+Implemented `NormalizationRulePack` (`normalization:normalization`, intent
+`NORMALIZATION`) with `NormalizationConfig` per-language fields for configured
+calls, instance/qualified calls, prefixes, qualifiers, types, candidate calls,
+candidate prefixes, and chain calls. Configured normalizers and prefix calls
+gated by qualifier/type establish `NORMALIZATION`; ambiguous display formatting
+and unconfigured chain tails emit `PACK_DOMAIN` candidates. `NormalizationRulePackTest`
+and `NormalizationConfigTest` cover configured detection, qualifiers, types,
+validation coexistence, candidate boundaries, and cross-language behavior. The
+pack is registered in `META-INF/services/dev.cint.api.RulePack`, included in the
+bundled loader/registration/host tests, and mapped in the renderer defaults.
+No 037 fidelity findings were deferred.

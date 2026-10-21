@@ -3,3 +3,6 @@ dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
 dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 dev.cint.rulepacks.validation.ValidationRulePack
 dev.cint.rulepacks.intents.mutation.MutationRulePack
+dev.cint.rulepacks.intents.normalization.NormalizationRulePack
+dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
+dev.cint.rulepacks.intents.service.ServiceRulePack

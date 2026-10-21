@@ -1,7 +1,8 @@
 # Service intents
 
-Scaffold for ticket 039. The pack is implemented but intentionally not registered
-in `META-INF/services`, so it does not affect bundled host output yet.
+The `service` pack owns `SERVICE_DELEGATION` and `SERVICE_INIT`. It is registered
+in bundled discovery and participates in host output alongside the other bundled
+packs.
 
 ## Intents
 
@@ -52,6 +53,10 @@ recognized, including generic parameter lists that contain commas. Lifecycle
 method names alone are candidate-only; they are established only when the
 function also has strong construction/connection/DI evidence.
 
+Known fidelity gaps: Kotlin `@Inject constructor` properties and TypeScript
+`constructor` parameter properties are not yet recognized, and `Factory` remains
+in the shared service suffix set. Ticket 042 tracks both.
+
 `new`/object creation is detected wherever it occurs (initializer, return,
 assignment, or argument), including C# target-typed `new()`, and the emitted span
 is the creation node itself. Nested constructions keep the outer configured
@@ -86,12 +91,14 @@ positions. `testing-grounds/kotlin/ServiceIntents.kt` is the shared fixture.
   every constructor call.
 - Init/setup calls are not also established delegation.
 
-## Registration
+## Registration and host coverage
 
-Registration and host/snapshot coverage are deferred with the scaffold. When the
-pack is enabled, add this line to
-`analysis-engine/core/rulepacks/src/main/resources/META-INF/services/dev.cint.api.RulePack`:
-
-```text
-dev.cint.rulepacks.intents.service.ServiceRulePack
-```
+The pack is registered in
+`analysis-engine/core/rulepacks/src/main/resources/META-INF/services/dev.cint.api.RulePack`
+as `dev.cint.rulepacks.intents.service.ServiceRulePack`. Bundled discovery and
+host composition are covered by `BundledRulePackRegistrationTest`,
+`BundledRulePackLoadingTest`, and `BundledRulePackRegistrationHostTest`, which
+assert `SERVICE_DELEGATION` and `SERVICE_INIT` per bundled language. The current
+pipeline snapshot includes `service:init` from `csharp/Sample.cs`, and
+`ServiceFixtureTest` covers `testing-grounds/kotlin/ServiceIntents.kt`. The
+manual gate records this coverage in m013.

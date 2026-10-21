@@ -44,10 +44,11 @@ The engine is split into two kinds of code with a hard line between them.
 core composition; they are not part of the plugin API. A plugin cannot remove,
 hide, or reclassify anything.
 
-The built-in detectors (logging, error handling, bookkeeping, validation, and mutation) are
-**bundled rulepacks that use the same API as any third-party pack.** Core
-contains no hardcoded intent detection. This is what keeps the hull from
-decaying back into a monolithic block implementation.
+The built-in detectors (logging, error handling, bookkeeping, validation,
+normalization, data access, service boundaries, and mutation) are **bundled
+rulepacks that use the same API as any third-party pack.** Core contains no
+hardcoded intent detection. This is what keeps the hull from decaying back into
+a monolithic block implementation.
 
 ## 2. Intents, rules, ownership
 
@@ -122,6 +123,8 @@ Worked example of strata:
 
 ```
 stratum 0:  logging, error-handling-<language>, bookkeeping,
+            normalization:normalization, data-access:search,
+            data-access:lookup, service:delegation, service:init,
             mutation:data-modify (no dependencies)
 stratum 1:  validation, mutation:local-value-modify
             (read BOOKKEEPING)
@@ -262,7 +265,7 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 | module | responsibility |
 |---|---|
 | `api` | frozen v5 contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, scheduler contract, DSL |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, and mutation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, and mutation packs |
 | `core` | syntax facts, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
 | `suggest` | candidate context, provider SPI/registry, fake provider, validator, merge, grouping |
 | `host` | host pipeline and project config loading shared by all hosts |
@@ -286,7 +289,10 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 - Loading reads `META-INF/services/dev.cint.api.RulePack` explicitly rather
   than iterating `ServiceLoader`. That keeps per-provider failure isolation,
   API-version checks, and deterministic ordering; there is no runtime Kotlin
-  compiler or classloader swapping.
+  compiler or classloader swapping. The bundled descriptor registers logging,
+  error-handling, bookkeeping, validation, normalization, data-access, service,
+  and mutation packs; host selection constructs the per-language error-handling
+  rules.
 - **Graceful degradation:** a missing, corrupt, or version-mismatched pack is
   reported and skipped; the engine keeps analyzing with what loaded.
 - **Reload.** A pack change is normally a dev-time action, never a per-edit one;

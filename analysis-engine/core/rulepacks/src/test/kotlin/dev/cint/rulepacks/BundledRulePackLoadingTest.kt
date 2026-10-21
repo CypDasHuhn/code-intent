@@ -37,7 +37,17 @@ class BundledRulePackLoadingTest {
         val result = RulePackLoader(TestBundledPack::class.java.classLoader, onFailure = {}).load()
 
         assertEquals(
-            listOf("bookkeeping", "bundled-test", "error-handling", "logging", "mutation", "validation"),
+            listOf(
+                "bookkeeping",
+                "bundled-test",
+                "data-access",
+                "error-handling",
+                "logging",
+                "mutation",
+                "normalization",
+                "service",
+                "validation",
+            ),
             result.loadedPackIds,
         )
         assertTrue(result.failures.isEmpty())
@@ -46,10 +56,15 @@ class BundledRulePackLoadingTest {
             setOf(
                 "bookkeeping:bookkeeping",
                 "bundled-test:logging",
+                "data-access:lookup",
+                "data-access:search",
                 "error-handling:error-handling",
                 "logging:logging",
                 "mutation:data-modify",
                 "mutation:local-value-modify",
+                "normalization:normalization",
+                "service:delegation",
+                "service:init",
                 "validation:validation",
             ),
             plan.strata

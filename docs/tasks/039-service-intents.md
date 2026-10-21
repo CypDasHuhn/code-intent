@@ -1,6 +1,6 @@
 ---
 name: service delegation and init intents
-status: todo
+status: done
 depends-on: [036]
 reviewers: [correctness, detection-fidelity]
 ---
@@ -46,3 +46,20 @@ Add two service-boundary intents:
 - SERVICE_DELEGATION is about responsibility transfer, not the call's business
   intent. It can co-occur with SEARCH or DATA_MODIFY on the inner call.
 - SERVICE_INIT is about lifecycle construction, not initializing business data.
+
+## Outcome (2026-10-21)
+
+Implemented `ServiceRulePack` with `service:delegation`
+(`SERVICE_DELEGATION`) and `service:init` (`SERVICE_INIT`), plus
+`ServiceConfig` for delegation/service markers, controller/facade suffixes,
+init/connection/DI calls and qualifiers, and injection annotations. Established
+delegation requires a thin whole-body forwarding expression; mixed bodies become
+candidates. Init covers construction, factory/connection setup, DI annotations,
+and constructor injection. `ServiceDelegationRulePackTest`,
+`ServiceInitRulePackTest`, `ServiceOverlapTest`, `ServiceFixtureTest`, and
+`ServiceConfigTest` cover the behavior and `testing-grounds/kotlin/ServiceIntents.kt`
+is the shared fixture. The pack is registered in
+`META-INF/services/dev.cint.api.RulePack`; bundled host registration asserts both
+intents, and the current pipeline snapshot includes `service:init` from
+`csharp/Sample.cs`. Kotlin `@Inject constructor`, TypeScript parameter-property
+injection, and the `Factory` suffix boundary were deferred to ticket 042.

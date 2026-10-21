@@ -13,7 +13,9 @@ intents into visual meanings.
 - Intents are a set, e.g. `{VALIDATION, BOOKKEEPING}`.
 - `UNTAGGED` is the reserved "unclassified effect" intent.
 - Tag/intent names are screaming snake case: `LOGGING`, `ERROR_HANDLING`,
-  `BOOKKEEPING`, `VALIDATION`, `USER_FEEDBACK` (planned), `UNTAGGED`.
+  `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`, `LOOKUP`,
+  `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`,
+  `USER_FEEDBACK` (planned), `UNTAGGED`.
 - Source annotations remain code-shaped: `@Bookkeeping`, `@UserFeedback`,
   `// cint:bookkeeping`, `// cint:validation`.
 - The engine has no colors or visual policy. `tags[intent].meaning` and
@@ -122,10 +124,10 @@ so the `if` becomes `{VALIDATION, USER_FEEDBACK}`.
 `APP_EFFECT` is considered too broad: messages, sounds, inventory mutations,
 etc. have different semantics. Generic effects can be a separate taxonomy later.
 
-### Queued intents (2026-10-21)
+### Implemented intents (2026-10-21)
 
-Definitions for the next taxonomy batch. Deterministic detection where
-config/explicit patterns exist; AI candidates for the ambiguous remainder.
+Definitions for the current taxonomy batch. Deterministic detection where
+config/explicit patterns exist; candidates for the ambiguous remainder.
 
 | intent | meaning | include | exclude / boundary |
 |---|---|---|---|
@@ -136,6 +138,21 @@ config/explicit patterns exist; AI candidates for the ambiguous remainder.
 | `SERVICE_INIT` | build/configure/wire a service or resource | construction, client creation, connection setup, DI/bootstrap | initializing business data, delegation, every constructor call |
 | `DATA_MODIFY` | change that persists beyond the process | repository save/update/delete, ORM writes, durable file writes, queue/event publication | in-memory mutation (`LOCAL_VALUE_MODIFY`), bookkeeping counters |
 | `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, loop counters/noise |
+
+Bundled ownership and deployment:
+
+- `normalization:normalization` owns `NORMALIZATION`; configured calls and
+  prefixes establish only with qualifier/type evidence, while display formatting
+  and unconfigured chain tails are candidates.
+- `data-access:search` and `data-access:lookup` own `SEARCH` and `LOOKUP`; both
+  are source-only rules registered in bundled discovery. Ambiguous retrieval
+  calls and SEARCH/LOOKUP boundaries are candidates.
+- `service:delegation` and `service:init` own `SERVICE_DELEGATION` and
+  `SERVICE_INIT`; thin forwarding is judged independently of the delegate's
+  intent, and factory/connection/DI work belongs to init.
+- `mutation:data-modify` and `mutation:local-value-modify` own `DATA_MODIFY` and
+  `LOCAL_VALUE_MODIFY`; persistence needs durable receiver/path evidence, and
+  local writes exclude bookkeeping and loop counters.
 
 Overlaps are intent sets, not exclusive labels, but packs should avoid
 double-tagging unless both meanings genuinely apply. Persistence wins over local
@@ -395,8 +412,10 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 - Profiles/shards are client-side and only re-render cached annotations.
 - Live keeps old marks while a new version is pending; reveal-on-cursor reveals
   all annotations contained in the active scaffold/vertical block.
-- Tag names and profiles are uppercase. Client defaults include
-  `LOGGING`, `ERROR_HANDLING`, `BOOKKEEPING`, `VALIDATION`, `UNTAGGED`.
+- Tag names and profiles are uppercase. Client defaults include `LOGGING`,
+  `ERROR_HANDLING`, `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`,
+  `LOOKUP`, `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`,
+  `LOCAL_VALUE_MODIFY`, `UNTAGGED`.
 
 ## 9. Open decisions
 
@@ -438,10 +457,14 @@ Key engine files:
   `META-INF/services` discovery, validation, and per-provider degradation.
 - `analysis-engine/core/host/.../HostPipeline.kt`, `HostConfig.kt`, and
   `ProjectConfigLoader.kt` — production pack selection and project config.
-- `analysis-engine/core/rulepacks/.../logging|errorhandling|bookkeeping|validation/`
-  — bundled detection packs; `intents/mutation/` supplies the multi-rule
-  `DATA_MODIFY`/`LOCAL_VALUE_MODIFY` pack; `support/BundledRulePackSelection.kt`
-  supplies the per-language error-handling packs.
+- `analysis-engine/core/rulepacks/.../logging/`, `errorhandling/`,
+  `bookkeeping/`, and `validation/` — bundled detection packs;
+  `intents/normalization/`, `intents/dataaccess/`, `intents/service/`, and
+  `intents/mutation/` supply the newer `NORMALIZATION`, `SEARCH`/`LOOKUP`,
+  `SERVICE_DELEGATION`/`SERVICE_INIT`, and
+  `DATA_MODIFY`/`LOCAL_VALUE_MODIFY` packs;
+  `support/BundledRulePackSelection.kt` supplies the per-language
+  error-handling packs.
 - `analysis-engine/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
   JavaScript, TypeScript, Vue, and C# node-kind profiles.
 - `analysis-engine/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and
@@ -463,6 +486,9 @@ Fixtures:
 - `testing-grounds/kotlin/Scaffolds.kt` — guards/branches/untagged.
 - `testing-grounds/kotlin/Catches.kt` — try/catch spans.
 - `testing-grounds/kotlin/LoggerInteractions.kt` — typed/heuristic sources.
+- `testing-grounds/kotlin/Mutation.kt` — persistence, local writes, collection
+  operations.
+- `testing-grounds/kotlin/ServiceIntents.kt` — delegation and service init.
 
 Tests and tooling:
 

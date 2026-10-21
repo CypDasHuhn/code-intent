@@ -16,7 +16,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | module | responsibility |
 |--------|----------------|
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, and mutation packs |
+| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, and mutation packs |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
 | `suggest` | candidate context/provider SPI, fake provider, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
@@ -42,7 +42,10 @@ project config, and is reused by every host.
 Rulepacks are discovered from `META-INF/services/dev.cint.api.RulePack`
 descriptors. The loader parses those descriptors explicitly, validates each
 provider's API version and ownership, and degrades per provider instead of
-aborting the whole load. The tests-only modules are not production dependencies.
+aborting the whole load. The bundled descriptor registers logging,
+error-handling, bookkeeping, validation, normalization, data-access, service,
+and mutation packs; `BundledRulePackSelection` constructs the per-language
+error-handling rules. The tests-only modules are not production dependencies.
 
 ## Languages
 
@@ -102,6 +105,25 @@ Detection rulepacks and core composition:
   the validation intent or config. Bare exits stay neutral.
 - `error-handling-<language>:error-handling` — `throw` and configured checks
   (`require`, `assert`, ...). Call spans include trailing lambda arguments.
+- `normalization:normalization` — configured normalizer calls and prefixes
+  (`trim`, case folding, parse/coerce, canonicalize) that are gated by a
+  configured qualifier or oracle-resolved type. Ambiguous display formatting,
+  unprefixed unconfigured helpers, and chain tails after an established transform
+  are candidates.
+- `data-access:search` — configured repository/query calls and prefixes on a
+  configured search qualifier/type; ambiguous `get`/`find`/`fetch*` wrappers and
+  bare configured calls stay candidates. `findBy*` also gets a `LOOKUP` boundary
+  candidate.
+- `data-access:lookup` — known-map/table index reads, configured lookup calls on
+  known receivers/types, and enum/constant resolution (`valueOf`, `fromCode`,
+  ...). Write targets and unknown indexes are not lookup; ambiguous calls are
+  candidates.
+- `service:delegation` — a thin whole-body forwarding expression to a configured
+  service call. Mixed bodies, local-write/guard/try bodies, and controller or
+  facade patterns without configured service evidence are candidates.
+- `service:init` — configured construction, client creation, factory/connection
+  setup, DI calls, and constructor injection. Lifecycle names alone are
+  candidates; init call spans use the call/creation node.
 - `mutation:data-modify` — configured persistence calls on repository/ORM,
   file, queue, event, and object-store receivers. A receiver must prove a
   durable qualifier, type, or templated client; bare configured calls and
@@ -210,6 +232,10 @@ mutation:
     mutableReceiverNames: [items, values, cache]
     assignmentPatterns: [assignment, increment, decrement]
 ```
+
+Bundled pack ids are `logging`, `error-handling`, `bookkeeping`, `validation`,
+`normalization`, `data-access`, `service`, and `mutation`; each carries
+per-language fields for its own detection vocabulary.
 
 Missing values use the owning pack's defaults. Unknown packs and keys are
 reported. Purity is explicit: an annotation means pure; its absence means

@@ -64,11 +64,16 @@ token-based: camel/snake boundaries form tokens, so `userRepository` matches the
 - A known-map `get` is established `LOOKUP` because the key identifies one known
   value; the search rule still adds a `SEARCH` candidate for the boundary.
 - Index access that is the assigned target of an assignment, compound
-  assignment, or increment/decrement emits no `LOOKUP`; the future `DATA_MODIFY`
-  pack owns that boundary. Reads on the right-hand side (`copy = statusById[id]`)
-  and nested reads inside a target (`codeMap[id].field = value`,
-  `translationTable[statusById[id]] = value`) still emit `LOOKUP`.
+  assignment, or increment/decrement emits no `LOOKUP`; that write boundary
+  belongs to the mutation pack. Reads on the right-hand side
+  (`copy = statusById[id]`) and nested reads inside a target
+  (`codeMap[id].field = value`, `translationTable[statusById[id]] = value`) still
+  emit `LOOKUP`.
 - Unknown index access is not LOOKUP.
+
+Known fidelity gap: structural increment/decrement targets such as
+`counts[i - 1]++` and `statusById["x-y"]++` are still missed by the text-based
+target filter. Ticket 042 tracks the syntax-based target fix.
 
 ## Overlap policy
 
@@ -76,23 +81,23 @@ Intents are a set, not a mutually exclusive enum, so SEARCH and LOOKUP may
 legitimately co-occur on different spans in the same function or call chain.
 
 - `SERVICE_DELEGATION` describes responsibility transfer, not the delegated
-  call's business meaning. A later service pack may tag a thin wrapper while the
+  call's business meaning. The service pack may tag a thin wrapper while the
   inner repository/search call remains `SEARCH` or `LOOKUP`.
 - `DATA_MODIFY` describes persistence. A persistence write is not silently
   re-labelled as search/lookup; the persistence boundary wins for writes. This
   pack only classifies read-shaped data access and does not model calls that both
   query and mutate.
-- The current pack does not emit either intent; overlap is expressed by keeping
-  the data-access intents independent and composable.
+- The data-access rules are independent and composable; neither suppresses the
+  other or the service/mutation packs.
 
-## Registration
+## Registration and host coverage
 
-The pack is intentionally not registered in this scaffold: no host, CLI, server,
-or bundled-discovery path emits `SEARCH`/`LOOKUP` yet. Integration is deferred
-under ticket 038 and recorded in the manual gate (m013). Add this line to
+The pack is registered in
 `analysis-engine/core/rulepacks/src/main/resources/META-INF/services/dev.cint.api.RulePack`
-during that integration work:
-
-```text
-dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
-```
+as `dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack`. Bundled discovery
+and host composition are covered by `BundledRulePackRegistrationTest`,
+`BundledRulePackLoadingTest`, and `BundledRulePackRegistrationHostTest`, which
+assert both `SEARCH` and `LOOKUP` per bundled language. Classification itself is
+covered by the direct pack tests in `rulepacks-tests`. The current pipeline
+snapshot contains no data-access spans because its fixtures do not include
+search/lookup examples; the manual gate records this coverage in m013.
