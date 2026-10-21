@@ -7,6 +7,7 @@ import dev.cint.api.LanguageConfig
 data class NormalizationLanguageConfig(
     val calls: Set<String> = emptySet(),
     val instanceCalls: Set<String> = emptySet(),
+    val qualifiedCalls: Set<String> = emptySet(),
     val prefixes: List<String> = emptyList(),
     val qualifiers: Set<String> = emptySet(),
     val types: Set<String> = emptySet(),
@@ -36,6 +37,11 @@ data class NormalizationConfig(
                     "instanceCalls",
                     { it.instanceCalls },
                     { config, value -> config.copy(instanceCalls = value) },
+                ),
+                ConfigField.strings<NormalizationLanguageConfig>(
+                    "qualifiedCalls",
+                    { it.qualifiedCalls },
+                    { config, value -> config.copy(qualifiedCalls = value) },
                 ),
                 ConfigField.stringList<NormalizationLanguageConfig>(
                     "prefixes",
@@ -128,6 +134,17 @@ data class NormalizationConfig(
                         "toBigInteger",
                         "toPath",
                         "toUri",
+                        "normalize",
+                    ),
+                qualifiedCalls =
+                    setOf(
+                        "parseInt",
+                        "parseLong",
+                        "parseDouble",
+                        "parseFloat",
+                        "parseBoolean",
+                        "fromString",
+                        "decodeFromString",
                     ),
                 prefixes = listOf("parse", "normalize", "canonicalize"),
                 qualifiers =
@@ -216,7 +233,9 @@ data class NormalizationConfig(
                         "toUpperCase",
                         "toLocaleLowerCase",
                         "toLocaleUpperCase",
+                        "normalize",
                     ),
+                qualifiedCalls = setOf("parseInt", "parseFloat"),
                 prefixes = listOf("parse", "normalize", "canonicalize"),
                 qualifiers = setOf("JSON", "Number", "Date", "Intl", "String", "Buffer", "URL", "URLSearchParams", "path"),
                 types = setOf("Date", "URL", "URLSearchParams"),
@@ -261,6 +280,23 @@ data class NormalizationConfig(
                         "ToUpper",
                         "ToLowerInvariant",
                         "ToUpperInvariant",
+                        "Normalize",
+                    ),
+                qualifiedCalls =
+                    setOf(
+                        "Parse",
+                        "ParseExact",
+                        "GetFullPath",
+                        "GetRelativePath",
+                        "EscapeDataString",
+                        "UnescapeDataString",
+                        "ToInt16",
+                        "ToInt32",
+                        "ToInt64",
+                        "ToDouble",
+                        "ToDecimal",
+                        "ToBoolean",
+                        "ToDateTime",
                     ),
                 prefixes = listOf("Parse", "Normalize", "Canonicalize"),
                 qualifiers =

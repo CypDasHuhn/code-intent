@@ -15,9 +15,12 @@ class NormalizationConfigTest {
 
         assertEquals(NormalizationConfig.defaults(), config.languages)
         assertTrue("trim" in config.forLanguage("kotlin").calls)
+        assertTrue("normalize" in config.forLanguage("kotlin").instanceCalls)
         assertTrue("LocalDate" in config.forLanguage("kotlin").qualifiers)
         assertTrue("JSON" in config.forLanguage("javascript").qualifiers)
+        assertTrue("normalize" in config.forLanguage("javascript").instanceCalls)
         assertTrue("Trim" in config.forLanguage("csharp").calls)
+        assertTrue("Normalize" in config.forLanguage("csharp").instanceCalls)
         assertEquals(config.forLanguage("javascript"), config.forLanguage("typescript"))
     }
 

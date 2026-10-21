@@ -182,7 +182,8 @@ class NormalizationRulePackTest {
                 mapOf(
                     "kotlin" to
                         mapOf(
-                            "calls" to listOf("normalize"),
+                            "calls" to listOf("fromString"),
+                            "qualifiedCalls" to listOf("fromString"),
                             "prefixes" to emptyList<String>(),
                             "qualifiers" to listOf("Normalizers"),
                         ),
@@ -191,15 +192,69 @@ class NormalizationRulePackTest {
         val text =
             """
             fun f(value: String) {
-                Normalizers.normalize(value)
-                other.normalize(value)
+                Normalizers.fromString(value)
+                other.fromString(value)
             }
             """.trimIndent()
 
         val analysis = analyze("kotlin", text, listOf(pack))
 
-        assertEquals(listOf("Normalizers.normalize(value)"), analysis.texts(NORMALIZATION_INTENT))
-        assertEquals("other.normalize(value)", analysis.candidateText(text))
+        assertEquals(listOf("Normalizers.fromString(value)"), analysis.texts(NORMALIZATION_INTENT))
+        assertEquals("other.fromString(value)", analysis.candidateText(text))
+    }
+
+    @Test
+    fun configuredInstanceCallsEstablishWithoutAnExtraList() {
+        val pack =
+            NormalizationRulePack().configure(
+                mapOf(
+                    "kotlin" to
+                        mapOf(
+                            "calls" to listOf("slugify"),
+                            "prefixes" to emptyList<String>(),
+                            "candidateCalls" to emptyList<String>(),
+                            "candidatePrefixes" to emptyList<String>(),
+                            "chainCalls" to emptyList<String>(),
+                        ),
+                ),
+            )
+        val text = "fun f(value: String) = value.slugify()"
+
+        val analysis = analyze("kotlin", text, listOf(pack))
+
+        assertEquals(listOf("value.slugify()"), analysis.texts(NORMALIZATION_INTENT))
+        assertTrue(analysis.candidates(NORMALIZATION_INTENT).isEmpty())
+    }
+
+    @Test
+    fun standardInstanceNormalizersEstablishAcrossLanguages() {
+        val cases =
+            mapOf(
+                "kotlin" to "fun f(value: String) = value.normalize()",
+                "javascript" to "function f(value) { return value.normalize(); }",
+                "typescript" to "function f(value: string): string { return value.normalize(); }",
+                "csharp" to "class C { string F(string value) { return value.Normalize(); } }",
+            )
+
+        for ((language, text) in cases) {
+            val analysis = analyze(language, text)
+            assertTrue(analysis.texts(NORMALIZATION_INTENT).single().contains("normalize", ignoreCase = true), language)
+            assertTrue(analysis.candidates(NORMALIZATION_INTENT).isEmpty(), "$language candidates")
+        }
+
+        val kotlinPath = "fun f(path: LocalPath) = path.normalize()"
+        val withoutOracle = analyze("kotlin", kotlinPath)
+        assertEquals(listOf("path.normalize()"), withoutOracle.texts(NORMALIZATION_INTENT))
+        assertTrue(withoutOracle.candidates(NORMALIZATION_INTENT).isEmpty())
+
+        val withOracle =
+            analyzePack(
+                parsePackInput("kotlin", kotlinPath),
+                listOf(NormalizationRulePack()),
+                FixedOracle(TypeFact("java.nio.file.Path", "lsp", 0.9)),
+            )
+        assertEquals(listOf("path.normalize()"), withOracle.texts(NORMALIZATION_INTENT))
+        assertTrue(withOracle.candidates(NORMALIZATION_INTENT).isEmpty())
     }
 
     @Test

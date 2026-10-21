@@ -132,7 +132,7 @@ private fun NormalizationLanguageConfig.matchKind(
 
 private fun NormalizationLanguageConfig.isQualified(call: CallFact): Boolean {
     if (call.receiver == null || call.callee in instanceCalls) return false
-    return qualifiers.isNotEmpty() || types.isNotEmpty()
+    return call.callee in qualifiedCalls
 }
 
 private fun NormalizationLanguageConfig.acceptsReceiver(
