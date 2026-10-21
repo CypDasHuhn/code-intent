@@ -128,6 +128,7 @@ class LiveServer(
     private val publishedCandidates = ConcurrentHashMap<DocumentKey, List<PublishedCandidate>>()
     private val analysisRevisions = ConcurrentHashMap<DocumentKey, AtomicLong>()
     private val candidateLocks = ConcurrentHashMap<DocumentKey, Any>()
+    private val anchorLocks = ConcurrentHashMap<String, Any>()
     private val candidateStateRevisions = ConcurrentHashMap<DocumentKey, Long>()
     private val inFlightSuggestions = ConcurrentHashMap<DocumentKey, SuggestPass>()
     private val inFlightFutures = ConcurrentHashMap<DocumentKey, Future<*>>()
@@ -142,6 +143,9 @@ class LiveServer(
 
     @Volatile
     internal var analysisRevisionBarrierForTest: (() -> Unit)? = null
+
+    @Volatile
+    internal var candidateDecisionBarrierForTest: (() -> Unit)? = null
 
     fun run() {
         val parent = socketPath.parent
@@ -307,7 +311,6 @@ class LiveServer(
 
             "shutdown" -> {
                 respond(writer, id, true)
-                shutdownSuggestions()
             }
 
             else -> {
@@ -559,6 +562,7 @@ class LiveServer(
         candidates: List<CandidateEmit>,
         analysisRevision: Long,
         expectedStateRevision: Long? = null,
+        extraSkips: Set<String> = emptySet(),
     ): Int? {
         val key = DocumentKey(writer, doc.uri)
         val lock = candidateLocks.computeIfAbsent(key) { Any() }
@@ -622,7 +626,7 @@ class LiveServer(
                 val kept =
                     group.candidates.mapNotNull { candidate ->
                         val candidateId = candidateId(path, group.contentHash, candidate)
-                        if (candidateId in rejected || candidateId in currentSessionSkips) {
+                        if (candidateId in rejected || candidateId in currentSessionSkips || candidateId in extraSkips) {
                             null
                         } else {
                             PublishedCandidate(
@@ -924,9 +928,9 @@ class LiveServer(
         }
         when (decision) {
             "skip" -> {
-                sessionSkipped.computeIfAbsent(key) { ConcurrentHashMap.newKeySet() } += candidateId
                 val current = publishedCandidates[key].orEmpty()
                 val analysisRevision = current.maxOfOrNull { it.analysisRevision } ?: nextAnalysisRevision(key)
+                candidateDecisionBarrierForTest?.invoke()
                 val published =
                     publishCandidates(
                         writer,
@@ -934,10 +938,12 @@ class LiveServer(
                         current.map { it.candidate },
                         analysisRevision,
                         expectedStateRevision = baseStateRevision,
+                        extraSkips = setOf(candidateId),
                     )
                 if (published == null) {
                     return respond(writer, id, mapOf("accepted" to false, "stale" to true))
                 }
+                sessionSkipped.computeIfAbsent(key) { ConcurrentHashMap.newKeySet() } += candidateId
             }
 
             "reject" -> {
@@ -961,36 +967,68 @@ class LiveServer(
             }
 
             "confirm" -> {
-                UserAnnotationsFile.add(
-                    root,
-                    UserAnnotation(
-                        path = relativePath(uri),
-                        span = candidate.candidate.span,
-                        intents = candidate.candidate.intents,
-                        contentHash = candidate.contentHash,
-                        createdAt = Instant.now().toString(),
-                    ),
-                )
-                suggestionStore.record(
-                    SuggestionDecision(
-                        candidateId = candidateId,
-                        path = candidate.path,
-                        contentHash = candidate.contentHash,
-                        intents = candidate.candidate.intents,
-                        reason = candidate.candidate.reason.name,
-                        decision = "confirm",
-                        createdAt = Instant.now().toString(),
-                        anchorId = candidate.anchorId,
-                        startLine = candidate.candidate.span.startLine,
-                        startCol = candidate.candidate.span.startCol,
-                        endLine = candidate.candidate.span.endLine,
-                        endCol = candidate.candidate.span.endCol,
-                    ),
-                )
+                val anchorLock = anchorLocks.computeIfAbsent(candidate.anchorId) { Any() }
+                val confirmed =
+                    synchronized(anchorLock) {
+                        if (anchorResolvedGlobally(candidate.anchorId)) {
+                            false
+                        } else {
+                            UserAnnotationsFile.add(
+                                root,
+                                UserAnnotation(
+                                    path = relativePath(uri),
+                                    span = candidate.candidate.span,
+                                    intents = candidate.candidate.intents,
+                                    contentHash = candidate.contentHash,
+                                    createdAt = Instant.now().toString(),
+                                ),
+                            )
+                            suggestionStore.record(
+                                SuggestionDecision(
+                                    candidateId = candidateId,
+                                    path = candidate.path,
+                                    contentHash = candidate.contentHash,
+                                    intents = candidate.candidate.intents,
+                                    reason = candidate.candidate.reason.name,
+                                    decision = "confirm",
+                                    createdAt = Instant.now().toString(),
+                                    anchorId = candidate.anchorId,
+                                    startLine = candidate.candidate.span.startLine,
+                                    startCol = candidate.candidate.span.startCol,
+                                    endLine = candidate.candidate.span.endLine,
+                                    endCol = candidate.candidate.span.endCol,
+                                ),
+                            )
+                            true
+                        }
+                    }
+                if (!confirmed) {
+                    return respond(writer, id, mapOf("accepted" to false, "missing" to true))
+                }
                 publish(writer, doc)
             }
         }
         respond(writer, id, mapOf("accepted" to true, "stale" to false, "decision" to decision))
+    }
+
+    private fun anchorResolvedGlobally(anchorId: String): Boolean {
+        val decisions = suggestionStore.load()
+        val confirmations = decisions.filter { it.decision == "confirm" && it.anchorId == anchorId }
+        if (confirmations.isEmpty()) return false
+        val userAnnotations = UserAnnotationsFile.loadTolerant(root)
+        return confirmations.any { decision ->
+            userAnnotations.any { annotation ->
+                annotation.path == decision.path &&
+                    annotation.span ==
+                    dev.cint.api.Span(
+                        decision.startLine,
+                        decision.startCol,
+                        decision.endLine,
+                        decision.endCol,
+                    ) &&
+                    annotation.intents.any { it in decision.intents }
+            }
+        }
     }
 
     private fun relativePath(uri: String): String {

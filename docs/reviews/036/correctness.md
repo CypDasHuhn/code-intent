@@ -359,3 +359,118 @@ the revision ordering and group reconciliation fixes.
 - The config gate is read once at `LiveServer` construction, so editing
   `.cint/suggestions.yml` requires a restart (consistent with the manual-test
   row, but not live-reloaded).
+
+## Round 3
+
+Verdict: Round 2 findings 1-5 are addressed. Analysis revisions are now assigned
+under the same lock as the analysis/config snapshot, tag and candidate writes
+are version-gated, candidate publication uses a per-document compare-and-set,
+confirm resolves the candidate group (including a test that the sibling cannot
+later be confirmed), malformed user annotations are tolerated, the
+same-version/different-hash decision is tested, and the executor/provider pools
+are bounded with a timeout. Two correctness issues remain: a stale `skip` still
+mutates session suppression even though the response says stale, and concurrent
+confirms do an unsynchronized read-modify-write of the user-annotation file.
+The loop cannot close until those are fixed.
+
+### Findings
+
+1. **`analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:926-940`
+   — a stale `skip` is applied to session suppression even though the decision
+   is reported as stale and no candidate list is published.**
+
+   The skip branch adds `candidateId` to `sessionSkipped` before calling
+   `publishCandidates`. If the compare-and-set fails because the candidate state
+   changed (a newer suggest/decision publish landed after
+   `baseStateRevision` was captured), `publishCandidates` returns `null` and the
+   handler responds `accepted=false, stale=true`. The candidate is nevertheless
+   now in `sessionSkipped`, so every later candidate publication hides it even
+   though the user was told the skip did not apply. The skip is effectively
+   committed on a stale decision, and no test exercises this path.
+
+   Fix: apply the session skip only after `publishCandidates` succeeds, or roll
+   the `sessionSkipped` entry back when it returns `null` (and on the stale
+   version/hash exits). Add a test that forces the expected-state mismatch
+   between the skip capture and publish and asserts the response is stale and
+   the candidate remains visible afterwards.
+
+2. **`analysis-engine/core/core/src/main/kotlin/dev/cint/core/user/UserAnnotationsFile.kt:28-41`
+   with `analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:963-990`
+   — concurrent confirms perform an unsynchronized load-modify-save of
+   `.cint/user-annotations.json`, so one confirmation can overwrite another.**
+
+   `handleCandidateDecision` runs on each connection's thread, and the live
+   server explicitly supports independent per-connection candidate state. Two
+   clients (or one client and the nvim annotation writer) can confirm different
+   candidates at the same time. Each `UserAnnotationsFile.add` loads the file,
+   appends its record, and writes the whole list; the later writer overwrites the
+   earlier one. The server records both decisions in `suggestions.json`, so the
+   lost annotation then makes the confirmed candidate re-propose or leaves the
+   group unresolved. `SuggestionStore.record` is synchronized, but the
+   annotation write is not, and `add`/`save` are separate read-modify-write
+   operations.
+
+   Fix: serialize annotation writes (a per-root/server lock around `add`, or a
+   file lock for cross-process writers) and, ideally, write from the freshly
+   loaded list under that lock. Add a two-client concurrent-confirm test (or a
+   direct concurrent `add` test) asserting both annotations survive and both
+   groups resolve.
+
+### Concurs / Dissents
+
+- **Round 2 finding 1 (revision ordering):** concurs. `publish` now computes the
+  analysis, snapshots `configRevision`, and takes `nextAnalysisRevision` inside
+  the same `synchronized(this)` block, so revision order matches analysis order.
+  The barrier test and the concurrent didChange/config test both pin the
+  post-mutation result at the highest revision; the client's analysis-revision
+  gate now discards reordered older writes.
+- **Round 2 finding 2 (candidate compare-and-set):** concurs on the CAS and the
+  async overwrite race. `publishCandidates` locks per document and rejects lower
+  analysis revisions, old published revisions and unexpected state revisions;
+  the async test asserts a released suggestion cannot overwrite the newer
+  analysis. Dissents only on the stale-skip rollback in finding 1 above.
+- **Round 2 finding 3 (group resolution):** concurs. Confirm records carry the
+  anchor and span, `publishCandidates` resolves the anchor only while the user
+  annotation still exists, the alternative test confirms one member and asserts
+  the sibling is missing, and removing the annotation makes the group
+  re-proposable. The implementation path is correct; the multi-candidate
+  re-proposal case is not separately tested.
+- **Round 2 finding 4 (tolerant malformed user annotations):** concurs.
+  `loadTolerant` is used for candidate publication and `add`, and the malformed
+  file test verifies publication and confirmation continue. Residual: `add` now
+  silently overwrites the malformed file with only the new record rather than
+  preserving a backup.
+- **Round 2 finding 5 (same-version/different-hash decision):** concurs.
+  `sameVersionDifferentHashDecisionIsStale` rewrites the document text without a
+  version change and asserts the confirm is refused and no annotation is written.
+- **Bounded executor/shutdown/interruption:** concurs on the implementation.
+  Both pools are fixed-size `workerThreads` pools, provider work is submitted
+  separately with a bounded `timeoutMs`, cancellation interrupts the provider,
+  and `shutdownSuggestions` marks passes cancelled, cancels futures and calls
+  `shutdownNow` from the shutdown hook, run loop and protocol shutdown. The
+  timeout and cancel-during-work tests pass the intended behavior; shutdown and
+  the busy response are not directly tested.
+- **Single grouping implementation:** concurs. `LiveServer` calls
+  `SuggestionService.group`/`CandidateGrouping`, and the server no longer
+  duplicates the group key logic; anchor ids, payload groups and decision
+  records use the same grouping values.
+
+**Loop status:** the loop cannot close yet. Finding 1 (stale skip committing
+session state) and finding 2 (concurrent confirmation lost updates) are remaining
+correctness work; after those, the ticket has no open correctness findings from
+this reviewer.
+
+### Residual observations (not filed)
+
+- `inFlightFutures.remove(key)` in the suggestion `finally` is unconditional; if
+  a new pass for the same document starts after `inFlightSuggestions.remove` but
+  before that line, the old pass can remove the new pass's future from the
+  cancellation map. `providerFutures` and `inFlightSuggestions` still cancel the
+  new pass, so the practical impact is limited, but a value-checked removal or a
+  per-pass token would close the window.
+- The `shutdown` request shuts down the global suggestion pools but does not stop
+  the server itself, and the new busy/shutdown paths have no direct tests.
+- `SuggestionStore.suppressedIds()` is now unused after the decision-based
+  suppression rewrite.
+- The walkthrough remains read-only; no build, test, lint or formatter command
+  was run by this role, per `docs/workflow.md`.

@@ -670,6 +670,166 @@ class LiveSuggestionsTest {
         }
     }
 
+    @Test
+    fun staleSkipDoesNotHideTheCandidate() {
+        val root = Files.createTempDirectory("cint-live-suggest-stale-skip")
+        try {
+            val harness = harness(root)
+            val peer = Peer(harness.server)
+            val uri = root.resolve("Sample.kt").toString()
+            peer.open(uri, gapSource, version = 1)
+            val candidateId = candidate(peer.latest("cint/publishCandidates"), "VALIDATION")["candidateId"].asText()
+
+            val started = CountDownLatch(1)
+            val release = CountDownLatch(1)
+            harness.server.candidateDecisionBarrierForTest = {
+                started.countDown()
+                release.await(5, TimeUnit.SECONDS)
+            }
+            val skipThread =
+                Thread {
+                    peer.decide(uri, version = 1, id = 2, candidateId = candidateId, decision = "skip")
+                }
+            skipThread.start()
+            assertTrue(started.await(2, TimeUnit.SECONDS))
+            peer.change(uri, gapSource, version = 2)
+            harness.server.candidateDecisionBarrierForTest = null
+            release.countDown()
+            skipThread.join(5_000)
+
+            assertTrue(peer.lastResponse(2).path("stale").asBoolean())
+            candidate(peer.latest("cint/publishCandidates"), "VALIDATION")
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun concurrentConfirmsForDifferentAnchorsBothPersist() {
+        val root = Files.createTempDirectory("cint-live-suggest-concurrent-confirms")
+        try {
+            val harness = harness(root)
+            val first = Peer(harness.server)
+            val second = Peer(harness.server)
+            val uri = root.resolve("Sample.kt").toString()
+            first.open(uri, twoGapSource, version = 1)
+            second.open(uri, twoGapSource, version = 1)
+            val firstCandidates = candidates(first.latest("cint/publishCandidates"), "VALIDATION")
+            val secondCandidates = candidates(second.latest("cint/publishCandidates"), "VALIDATION")
+            assertEquals(2, firstCandidates.size)
+            assertEquals(2, secondCandidates.size)
+
+            val start = CountDownLatch(1)
+            val firstThread =
+                Thread {
+                    start.await(2, TimeUnit.SECONDS)
+                    first.decide(uri, version = 1, id = 2, candidateId = firstCandidates[0]["candidateId"].asText(), decision = "confirm")
+                }
+            val secondThread =
+                Thread {
+                    start.await(2, TimeUnit.SECONDS)
+                    second.decide(uri, version = 1, id = 3, candidateId = secondCandidates[1]["candidateId"].asText(), decision = "confirm")
+                }
+            firstThread.start()
+            secondThread.start()
+            start.countDown()
+            firstThread.join(5_000)
+            secondThread.join(5_000)
+
+            val annotations = UserAnnotationsJson.parse(Files.readString(UserAnnotationsFile.path(root)))
+            assertEquals(2, annotations.size)
+            assertEquals(2, annotations.map { it.span.startLine }.toSet().size)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun secondClientCannotConfirmAnAlreadyResolvedSibling() {
+        val root = Files.createTempDirectory("cint-live-suggest-cross-client-group")
+        try {
+            val provider =
+                object : IntentSuggestionProvider {
+                    override val id: String = "cross-stub"
+                    override val model: String = "cross-stub-v1"
+
+                    override fun suggest(context: CandidateContext): List<CandidateEmit> =
+                        listOf(
+                            context.candidate.copy(
+                                intents = setOf("LOGGING"),
+                                source = "ai:cross-stub",
+                                provider = id,
+                                model = model,
+                                rationale = "cross-client alternative",
+                            ),
+                        )
+                }
+            val service = SuggestionService(SuggestionProviderRegistry(listOf(provider)))
+            val harness =
+                harness(
+                    root,
+                    suggestionSettings = SuggestionSettings(enabled = true, provider = provider.id, model = provider.model),
+                    service = service,
+                )
+            val uri = root.resolve("Sample.kt").toString()
+            val second = Peer(harness.server)
+            harness.open(uri, gapSource, version = 1)
+            second.open(uri, gapSource, version = 1)
+            harness.suggest(uri, version = 1, id = 2, requestId = "first")
+            second.suggest(uri, version = 1, id = 2, requestId = "second")
+            assertTrue(harness.waitForResponse(2).path("accepted").asBoolean())
+            assertTrue(second.waitForResponse(2).path("accepted").asBoolean())
+
+            val firstAlternatives =
+                harness
+                    .latest("cint/publishCandidates")
+                    .path("params")
+                    .path("groups")[0]
+                    .path("candidates")
+            val secondAlternatives =
+                second
+                    .latest("cint/publishCandidates")
+                    .path("params")
+                    .path("groups")[0]
+                    .path("candidates")
+            val chosen = firstAlternatives.first { it["source"].asText() == "ai:cross-stub" }
+            val sibling = secondAlternatives.first { it["source"].asText() == "rule:validation:validation" }
+
+            harness.decide(uri, version = 1, id = 3, candidateId = chosen["candidateId"].asText(), decision = "confirm")
+            second.decide(uri, version = 1, id = 4, candidateId = sibling["candidateId"].asText(), decision = "confirm")
+
+            assertTrue(second.lastResponse(4).path("missing").asBoolean())
+            val annotations = UserAnnotationsJson.parse(Files.readString(UserAnnotationsFile.path(root)))
+            assertEquals(1, annotations.size)
+            assertEquals(setOf("LOGGING"), annotations.single().intents)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun protocolShutdownDoesNotDisableSuggestionsForLaterClients() {
+        val root = Files.createTempDirectory("cint-live-suggest-shutdown")
+        try {
+            val harness = harness(root)
+            harness.send("""{"jsonrpc":"2.0","id":90,"method":"shutdown"}""")
+            assertTrue(harness.lastResponse(90).asBoolean())
+
+            val later = Peer(harness.server)
+            val uri = root.resolve("Sample.kt").toString()
+            later.open(uri, gapSource, version = 1)
+            later.suggest(uri, version = 1, id = 2, requestId = "after-shutdown")
+            assertTrue(later.waitForResponse(2).path("accepted").asBoolean())
+            val enriched =
+                later.waitForCandidate(uri, "VALIDATION") {
+                    it["source"].asText() == "ai:fake"
+                }
+            assertEquals("ai:fake", enriched["source"].asText())
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
     private fun candidate(
         message: JsonNode,
         intent: String,
@@ -897,6 +1057,123 @@ class LiveSuggestionsTest {
             messages().lastOrNull {
                 it["id"]?.asInt() == id && it["method"] == null
             }
+
+        private fun quote(value: String): String = mapper.writeValueAsString(value)
+    }
+
+    private class Peer(
+        private val server: LiveServer,
+    ) {
+        private val mapper = jacksonObjectMapper()
+        private val output = StringWriter()
+        private val writer = BufferedWriter(output)
+
+        fun send(message: String) {
+            server.handleMessage(message, writer)
+        }
+
+        fun open(
+            uri: String,
+            text: String,
+            version: Int,
+        ) {
+            send(
+                """{"jsonrpc":"2.0","id":11,"method":"textDocument/didOpen","params":{"uri":${quote(
+                    uri,
+                )},"text":${quote(text)},"version":$version,"languageId":"kotlin"}}""",
+            )
+        }
+
+        fun change(
+            uri: String,
+            text: String,
+            version: Int,
+        ) {
+            send(
+                """{"jsonrpc":"2.0","method":"textDocument/didChange","params":{"uri":${quote(
+                    uri,
+                )},"text":${quote(text)},"version":$version,"languageId":"kotlin"}}""",
+            )
+        }
+
+        fun suggest(
+            uri: String,
+            version: Int,
+            id: Int,
+            requestId: String,
+        ) {
+            send(
+                """{"jsonrpc":"2.0","id":$id,"method":"cint/suggest","params":{"uri":${quote(
+                    uri,
+                )},"version":$version,"requestId":${quote(requestId)}}}""",
+            )
+        }
+
+        fun decide(
+            uri: String,
+            version: Int,
+            id: Int,
+            candidateId: String,
+            decision: String,
+        ) {
+            send(
+                """{"jsonrpc":"2.0","id":$id,"method":"cint/candidates/decide","params":{"uri":${quote(
+                    uri,
+                )},"version":$version,"candidateId":${quote(candidateId)},"decision":${quote(decision)}}}""",
+            )
+        }
+
+        fun messages(): List<JsonNode> =
+            output
+                .toString()
+                .trim()
+                .lines()
+                .filter { it.isNotBlank() }
+                .mapNotNull { line -> runCatching { mapper.readTree(line) }.getOrNull() }
+
+        fun latest(method: String): JsonNode = messages().last { it["method"]?.asText() == method }
+
+        fun lastResponse(id: Int): JsonNode =
+            messages()
+                .last {
+                    it["id"]?.asInt() == id && it["method"] == null
+                }.path("result")
+
+        fun waitForResponse(id: Int): JsonNode {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
+            while (System.nanoTime() < deadline) {
+                val response =
+                    messages().lastOrNull {
+                        it["id"]?.asInt() == id && it["method"] == null
+                    }
+                if (response != null) return response.path("result")
+                Thread.sleep(10)
+            }
+            error("timed out waiting for response $id; messages=${messages()}")
+        }
+
+        fun waitForCandidate(
+            uri: String,
+            intent: String,
+            predicate: (JsonNode) -> Boolean,
+        ): JsonNode {
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
+            while (System.nanoTime() < deadline) {
+                val candidate =
+                    messages()
+                        .filter { it["method"]?.asText() == "cint/publishCandidates" }
+                        .flatMap { message ->
+                            message.path("params").path("candidates").filter { candidate ->
+                                candidate.path("intents").any { it.asText() == intent } &&
+                                    candidate.path("path").asText().isNotEmpty() &&
+                                    predicate(candidate)
+                            }
+                        }.lastOrNull()
+                if (candidate != null) return candidate
+                Thread.sleep(10)
+            }
+            error("timed out waiting for candidate on $uri; messages=${messages()}")
+        }
 
         private fun quote(value: String): String = mapper.writeValueAsString(value)
     }

@@ -330,3 +330,116 @@ that ordering is made monotonic with the analysis snapshot.
   total.
 - Static review only; no build, test, formatter, or source edit was run by this
   role, per `docs/workflow.md`. The handover is assumed green.
+
+## Round 3
+
+Verdict: Round-2 finding 7 is closed. `analysisRevision` is now allocated inside
+the same synchronized block as the analysis and config snapshot, the
+`CachedAnalysis` is stored under that lock, and candidate publishes reject an
+analysis revision older than either the cached analysis or the last published
+candidates. The suggest path also carries the candidate-state revision it
+started from, so a decision or newer publish drops the pass. The group wire
+shape is coherent: confirming an alternative republishes empty
+`candidates`/`groups` for the resolved span and the sibling is no longer
+confirmable through the acting client. Decision records add optional
+`anchorId` and span fields without changing the file version, and older records
+load with defaults. Provider timeout returns the documented
+`cancelled`/`timeout` result without publishing partial candidates, and the docs
+match the implementation. One finding remains in cross-client group resolution:
+the persisted confirm resolves the anchor globally, but enforcement is only in
+the acting client's published list, so a second client on the same URI can still
+confirm a sibling and write a second annotation. The loop cannot close until that
+case is enforced or the contract is explicitly scoped to one client.
+
+### Findings
+
+8. **`analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:900-1005`
+   with `LiveServer.kt:556-676` and
+   `analysis-engine/hosts/server/src/test/kotlin/dev/cint/server/LiveSuggestionsTest.kt:435-470`
+   — group resolution is persisted globally but only enforced for the acting
+   client, so another client can confirm a sibling.**
+
+   `publishCandidates` filters a whole anchor group when a confirm decision with
+   that `anchorId` matches a current user annotation, and the same-client test
+   proves the resolved group disappears and the sibling then returns `missing`.
+   `handleCandidateDecision`, however, only looks in
+   `publishedCandidates[DocumentKey(writer, uri)]` and does not consult the
+   persisted decisions or user annotations for an already-resolved anchor. A
+   second client that opened the same URI before the confirm still has the
+   sibling in its own published list, so its confirm is accepted and writes a
+   second user annotation at the same anchor. That contradicts both the new
+   contract ("siblings are no longer published or confirmable") and the
+   project-wide persistence model, and it can leave two conflicting intents
+   established for one occurrence. The per-owner skip behavior has the same
+   scope mismatch with the docs' "current server session" wording.
+
+   Suggested fix: before accepting a decision, load the persisted decisions and
+   matching user annotations and reject a confirm whose `anchorId` is already
+   resolved (or whose sibling is already confirmed), not just one that is absent
+   from this writer's published list. Alternatively broadcast the decision
+   republish to every owner of the URI so sibling state is removed everywhere.
+   State whether skip is per client or per server. Add a two-client test that
+   confirms one alternative on client A and then attempts to confirm a sibling on
+   client B, asserting `missing`/`stale` and only one user annotation.
+
+### Concurs / Dissents
+
+- Concurs finding 7: `publish` now computes
+  `analysisRevision = nextAnalysisRevision(key)` and stores the corresponding
+  `CachedAnalysis` while still holding the analysis lock, so revision order
+  matches analysis order and config snapshots. `publishCandidates` additionally
+  rejects revisions older than the current analysis or the last candidate
+  publish, and `handleSuggest` passes `expectedStateRevision` so a pass started
+  before a decision cannot overwrite the newer state.
+  `analysisRevisionOrderingMatchesConfigSnapshotDuringConcurrentPublish`,
+  `staleAnalysisCannotPublishAfterConfigMutation`, and
+  `suggestionCannotOverwriteNewerAnalysisAfterItIsReleased` cover the old and new
+  paths.
+- Concurs: no stale candidate publish remains in the reviewed single-client
+  paths. The candidate lock serializes state and revision updates; the cached
+  analysis revision is checked again before the suggest result is published; and
+  the flat `candidates`/`groups` list is rebuilt only after those checks.
+- Concurs: the group wire shape is stable and internally consistent. A group is
+  an anchor plus its kept candidates, `groups` and flat `candidates` are
+  projections of the same list, an empty result is emitted as empty
+  `candidates`/`groups`, and the client clears candidate marks while retaining
+  established annotations. Within the acting client, a confirmed alternative
+  resolves the group and the sibling becomes `missing`.
+- Concurs: the decision-record additions are additive. `SuggestionStore` keeps
+  `version: 1`, loads missing `anchorId` as null and missing span fields as zero,
+  and still applies existing candidateId-based rejections. New records persist
+  `anchorId` plus the span snapshot. Old records therefore remain readable and
+  old candidateId suppression still works; only old confirm records without an
+  `anchorId` fall back to the candidateId/user-annotation branch.
+- Concurs: the timeout and cancellation contract matches the docs. A provider
+  timeout returns `{accepted: false, cancelled: true, timeout: true, count: 0}`,
+  cancels the provider future, and publishes nothing; explicit cancel marks the
+  pass and cancels the provider future; disabled, stale, busy, and cancelled
+  responses are distinct; `timeoutMs` and `workerThreads` are validated and the
+  pools shut down with the server.
+- Concurs: the API v5 surface and module boundary are unchanged by these fixes.
+  `RuleEmit`/`Emit`/`CandidateEmit`, `toContribution`, the v4 rejection, and the
+  candidate channel remain as reviewed; `suggest` still depends on `api` and
+  `core` only, and no AI or provider SDK enters `core`/`api`.
+- Concurs: the docs now match the implemented protocol 3 shape for revisions,
+  empty candidate groups, anchor-resolving confirms, optional decision fields,
+  timeouts, and the manual m012 check. The only prose/behaviour mismatch left is
+  the cross-client sibling/skip scope recorded in finding 8.
+- Dissents: finding 8.
+
+### Residuals (not filed)
+
+- There is no explicit test that seeds an older `.cint/suggestions.json` record
+  without `anchorId`/span fields; the loader handles it, but the compatibility
+  claim rests on code inspection rather than a fixture.
+- Provider interruption is cooperative. A provider that ignores thread
+  interruption can occupy a bounded worker after the timeout response has
+  already been returned; the response and publish behavior remain correct.
+- Grouping and anchor hashing still exist in both `suggest` and the server, and
+  `SuggestionService.group` is unused by the server; they must remain in
+  lockstep.
+- `maxCandidates` is still applied per input candidate rather than as a total
+  across the pass, so a document with many candidates can exceed the configured
+  total.
+- Static review only; no build, test, formatter, or source edit was run by this
+  role, per `docs/workflow.md`. The committed handover is assumed green.

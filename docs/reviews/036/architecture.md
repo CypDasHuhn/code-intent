@@ -382,3 +382,109 @@ explicitly deferred to named tickets.
   concurrent decisions can still lose a user-annotation or decision record.
 - Static review only; no build, test, formatter, or source edit was run by this
   role, per `docs/workflow.md`. The handover is assumed green.
+
+## Round 3
+
+Verdict: Round 2 findings 1-3 are addressed in the committed 036 state. The
+suggestion and provider pools are bounded by `workerThreads`, provider calls
+have a timeout and best-effort interrupt, both pools are closed by the run loop
+and shutdown hook, grouping is now served by `SuggestionService.group` /
+`CandidateGrouping`, and `analysisRevision` is allocated under the same lock as
+the analysis and config snapshot, with a concurrent ordering test. Group
+reconciliation persists `anchorId` and span data, resolves a confirmed anchor,
+re-proposes after annotation removal, and keeps rejection/skip candidate-scoped.
+Per-connection state and the v5 candidate channel remain intact, with no new
+detection or persistence leak into `:core`. One new lifecycle finding remains:
+the protocol `shutdown` request tears down the suggestion executors even though
+the detached server keeps running, so a subsequent editor connection to the
+same daemon cannot suggest. The loop cannot close until this is fixed or
+explicitly deferred.
+
+### Findings
+
+1. **`analysis-engine/hosts/server/src/main/kotlin/dev/cint/server/LiveServer.kt:308-311,179-185`
+   with `nvim-renderer/lua/cint/ops/live_ops.lua:361-369`,
+   `nvim-renderer/lua/cint/commands.lua:177-179,308-312`, and
+   `nvim-renderer/lua/cint/transport/live.lua:313-317`
+   — the protocol `shutdown` request permanently disables suggestions on a
+   still-running reusable daemon.**
+
+   `live_shutdown()` closes the client's documents and sends the JSON-RPC
+   `shutdown` request on `:CintServerDisconnect` and `VimLeavePre`; the server's
+   `shutdown` handler responds, calls `shutdownSuggestions()`, and continues its
+   accept loop. The daemon is intentionally detached and reused across Neovim
+   restarts (and `CintServerDisconnect` is only a client disconnect), so the
+   next connection reaches a server whose `suggestionExecutor` and
+   `providerExecutor` are already shut down. `cint/suggest` then throws
+   `RejectedExecutionException` from `submit`, which surfaces as a generic error
+   instead of working or reporting a deliberate disabled state. This also means
+   one client's disconnect disables suggestions for every other connected
+   client.
+
+   Fix: keep executor teardown tied to process termination (the run loop exiting
+   or the shutdown hook) and remove it from the protocol `shutdown` handler, or
+   make `shutdown` actually stop the accept loop/server before tearing down the
+   pools. Add a test that sends `shutdown`, reconnects to the same server, and
+   either still suggests successfully or finds the server stopped.
+
+### Concurs / Dissents
+
+- Concurs with Round 2 finding 1 for boundedness, timeout, cancellation, and
+  run/hook teardown: `suggestionExecutor` and `providerExecutor` are fixed pools
+  sized by `workerThreads`, `providerFuture.get(timeoutMs)` interrupts on
+  timeout, `cint/suggest/cancel` cancels the provider future, and the run loop
+  and JVM hook call `shutdownSuggestions()`. Dissents on tying that teardown to
+  the protocol `shutdown` request, filed as finding 1.
+- Concurs with Round 2 finding 2: `LiveServer.publishCandidates` calls
+  `suggestionService.group`, and `candidateGroupPayload` only maps the service's
+  `CandidateGroup` to the wire shape. `SuggestionService.group` and
+  `CandidateGrouping` are now live, and `suggestionService.anchorHash` is used
+  for decision validation.
+- Concurs with Round 2 finding 3: the analysis, config revision, and
+  `analysisRevision` are sampled and assigned together under `synchronized(this)`;
+  `analyses[key]` is updated there. The new barrier test pins config revision
+  order against analysis revision during concurrent didOpen/config mutation.
+- Concurs with group reconciliation and persistence: confirm/reject records now
+  carry `anchorId` and span, `publishCandidates` resolves confirmed anchors,
+  removes the whole group for a confirmed span, re-proposes after the user
+  annotation is deleted, and leaves reject/skip candidate-scoped. Tests cover
+  alternative confirmation, sibling disappearance, and persistence across a
+  fresh server.
+- Concurs with per-connection state: analyses, published candidates, analysis
+  revisions, candidate locks/state revisions, in-flight passes/futures, and
+  session skips are keyed by `DocumentKey(owner, uri)`; close/disconnect
+  cleanup cancels in-flight work and removes that key's maps.
+- Concurs with module boundaries and v5 shape: `:suggest` depends on `:api` and
+  `:core`, `:core` does not depend on suggestions, and the server owns
+  orchestration, settings, persistence, and the provider instance. Candidates
+  still flow only through `AnalysisOutput`/`publishCandidates` and never enter
+  `AnnotationStore`, composition, fixpoint identity, or `reads`. The
+  `RuleEmit` split and anchor groups give 037-040 a usable way to emit
+  deterministic candidates and AI alternatives without changing the hull.
+- Dissents: finding 1.
+
+### Residuals (not filed)
+
+- `SuggestionOptions.model` is still unused: the configured model is advertised
+  in `initialize.suggestions` but the provider/context and candidate provenance
+  use the provider's own model.
+- `maxCandidates` is applied per input candidate, not per document/pass, so
+  candidate-heavy packs can exceed the configured total.
+- Same-intent proposals from different providers still collapse because
+  candidate identity/dedupe excludes source/provider; only different-intent
+  alternatives survive as separate candidates.
+- `CandidateContext` still lacks a source excerpt, language/imports, and an
+  enclosing-function value; `neighboringIntents` is document-wide. The current
+  fake provider does not need them, but a real provider will.
+- Candidate identity construction is duplicated at
+  `SuggestionService.candidateId` and `LiveServer.candidateId` (both delegate to
+  `CandidateIdentity`, but the argument assembly can drift).
+- `CandidateJson` and the server `candidatePayload` remain separate
+  serializers; the artifact intentionally omits decision identity.
+- `UserAnnotationsFile.add` and `SuggestionStore.record` are not coordinated;
+  concurrent decisions can still lose one of the two records.
+- The future maps are assigned after `submit`; a very fast completion can leave
+  a completed future entry until the next suggestion or document cleanup. This
+  is not currently user-visible.
+- Static review only; no build, test, formatter, or source edit was run by this
+  role, per `docs/workflow.md`. The handover is assumed green.
