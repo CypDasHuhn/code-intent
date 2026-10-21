@@ -71,7 +71,7 @@ data class SourceExcerpt(
             val radius = radiusBytes.coerceAtLeast(0)
             var start = (safeStart - radius).coerceAtLeast(0)
             var end = (safeEnd + radius).coerceAtMost(bytes.size)
-            while (start > 0 && start < safeStart && bytes[start].isContinuationByte()) {
+            while (start in 1..<safeStart && bytes[start].isContinuationByte()) {
                 start -= 1
             }
             while (end < bytes.size && end > safeEnd && bytes[end].isContinuationByte()) {

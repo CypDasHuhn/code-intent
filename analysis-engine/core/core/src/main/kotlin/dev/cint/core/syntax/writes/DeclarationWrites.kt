@@ -94,12 +94,12 @@ internal class DeclarationWrites(
             result += WriteTarget(nameNode.text, nameNode, nameNode, scope, DeclarationKind.VARIABLE)
         }
         for (node in tree.root.descendants()) {
-            when {
-                node.kind in kinds.parameterKinds -> {
+            when (node.kind) {
+                in kinds.parameterKinds -> {
                     bindingNameNodes(node).forEach { add(it, callableScope(node)) }
                 }
 
-                node.kind in kinds.parameterListKinds -> {
+                in kinds.parameterListKinds -> {
                     for (child in node.children.filter { it.kind in kinds.identifierKinds }) {
                         add(child, callableScope(child))
                     }
@@ -120,11 +120,11 @@ internal class DeclarationWrites(
             val nameNode =
                 catch
                     .descendants()
-                    .filter {
+                    .lastOrNull {
                         it.startByte < bodyStart &&
                             it.kind in kinds.identifierKinds &&
                             !isWithinTypeReference(it, catch)
-                    }.lastOrNull()
+                    }
             add(nameNode, ScopeFact(catch, ScopeKind.BLOCK, catch))
         }
         return result.distinctBy { it.nameNode.startByte to it.nameNode.endByte }
@@ -138,10 +138,10 @@ internal class DeclarationWrites(
         return loop.children
             .filter { it.startByte < limit }
             .flatMap { child ->
-                when {
-                    child.kind in kinds.bindingKinds -> bindingNameNodes(child)
-                    child.kind in kinds.loopBindingContainerKinds -> bindingsWithin(child)
-                    child.kind in kinds.declarationWrapperKinds -> bindingsWithin(child)
+                when (child.kind) {
+                    in kinds.bindingKinds -> bindingNameNodes(child)
+                    in kinds.loopBindingContainerKinds -> bindingsWithin(child)
+                    in kinds.declarationWrapperKinds -> bindingsWithin(child)
                     else -> emptyList()
                 }
             }
@@ -149,9 +149,9 @@ internal class DeclarationWrites(
 
     private fun bindingsWithin(node: SyntaxNode): List<SyntaxNode> =
         node.children.flatMap { child ->
-            when {
-                child.kind in kinds.bindingKinds -> bindingNameNodes(child)
-                child.kind in kinds.declarationWrapperKinds -> bindingsWithin(child)
+            when (child.kind) {
+                in kinds.bindingKinds -> bindingNameNodes(child)
+                in kinds.declarationWrapperKinds -> bindingsWithin(child)
                 else -> emptyList()
             }
         }

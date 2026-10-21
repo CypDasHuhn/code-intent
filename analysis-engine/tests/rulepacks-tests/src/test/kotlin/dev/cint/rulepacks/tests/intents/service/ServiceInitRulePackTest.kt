@@ -176,7 +176,7 @@ class ServiceInitRulePackTest {
             val init = analysis.source(SERVICE_INIT_INTENT)
 
             assertTrue(init.any { it.text(source) == "new HttpClient()" }, language)
-            assertTrue(init.filter { it.text(source) == "new HttpClient()" }.isNotEmpty(), language)
+            assertTrue(init.any { it.text(source) == "new HttpClient()" }, language)
         }
     }
 

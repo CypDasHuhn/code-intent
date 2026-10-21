@@ -187,7 +187,7 @@ class DeepSeekIntentSuggestionProvider(
         }
         val start = text.indexOf('[')
         val end = text.lastIndexOf(']')
-        if (start >= 0 && end > start) text = text.substring(start, end + 1)
+        if (start in 0..<end) text = text.substring(start, end + 1)
         return text.trim()
     }
 

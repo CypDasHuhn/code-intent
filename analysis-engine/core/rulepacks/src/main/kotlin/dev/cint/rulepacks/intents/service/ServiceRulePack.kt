@@ -141,10 +141,10 @@ private class ServiceInitRule(
             }
         }
 
-        for (creation in creations) {
-            if (!typeMatches(creation.type ?: continue, language.initTypes, emptySet())) continue
-            if (emitted.add(creation.node.startByte to creation.node.endByte)) {
-                result += Emit.of(SERVICE_INIT_INTENT, creation.node, Emit.DEFAULT_SOURCE, 0.85)
+        for ((node, type) in creations) {
+            if (!typeMatches(type ?: continue, language.initTypes, emptySet())) continue
+            if (emitted.add(node.startByte to node.endByte)) {
+                result += Emit.of(SERVICE_INIT_INTENT, node, Emit.DEFAULT_SOURCE, 0.85)
             }
         }
 
@@ -166,11 +166,11 @@ private class ServiceInitRule(
             }
         }
 
-        for (declaration in view.declarations()) {
-            if (declaration.kind != DeclarationKind.FUNCTION) continue
-            val name = declaration.name ?: continue
+        for ((node1, kind, name1, nameNode) in view.declarations()) {
+            if (kind != DeclarationKind.FUNCTION) continue
+            val name = name1 ?: continue
             if (name !in language.initMethods) continue
-            val span = declaration.node.startByte to declaration.node.endByte
+            val span = node1.startByte to node1.endByte
             lifecycleFunctions += span
             if (span in annotatedFunctions) continue
             val function = view.functions().firstOrNull { it.node.startByte == span.first && it.node.endByte == span.second } ?: continue
@@ -181,7 +181,7 @@ private class ServiceInitRule(
                 } else {
                     Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
                 }
-            val node = declaration.nameNode ?: declaration.node
+            val node = nameNode ?: node1
             if (emitted.add(node.startByte to node.endByte)) {
                 result += initEmit(node, evidence)
             }
@@ -250,9 +250,9 @@ private fun constructorInjectionEvidence(
     val result = mutableListOf<Pair<SyntaxNode, Evidence>>()
     val seenScopes = mutableSetOf<Pair<Int, Int>>()
 
-    for (scope in view.scopes()) {
-        if (scope.kind != ScopeKind.CLASS) continue
-        val classNode = scope.owner ?: scope.node
+    for ((node, kind, owner) in view.scopes()) {
+        if (kind != ScopeKind.CLASS) continue
+        val classNode = owner ?: node
         if (!seenScopes.add(classNode.startByte to classNode.endByte)) continue
         val params = PRIMARY_CONSTRUCTOR.find(classNode.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
@@ -269,15 +269,15 @@ private fun constructorInjectionEvidence(
         }
     }
 
-    for (function in view.functions()) {
-        val classNode = view.enclosingScope(function.node)?.owner ?: continue
+    for ((node, name) in view.functions()) {
+        val classNode = view.enclosingScope(node)?.owner ?: continue
         val className = classNameOf(classNode) ?: continue
-        if (function.name != className) continue
-        val params = FUNCTION_PARAMETERS.find(function.node.text)?.groupValues?.get(1) ?: continue
+        if (name != className) continue
+        val params = FUNCTION_PARAMETERS.find(node.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
             val type = parameterType(parameter) ?: continue
             if (!isWiringType(type, language)) continue
-            result += (findTextNode(function.node, parameter) ?: function.node) to Evidence(HEURISTIC_SOURCE, 0.8)
+            result += (findTextNode(node, parameter) ?: node) to Evidence(HEURISTIC_SOURCE, 0.8)
         }
     }
 
@@ -489,8 +489,7 @@ private fun bodyUnits(
     }
     val nameEnd = function.nameNode?.endByte ?: function.node.startByte
     return function.node.children
-        .filter { it.startByte >= nameEnd && containsCall(view, it) }
-        .lastOrNull()
+        .lastOrNull { it.startByte >= nameEnd && containsCall(view, it) }
         ?.let { listOf(it) }
         .orEmpty()
 }

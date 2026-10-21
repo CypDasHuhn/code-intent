@@ -34,9 +34,11 @@ private class LoggingRule(
 ) : Matcher {
     override fun match(view: View): List<RuleEmit> {
         val language = config.forLanguage(view.language())
-        return print(view, language) +
-            loggerInteraction(view, language) +
-            loggingState(view, language)
+        return buildList {
+            addAll(this@LoggingRule.print(view, language))
+            addAll(this@LoggingRule.loggerInteraction(view, language))
+            addAll(this@LoggingRule.loggingState(view, language))
+        }
     }
 
     private fun print(
@@ -80,10 +82,8 @@ private class LoggingRule(
                 return@mapNotNull call.emit(LOGGING_INTENT, HEURISTIC_SOURCE, heuristic.confidence)
             }
 
-            val type = view.receiverType(call)
-            if (type == null) {
-                return@mapNotNull heuristic?.let { call.emit(LOGGING_INTENT, HEURISTIC_SOURCE, it.confidence) }
-            }
+            val type =
+                view.receiverType(call) ?: return@mapNotNull heuristic?.let { call.emit(LOGGING_INTENT, HEURISTIC_SOURCE, it.confidence) }
             if (!typeMatches(type.fqName, language.types)) return@mapNotNull null
             call.emit(LOGGING_INTENT, type.source, type.confidence)
         }

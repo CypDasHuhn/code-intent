@@ -177,7 +177,7 @@ class HostPipeline(
                     UserAnnotationResolver.selectionText(region.text, span)?.let(::contentHash)
                         ?: return@mapNotNull null
                 } else {
-                    record.contentHash
+                    null
                 }
             record.copy(span = span, contentHash = clippedHash)
         }

@@ -99,7 +99,7 @@ class StructuralBoundariesTest {
         val knownPackages = packages.mapTo(mutableSetOf()) { it.name }
         val edges = packages.associate { it.name to it.edges(knownPackages) }
         val cycle = findCycle(edges)
-        assertTrue(cycle == null, "core package cycle: ${cycle?.joinToString(" -> ")}")
+        assertEquals(null, cycle, "core package cycle: ${cycle?.joinToString(" -> ")}")
     }
 
     private fun assertNoText(
@@ -231,11 +231,10 @@ class StructuralBoundariesTest {
 
     private fun engineRoot(): Path {
         val cwd = Path.of("").toAbsolutePath()
-        return generateSequence(cwd) { it.parent }
-            .mapNotNull { directory ->
-                listOf(directory, directory.resolve("analysis-engine"))
-                    .firstOrNull { candidate -> Files.isRegularFile(candidate.resolve("settings.gradle.kts")) }
-            }.firstOrNull()
+        return generateSequence(cwd) { it.parent }.firstNotNullOfOrNull { directory ->
+            listOf(directory, directory.resolve("analysis-engine"))
+                .firstOrNull { candidate -> Files.isRegularFile(candidate.resolve("settings.gradle.kts")) }
+        }
             ?: error("could not locate settings.gradle.kts from $cwd")
     }
 

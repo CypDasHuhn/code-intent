@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sun.net.httpserver.HttpServer
 import dev.cint.api.CandidateEmit
-import dev.cint.api.CandidateReason
-import dev.cint.api.Span
 import dev.cint.core.user.UserAnnotationsFile
 import dev.cint.core.user.UserAnnotationsJson
 import dev.cint.host.HostConfig
@@ -95,7 +93,7 @@ class LiveSuggestionsTest {
                     it["source"].asText() == "ai:fake"
                 }
             assertEquals(candidateId, enriched["candidateId"].asText())
-            assertTrue(enriched["provider"].asText() == "fake")
+            assertEquals("fake", enriched["provider"].asText())
             assertTrue(enriched["model"].asText().isNotBlank())
             assertTrue(enriched["promptVersion"].asText().isNotBlank())
             assertTrue(enriched["rationale"].asText().isNotBlank())

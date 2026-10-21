@@ -21,10 +21,10 @@ import kotlin.test.assertTrue
 class ProfileFactsLanguageTest {
     @Test
     fun profilesExposeDeclarationWriteGuardAndClassScopeFacts() {
-        for (fixture in fixtures) {
-            val source = SourceFile(fixture.fileName, fixture.text)
-            val tree = parse(fixture.language, source)
-            val syntax = syntax(fixture.language)
+        for ((language, fileName, text, callName, fieldWrites, localWrite) in fixtures) {
+            val source = SourceFile(fileName, text)
+            val tree = parse(language, source)
+            val syntax = syntax(language)
             val flow = ControlFlowBuilder(tree, syntax).build()
             val context =
                 AnalysisContext(
@@ -33,7 +33,7 @@ class ProfileFactsLanguageTest {
                     syntax,
                     flow,
                     NullOracle,
-                    testConfig(fixture.language),
+                    testConfig(language),
                     AnnotationStore(),
                 )
             val view = context.view("BOOKKEEPING", emptySet())
@@ -41,30 +41,30 @@ class ProfileFactsLanguageTest {
             val field = view.declarations().single { it.name == "count" && it.kind == DeclarationKind.PROPERTY }
             val local = view.declarations().single { it.name == "count" && it.kind == DeclarationKind.VARIABLE }
 
-            assertTrue(field.hasAnnotation("Bookkeeping"), "${fixture.language} annotation")
-            assertEquals(listOf("Bookkeeping"), field.annotations, "${fixture.language} normalized annotation")
-            assertTrue(field.hasMagicComment("bookkeeping"), "${fixture.language} magic comment")
-            assertTrue(field.isProperty, "${fixture.language} field is property")
-            assertTrue(local.isVariable, "${fixture.language} local is variable")
-            assertEquals(ScopeKind.CLASS, field.scope?.kind, "${fixture.language} field scope")
-            assertEquals("class_declaration", field.scope?.owner?.kind, "${fixture.language} class owner")
-            assertTrue(view.scopes().any { it.kind == ScopeKind.CLASS }, "${fixture.language} class scope")
-            assertEquals(fixture.fieldWrites, field.writes().map { it.node.text }.toSet(), "${fixture.language} field writes")
-            assertEquals(setOf(fixture.localWrite), local.writes().map { it.node.text }.toSet(), "${fixture.language} local writes")
-            assertTrue(field.writes().any { it.kind == WriteKind.INCREMENT }, "${fixture.language} increment write")
-            assertTrue(field.writes().any { it.kind == WriteKind.ASSIGNMENT }, "${fixture.language} assignment write")
+            assertTrue(field.hasAnnotation("Bookkeeping"), "$language annotation")
+            assertEquals(listOf("Bookkeeping"), field.annotations, "$language normalized annotation")
+            assertTrue(field.hasMagicComment("bookkeeping"), "$language magic comment")
+            assertTrue(field.isProperty, "$language field is property")
+            assertTrue(local.isVariable, "$language local is variable")
+            assertEquals(ScopeKind.CLASS, field.scope?.kind, "$language field scope")
+            assertEquals("class_declaration", field.scope?.owner?.kind, "$language class owner")
+            assertTrue(view.scopes().any { it.kind == ScopeKind.CLASS }, "$language class scope")
+            assertEquals(fieldWrites, field.writes().map { it.node.text }.toSet(), "$language field writes")
+            assertEquals(setOf(localWrite), local.writes().map { it.node.text }.toSet(), "$language local writes")
+            assertTrue(field.writes().any { it.kind == WriteKind.INCREMENT }, "$language increment write")
+            assertTrue(field.writes().any { it.kind == WriteKind.ASSIGNMENT }, "$language assignment write")
 
             val conditional = view.guards().single { it.kind == GuardKind.CONDITIONAL }
             val loop = view.guards().single { it.kind == GuardKind.LOOP }
-            assertNotNull(conditional.condition, "${fixture.language} if condition")
-            assertTrue(conditional.exits.isNotEmpty(), "${fixture.language} if exits")
-            assertNotNull(loop.condition, "${fixture.language} loop condition")
-            assertTrue(loop.exits.isNotEmpty(), "${fixture.language} loop exits")
+            assertNotNull(conditional.condition, "$language if condition")
+            assertTrue(conditional.exits.isNotEmpty(), "$language if exits")
+            assertNotNull(loop.condition, "$language loop condition")
+            assertTrue(loop.exits.isNotEmpty(), "$language loop exits")
 
-            val call = view.calls().single { it.callee == fixture.callName }
-            assertNotNull(call.path, "${fixture.language} call path")
-            assertNotNull(call.trailingLambda, "${fixture.language} trailing lambda")
-            assertTrue(call.trailingLambda!!.text.contains("detail"), "${fixture.language} trailing lambda text")
+            val call = view.calls().single { it.callee == callName }
+            assertNotNull(call.path, "$language call path")
+            assertNotNull(call.trailingLambda, "$language trailing lambda")
+            assertTrue(call.trailingLambda!!.text.contains("detail"), "$language trailing lambda text")
         }
     }
 }

@@ -47,7 +47,7 @@ class ReservedIntentOwner(
 
 class ReservedContributorId(
     val rule: Rule,
-    val prefix: String = CoreContributors.PREFIX,
+    prefix: String = CoreContributors.PREFIX,
 ) : SchedulerException(
         SchedulerError.RESERVED_CONTRIBUTOR_ID,
         "rule '${rule.id}' uses the reserved contributor prefix '$prefix'",

@@ -175,11 +175,12 @@ private class LocalValueModifyRule(
             if (isBookkeeping(write.node, bookkeeping)) continue
             if (language.ignoreLoopCounters && isLoopCounter(view, write)) continue
             val local = owners[write.node.startByte to write.node.endByte]?.kind == DeclarationKind.VARIABLE
-            if (local) {
-                result += Emit.of(LOCAL_VALUE_MODIFY_INTENT, write.node, confidence = LOCAL_CONFIDENCE)
-            } else {
-                result += writeCandidate(write)
-            }
+            result +=
+                if (local) {
+                    Emit.of(LOCAL_VALUE_MODIFY_INTENT, write.node, confidence = LOCAL_CONFIDENCE)
+                } else {
+                    writeCandidate(write)
+                }
         }
 
         for (call in view.calls()) {
@@ -299,10 +300,7 @@ private class PersistenceMatch(
     ): Boolean {
         val callee = call.callee ?: return false
         if (established(view, call)) return false
-        val receiver = call.receiver
-        if (receiver == null) {
-            return configuredCandidate(callee, call.path)
-        }
+        val receiver = call.receiver ?: return configuredCandidate(callee, call.path)
         if (isReadCall(callee)) return false
         if (persistentReceiver(view, call)) {
             return mutationShaped(callee, call.path)

@@ -75,7 +75,7 @@ enum class CommentKind {
         fun fromConfig(names: Collection<String>): Set<CommentKind> =
             names.flatMapTo(linkedSetOf()) { name ->
                 when (name.trim().lowercase()) {
-                    "comment" -> values().toList()
+                    "comment" -> entries
                     "line", "line_comment" -> listOf(LINE)
                     "block", "block_comment", "multiline_comment" -> listOf(BLOCK)
                     "doc", "documentation", "doc_comment", "documentation_comment" -> listOf(DOC)

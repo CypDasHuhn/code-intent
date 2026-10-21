@@ -31,21 +31,21 @@ internal fun discoverRulePacks(
             )
             config
         }
-    for (issue in configIssues) {
+    for ((packId, message) in configIssues) {
         report(
             RulePackLoadFailure(
                 RulePackLoadFailureKind.INVALID_PACK_CONFIG,
-                setOf(issue.packId),
-                issue.message,
+                setOf(packId),
+                message,
             ),
         )
     }
     val loaded = mutableListOf<LoadedRulePack>()
-    for (provider in discovered) {
-        val schema = configSchemaOf(provider.pack)
-        val configured = configureRulePack(provider.pack, provider.id, resolvedConfig, report) ?: continue
-        val additive = configureRulePackAdditive(configured, provider.id, overlay, report) ?: continue
-        validateRulePack(additive, provider.sourceClassName, expectedApiVersion, report, schema)?.let { loaded += it }
+    for ((pack, id, sourceClassName) in discovered) {
+        val schema = configSchemaOf(pack)
+        val configured = configureRulePack(pack, id, resolvedConfig, report) ?: continue
+        val additive = configureRulePackAdditive(configured, id, overlay, report) ?: continue
+        validateRulePack(additive, sourceClassName, expectedApiVersion, report, schema)?.let { loaded += it }
     }
     val packs =
         rejectDuplicatePackIds(loaded, report)

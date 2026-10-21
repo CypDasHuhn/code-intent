@@ -12,7 +12,6 @@ import dev.cint.treesitter.view.support.syntax
 import dev.cint.treesitter.view.support.view
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class CallFactsLanguageTest {
     @Test
@@ -64,7 +63,7 @@ class CallFactsLanguageTest {
             val view = context.view("BOOKKEEPING", emptySet())
             val name = if (language == "kotlin") "foo" else "setTimeout"
             val outer = view.calls().single { it.callee == name }
-            assertTrue(outer.trailingLambda == null, "$language incorrectly reported a trailing lambda")
+            assertEquals(null, outer.trailingLambda, "$language incorrectly reported a trailing lambda")
         }
     }
 

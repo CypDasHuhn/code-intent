@@ -421,9 +421,9 @@ class ConfigSupportTest {
     fun supportSurfaceRemainsAdditiveAtVersionFive() {
         assertEquals(5, CINT_API_VERSION)
 
-        val matcher: Matcher = Matcher { emptyList() }
+        val matcher = Matcher { emptyList() }
         val schema: ConfigSchema<TestConfig> = testSchema
-        val configValues: ConfigValues = ConfigValues
+        val configValues = ConfigValues
         val languages: LanguageConfig<TestConfig> = LanguageConfig.of("kotlin" to TestConfig())
         val decoded: ConfigDecodeResult<TestConfig> = schema.decodeResult(TestConfig(), emptyMap())
         val pack: SingleIntentPack<TestConfig> = ConfigTestPack()

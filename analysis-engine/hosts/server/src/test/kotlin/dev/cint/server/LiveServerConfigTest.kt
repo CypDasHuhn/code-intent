@@ -269,7 +269,7 @@ class LiveServerConfigTest {
             assertTrue(server.configDescriptors().any { it.packId == "legacy-server" })
             assertEquals(setOf("project"), ServerLegacyPack.lastCalls)
 
-            output.getBuffer().setLength(0)
+            output.buffer.setLength(0)
             server.handleMessage(
                 """{"jsonrpc":"2.0","id":2,"method":"cint/config/append","params":{"packId":"legacy-server","language":"testlang","field":"calls","value":"second"}}""",
                 writer,
@@ -370,7 +370,7 @@ class LiveServerConfigTest {
                     .last()
                     .contains("\"error\""),
             )
-            output.getBuffer().setLength(0)
+            output.buffer.setLength(0)
 
             server.handleMessage(
                 """{"jsonrpc":"2.0","id":2,"method":"cint/config/append","params":{"packId":"logging","language":"kotlin","field":"methods","value":"audit"}}""",
@@ -410,8 +410,8 @@ class LiveServerConfigTest {
                 """{"jsonrpc":"2.0","id":1,"method":"textDocument/didOpen","params":{"uri":"Test2.kt","text":"fun g() {}","version":1,"languageId":"kotlin"}}""",
                 second,
             )
-            firstOutput.getBuffer().setLength(0)
-            secondOutput.getBuffer().setLength(0)
+            firstOutput.buffer.setLength(0)
+            secondOutput.buffer.setLength(0)
 
             server.handleMessage(
                 """{"jsonrpc":"2.0","id":2,"method":"cint/config/append","params":{"packId":"logging","language":"kotlin","field":"methods","value":"audit"}}""",
@@ -445,7 +445,7 @@ class LiveServerConfigTest {
                 )},"version":1,"languageId":"kotlin"}}""",
                 writer,
             )
-            output.getBuffer().setLength(0)
+            output.buffer.setLength(0)
             val start = CountDownLatch(1)
             val change =
                 thread {

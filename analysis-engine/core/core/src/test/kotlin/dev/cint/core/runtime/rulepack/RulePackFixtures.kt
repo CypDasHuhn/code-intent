@@ -1,7 +1,6 @@
 package dev.cint.core.runtime.rulepack
 
 import dev.cint.api.*
-import dev.cint.api.RuleEmit
 
 private class FixtureRule(
     override val id: String,

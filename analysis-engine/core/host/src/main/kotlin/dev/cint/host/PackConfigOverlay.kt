@@ -65,9 +65,8 @@ object PackConfigOverlay {
         val pack = packs.getOrPut(packId) { linkedMapOf() }
         val target =
             if (field.scope == ConfigFieldScope.LANGUAGE) {
-                val existing = pack[language]
                 val languageValues =
-                    when (existing) {
+                    when (val existing = pack[language]) {
                         null -> linkedMapOf()
                         is Map<*, *> -> mutableMap(existing)
                         else -> throw IllegalArgumentException("$packId.$language: expected a map")

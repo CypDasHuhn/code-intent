@@ -39,7 +39,7 @@ internal class ControlFlowFacts(
         return tree.root
             .descendants()
             .filter { it.kind in kinds.guardKinds }
-            .mapNotNull { node ->
+            .map { node ->
                 val ifFact = ifFacts[nodeKey(node)]
                 val loopFact = loopFacts[nodeKey(node)]
                 when {

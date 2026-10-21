@@ -25,7 +25,7 @@ private class RepositoryOracle : TypeOracle {
     override fun typeAt(
         file: SourceFile,
         byteOffset: Int,
-    ): TypeFact? = TypeFact("org.springframework.data.repository.Repository")
+    ): TypeFact = TypeFact("org.springframework.data.repository.Repository")
 }
 
 class MutationOverlapTest {

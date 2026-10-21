@@ -207,7 +207,7 @@ object UserAnnotationResolver {
         val start = lineStarts[line]
         val end = if (line + 1 < lineStarts.size) lineStarts[line + 1] - 1 else bytes.size
         val value = start + col
-        if (value < start || value > end || value > bytes.size) return null
+        if (value !in start..end || value > bytes.size) return null
         return value
     }
 
@@ -216,7 +216,7 @@ object UserAnnotationResolver {
         start: Int,
         end: Int,
     ): String? {
-        if (start < 0 || end < start || end > bytes.size) return null
+        if (start !in 0..end || end > bytes.size) return null
         return String(bytes, start, end - start, Charsets.UTF_8)
     }
 

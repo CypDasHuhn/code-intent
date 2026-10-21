@@ -1,6 +1,5 @@
 package dev.cint.suggest
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sun.net.httpserver.HttpServer
 import dev.cint.api.CandidateEmit
@@ -45,7 +44,7 @@ class DeepSeekIntentSuggestionProviderTest {
     @Test
     fun validResponseIsValidatedCappedAndCarriesProvenance() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             endpoint.responder = {
                 completion(
                     """
@@ -67,15 +66,13 @@ class DeepSeekIntentSuggestionProviderTest {
             assertEquals(0.84, enriched.confidence)
             assertEquals("looks like logging", enriched.rationale)
             assertFalse(enriched.aiEligible)
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun unsetPromptVersionUsesTheDeepSeekDefault() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             endpoint.responder = {
                 completion("""[{"startByte":0,"endByte":4,"intent":"LOGGING","confidence":0.6,"rationale":"logging"}]""")
             }
@@ -86,22 +83,18 @@ class DeepSeekIntentSuggestionProviderTest {
             val body = mapper.readTree(endpoint.requests.single().body)
             val user = mapper.readTree(body.path("messages")[1].path("content").asText())
             assertEquals(DEEPSEEK_PROMPT_VERSION, user.path("promptVersion").asText())
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun configuredConfidenceAboveTheSafeCeilingIsClamped() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             endpoint.responder = {
                 completion("""[{"startByte":0,"endByte":4,"intent":"LOGGING","confidence":0.99,"rationale":"logging"}]""")
             }
             val enriched = provider(endpoint, maxConfidence = 1.0).suggest(context()).single()
             assertEquals(DEEPSEEK_MAX_CONFIDENCE, enriched.confidence)
-        } finally {
-            endpoint.close()
         }
     }
 
@@ -110,15 +103,13 @@ class DeepSeekIntentSuggestionProviderTest {
         val values = listOf("1.1", "-0.1", "1e999", "-1e999", "NaN")
         for (value in values) {
             val endpoint = FakeEndpoint()
-            try {
+            endpoint.use { endpoint ->
                 endpoint.responder = {
                     completion(
                         """[{"startByte":0,"endByte":4,"intent":"LOGGING","confidence":$value,"rationale":"bad"}]""",
                     )
                 }
                 assertTrue(provider(endpoint).suggest(context()).isEmpty(), value)
-            } finally {
-                endpoint.close()
             }
         }
     }
@@ -126,7 +117,7 @@ class DeepSeekIntentSuggestionProviderTest {
     @Test
     fun modelSubSpanInMultilineExcerptMapsToAbsoluteBytesAndLines() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             val text = "first line\nsecond target line\nthird line"
             val modelStart = text.indexOf("target")
             val modelEnd = modelStart + "target".length
@@ -153,21 +144,19 @@ class DeepSeekIntentSuggestionProviderTest {
             assertEquals(modelStart, enriched.startByte)
             assertEquals(modelEnd, enriched.endByte)
             assertEquals(Span(1, 7, 1, 13), enriched.span)
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun nonAsciiExcerptBoundaryKeepsByteOffsetsAndPositions() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             val prefix = "é".repeat(500)
             val text = prefix + "TARGET tail"
             val inputStart = prefix.toByteArray(StandardCharsets.UTF_8).size
             val inputEnd = inputStart + "TARGET".length
             val excerpt = SourceExcerpt.around(text, inputStart, inputEnd, radiusBytes = 401)
-            assertTrue(excerpt.startByte % 2 == 0)
+            assertEquals(0, excerpt.startByte % 2)
             assertFalse(excerpt.text.contains('\uFFFD'))
             val localCandidate =
                 candidate.copy(
@@ -192,15 +181,13 @@ class DeepSeekIntentSuggestionProviderTest {
             assertEquals(modelStart, enriched.startByte)
             assertEquals(modelEnd, enriched.endByte)
             assertEquals(Span(0, modelStart, 0, modelEnd), enriched.span)
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun candidateAtDocumentEdgeMapsExactSpan() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             val provider = provider(endpoint)
 
             fun check(
@@ -233,15 +220,13 @@ class DeepSeekIntentSuggestionProviderTest {
 
             check("edge", 0, 4, Span(0, 0, 0, 4))
             check("head\ntail", 5, 9, Span(1, 0, 1, 4))
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun requestShapeIsBoundedAndDoesNotLeakTheKey() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             endpoint.responder = { completion("[]") }
             val prefix = "large surrounding text ".repeat(200)
             val text = prefix + "abcd" + " trailing".repeat(200)
@@ -287,20 +272,16 @@ class DeepSeekIntentSuggestionProviderTest {
             assertTrue(excerptText.length < 1_500)
             assertTrue(excerpt.path("startByte").asInt() > 0)
             assertTrue(excerpt.path("endByte").asInt() < text.toByteArray(StandardCharsets.UTF_8).size)
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun missingKeyReturnsNoProposalsWithoutCallingTheEndpoint() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             val provider = provider(endpoint, key = null)
             assertTrue(provider.suggest(context()).isEmpty())
             assertTrue(endpoint.requests.isEmpty())
-        } finally {
-            endpoint.close()
         }
     }
 
@@ -315,11 +296,9 @@ class DeepSeekIntentSuggestionProviderTest {
             )
         for (response in responses) {
             val endpoint = FakeEndpoint()
-            try {
+            endpoint.use { endpoint ->
                 endpoint.responder = { response }
                 assertTrue(provider(endpoint).suggest(context()).isEmpty(), response.body)
-            } finally {
-                endpoint.close()
             }
         }
     }
@@ -327,7 +306,7 @@ class DeepSeekIntentSuggestionProviderTest {
     @Test
     fun outOfBoundsUnknownAndOutsideSpanCandidatesAreRejected() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             endpoint.responder = {
                 completion(
                     """
@@ -343,35 +322,29 @@ class DeepSeekIntentSuggestionProviderTest {
             val enriched = provider(endpoint).suggest(context()).single()
             assertEquals(setOf("LOGGING"), enriched.intents)
             assertEquals("valid", enriched.rationale)
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun httpTimeoutReturnsNoProposals() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             endpoint.responder = {
                 Thread.sleep(1_000)
                 completion("""[]""")
             }
             val provider = provider(endpoint, timeoutMs = 100)
             assertTrue(provider.suggest(context()).isEmpty())
-        } finally {
-            endpoint.close()
         }
     }
 
     @Test
     fun ineligibleCandidateIsIgnoredWithoutARequest() {
         val endpoint = FakeEndpoint()
-        try {
+        endpoint.use { endpoint ->
             val provider = provider(endpoint)
             assertTrue(provider.suggest(context().copy(candidate = candidate.copy(aiEligible = false))).isEmpty())
             assertTrue(endpoint.requests.isEmpty())
-        } finally {
-            endpoint.close()
         }
     }
 
