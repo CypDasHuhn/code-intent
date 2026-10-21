@@ -140,6 +140,9 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, loop counters/noise |
 | `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` over predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, plain literals |
 | `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`) |
+| `RETURN_VALUE` | explicitly return a computed value | return statements with an expression | bare `return`, returning a literal only unless configured |
+| `CHAINING` | fluent/chained call shape | two or more links, e.g. `Factory.For().Use().Build()` | boolean `||` chains (`BOOL_COMBINATORICS`), single calls |
+| `LOCAL_COPY` | copy a parameter into a field/local | `_db = db`, `this.x = x` with parameter source | general local mutation (`LOCAL_VALUE_MODIFY`), persistence (`DATA_MODIFY`) |
 
 Bundled ownership and deployment:
 

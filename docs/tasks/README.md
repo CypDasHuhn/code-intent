@@ -57,6 +57,8 @@ host and client cutover at the end.
 | 043 | [DeepSeek intent provider](043-deepseek-intent-provider.md) | done | 036 | Real DeepSeek-backed AI intent candidates, confirmable only. |
 | 044 | [analysis oracle caching and budgeting](044-analysis-oracle-caching.md) | todo | 040 | Memoize receiver types, cache LSP results, gate/limit oracle queries. |
 | 045 | [composition intent coverage and read-only semantics](045-composition-intent-coverage.md) | todo | 037, 038, 040 | Propagate initializer intents, add BOOL_COMBINATORICS/DATA_TRANSFORMATION, read-only guards. |
+| 046 | [structural intents: return value, chaining, local copy](046-structural-intents.md) | todo | 037, 038, 040, 045 | Add RETURN_VALUE, CHAINING, LOCAL_COPY as additive structural intents. |
+| 047 | [striped mixed-intent rendering experiment](047-striped-mixed-intent-rendering.md) | todo | 016 | Opt-in ABABAB tag-color striping for multi-intent spans. |
 
 ## Resolved decisions
 
