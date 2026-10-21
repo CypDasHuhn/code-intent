@@ -40,6 +40,10 @@ possible.
 
 ### `ERROR_HANDLING`
 
+Elvis/coalesce throws (`x ?: throw ...`, `x ?? throw ...`) are tagged from
+the `?:`/`??` operator through the throw; the left operand and the enclosing
+declaration are not error handling.
+
 - `throw` and configured checks: `require`, `requireNotNull`, `check`,
   `checkNotNull`, `error`, `TODO`, `assert`.
 - Trailing lambda spans are included.

@@ -186,4 +186,20 @@ class ErrorHandlingRulePackTest {
                 )
             }.sortedWith(errorHandlingHitOrder)
             .toList()
+
+    @Test
+    fun elvisThrowIsTaggedFromTheCoalesceOperator() {
+        val source =
+            """
+            fun f(seed: String?): String {
+                val value = seed ?: throw IllegalStateException("missing")
+                return value
+            }
+            """.trimIndent()
+        val analysis = analyzePack("kotlin", source, listOf(ErrorHandlingRulePack()))
+        val texts = analysis.source(ERROR_HANDLING_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.trimStart().startsWith("?: throw") })
+        assertTrue(texts.none { it.trimStart().startsWith("seed ?:") })
+    }
 }

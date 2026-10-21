@@ -112,7 +112,7 @@ is present. Unbraced bodies are
   intents block it. The annotation is also a return certificate, so core can
   categorize returns without knowing the validation intent or config. Bare
   exits stay neutral.
-- `error-handling-<language>:error-handling` — `throw` and configured checks
+- `error-handling-<language>:error-handling` — `throw` and configured checks (elvis/coalesce throws are tagged from the `?:`/`??` operator through the throw)
   (`require`, `assert`, ...). Call spans include trailing lambda arguments.
 - `normalization:normalization` — configured normalizer calls and prefixes
   (`trim`, case folding, parse/coerce, canonicalize) that are gated by a

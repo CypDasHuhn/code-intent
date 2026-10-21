@@ -9,6 +9,7 @@ import dev.cint.api.LanguageConfig
 import dev.cint.api.Matcher
 import dev.cint.api.RuleEmit
 import dev.cint.api.SingleIntentPack
+import dev.cint.api.SyntaxNode
 import dev.cint.api.View
 import dev.cint.api.emit
 
@@ -123,10 +124,29 @@ private class ErrorHandlingRule(
         val calls = view.calls().filter(config::accepts).map { it.emit(ERROR_HANDLING_INTENT) }
         val throws =
             if (config.detectThrows) {
-                view.throws().map { Emit.of(ERROR_HANDLING_INTENT, it) }
+                view
+                    .throws()
+                    .map { throwEmit(it) }
+                    .distinctBy { it.startByte to it.endByte }
             } else {
                 emptyList()
             }
         return calls + throws
+    }
+
+    private fun throwEmit(node: SyntaxNode): Emit {
+        var current = node.parent
+        while (current != null) {
+            val operator = current.children.firstOrNull { it.text.trim() in COALESCE_OPERATORS }
+            if (operator != null) {
+                return Emit.range(ERROR_HANDLING_INTENT, operator, node)
+            }
+            current = current.parent
+        }
+        return Emit.of(ERROR_HANDLING_INTENT, node)
+    }
+
+    private companion object {
+        val COALESCE_OPERATORS = setOf("?:", "??")
     }
 }

@@ -10,24 +10,8 @@ import dev.cint.core.runtime.context.RuleContext
 
 private val MUTATION_INTENTS = setOf("DATA_MODIFY", "LOCAL_VALUE_MODIFY", "BOOKKEEPING")
 private val EFFECT_INTENTS = MUTATION_INTENTS + setOf("LOGGING", "ERROR_HANDLING")
-private val LAMBDA_KINDS =
-    setOf(
-        "lambda_literal",
-        "annotated_lambda",
-        "lambda_expression",
-        "arrow_function",
-        "function_expression",
-    )
 private val ASSIGNMENT_OPERATORS = setOf("=", "+=", "-=", "*=", "/=", "%=", "?:=", "||=", "&&=")
 private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment")
-private val ARGUMENT_KINDS =
-    setOf(
-        "value_arguments",
-        "value_argument",
-        "argument_list",
-        "argument",
-        "arguments",
-    )
 
 private data class ValueIntents(
     val intents: Set<String>,
@@ -172,17 +156,11 @@ private fun valueSourceIntents(
     node
         .descendants()
         .flatMap { descendant ->
-            val nestedEffect = insideLambda(descendant) || insideCallArgument(descendant)
             ctx
                 .covering(descendant)
                 .filter { annotation -> annotation.role == Role.SOURCE_INTENT }
                 .mapNotNull { annotation ->
-                    val intents =
-                        if (nestedEffect) {
-                            annotation.intents - EFFECT_INTENTS
-                        } else {
-                            annotation.intents
-                        }
+                    val intents = annotation.intents - EFFECT_INTENTS
                     if (intents.isEmpty()) null else ValueIntents(intents, annotation.confidence)
                 }
         }.distinct()
@@ -197,10 +175,6 @@ private fun allSourceAnnotations(
         .flatMap { ctx.covering(it).filter { annotation -> annotation.role == Role.SOURCE_INTENT } }
         .distinct()
         .toList()
-
-private fun insideLambda(node: SyntaxNode): Boolean = generateSequence(node) { it.parent }.any { it.kind in LAMBDA_KINDS }
-
-private fun insideCallArgument(node: SyntaxNode): Boolean = generateSequence(node) { it.parent }.any { it.kind in ARGUMENT_KINDS }
 
 private fun assignmentValue(node: SyntaxNode): SyntaxNode? {
     node.childByField("right")?.let { return it }
