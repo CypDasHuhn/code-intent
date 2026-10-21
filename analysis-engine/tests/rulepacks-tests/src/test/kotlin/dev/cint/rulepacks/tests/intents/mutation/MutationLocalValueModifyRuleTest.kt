@@ -57,7 +57,7 @@ class MutationLocalValueModifyRuleTest {
     }
 
     @Test
-    fun loopCountersAreNotPaintedButOtherWritesAre() {
+    fun whileLoopCountersAreLocalValueModify() {
         val text =
             """
             fun f() {
@@ -72,7 +72,7 @@ class MutationLocalValueModifyRuleTest {
 
         val analysis = analyze("kotlin", text)
 
-        assertEquals(setOf("total += i"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
+        assertEquals(setOf("i++", "total += i"), analysis.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
     }
 
     @Test
@@ -228,7 +228,7 @@ class MutationLocalValueModifyRuleTest {
     }
 
     @Test
-    fun prefixLoopCountersAreNotPainted() {
+    fun whileLoopPrefixCountersAreLocalValueModify() {
         val kotlinText =
             """
             fun f() {
@@ -243,7 +243,7 @@ class MutationLocalValueModifyRuleTest {
             """.trimIndent()
         val kotlin = analyze("kotlin", kotlinText)
 
-        assertEquals(setOf("total += i"), kotlin.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
+        assertEquals(setOf("--i", "++i", "total += i"), kotlin.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
 
         val csharpText =
             """
@@ -260,7 +260,7 @@ class MutationLocalValueModifyRuleTest {
             """.trimIndent()
         val csharp = analyze("csharp", csharpText)
 
-        assertTrue(csharp.texts(LOCAL_VALUE_MODIFY_INTENT).none { "++i" in it || "--i" in it })
+        assertEquals(setOf("++i", "total += i"), csharp.texts(LOCAL_VALUE_MODIFY_INTENT).toSet())
     }
 
     @Test

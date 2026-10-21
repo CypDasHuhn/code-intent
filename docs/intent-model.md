@@ -159,7 +159,7 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | `SERVICE_DELEGATION` | transfer responsibility to another service/component | controller→service, facade, adapter, thin call-through/argument adaptation | constructing/wiring (`SERVICE_INIT`), local business logic, the inner call's own intent |
 | `SERVICE_INIT` | build/configure/wire a service or resource | construction, client creation, connection setup, DI/bootstrap | initializing business data, delegation, every constructor call |
 | `DATA_MODIFY` | change that persists beyond the process | repository save/update/delete, ORM writes, durable file writes, queue/event publication | in-memory mutation (`LOCAL_VALUE_MODIFY`), bookkeeping counters |
-| `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, loop counters/noise |
+| `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, implicit `for`-loop counters |
 | `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` (and `every`/`some`) over predicates, two or more distinct classified predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, negation-only guards, plain literals, `is`/`has` prefix collisions such as `issue`/`hashCode` |
 | `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy`, `all`/`any`/`none`; in-place JS mutators such as `sort`/`reverse` may co-occur with `LOCAL_VALUE_MODIFY` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`); unclassified/unknown receivers stay candidates |
 | `RETURN_VALUE` | explicitly return a computed value | `return expr`, including value-bearing labeled returns (`return@map expr`); emitted on the returned expression | bare `return`, bare `return@label`, literal/constant-only returns unless `includeLiterals` is enabled; never suppresses other intents |
@@ -179,7 +179,7 @@ Bundled ownership and deployment:
   intent, and factory/connection/DI work belongs to init.
 - `mutation:data-modify` and `mutation:local-value-modify` own `DATA_MODIFY` and
   `LOCAL_VALUE_MODIFY`; persistence needs durable receiver/path evidence, and
-  local writes exclude bookkeeping and loop counters. `local-value-modify` also
+  local writes exclude bookkeeping and implicit `for`-loop counters; explicit `while`-loop increments/decrements are local modifications. `local-value-modify` also
   reads `LOCAL_COPY` (so the local-copy owner must be in the plan) and
   suppresses a write's local mutation by default when that write is an
   established `LOCAL_COPY`.

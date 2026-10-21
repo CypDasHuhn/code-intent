@@ -489,7 +489,10 @@ private fun isLoopCounter(
     val name = writeTarget(write) ?: return false
     if (name.lowercase() !in LOOP_COUNTER_NAMES) return false
     return view.guards().any { guard ->
-        guard.kind == GuardKind.LOOP &&
+        if (guard.kind != GuardKind.LOOP) return@any false
+        val header = guard.node.text.trimStart()
+        val forLoop = header.startsWith("for") || header.startsWith("foreach")
+        forLoop &&
             write.node.startByte >= guard.node.startByte &&
             write.node.endByte <= guard.node.endByte
     }
