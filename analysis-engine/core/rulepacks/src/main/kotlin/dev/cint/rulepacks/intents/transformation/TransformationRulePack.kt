@@ -29,7 +29,7 @@ class TransformationRulePack(
         schema = TransformationConfig.SCHEMA,
         ruleId = DATA_TRANSFORMATION_RULE_ID,
     ) {
-    override val reads: Set<Intent> = setOf(SEARCH_INTENT)
+    override val reads: Set<Intent> = setOf(SEARCH_INTENT, DATA_TRANSFORMATION_INTENT)
 
     override val matchers: List<Matcher> =
         listOf(Matcher { view -> TransformationRule(config.forLanguage(view.language())).match(view) })

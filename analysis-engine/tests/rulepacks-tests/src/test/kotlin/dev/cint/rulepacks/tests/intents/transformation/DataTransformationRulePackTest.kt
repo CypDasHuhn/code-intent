@@ -5,6 +5,7 @@ import dev.cint.api.Role
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.core.runtime.scheduler.RuleScheduler
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
@@ -59,7 +60,51 @@ class DataTransformationRulePackTest {
         val rule = pack.rules().single()
         assertEquals("data-transformation:data-transformation", rule.id)
         assertEquals("DATA_TRANSFORMATION", rule.owns)
-        assertEquals(setOf(SEARCH_INTENT), rule.reads)
+        assertEquals(setOf(SEARCH_INTENT, DATA_TRANSFORMATION_INTENT), rule.reads)
+    }
+
+    @Test
+    fun schedulesAfterSearchAndCanConsumeItsOwnEmissions() {
+        val plan = RuleScheduler().plan(listOf(DataAccessRulePack(), TransformationRulePack()))
+        val transformation = plan.strata.flatten().single { it.id == DATA_TRANSFORMATION_RULE_ID }
+        val searchIndex = plan.strata.indexOfFirst { stratum -> stratum.any { it.owns == SEARCH_INTENT } }
+        val transformationIndex = plan.strata.indexOfFirst { stratum -> stratum.any { it.id == DATA_TRANSFORMATION_RULE_ID } }
+
+        assertEquals(setOf(SEARCH_INTENT, DATA_TRANSFORMATION_INTENT), transformation.reads)
+        assertTrue(searchIndex < transformationIndex)
+    }
+
+    @Test
+    fun chainedTransformationsEstablishFromPriorTransformationEmissions() {
+        val text = "fun f(values: List<String>) = values.map { it.trim() }.filter { it.isNotEmpty() }"
+        val input = parsePackInput("kotlin", text)
+        val valuesOffset =
+            input.syntax
+                .calls(input.tree)
+                .first { it.callee == "map" }
+                .receiver!!
+                .startByte
+        val innerOnlyOracle =
+            object : TypeOracle {
+                override fun typeAt(
+                    file: SourceFile,
+                    byteOffset: Int,
+                ): TypeFact? =
+                    if (byteOffset == valuesOffset) {
+                        TypeFact("kotlin.collections.List", "lsp", 0.9)
+                    } else {
+                        null
+                    }
+            }
+        val pack =
+            TransformationRulePack().configure(
+                mapOf("kotlin" to mapOf("qualifiers" to emptyList<String>())),
+            )
+
+        val analysis = analyzePack(input, listOf(DataAccessRulePack(), pack), innerOnlyOracle)
+        val outer = "values.map { it.trim() }.filter { it.isNotEmpty() }"
+        assertTrue(analysis.source(DATA_TRANSFORMATION_INTENT).any { it.text(text) == outer })
+        assertTrue(analysis.candidates(DATA_TRANSFORMATION_INTENT).isEmpty())
     }
 
     @Test
