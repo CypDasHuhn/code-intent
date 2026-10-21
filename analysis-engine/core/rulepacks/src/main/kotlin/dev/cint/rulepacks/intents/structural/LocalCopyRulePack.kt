@@ -6,6 +6,7 @@ import dev.cint.api.Emit
 import dev.cint.api.Intent
 import dev.cint.api.Matcher
 import dev.cint.api.RuleEmit
+import dev.cint.api.ScopeKind
 import dev.cint.api.SingleIntentPack
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
@@ -25,6 +26,7 @@ private val OWNER_QUALIFIED =
     Regex("""^(?:this(?:@[A-Za-z_][A-Za-z0-9_]*)?|self|Me|base|super)\.[A-Za-z_$][A-Za-z0-9_$]*$""")
 private val ASSIGNMENT_OPERATORS = setOf("=", "+=", "-=", "*=", "/=", "%=", "?:=", "||=", "&&=")
 private val IDENTIFIER = Regex("""[A-Za-z_$][A-Za-z0-9_$]*""")
+private val LITERAL_IDENTIFIERS = setOf("null", "true", "false", "undefined", "nil", "None")
 
 class LocalCopyRulePack(
     config: LocalCopyConfig = LocalCopyConfig(),
@@ -70,7 +72,8 @@ private class LocalCopyRule(
                 copy.declaration(
                     property.name,
                     property.initializer,
-                    view.enclosingFunction(property.node) != null,
+                    view.enclosingFunction(property.node) != null ||
+                        view.enclosingScope(property.node)?.kind == ScopeKind.CLASS,
                     declared,
                     parameterNames(view, property.node, parameters),
                 ) ?: continue
@@ -131,7 +134,7 @@ private class LocalCopyMatch(
         if (assignmentOperator(node) != "=") return null
         val left = leftNode(node)?.text?.trim() ?: return null
         val right = rightNode(node)?.text?.trim() ?: return null
-        if (!isSimpleTarget(left) || !SIMPLE_IDENTIFIER.matches(right)) return null
+        if (!isSimpleTarget(left) || !isReferenceIdentifier(right)) return null
         return classify(left, right, declared, parameters)
     }
 
@@ -144,7 +147,7 @@ private class LocalCopyMatch(
     ): CopyMatch? {
         if (!insideFunction || name == null || initializer == null) return null
         val right = initializer.text.trim()
-        if (!SIMPLE_IDENTIFIER.matches(right) || name == right) return null
+        if (!isReferenceIdentifier(right) || name == right) return null
         return classify(name, right, declared, parameters)
     }
 
@@ -187,6 +190,8 @@ private class LocalCopyMatch(
             .drop(operatorIndex + 1)
             .firstOrNull { child -> child.text != ";" && !child.kind.contains("comment") }
     }
+
+    private fun isReferenceIdentifier(value: String): Boolean = SIMPLE_IDENTIFIER.matches(value) && value !in LITERAL_IDENTIFIERS
 
     private fun isSimpleTarget(target: String): Boolean = SIMPLE_IDENTIFIER.matches(target) || OWNER_QUALIFIED.matches(target)
 

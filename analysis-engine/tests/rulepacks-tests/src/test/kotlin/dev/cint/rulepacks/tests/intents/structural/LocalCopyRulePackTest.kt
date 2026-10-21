@@ -136,6 +136,20 @@ class LocalCopyRulePackTest {
     }
 
     @Test
+    fun constructorScopedDeclarationCopiesEstablish() {
+        val text =
+            """
+            class C(db: Database) {
+                private val _db = db
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text)
+
+        assertEquals(listOf("private val _db = db"), analysis.texts(LOCAL_COPY_INTENT))
+    }
+
+    @Test
     fun declarationAndLocalCopiesAreHandledSafely() {
         val text =
             """
