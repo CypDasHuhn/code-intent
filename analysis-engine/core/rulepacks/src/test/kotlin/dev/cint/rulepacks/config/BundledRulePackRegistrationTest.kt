@@ -1,4 +1,4 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.config
 
 import dev.cint.core.runtime.rulepack.RulePackLoader
 import dev.cint.core.runtime.scheduler.RuleScheduler

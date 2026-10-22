@@ -1,6 +1,7 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.config
 
 import dev.cint.api.RulePackConfigIssue
+import dev.cint.rulepacks.BundledRulePackConfigMigration
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

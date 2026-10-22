@@ -1,4 +1,4 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.config
 
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit

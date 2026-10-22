@@ -1,8 +1,6 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.intents.service
 
 import dev.cint.api.RulePackConfigException
-import dev.cint.rulepacks.intents.service.ServiceConfig
-import dev.cint.rulepacks.intents.service.ServiceRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
