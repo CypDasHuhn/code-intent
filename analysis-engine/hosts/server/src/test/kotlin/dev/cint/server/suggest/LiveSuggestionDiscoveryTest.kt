@@ -229,6 +229,87 @@ class LiveSuggestionDiscoveryTest {
     }
 
     @Test
+    fun closeWhileSuggestionIsQueuedStillWritesACancelledResponse() {
+        val root = Files.createTempDirectory("cint-live-discovery-queued-close")
+        try {
+            val provider = GatedDiscoveryProvider()
+            val harness =
+                harness(
+                    root,
+                    suggestionSettings = discoverySettings().copy(workerThreads = 1),
+                    service = service(provider),
+                )
+            harness.initialize()
+            val first = root.resolve("First.kt").toString()
+            val second = root.resolve("Second.kt").toString()
+            harness.open(first, source, version = 1)
+            harness.open(second, source, version = 1)
+
+            harness.suggest(first, version = 1, id = 2, requestId = "running")
+            assertTrue(provider.started.await(2, TimeUnit.SECONDS))
+            harness.suggest(second, version = 1, id = 3, requestId = "queued")
+            harness.send(
+                """{"jsonrpc":"2.0","method":"textDocument/didClose","params":{"uri":${mapper.writeValueAsString(second)}}}""",
+            )
+            provider.release.countDown()
+
+            assertTrue(harness.waitForResponse(2).path("accepted").asBoolean())
+            assertTrue(harness.waitForResponse(3).path("cancelled").asBoolean())
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun twoRapidEditsWhileReplacementPassRunsKeepTheNewPassResponsive() {
+        val provider = StubbornDiscoveryProvider()
+        val root = Files.createTempDirectory("cint-live-discovery-two-edits")
+        try {
+            val harness =
+                harness(
+                    root,
+                    suggestionSettings = discoverySettings().copy(workerThreads = 3),
+                    service = service(provider),
+                )
+            harness.initialize()
+            val uri = root.resolve("Facts.kt").toString()
+            harness.open(uri, source, version = 1)
+            harness.suggest(uri, version = 1, id = 2, requestId = "first")
+            awaitCalls(provider, 1)
+
+            harness.change(uri, source + "\n// v2", version = 2)
+            harness.suggest(uri, version = 2, id = 3, requestId = "replacement")
+            awaitCalls(provider, 2)
+
+            harness.change(uri, source + "\n// v3", version = 3)
+            harness.change(uri, source + "\n// v4", version = 4)
+            harness.suggest(uri, version = 4, id = 5, requestId = "final")
+
+            assertTrue(harness.waitForResponse(2).path("cancelled").asBoolean())
+            assertTrue(harness.waitForResponse(3).path("cancelled").asBoolean())
+
+            provider.release.countDown()
+            val final = harness.waitForResponse(5)
+            assertTrue(final.path("accepted").asBoolean())
+            assertFalse(final.path("busy").asBoolean())
+        } finally {
+            provider.release.countDown()
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    private fun awaitCalls(
+        provider: StubbornDiscoveryProvider,
+        count: Int,
+    ) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+        while (provider.calls.get() < count && System.nanoTime() < deadline) {
+            Thread.sleep(10)
+        }
+        assertTrue(provider.calls.get() >= count, "provider reached only ${provider.calls.get()} calls")
+    }
+
+    @Test
     fun budgetExhaustionPublishesGradedAdditionsAndUncoveredUnits() {
         val root = Files.createTempDirectory("cint-live-discovery-budget")
         try {
@@ -430,6 +511,30 @@ class LiveSuggestionDiscoveryTest {
                 } catch (_: InterruptedException) {
                     Thread.currentThread().interrupt()
                     return AgentTurn.Failure("cancelled")
+                }
+            }
+            return AgentTurn.Message("no verdicts")
+        }
+    }
+
+    private class StubbornDiscoveryProvider :
+        IntentSuggestionProvider,
+        AnnotationSessionProvider {
+        override val id: String = "discovery"
+        override val model: String = "discovery-v1"
+        override val defaultPromptVersion: String = "discovery-prompt-v1"
+        val calls: AtomicInteger = AtomicInteger(0)
+        val release: CountDownLatch = CountDownLatch(1)
+
+        override fun suggest(context: CandidateContext): List<CandidateEmit> = emptyList()
+
+        override fun complete(request: AgentRequest): AgentTurn {
+            calls.incrementAndGet()
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+            while (release.count > 0L && System.nanoTime() < deadline) {
+                try {
+                    release.await(1, TimeUnit.SECONDS)
+                } catch (_: InterruptedException) {
                 }
             }
             return AgentTurn.Message("no verdicts")

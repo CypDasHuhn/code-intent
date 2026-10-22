@@ -3,6 +3,7 @@ package dev.cint.treesitter.language
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.syntax.ExpressionUnit
 import dev.cint.core.syntax.ProfileSyntaxModel
+import dev.cint.core.syntax.SyntaxGroups
 import dev.cint.core.syntax.expressionUnits
 import dev.cint.treesitter.CsharpParser
 import dev.cint.treesitter.JavascriptParser
@@ -165,6 +166,48 @@ class ExpressionUnitsTest {
             "statement_block",
         )
         assertNoDeclarationNames(units, "required_parameter", "optional_parameter", "formal_parameters")
+    }
+
+    @Test
+    fun kotlinAnnotationArgumentsAreUnitsWithoutAnnotationNames() {
+        val source =
+            """
+            @Suppress("UNCHECKED_CAST")
+            class Foo {
+                @Deprecated(Regex("abc").pattern)
+                fun scan(@Suppress("x") text: String = "a"): Boolean = true
+            }
+            """.trimIndent()
+        val units = units("kotlin", KotlinParser(), source)
+
+        assertTrue(units.any { it.text == "\"UNCHECKED_CAST\"" })
+        assertTrue(units.any { it.text == "\"x\"" })
+        assertTrue(units.any { it.text == "Regex(\"abc\").pattern" })
+        assertTrue(units.none { it.text == "Suppress" || it.text == "Deprecated" })
+        assertNoNodes(
+            units,
+            "annotation",
+            "modifiers",
+            "parameter_modifiers",
+            "constructor_invocation",
+            "user_type",
+            "type_annotation",
+            "type_identifier",
+        )
+        assertNoDeclarationNames(units, "parameter", "function_value_parameters")
+    }
+
+    @Test
+    fun profilesRouteTypeNodesThroughExpressionExcluded() {
+        for (language in listOf("kotlin", "javascript", "typescript", "csharp", "vue")) {
+            val profile = SyntaxProfiles.load(language)
+            val typeKinds = profile.kinds(SyntaxGroups.TYPE_REFERENCE)
+            val excluded = profile.kinds(SyntaxGroups.EXPRESSION_EXCLUDED)
+            assertTrue(
+                typeKinds.all { it in excluded },
+                "$language type kinds missing from expressionExcluded: ${typeKinds - excluded}",
+            )
+        }
     }
 
     @Test

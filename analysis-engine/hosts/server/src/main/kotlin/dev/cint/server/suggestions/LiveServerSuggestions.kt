@@ -94,8 +94,7 @@ internal fun LiveServer.handleSuggest(
     val discoveryProvider = suggestionService.findSessionProvider(suggestionSettings.effectiveProvider)
     val clientProtocol = clientProtocols[writer] ?: 0
     val discovery = suggestionSettings.discoveryEnabled && discoveryProvider != null && clientProtocol >= 4
-    lateinit var task: FutureTask<Unit>
-    task =
+    val task =
         FutureTask(
             Callable {
                 try {
@@ -226,12 +225,10 @@ internal fun LiveServer.handleSuggest(
                     }
                 } finally {
                     inFlightSuggestions.remove(key, pass)
-                    inFlightFutures.remove(key, task)
                     if (requestId != null) cancelledSuggestions.remove(requestId)
                 }
             },
         )
-    inFlightFutures[key] = task
     suggestionExecutor.execute(task)
 }
 
@@ -343,8 +340,9 @@ internal fun LiveServer.cancelInFlightSuggestion(
     uri: String,
 ) {
     val key = DocumentKey(writer, uri)
-    val pass = inFlightSuggestions.remove(key) ?: return
+    val pass = inFlightSuggestions[key] ?: return
     pass.cancelled.set(true)
+    inFlightSuggestions.remove(key, pass)
     providerFutures.remove(key)?.cancel(true)
 }
 

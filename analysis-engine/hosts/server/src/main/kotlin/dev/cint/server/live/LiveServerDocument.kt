@@ -55,9 +55,10 @@ internal fun LiveServer.clearDocument(
     uri: String,
 ) {
     val key = DocumentKey(writer, uri)
-    inFlightSuggestions.remove(key)?.cancelled?.set(true)
+    val pass = inFlightSuggestions[key]
+    pass?.cancelled?.set(true)
+    if (pass != null) inFlightSuggestions.remove(key, pass)
     providerFutures.remove(key)?.cancel(true)
-    inFlightFutures.remove(key)?.cancel(true)
     analyses.remove(key)
     publishedCandidates.remove(key)
     analysisRevisions.remove(key)

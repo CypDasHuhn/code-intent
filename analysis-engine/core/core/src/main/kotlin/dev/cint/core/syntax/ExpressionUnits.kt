@@ -23,9 +23,6 @@ internal class ExpressionNodes(
     private val skippedSubtrees =
         kinds.commentKinds +
             kinds.importKinds +
-            kinds.annotationKinds +
-            kinds.modifierKinds +
-            kinds.typeReferenceKinds +
             kinds.expressionExcludedKinds
 
     fun expressions(tree: SyntaxTree): Sequence<SyntaxNode> =
@@ -51,6 +48,10 @@ internal class ExpressionNodes(
 
     private fun isDeclarationName(node: SyntaxNode): Boolean {
         val parent = node.parent ?: return false
+        if (parent.kind in kinds.annotationKinds) {
+            if (node.kind in kinds.identifierKinds || node.kind in kinds.typeReferenceKinds) return true
+            if (node.kind in kinds.expressionExcludedKinds) return true
+        }
         if (parent.kind in kinds.functionKinds || parent.kind in kinds.classKinds) {
             if (node.kind in kinds.identifierKinds) return true
             if (node.kind in kinds.typeReferenceKinds || node.kind in kinds.expressionExcludedKinds) return true
@@ -60,7 +61,6 @@ internal class ExpressionNodes(
             if (equals != null && node.endByte > equals.startByte) return false
             if (node.kind in kinds.identifierKinds || node.kind in kinds.typeReferenceKinds) return true
             if (node.kind in kinds.expressionExcludedKinds) return true
-            if (node.kind in kinds.annotationKinds || node.kind in kinds.modifierKinds) return true
         }
         if (parent.kind in kinds.variableKinds || parent.kind in kinds.bindingKinds) {
             if (node.kind in kinds.typeReferenceKinds || node.kind in kinds.expressionExcludedKinds) return true

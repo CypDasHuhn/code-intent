@@ -81,7 +81,6 @@ class LiveServer(
     internal val inFlightSuggestions = ConcurrentHashMap<DocumentKey, SuggestPass>()
     internal val sessionLogs = ConcurrentHashMap<DocumentKey, SessionLog>()
     internal val clientProtocols = ConcurrentHashMap<BufferedWriter, Int>()
-    internal val inFlightFutures = ConcurrentHashMap<DocumentKey, Future<*>>()
     internal val providerFutures = ConcurrentHashMap<DocumentKey, Future<*>>()
     internal val cancelledSuggestions = ConcurrentHashMap<String, Long>()
     internal val sessionSkipped = ConcurrentHashMap<DocumentKey, MutableSet<String>>()
@@ -136,7 +135,6 @@ class LiveServer(
     private fun shutdownSuggestions() {
         inFlightSuggestions.values.forEach { it.cancelled.set(true) }
         providerFutures.values.forEach { it.cancel(true) }
-        inFlightFutures.values.forEach { it.cancel(true) }
         suggestionExecutor.shutdownNow()
         providerExecutor.shutdownNow()
     }
