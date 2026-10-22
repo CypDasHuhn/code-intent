@@ -65,6 +65,7 @@ host and client cutover at the end.
 | 051 | [size hygiene splits](051-size-hygiene-splits.md) | done | 042, 044, 048, 050 | Split remaining EXTREME files and OVERCROWDED directories by responsibility. |
 | 052 | [nvim intent hover](052-nvim-intent-hover.md) | done | 016 | LSP-like non-blocking floating intent inspector for the caret span. |
 | 053 | [hover innermost span](053-hover-innermost-span.md) | done | 052 | Show only the intents of the innermost annotation span under the caret. |
+| 054 | [hover omit untagged](054-hover-omit-untagged.md) | done | 052, 053 | Never show the reserved UNTAGGED marker in the intent hover. |
 
 ## Resolved decisions
 
