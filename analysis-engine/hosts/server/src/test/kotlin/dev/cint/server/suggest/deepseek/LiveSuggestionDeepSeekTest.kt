@@ -10,10 +10,10 @@ import dev.cint.server.suggest.support.harness
 import dev.cint.server.suggest.support.lineCol
 import dev.cint.server.suggest.support.mapper
 import dev.cint.server.suggestionServiceFrom
-import dev.cint.suggest.DeepSeekIntentSuggestionProvider
-import dev.cint.suggest.DeepSeekProviderConfig
 import dev.cint.suggest.SuggestionProviderRegistry
 import dev.cint.suggest.SuggestionService
+import dev.cint.suggest.provider.DeepSeekIntentSuggestionProvider
+import dev.cint.suggest.provider.DeepSeekProviderConfig
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -4,10 +4,10 @@ import dev.cint.api.CandidateEmit
 import dev.cint.server.SuggestionSettings
 import dev.cint.server.suggest.support.gapSource
 import dev.cint.server.suggest.support.harness
-import dev.cint.suggest.CandidateContext
-import dev.cint.suggest.IntentSuggestionProvider
 import dev.cint.suggest.SuggestionProviderRegistry
 import dev.cint.suggest.SuggestionService
+import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.provider.IntentSuggestionProvider
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit

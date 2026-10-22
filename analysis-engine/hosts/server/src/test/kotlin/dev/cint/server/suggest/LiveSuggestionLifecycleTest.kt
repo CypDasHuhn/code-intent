@@ -9,10 +9,10 @@ import dev.cint.server.suggest.support.candidates
 import dev.cint.server.suggest.support.gapSource
 import dev.cint.server.suggest.support.harness
 import dev.cint.server.suggest.support.twoGapSource
-import dev.cint.suggest.CandidateContext
-import dev.cint.suggest.IntentSuggestionProvider
 import dev.cint.suggest.SuggestionProviderRegistry
 import dev.cint.suggest.SuggestionService
+import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.provider.IntentSuggestionProvider
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals

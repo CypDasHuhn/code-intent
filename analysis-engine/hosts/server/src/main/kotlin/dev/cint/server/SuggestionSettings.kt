@@ -1,14 +1,14 @@
 package dev.cint.server
 
-import dev.cint.suggest.DEEPSEEK_API_KEY_ENV
-import dev.cint.suggest.DEEPSEEK_BASE_URL
-import dev.cint.suggest.DEEPSEEK_MAX_CONFIDENCE
-import dev.cint.suggest.DEEPSEEK_MAX_TOKENS
-import dev.cint.suggest.DEEPSEEK_MODEL_ID
-import dev.cint.suggest.DEEPSEEK_PROVIDER_ID
-import dev.cint.suggest.FAKE_MODEL_ID
-import dev.cint.suggest.FAKE_PROVIDER_ID
-import dev.cint.suggest.SourceExcerpt
+import dev.cint.suggest.model.SourceExcerpt
+import dev.cint.suggest.provider.DEEPSEEK_API_KEY_ENV
+import dev.cint.suggest.provider.DEEPSEEK_BASE_URL
+import dev.cint.suggest.provider.DEEPSEEK_MAX_CONFIDENCE
+import dev.cint.suggest.provider.DEEPSEEK_MAX_TOKENS
+import dev.cint.suggest.provider.DEEPSEEK_MODEL_ID
+import dev.cint.suggest.provider.DEEPSEEK_PROVIDER_ID
+import dev.cint.suggest.provider.FAKE_MODEL_ID
+import dev.cint.suggest.provider.FAKE_PROVIDER_ID
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Files
 import java.nio.file.Path

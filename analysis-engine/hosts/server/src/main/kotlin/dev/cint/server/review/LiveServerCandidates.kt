@@ -9,7 +9,8 @@ import dev.cint.server.live.DocState
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.PublishedCandidate
 import dev.cint.server.live.relativePath
-import dev.cint.suggest.CandidateDocument
+import dev.cint.suggest.model.CandidateDocument
+import dev.cint.suggest.model.CandidateGroup
 import java.io.BufferedWriter
 import java.util.concurrent.ConcurrentHashMap
 
@@ -87,7 +88,7 @@ internal fun LiveServer.publishCandidates(
         val document = CandidateDocument(path, doc.version, doc.text, emptySet())
         val groups = suggestionService.group(document, candidates)
         val publishedById = linkedMapOf<String, PublishedCandidate>()
-        val publishedGroups = mutableListOf<Pair<dev.cint.suggest.CandidateGroup, List<PublishedCandidate>>>()
+        val publishedGroups = mutableListOf<Pair<CandidateGroup, List<PublishedCandidate>>>()
         for (group in groups) {
             val groupResolved =
                 group.anchorId in resolvedAnchors ||
@@ -160,7 +161,7 @@ private fun LiveServer.candidateId(
     )
 
 private fun LiveServer.candidateGroupPayload(
-    group: dev.cint.suggest.CandidateGroup,
+    group: CandidateGroup,
     kept: List<PublishedCandidate>,
 ): Map<String, Any?> =
     linkedMapOf(

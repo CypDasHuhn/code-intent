@@ -1,12 +1,12 @@
 package dev.cint.server
 
-import dev.cint.suggest.DEEPSEEK_MODEL_ID
-import dev.cint.suggest.DeepSeekIntentSuggestionProvider
-import dev.cint.suggest.DeepSeekProviderConfig
-import dev.cint.suggest.FakeIntentSuggestionProvider
-import dev.cint.suggest.IntentSuggestionProvider
 import dev.cint.suggest.SuggestionProviderRegistry
 import dev.cint.suggest.SuggestionService
+import dev.cint.suggest.provider.DEEPSEEK_MODEL_ID
+import dev.cint.suggest.provider.DeepSeekIntentSuggestionProvider
+import dev.cint.suggest.provider.DeepSeekProviderConfig
+import dev.cint.suggest.provider.FakeIntentSuggestionProvider
+import dev.cint.suggest.provider.IntentSuggestionProvider
 
 internal fun suggestionServiceFrom(
     settings: SuggestionSettings,

@@ -6,8 +6,8 @@ import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.SuggestPass
 import dev.cint.server.live.docsFor
 import dev.cint.server.live.relativePath
-import dev.cint.suggest.CandidateDocument
-import dev.cint.suggest.SuggestionOptions
+import dev.cint.suggest.model.CandidateDocument
+import dev.cint.suggest.model.SuggestionOptions
 import java.io.BufferedWriter
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
