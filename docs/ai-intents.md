@@ -139,7 +139,10 @@ CandidateEmit (aiEligible)
   deterministic candidates.
 - Context is a bounded excerpt plus metadata. Imports and enclosing functions
   are not collected or sent, and whole files are never sent.
-- Prompt is versioned and structured; code and comments are untrusted data.
+- Prompt is versioned and structured; code and comments are untrusted data. It
+  asks for several plausible alternatives, including lower-confidence guesses,
+  within the candidate span rather than requiring certainty. DeepSeek completion
+  uses a nonzero temperature (`0.3`) and a `1024`-token default budget.
 - `CandidateValidator` enforces intent vocabulary, confidence range, byte bounds
   and containment inside the input candidate, dedupes, and applies
   `maxCandidates`. Only the top `maxEnrichmentCandidates` deterministic
@@ -247,22 +250,23 @@ suggestions:
   trigger: manual        # manual; idle is a follow-up
   provider: deepseek     # "deepseek" by default when enabled and unset; "fake" stays available
   model: deepseek-chat
-  maxCandidates: 5
-  maxEnrichmentCandidates: 5  # deterministic candidates sent to AI per pass
-  promptVersion: deepseek-intent-v1
+  maxCandidates: 10
+  maxEnrichmentCandidates: 12  # deterministic candidates sent to AI per pass
+  promptVersion: deepseek-intent-v2
   timeoutMs: 10000       # whole pass/provider interrupt/HTTP timeout, minimum 1
   workerThreads: 2       # bounded suggestion/provider pools, clamped 1..8
   apiKeyEnv: DEEPSEEK_CHAT_KEY
   baseUrl: https://api.deepseek.com/chat/completions
-  maxTokens: 512
+  maxTokens: 1024
   maxConfidence: 0.84    # diagnostic cap, clamped to at most 0.84
   excerptRadiusBytes: 400
   allowGlobs: []         # empty allows every path; globs gate the AI pass
   redactPatterns: []     # regexes applied to the excerpt before sending
 ```
 
-A missing file defaults to disabled/manual/5 candidates, a 4000 ms timeout, and
-2 worker threads. When disabled, `initialize.suggestions.enabled` is false and
+A missing file defaults to disabled/manual, 10 candidates, 12 enrichment
+candidates, a 10000 ms timeout, and 2 worker threads. When disabled,
+`initialize.suggestions.enabled` is false and
 `cint/suggest` refuses, but pack candidates still publish. Both executor pools
 are bounded by `workerThreads` and stop on server/process close, not on the
 protocol `shutdown` request.

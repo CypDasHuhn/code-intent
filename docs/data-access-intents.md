@@ -4,11 +4,19 @@ The `data-access` pack owns two rules:
 
 | rule | intent | meaning |
 |---|---|---|
-| `data-access:search` | `SEARCH` | retrieve data by criteria from a source that may contain many records |
-| `data-access:lookup` | `LOOKUP` | resolve one known value by key/constant from a static or effectively static table/map/enum/config |
+| `data-access:search` | `SEARCH` | retrieve data by criteria where the result may be absent or span many records |
+| `data-access:lookup` | `LOOKUP` | resolve one known value by key/constant from a static or effectively static table/map/enum/config/registry |
 
 Both rules are source-only (`reads` is empty). They do not own
 `SERVICE_DELEGATION`, `DATA_MODIFY`, or any other pack's intent.
+
+## SEARCH vs LOOKUP contract
+
+`LOOKUP` retrieves a value known to exist from a static or effectively static
+source: a map/table key, enum/constant, config entry, or registry. `SEARCH`
+queries a collection or repository by criteria where the result may be absent
+(empty, null, or many records); a prior validation/guard does not change the
+data kind or turn a search into a lookup.
 
 ## Configuration
 
@@ -16,9 +24,19 @@ Configuration is per language under the `data-access` pack id. Every value is a
 set of strings and additive overlays union with the defaults.
 
 - `searchCalls`, `searchPrefixes`: repository/query methods and method prefixes.
+  Defaults include `findBy`, `getBy`, `loadBy`, `findAllBy`, `search`, and
+  `query`, so repository criteria calls establish SEARCH rather than ambiguity.
+  A prefix matches only at a token boundary: the callee must end at the prefix
+  or the remaining suffix must start an uppercase letter, a digit, or a
+  separator. The prefix must also cover whole camel/snake tokens. Thus `getBy`
+  and `loadBy` match `getById`/`loadById` but not `getBytes`/`loadBytes`, and
+  `search` does not match `searching`.
 - `searchQualifiers`, `searchTypes`: receiver names and oracle-resolved types
   that make a configured call a search call.
 - `lookupCalls`: strong key/value calls (`getValue`, `getOrDefault`, `lookup`, ...).
+  An explicit lookup call takes precedence over search-prefix matching, so
+  `getByKey` never establishes or candidates SEARCH. To give such a call search
+  meaning, add it explicitly to `searchCalls` as well.
 - `lookupQualifiers`, `lookupTypes`: receiver names/types treated as dictionaries,
   maps, configs, tables, or lookup registries.
 - `enumCalls`, `enumTypes`, `enumTypeSuffixes`, `enumExclusions`: enum/constant
@@ -38,8 +56,9 @@ set of strings and additive overlays union with the defaults.
   defaults and classify as `LOCAL_VALUE_MODIFY`. Additive overlays can add
   project wrappers such as `getPersist`; add the same wrapper to the mutation
   vocabulary to give it a data or local classification.
-- `boundaryPrefixes`: `findBy*`-style prefixes that also receive a LOOKUP
-  boundary candidate.
+- `boundaryPrefixes`: optional `findBy*`-style prefixes that also receive a
+  LOOKUP boundary candidate. The default is empty, so repository searches stay
+  SEARCH unless a project explicitly opts into a boundary alternative.
 - `indexKinds`: language node kinds for index/subscript/element access.
 
 Method and qualifier matching is case-insensitive, so the same defaults serve
@@ -51,9 +70,14 @@ token-based: camel/snake boundaries form tokens, so `userRepository` matches the
 
 ## Classification policy
 
-- A configured search call or `findBy*`/`search*`/`query*` prefix emits
-  established `SEARCH` only on a configured search receiver/type. Bare or
-  unresolved calls become candidates.
+- A configured search call or `findBy*`/`getBy*`/`loadBy*`/`search*`/`query*`
+  prefix emits established `SEARCH` only on a configured search receiver/type.
+  Prefix matching respects token boundaries, so `getBytes`/`loadBytes` are not
+  search-prefix matches; they stay ambiguous candidates. Bare or unresolved
+  calls become candidates.
+- Explicit `lookupCalls` entries win over search-prefix classification:
+  `getByKey` is a lookup call even though it starts with `getBy`, so it emits
+  no SEARCH source or candidate.
 - Index access on a known map/table or lookup qualifier, and configured lookup
   calls on a known receiver/type, emit established `LOOKUP`. Bare lookup calls
   are candidates, not established.
@@ -64,9 +88,10 @@ token-based: camel/snake boundaries form tokens, so `userRepository` matches the
   `String.valueOf` stays out of this pack and belongs to the `NORMALIZATION`
   boundary.
 - `findById`-style calls are explicitly `SEARCH`: they retrieve by criteria from
-  a repository or other multi-record source that may return empty. The lookup
-  rule emits a `LOOKUP` candidate on the same span as a reviewable boundary
-  alternative.
+  a repository or other multi-record source that may return empty. The default
+  `boundaryPrefixes` is empty, so the lookup rule does not emit a `LOOKUP`
+  alternative; a project can opt in with an explicit `boundaryPrefixes` entry.
+  A guard or validation before the call does not reclassify it as `LOOKUP`.
 - Generic `get`, `find`, `fetch*`, `load*`, and similar wrappers are not
   established. Both rules emit `PACK_DOMAIN` candidates so review/AI can choose,
   and the established output stays conservative.

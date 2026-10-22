@@ -153,8 +153,9 @@ evidence is qualifier/type/`SEARCH`/transformation based; unknown or
 unclassified receivers, including offline runs with a null oracle, stay
 candidates rather than established spans.
 
-The structural packs are independent source rules. `return-value` emits on the
-returned expression and is additive with domain intents. `chaining` keeps only
+The structural packs are independent source rules. `return-value` emits over
+the return statement from the `return` keyword through the expression and is
+additive with domain intents. `chaining` keeps only
 exact receiver links, emits once at the outer call, excludes boolean OR operands,
 and candidates ambiguous conditional bases. `local-copy` covers assignments and
 declaration/property initializers (including class/constructor-scoped

@@ -39,6 +39,29 @@ class DeepSeekIntentSuggestionProviderTest {
     }
 
     @Test
+    fun requestUsesRecallDefaultsAndAsksForAlternatives() {
+        val endpoint = FakeEndpoint()
+        endpoint.use { endpoint ->
+            endpoint.responder = {
+                completion("""[{"startByte":0,"endByte":4,"intent":"LOGGING","confidence":0.6,"rationale":"logging"}]""")
+            }
+            provider(endpoint).suggest(context())
+
+            val body = deepSeekMapper.readTree(endpoint.requests.single().body)
+            assertEquals(0.3, body.path("temperature").asDouble())
+            assertEquals(1024, body.path("max_tokens").asInt())
+            val system =
+                body
+                    .path("messages")
+                    .first { it.path("role").asText() == "system" }
+                    .path("content")
+                    .asText()
+            assertTrue(system.contains("alternatives"))
+            assertTrue(system.contains("lower-confidence"))
+        }
+    }
+
+    @Test
     fun unsetPromptVersionUsesTheDeepSeekDefault() {
         val endpoint = FakeEndpoint()
         endpoint.use { endpoint ->
@@ -48,6 +71,7 @@ class DeepSeekIntentSuggestionProviderTest {
             val provider = provider(endpoint)
             val enriched = provider.suggest(context().copy(promptVersion = null)).single()
 
+            assertEquals("deepseek-intent-v2", DEEPSEEK_PROMPT_VERSION)
             assertEquals(DEEPSEEK_PROMPT_VERSION, enriched.promptVersion)
             val body = deepSeekMapper.readTree(endpoint.requests.single().body)
             val user = deepSeekMapper.readTree(body.path("messages")[1].path("content").asText())

@@ -255,6 +255,70 @@ class DerivativeUseCompositionTest {
     }
 
     @Test
+    fun returnedPropertyWithUnclassifiedSiblingReadInheritsReturnValue() {
+        val text =
+            """
+            class Config(val value: String?, val errors: List<String>)
+            fun load(): Config = Config("value", emptyList())
+            fun value(): String? {
+                val result = load()
+                if (result.errors.isNotEmpty()) throw IllegalStateException("bad")
+                return result.value
+            }
+            """.trimIndent()
+        val annotations = analyzePipeline(text, testPacks())
+
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val result")
+            }
+        assertEquals(setOf("RETURN_VALUE"), derivative.intents)
+    }
+
+    @Test
+    fun returnedLocalKeepsSiblingIntentsBehindTheAllClassifiedGate() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger("Test")
+            class Config(val value: String?, val errors: List<String>)
+            fun load(): Config = Config("value", emptyList())
+            fun value(): String? {
+                val result = load()
+                if (result.errors.isNotEmpty()) throw IllegalStateException("bad")
+                log.info(result.value ?: "")
+                return result.value
+            }
+            """.trimIndent()
+        val annotations = analyzePipeline(text, testPacks())
+
+        assertTrue(annotations.any { "LOGGING" in it.intents && it.text(text).contains("log.info") })
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val result")
+            }
+        assertEquals(setOf("RETURN_VALUE"), derivative.intents)
+    }
+
+    @Test
+    fun returnedNestedArgumentLocalInheritsReturnValue() {
+        val text =
+            """
+            class LanguageConfig(values: Map<String, String>)
+            fun configure(values: Map<String, String>): LanguageConfig {
+                val updated = values.toMutableMap()
+                return LanguageConfig(updated)
+            }
+            """.trimIndent()
+        val annotations = analyzePipeline(text, testPacks())
+
+        val derivative =
+            annotations.first {
+                it.role == Role.DERIVATIVE_USE && it.text(text).contains("val updated")
+            }
+        assertEquals(setOf("RETURN_VALUE"), derivative.intents)
+    }
+
+    @Test
     fun returnedLocalWritesInheritReturnValueDerivativeUse() {
         val text =
             """

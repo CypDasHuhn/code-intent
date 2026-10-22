@@ -10,9 +10,34 @@ internal fun isAmbiguous(
     if (containsName(language.compoundMutationCalls, callee)) return false
     if (containsName(language.lookupCalls, callee)) return false
     if (containsName(language.searchCalls, callee)) return false
-    if (language.searchPrefixes.any { callee.startsWith(it, ignoreCase = true) }) return false
+    if (matchesConfiguredPrefix(callee, language.searchPrefixes)) return false
     return containsName(language.ambiguousCalls, callee) ||
         language.ambiguousPrefixes.any { callee.startsWith(it, ignoreCase = true) }
+}
+
+internal fun matchesConfiguredPrefix(
+    callee: String,
+    prefixes: Set<String>,
+): Boolean = prefixes.any { matchesTokenBoundaryPrefix(callee, it) }
+
+internal fun matchesTokenBoundaryPrefix(
+    callee: String,
+    prefix: String,
+): Boolean {
+    if (prefix.isEmpty()) return false
+    if (callee.equals(prefix, ignoreCase = true)) return true
+    if (callee.startsWith(prefix, ignoreCase = true)) {
+        val suffix = callee.substring(prefix.length)
+        if (suffix.isNotEmpty()) {
+            val first = suffix.first()
+            if (first.isUpperCase() || first.isDigit() || !first.isLetterOrDigit()) return true
+        }
+    }
+    val calleeTokens = tokenize(callee)
+    val prefixTokens = tokenize(prefix)
+    return prefixTokens.isNotEmpty() &&
+        calleeTokens.size >= prefixTokens.size &&
+        calleeTokens.subList(0, prefixTokens.size) == prefixTokens
 }
 
 internal fun isKnownMap(

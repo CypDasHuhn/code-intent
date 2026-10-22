@@ -12,9 +12,10 @@ const val DEEPSEEK_PROVIDER_ID: String = "deepseek"
 const val DEEPSEEK_MODEL_ID: String = "deepseek-chat"
 const val DEEPSEEK_BASE_URL: String = "https://api.deepseek.com/chat/completions"
 const val DEEPSEEK_API_KEY_ENV: String = "DEEPSEEK_CHAT_KEY"
-const val DEEPSEEK_PROMPT_VERSION: String = "deepseek-intent-v1"
-const val DEEPSEEK_MAX_TOKENS: Int = 512
+const val DEEPSEEK_PROMPT_VERSION: String = "deepseek-intent-v2"
+const val DEEPSEEK_MAX_TOKENS: Int = 1024
 const val DEEPSEEK_MAX_CONFIDENCE: Double = 0.84
+private const val DEEPSEEK_TEMPERATURE: Double = 0.3
 
 data class DeepSeekProviderConfig(
     val apiKeyEnv: String = DEEPSEEK_API_KEY_ENV,
@@ -98,7 +99,7 @@ class DeepSeekIntentSuggestionProvider(
             )
         return linkedMapOf(
             "model" to model,
-            "temperature" to 0.0,
+            "temperature" to DEEPSEEK_TEMPERATURE,
             "max_tokens" to config.maxTokens.coerceAtLeast(1),
             "messages" to
                 listOf(
@@ -181,6 +182,9 @@ class DeepSeekIntentSuggestionProvider(
               "intent": one string from the provided knownIntents vocabulary,
               "confidence": number from 0 to 1,
               "rationale": short string explaining the choice.
+            Propose several plausible alternatives when the span is ambiguous, including lower-confidence
+            guesses; do not require certainty. Prefer the most specific intent and use distinct intents for
+            alternatives.
             Only propose intents for the provided candidate span: startByte must be >= the candidate startByte,
             endByte must be <= the candidate endByte, and both must lie inside the provided excerpt.
             Do not invent intents. Do not edit code. Do not return established annotations.

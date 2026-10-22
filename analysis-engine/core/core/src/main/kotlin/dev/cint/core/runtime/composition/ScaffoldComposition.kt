@@ -6,6 +6,8 @@ import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
 import dev.cint.core.runtime.context.RuleContext
 
+private const val RETURN_VALUE_INTENT = "RETURN_VALUE"
+
 internal fun scaffoldContributions(ctx: RuleContext): List<Contribution> {
     val result = mutableListOf<Contribution>()
     result += ifScaffolds(ctx)
@@ -209,16 +211,16 @@ private fun exitIntents(
 ): Set<String>? {
     if (!ctx.syntax.isExit(node)) return null
     if (ctx.syntax.isReturn(node)) {
-        val covered = ctx.coverage(node)
-        if (covered.hasRealIntent) {
-            return covered.intents
+        val covered = ctx.coverage(node).intents - RETURN_VALUE_INTENT
+        if (covered.any { it != UNTAGGED_INTENT }) {
+            return covered
         }
         val expression = ctx.syntax.exitExpression(node) ?: return emptySet()
         if (expression.text.trim() == "false") return emptySet()
         if (ctx.syntax.isConstant(expression) || ctx.syntax.isSideEffectFree(expression)) {
             return setOf(UNTAGGED_INTENT)
         }
-        val intents = ctx.intentsAt(expression)
+        val intents = ctx.intentsAt(expression) - RETURN_VALUE_INTENT
         return if (intents.any { it != UNTAGGED_INTENT }) intents else setOf(UNTAGGED_INTENT)
     }
     val expression = ctx.syntax.exitExpression(node) ?: return emptySet()

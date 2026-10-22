@@ -11,7 +11,10 @@ intents into visual meanings.
 
 - Roles: `SOURCE_INTENT`, `DERIVATIVE_USE`, `SCAFFOLD`.
 - Intents are a set, e.g. `{VALIDATION, BOOKKEEPING}`.
-- `UNTAGGED` is the reserved "unclassified effect" intent.
+- `UNTAGGED` is the reserved "unclassified effect" intent. Clients ignore it
+  when resolving a scaffold's visual meaning/tag and when deciding whether a
+  scaffold is mixed-intent, so a scaffold carrying one real intent plus
+  `UNTAGGED` renders as that intent.
 - Tag/intent names are screaming snake case: `LOGGING`, `ERROR_HANDLING`,
   `BOOKKEEPING`, `VALIDATION`, `NORMALIZATION`, `SEARCH`, `LOOKUP`,
   `SERVICE_DELEGATION`, `SERVICE_INIT`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`,
@@ -180,7 +183,7 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | intent | meaning | include | exclude / boundary |
 |---|---|---|---|
 | `NORMALIZATION` | canonicalize a value for downstream use | trim, case fold, parse/coerce, date/time format, path/unit normalization | rejecting input (`VALIDATION`), persistence (`DATA_MODIFY`), display-only formatting until configured |
-| `SEARCH` | retrieve data by criteria from a source | repository queries, `findBy*`/`search*`/`query*`, filters, external search APIs; empty/many results | known-key single-value mapping (`LOOKUP`), pure transformation (`NORMALIZATION`) |
+| `SEARCH` | retrieve data by criteria from a source | repository queries, `findBy*`/`getBy*`/`loadBy*`/`search*`/`query*`, filters, external search APIs; empty/many results | known-key single-value mapping (`LOOKUP`), pure transformation (`NORMALIZATION`) |
 | `LOOKUP` | resolve one known value by key/constant | map/dictionary get, enum/constant maps, config keys, static tables, enum-like value to DB id | criteria-based retrieval (`SEARCH`), service forwarding (`SERVICE_DELEGATION`) |
 | `SERVICE_DELEGATION` | transfer responsibility to another service/component | controller→service, facade, adapter, thin call-through/argument adaptation | constructing/wiring (`SERVICE_INIT`), local business logic, the inner call's own intent |
 | `SERVICE_INIT` | build/configure/wire a service or resource | construction, client creation, connection setup, DI/bootstrap | initializing business data, delegation, every constructor call |
@@ -188,7 +191,7 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, atomic `getAndIncrement`/`getAndUpdate`/`getAndDecrement`, configured mutable collection operations; opt-in mutable local declarations with later writes | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, implicit `for`-loop counters, unwritten/`val` declarations, declarations used only for pure copies |
 | `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` (and `every`/`some`) over predicates, two or more distinct classified predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, negation-only guards, plain literals, `is`/`has` prefix collisions such as `issue`/`hashCode` |
 | `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy`, `all`/`any`/`none`; in-place JS mutators such as `sort`/`reverse` may co-occur with `LOCAL_VALUE_MODIFY` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`); unclassified/unknown receivers stay candidates |
-| `RETURN_VALUE` | explicitly return a computed value | `return expr`, including value-bearing labeled returns (`return@map expr`); emitted on the returned expression | bare `return`, bare `return@label`, literal/constant-only returns unless `includeLiterals` is enabled; never suppresses other intents |
+| `RETURN_VALUE` | explicitly return a computed value | `return expr`, including value-bearing labeled returns (`return@map expr`); emitted over the whole return statement from the `return` keyword through the expression | bare `return`, bare `return@label`, literal/constant-only returns unless `includeLiterals` is enabled; never suppresses other intents |
 | `CHAINING` | fluent/chained call shape | at least two exact call links, e.g. `Factory.For().Use().Build()`; the outer call is the primary emit | boolean `||` operands and parenthesized OR receivers (`BOOL_COMBINATORICS`), single calls; ambiguous conditional/ternary receivers are candidates |
 | `LOCAL_COPY` | copy a parameter into a field/local | field-like target (`_db`, `m_`/`s_`/`f_` or configured prefix, or owner-qualified) from a bare non-field identifier; assignments and declaration/property initializers, including class/constructor copies | general local mutation (`LOCAL_VALUE_MODIFY`), persistence (`DATA_MODIFY`); field/self copies, declared-property sources, and case variants do not establish; non-established simple shapes (including field/self and ambiguous owner-qualified targets) are candidates when enabled |
 
@@ -238,10 +241,12 @@ Bundled ownership and deployment:
   candidates unless a configured qualifier matches. Ambiguous helpers
   (`transform`, `process`, `reshape`, `convert`, ...) are candidates.
 - `return-value:return-value` owns `RETURN_VALUE`; it reads no other intent and
-  is purely additive. It emits on the returned expression span, not on the
-  `return` keyword, so domain/search/validation intents on the same expression
-  are preserved. Bare labeled returns are skipped; a labeled return with a value
-  emits that value.
+  is purely additive. It emits over the whole return statement from the `return`
+  keyword through the expression, so domain/search/validation intents on the
+  same expression are preserved on their own spans. Bare labeled returns are
+  skipped; a labeled return with a value emits the labeled return statement.
+  `RETURN_VALUE` does not participate in scaffold category resolution, so it
+  never replaces or blocks the returned domain intent.
 - `chaining:chaining` owns `CHAINING`; it reads no other intent. A link requires
   the next inner call to cover the receiver's exact node/site span, so calls
   buried in indexes, arguments, or binary expressions do not become links.
@@ -319,13 +324,13 @@ Concrete overlaps and precedence:
 Structural scratchpad examples:
 
 ```kotlin
-return _adminUserId.Value            // RETURN_VALUE (+ domain intents on the value)
+return _adminUserId.Value            // RETURN_VALUE over the return statement (+ domain intents on the value)
 Factory.For().Use().Build()          // CHAINING (+ SERVICE_INIT where applicable)
 val _db = db                         // LOCAL_COPY declaration copy
 _db = db                             // LOCAL_COPY; LOCAL_VALUE_MODIFY suppressed by default
 this._db = _db                       // field/self shape: candidate, not established
 this.database = db                   // ambiguous field target: candidate
-return@map it + 1                    // RETURN_VALUE on `it + 1`
+return@map it + 1                    // RETURN_VALUE over `return@map it + 1`
 return@forEach                       // no RETURN_VALUE
 ```
 
@@ -347,7 +352,11 @@ Local derivative promotion uses a **read-only** policy, not purity:
   derives at `0.55`. This lowers confidence; it does not promote a candidate to
   established and it does not certify purity.
 - a local is only promoted when all reads are classified; mixed/untagged reads
-  prevent promotion.
+  prevent promotion, except when any read carries `RETURN_VALUE`. In that case
+  the local and its writes inherit `RETURN_VALUE` even if sibling reads are
+  unclassified, so `val result = ...` reaches a returned `result.value` and
+  `val updated = ...` reaches `LanguageConfig(updated)`. Other intents still
+  require every read to be classified.
 - Intents at a read are resolved from the smallest containing annotation, which
   is what lets reads inside an error-handling lambda inherit `ERROR_HANDLING`.
 
