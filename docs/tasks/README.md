@@ -61,7 +61,7 @@ host and client cutover at the end.
 | 047 | [striped mixed-intent rendering experiment](047-striped-mixed-intent-rendering.md) | done | 016 | Opt-in ABABAB tag-color striping for active multi-intent spans. |
 | 048 | [local mutation and callback effect coverage](048-local-mutation-callback-coverage.md) | done | 040, 046 | Stronger mutable-local declarations and callback effect classification. |
 | 049 | [user readonly directive](049-user-readonly-directive.md) | done | 030 | `READONLY` user directive for side-effect-free reads without a determinism claim. |
-| 050 | [automated cross-writer annotation lock test](050-cross-writer-annotation-lock-test.md) | todo | 041 | Kotlin-plus-Neovim contention on one root; deferred from 041 because the engine harness has no cross-process orchestration. |
+| 050 | [automated cross-writer annotation lock test](050-cross-writer-annotation-lock-test.md) | done | 041 | Kotlin-plus-Neovim contention on one root; automated by `CrossWriterAnnotationLockTest` and `just test-cross-writer`. |
 
 ## Resolved decisions
 

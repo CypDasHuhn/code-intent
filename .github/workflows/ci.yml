@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CINT_TESTING_GROUNDS: ${{ github.workspace }}/testing-grounds
+      CINT_REQUIRE_NVIM: "1"
     steps:
       - uses: actions/checkout@v4
 

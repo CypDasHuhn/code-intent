@@ -1,5 +1,6 @@
 package dev.cint.core.user
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import dev.cint.api.Span
 import java.nio.file.Files
 import java.nio.file.Path
@@ -17,6 +18,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class UserAnnotationsFileTest {
+    private val json = ObjectMapper()
+
     @Test
     fun concurrentAddsPreserveEveryAnnotation() {
         val root = Files.createTempDirectory("cint-user-annotations-concurrent")
@@ -48,6 +51,52 @@ class UserAnnotationsFileTest {
             root.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun encodedAnnotationsWithNotesAndTimestampsAreStrictJson() {
+        val createdAt = "2026-01-01T00:00:00Z"
+        val noteOnly = encodeAnnotation(note = "note")
+        val createdAtOnly = encodeAnnotation(createdAt = createdAt)
+        val both = encodeAnnotation(note = "note", createdAt = createdAt)
+        val neither = encodeAnnotation()
+
+        for ((label, encoded) in mapOf("note" to noteOnly, "createdAt" to createdAtOnly, "both" to both, "neither" to neither)) {
+            assertFalse(Regex(",\\s*[}\\]]").containsMatchIn(encoded), "$label: $encoded")
+            json.readTree(encoded)
+        }
+
+        val noteRecord = json.readTree(noteOnly)["annotations"][0]
+        assertEquals("note", noteRecord["note"].asText())
+        assertFalse(noteRecord.has("createdAt"))
+
+        val createdAtRecord = json.readTree(createdAtOnly)["annotations"][0]
+        assertEquals(createdAt, createdAtRecord["createdAt"].asText())
+        assertFalse(createdAtRecord.has("note"))
+
+        val bothRecord = json.readTree(both)["annotations"][0]
+        assertEquals("note", bothRecord["note"].asText())
+        assertEquals(createdAt, bothRecord["createdAt"].asText())
+
+        val plainRecord = json.readTree(neither)["annotations"][0]
+        assertFalse(plainRecord.has("note"))
+        assertFalse(plainRecord.has("createdAt"))
+    }
+
+    private fun encodeAnnotation(
+        note: String? = null,
+        createdAt: String? = null,
+    ): String =
+        UserAnnotationsJson.encode(
+            listOf(
+                UserAnnotation(
+                    path = "Sample.kt",
+                    span = Span(0, 0, 0, 1),
+                    intents = setOf("PURE"),
+                    note = note,
+                    createdAt = createdAt,
+                ),
+            ),
+        )
 
     @Test
     fun fileLockSerializesDirectCallers() {

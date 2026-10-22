@@ -11,6 +11,22 @@ import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
+internal interface AnnotationLockObserver {
+    fun acquired(
+        root: Path,
+        lockPath: Path,
+        token: String,
+    )
+
+    fun beforeRelease(
+        root: Path,
+        lockPath: Path,
+        token: String,
+    )
+
+    fun conflict(lockPath: Path)
+}
+
 /**
  * Serializes user-annotation writes through a directory lock shared with the
  * Neovim client. The lock carries an owner record (token, pid and process-start
@@ -35,6 +51,9 @@ object UserAnnotationsFile {
 
     private val locks = ConcurrentHashMap<Path, Any>()
     private val random = SecureRandom()
+
+    @Volatile
+    internal var lockObserver: AnnotationLockObserver? = null
 
     fun path(root: Path): Path = root.resolve(DIRECTORY).resolve(FILE_NAME)
 
@@ -150,11 +169,13 @@ object UserAnnotationsFile {
         }
         var failure: Throwable? = null
         try {
+            runCatching { lockObserver?.acquired(root, lockPath, token) }
             return block(token)
         } catch (error: Throwable) {
             failure = error
             throw error
         } finally {
+            runCatching { lockObserver?.beforeRelease(root, lockPath, token) }
             try {
                 release(lockPath, token, onBeforeRelease, onBeforeReleaseRestore)
             } catch (releaseError: Throwable) {
@@ -206,6 +227,7 @@ object UserAnnotationsFile {
                 continue
             }
             onAcquireConflict?.invoke(lockPath)
+            runCatching { lockObserver?.conflict(lockPath) }
             if (isStale(lockPath)) {
                 val claimed = tryAcquireClaim(claimPath, token, deadline, onAfterClaimAcquired)
                 if (claimed) {

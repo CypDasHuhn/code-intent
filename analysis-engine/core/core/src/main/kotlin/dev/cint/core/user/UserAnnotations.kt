@@ -60,9 +60,9 @@ object UserAnnotationsJson {
                 append("\"endCol\":${annotation.span.endCol},")
                 append("\"intents\":[")
                 append(annotation.intents.sorted().joinToString(",") { "\"${escape(it)}\"" })
-                append("],")
-                annotation.note?.let { append("\"note\":\"${escape(it)}\",") }
-                annotation.createdAt?.let { append("\"createdAt\":\"${escape(it)}\",") }
+                append("]")
+                annotation.note?.let { append(",\"note\":\"${escape(it)}\"") }
+                annotation.createdAt?.let { append(",\"createdAt\":\"${escape(it)}\"") }
                 if (index < annotations.size - 1) append("},\n") else append("}")
             }
             if (annotations.isNotEmpty()) append("\n  ")
