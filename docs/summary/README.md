@@ -34,8 +34,9 @@ just build && just test-engine && just lint && just test-nvim
 
 - Engine: `analysis-engine/` (Gradle, Kotlin, tree-sitter, optional kotlin-lsp).
 - Client: `nvim-renderer/` (Lua, headless Neovim tests).
-- Task queue: `docs/tasks/README.md`. The only remaining queue entry is 017
-  (blocked); 023/028 file frontmatter is stale (README says done).
+- Task queue: `docs/tasks/README.md`. 058-061 are the proposed AI annotation
+  session/discovery, restrictions, reuse cache, and review UX; 017 remains
+  blocked. 023/028 file frontmatter is stale (README says done).
 - Current product surface: deterministic intent tags plus AI candidate review,
   user annotations with `PURE`/`READONLY`, live daemon protocol 3, and the
   Neovim renderer with inline labels, stripes, hover, and candidate review.

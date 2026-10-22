@@ -10,6 +10,8 @@ Index of the written contract for CodeIntent.
   scaffolds, CFG, profiles, and implementation snapshot.
 - [ai-intents.md](ai-intents.md) — secondary emits, AI candidate inference,
   review/persistence, and protocol.
+- [ai-annotation-session.md](ai-annotation-session.md) — proposed expression-level
+  annotation sessions, AI restrictions, and verdict reuse.
 - [workflow.md](workflow.md) — roles, ticket/review pipeline, verification
   commands, manual gate, and commit rules.
 - [manual-test.md](manual-test.md) — non-automated acceptance checks and their

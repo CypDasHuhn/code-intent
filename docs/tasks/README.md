@@ -69,6 +69,10 @@ host and client cutover at the end.
 | 055 | [ai candidate arrival ui](055-ai-candidate-arrival-ui.md) | done | 052 | Distinct AI candidate rendering, arrival notification, and AI count. |
 | 056 | [detection and AI sensitivity bundle](056-detection-and-ai-sensitivity.md) | done | 042, 048, 055 | Scaffold/return rendering, SEARCH vs LOOKUP, and broader AI recall. |
 | 057 | [uncap ai enrichment](057-uncap-ai-enrichment.md) | done | 055, 056 | Let every AI-eligible candidate and validated proposal through by default. |
+| 058 | [ai expression discovery session](058-ai-expression-discovery-session.md) | todo | 057 | Expression-level annotation session with an internal tool loop, per-unit verdicts, coverage, and protocol 4 progress. |
+| 059 | [ai restriction proposals](059-ai-restriction-proposals.md) | todo | 058 | Grouped remove+add proposals, persistence in `.cint/ai-restrictions.json`, pre-composition application, and confirmation. |
+| 060 | [ai verdict reuse cache](060-ai-verdict-reuse-cache.md) | todo | 058, 059 | Document short circuit, unit fingerprint cache, diff invalidation, similarity hints, and disk persistence. |
+| 061 | [ai review ux for discovery and restrictions](061-ai-review-ux.md) | todo | 058, 059, 060 | Quiet passive mode, review groups/list, restrictions inspector, progress, cancellation, and AI session log. |
 
 ## Resolved decisions
 

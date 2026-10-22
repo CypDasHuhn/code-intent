@@ -4,6 +4,10 @@ AI here means **intent inference**, not code completion. The deterministic
 pipeline remains the source of truth; AI only fills structural gaps and produces
 reviewable candidates.
 
+For the proposed expression-level annotation session, AI restrictions, and
+verdict reuse, see [ai-annotation-session.md](ai-annotation-session.md). This
+document describes the currently implemented candidate channel.
+
 ## Boundary
 
 ```

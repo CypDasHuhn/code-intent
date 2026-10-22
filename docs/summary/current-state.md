@@ -55,6 +55,9 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 
 ## Open work
 
+- **058-061 (proposed): AI annotation session.** Expression-level discovery,
+  reviewable remove+add restrictions, per-unit verdict reuse, and the renderer
+  review UX. Design: [../ai-annotation-session.md](../ai-annotation-session.md).
 - **017 (blocked): fixpoint metadata convergence.** Decide whether
   `source`/`confidence` metadata participates in convergence or whether
   metadata-only changes are non-convergent; the evidence field no longer
