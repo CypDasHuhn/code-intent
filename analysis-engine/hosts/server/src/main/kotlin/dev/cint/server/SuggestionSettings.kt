@@ -18,8 +18,8 @@ data class SuggestionSettings(
     val trigger: String = "manual",
     val provider: String? = null,
     val model: String? = null,
-    val maxCandidates: Int = 10,
-    val maxEnrichmentCandidates: Int = 12,
+    val maxCandidates: Int = 0,
+    val maxEnrichmentCandidates: Int = 0,
     val promptVersion: String? = null,
     val timeoutMs: Long = 10_000L,
     val workerThreads: Int = 2,
@@ -56,9 +56,9 @@ object SuggestionSettingsLoader {
                 (suggestions["provider"] as? String)?.takeIf { it.isNotBlank() }
                     ?: if (enabled) DEEPSEEK_PROVIDER_ID else null,
             model = (suggestions["model"] as? String)?.takeIf { it.isNotBlank() },
-            maxCandidates = (suggestions["maxCandidates"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 10,
+            maxCandidates = (suggestions["maxCandidates"] as? Number)?.toInt() ?: 0,
             maxEnrichmentCandidates =
-                (suggestions["maxEnrichmentCandidates"] as? Number)?.toInt()?.coerceAtLeast(0) ?: 12,
+                (suggestions["maxEnrichmentCandidates"] as? Number)?.toInt() ?: 0,
             promptVersion = (suggestions["promptVersion"] as? String)?.takeIf { it.isNotBlank() },
             timeoutMs = (suggestions["timeoutMs"] as? Number)?.toLong()?.coerceAtLeast(1L) ?: 10_000L,
             workerThreads = (suggestions["workerThreads"] as? Number)?.toInt()?.coerceIn(1, 8) ?: 2,

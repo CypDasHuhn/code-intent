@@ -1,5 +1,6 @@
 package dev.cint.server.suggest
 
+import dev.cint.server.SuggestionSettings
 import dev.cint.server.SuggestionSettingsLoader
 import dev.cint.server.suggest.support.gapSource
 import dev.cint.server.suggest.support.harness
@@ -58,6 +59,10 @@ class LiveSuggestionSettingsTest {
 
     @Test
     fun suggestionSettingsDefaultToDeepSeekWhenEnabledWithoutProvider() {
+        val defaults = SuggestionSettings()
+        assertEquals(0, defaults.maxCandidates)
+        assertEquals(0, defaults.maxEnrichmentCandidates)
+
         val root = Files.createTempDirectory("cint-suggestion-settings-deepseek")
         try {
             val file = root.resolve(".cint/suggestions.yml")
@@ -73,9 +78,32 @@ class LiveSuggestionSettingsTest {
             assertEquals("deepseek", settings.provider)
             assertEquals("deepseek", settings.effectiveProvider)
             assertEquals("deepseek-chat", settings.effectiveModel)
-            assertEquals(10, settings.maxCandidates)
-            assertEquals(12, settings.maxEnrichmentCandidates)
+            assertEquals(0, settings.maxCandidates)
+            assertEquals(0, settings.maxEnrichmentCandidates)
             assertEquals(1024, settings.maxTokens)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun suggestionSettingsLoadZeroCandidateMaximumsWithoutCoercion() {
+        val root = Files.createTempDirectory("cint-suggestion-settings-unlimited")
+        try {
+            val file = root.resolve(".cint/suggestions.yml")
+            Files.createDirectories(file.parent)
+            Files.writeString(
+                file,
+                """
+                suggestions:
+                  enabled: true
+                  maxCandidates: 0
+                  maxEnrichmentCandidates: 0
+                """.trimIndent(),
+            )
+            val settings = SuggestionSettingsLoader.load(root)
+            assertEquals(0, settings.maxCandidates)
+            assertEquals(0, settings.maxEnrichmentCandidates)
         } finally {
             root.toFile().deleteRecursively()
         }

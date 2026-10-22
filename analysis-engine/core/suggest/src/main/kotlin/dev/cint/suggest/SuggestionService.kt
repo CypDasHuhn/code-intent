@@ -35,11 +35,16 @@ class SuggestionService(
         for (candidate in candidates) {
             merged[candidateId(document.path, document.text, candidate)] = candidate
         }
-        val enrichable =
+        val eligible =
             candidates
                 .filter { it.aiEligible }
                 .sortedWith(compareBy({ reasonRank(it.reason) }, { it.startByte }, { it.endByte }))
-                .take(options.maxEnrichmentCandidates.coerceAtLeast(0))
+        val enrichable =
+            if (options.maxEnrichmentCandidates > 0) {
+                eligible.take(options.maxEnrichmentCandidates)
+            } else {
+                eligible
+            }
         for (candidate in enrichable) {
             val excerpt =
                 SourceExcerpt

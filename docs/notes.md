@@ -423,7 +423,9 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - Suggestion config: `<root>/.cint/suggestions.yml` under `suggestions:` with
   `enabled` (default false), `trigger`, `provider` (default `deepseek` when
   enabled and unset), `model` (default `deepseek-chat`), `maxCandidates`
-  (default 10), `maxEnrichmentCandidates` (default 12),
+  (default 0; `0` or less is unlimited, positive values cap validated
+  proposals), `maxEnrichmentCandidates` (default 0; `0` or less sends every
+  AI-eligible candidate, positive values cap the pass),
   `promptVersion` (default `deepseek-intent-v2`), `timeoutMs` (default 10000,
   min 1), `workerThreads` (default 2, clamped 1..8), `apiKeyEnv` (default
   `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
@@ -438,7 +440,9 @@ Authoritative for resuming. Older sections are historical where they conflict.
   `DEEPSEEK_CHAT_KEY` (or `apiKeyEnv`) and never logged or published. The
   suggestion and provider pools are bounded by `workerThreads`, provider calls
   are interrupted after `timeoutMs`, and both pools stop on server/process close,
-  not on the protocol `shutdown` request. Missing keys, HTTP failures, and
+  not on the protocol `shutdown` request. Candidates still come from packs, so
+  unlimited defaults do not scan arbitrary lines, but they can increase provider
+  latency and cost; the timeout remains the safety valve. Missing keys, HTTP failures, and
   malformed AI output leave deterministic candidates untouched after one attempt
   (no retries). Only the candidate span plus `excerptRadiusBytes` per side is
   sent with candidate metadata, known/neighboring intents, path/language, and the
