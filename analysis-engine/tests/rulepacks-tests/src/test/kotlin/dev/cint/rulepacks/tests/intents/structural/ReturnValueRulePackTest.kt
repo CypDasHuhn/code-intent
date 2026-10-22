@@ -4,7 +4,6 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
-import dev.cint.rulepacks.intents.structural.LOCAL_COPY_INTENT
 import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.intents.structural.RETURN_VALUE_INTENT
 import dev.cint.rulepacks.intents.structural.RETURN_VALUE_RULE_ID
@@ -50,7 +49,7 @@ class ReturnValueRulePackTest {
         val analysis = analyze("kotlin", text)
 
         assertEquals(listOf("id.trim()"), analysis.texts(RETURN_VALUE_INTENT))
-        assertTrue(analysis.source(RETURN_VALUE_INTENT).single().rule == RETURN_VALUE_RULE_ID)
+        assertEquals(RETURN_VALUE_RULE_ID, analysis.source(RETURN_VALUE_INTENT).single().rule)
     }
 
     @Test

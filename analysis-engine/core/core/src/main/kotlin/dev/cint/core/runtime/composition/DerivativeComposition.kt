@@ -93,16 +93,16 @@ internal fun derivativeContributions(
             )
     }
 
-    for (write in ctx.writes) {
-        if (write.kind != WriteKind.ASSIGNMENT) continue
-        val value = assignmentValue(write.node) ?: continue
+    for ((node, kind) in ctx.writes) {
+        if (kind != WriteKind.ASSIGNMENT) continue
+        val value = assignmentValue(node) ?: continue
         readOnlyConfidence(ctx, value, pureAnnotations) ?: continue
         val valueIntents = valueSourceIntents(ctx, value)
         val intents = valueIntents.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) continue
 
         result +=
-            write.node.raw(
+            node.raw(
                 Role.DERIVATIVE_USE,
                 intents,
                 DERIVATIVE_RULE,
@@ -150,14 +150,11 @@ private fun merge(contributions: List<Contribution>): List<Contribution> {
         val key = Triple(contribution.role, contribution.startByte, contribution.endByte)
         val previous = merged[key]
         merged[key] =
-            if (previous == null) {
-                contribution
-            } else {
-                previous.copy(
-                    intents = previous.intents + contribution.intents,
-                    confidence = minOf(previous.confidence, contribution.confidence),
-                )
-            }
+            previous?.copy(
+                intents = previous.intents + contribution.intents,
+                confidence = minOf(previous.confidence, contribution.confidence),
+            )
+                ?: contribution
     }
     return merged.values.toList()
 }

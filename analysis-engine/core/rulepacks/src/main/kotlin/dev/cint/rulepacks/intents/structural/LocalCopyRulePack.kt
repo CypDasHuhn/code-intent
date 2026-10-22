@@ -55,7 +55,7 @@ private data class Assignment(
 )
 
 private class LocalCopyRule(
-    private val config: LocalCopyLanguageConfig,
+    config: LocalCopyLanguageConfig,
 ) : Matcher {
     private val copy = LocalCopyMatch(config)
 
@@ -67,17 +67,17 @@ private class LocalCopyRule(
             val result = copy.assignment(write, declared, parameterNames(view, write.node, parameters)) ?: continue
             select(selected, write.node, result)
         }
-        for (property in view.properties()) {
+        for ((node, name, _, initializer) in view.properties()) {
             val result =
                 copy.declaration(
-                    property.name,
-                    property.initializer,
-                    view.enclosingFunction(property.node) != null ||
-                        view.enclosingScope(property.node)?.kind == ScopeKind.CLASS,
+                    name,
+                    initializer,
+                    view.enclosingFunction(node) != null ||
+                        view.enclosingScope(node)?.kind == ScopeKind.CLASS,
                     declared,
-                    parameterNames(view, property.node, parameters),
+                    parameterNames(view, node, parameters),
                 ) ?: continue
-            select(selected, property.node, result)
+            select(selected, node, result)
         }
         return selected.values.map { (node, result) -> emit(node, result) }
     }
@@ -254,25 +254,43 @@ private fun splitTopLevel(parameters: String): List<String> {
     var start = 0
     for (index in parameters.indices) {
         val character = parameters[index]
-        if (character == '<') {
-            angle++
-        } else if (character == '>' && angle > 0) {
-            angle--
-        } else if (character == '(') {
-            parens++
-        } else if (character == ')' && parens > 0) {
-            parens--
-        } else if (character == '[') {
-            brackets++
-        } else if (character == ']' && brackets > 0) {
-            brackets--
-        } else if (character == '{') {
-            braces++
-        } else if (character == '}' && braces > 0) {
-            braces--
-        } else if (character == ',' && angle == 0 && parens == 0 && brackets == 0 && braces == 0) {
-            result += parameters.substring(start, index).trim()
-            start = index + 1
+        when (character) {
+            '<' -> {
+                angle++
+            }
+
+            '>' if angle > 0 -> {
+                angle--
+            }
+
+            '(' -> {
+                parens++
+            }
+
+            ')' if parens > 0 -> {
+                parens--
+            }
+
+            '[' -> {
+                brackets++
+            }
+
+            ']' if brackets > 0 -> {
+                brackets--
+            }
+
+            '{' -> {
+                braces++
+            }
+
+            '}' if braces > 0 -> {
+                braces--
+            }
+
+            ',' if angle == 0 && parens == 0 && brackets == 0 && braces == 0 -> {
+                result += parameters.substring(start, index).trim()
+                start = index + 1
+            }
         }
     }
     result += parameters.substring(start).trim()

@@ -284,8 +284,7 @@ private class ValidationRule(
                 .trim()
         if (text.startsWith("continue") || text.startsWith("break")) return true
         if (!text.startsWith("return")) return false
-        val expression = returnExpression(node)
-        if (expression == null) return true
+        val expression = returnExpression(node) ?: return true
         return expression.text.trim() in config.rejectionValues
     }
 

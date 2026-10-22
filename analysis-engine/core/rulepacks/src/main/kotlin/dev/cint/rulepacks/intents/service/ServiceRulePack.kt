@@ -478,12 +478,10 @@ private fun initCallEvidence(
             Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
         }
     }
-    if (diCall) {
-        return if (isDiReceiver(path, receiverName, receiverType, language)) {
-            Evidence(Emit.DEFAULT_SOURCE, 0.85)
-        } else {
-            Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
-        }
+    return if (isDiReceiver(path, receiverName, receiverType, language)) {
+        Evidence(Emit.DEFAULT_SOURCE, 0.85)
+    } else {
+        Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
     }
     return null
 }

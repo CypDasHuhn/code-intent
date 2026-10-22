@@ -19,7 +19,7 @@ private const val ESTABLISHED_CONFIDENCE: Double = 0.8
 private const val CANDIDATE_CONFIDENCE: Double = 0.4
 
 private val BOOLEAN_TOKENS = setOf("&&", "||")
-private val NEGATION_TOKEN = "!"
+private const val NEGATION_TOKEN = "!"
 private val PARENTHESIZED_KINDS = setOf("parenthesized_expression")
 
 class BoolCombinatoricsRulePack(

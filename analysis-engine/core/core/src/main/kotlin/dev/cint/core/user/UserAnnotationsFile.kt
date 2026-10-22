@@ -501,7 +501,7 @@ object UserAnnotationsFile {
             } catch (_: Throwable) {
                 return
             }
-        val safe = raw == null || raw.isBlank() || parseOwner(raw)?.token == token
+        val safe = raw.isNullOrBlank() || parseOwner(raw)?.token == token
         if (!safe) return
         runCatching { Files.deleteIfExists(ownerPath) }
         runCatching { Files.deleteIfExists(path) }

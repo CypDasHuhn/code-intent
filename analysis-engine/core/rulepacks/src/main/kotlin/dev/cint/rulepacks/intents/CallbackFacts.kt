@@ -13,8 +13,7 @@ internal data class CallbackParameter(
 
     val isFunctionTyped: Boolean
         get() {
-            val declared = declaredType
-            if (declared == null) return default?.let(::looksLikeFunctionDefault) == true
+            val declared = declaredType ?: return default?.let(::looksLikeFunctionDefault) == true
             if (FUNCTION_TYPE_MARKERS.any { declared.contains(it, ignoreCase = true) }) return true
             return default?.let(::looksLikeFunctionDefault) == true
         }
@@ -390,25 +389,43 @@ private fun splitTopLevel(parameters: String): List<String> {
     var start = 0
     for (index in parameters.indices) {
         val character = parameters[index]
-        if (character == '<') {
-            angle++
-        } else if (character == '>' && angle > 0) {
-            angle--
-        } else if (character == '(') {
-            parens++
-        } else if (character == ')' && parens > 0) {
-            parens--
-        } else if (character == '[') {
-            brackets++
-        } else if (character == ']' && brackets > 0) {
-            brackets--
-        } else if (character == '{') {
-            braces++
-        } else if (character == '}' && braces > 0) {
-            braces--
-        } else if (character == ',' && angle == 0 && parens == 0 && brackets == 0 && braces == 0) {
-            result += parameters.substring(start, index).trim()
-            start = index + 1
+        when (character) {
+            '<' -> {
+                angle++
+            }
+
+            '>' if angle > 0 -> {
+                angle--
+            }
+
+            '(' -> {
+                parens++
+            }
+
+            ')' if parens > 0 -> {
+                parens--
+            }
+
+            '[' -> {
+                brackets++
+            }
+
+            ']' if brackets > 0 -> {
+                brackets--
+            }
+
+            '{' -> {
+                braces++
+            }
+
+            '}' if braces > 0 -> {
+                braces--
+            }
+
+            ',' if angle == 0 && parens == 0 && brackets == 0 && braces == 0 -> {
+                result += parameters.substring(start, index).trim()
+                start = index + 1
+            }
         }
     }
     result += parameters.substring(start).trim()

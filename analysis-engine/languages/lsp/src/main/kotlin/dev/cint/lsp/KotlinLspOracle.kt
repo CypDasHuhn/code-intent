@@ -60,7 +60,7 @@ class LspOracle internal constructor(
     private val executor: java.util.concurrent.ExecutorService?,
     private val server: LanguageServer,
     private val typeTimeoutMs: Long,
-    private val negativeTtlMs: Long = NEGATIVE_TTL_MS,
+    negativeTtlMs: Long = NEGATIVE_TTL_MS,
     private val nanoTime: () -> Long = System::nanoTime,
 ) : TypeOracle,
     OracleMetrics,

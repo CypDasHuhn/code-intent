@@ -44,7 +44,7 @@ class ServiceBudgetTest {
                 override fun typeAt(
                     file: SourceFile,
                     byteOffset: Int,
-                ): TypeFact? {
+                ): TypeFact {
                     calls++
                     if (byteOffset != typedOffset) throw TimeoutException("unrelated receiver")
                     return TypeFact("com.acme.UserService")

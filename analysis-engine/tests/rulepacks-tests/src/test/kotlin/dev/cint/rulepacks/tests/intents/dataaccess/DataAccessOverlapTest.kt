@@ -128,10 +128,12 @@ class DataAccessOverlapTest {
         )
 
         val readTexts =
-            analysis.source(SEARCH_INTENT).map { text.substring(it.startByte, it.endByte) } +
-                analysis.source(LOOKUP_INTENT).map { text.substring(it.startByte, it.endByte) } +
-                analysis.candidates(SEARCH_INTENT).map { text.substring(it.startByte, it.endByte) } +
-                analysis.candidates(LOOKUP_INTENT).map { text.substring(it.startByte, it.endByte) }
+            buildList {
+                analysis.source(SEARCH_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+                analysis.source(LOOKUP_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+                analysis.candidates(SEARCH_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+                analysis.candidates(LOOKUP_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+            }
         assertTrue(
             readTexts.none {
                 it.contains("findOneAndUpdate") ||
@@ -292,7 +294,9 @@ private fun readTexts(
     analysis: PackAnalysis,
     text: String,
 ): List<String> =
-    analysis.source(SEARCH_INTENT).map { text.substring(it.startByte, it.endByte) } +
-        analysis.source(LOOKUP_INTENT).map { text.substring(it.startByte, it.endByte) } +
-        analysis.candidates(SEARCH_INTENT).map { text.substring(it.startByte, it.endByte) } +
-        analysis.candidates(LOOKUP_INTENT).map { text.substring(it.startByte, it.endByte) }
+    buildList {
+        analysis.source(SEARCH_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+        analysis.source(LOOKUP_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+        analysis.candidates(SEARCH_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+        analysis.candidates(LOOKUP_INTENT).mapTo(this) { text.substring(it.startByte, it.endByte) }
+    }

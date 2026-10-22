@@ -5,7 +5,6 @@ import java.util.concurrent.TimeoutException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 private class RecordingOracle(
     private val result: (SourceFile, Int) -> TypeFact?,
@@ -190,6 +189,6 @@ class OracleSessionTest {
         val stats = session.oracleStats()
         assertEquals(12L, stats.elapsedMs)
         assertEquals(47L, stats.blocked)
-        assertTrue(stats.cacheHits == 0L)
+        assertEquals(0L, stats.cacheHits)
     }
 }

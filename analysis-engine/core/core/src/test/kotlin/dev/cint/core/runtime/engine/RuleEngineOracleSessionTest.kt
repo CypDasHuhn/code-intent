@@ -25,7 +25,7 @@ private class CountingTypeOracle : TypeOracle {
     override fun typeAt(
         file: SourceFile,
         byteOffset: Int,
-    ): TypeFact? {
+    ): TypeFact {
         calls++
         return TypeFact("Acme.Type")
     }
