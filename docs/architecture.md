@@ -250,35 +250,56 @@ reason. Payloads carry `source` (`rule:<rule-id>` or `ai:<provider>`),
 is structural because the AI output type is `CandidateEmit`, never an established
 `Emit`/`Annotation`.
 
-### AI enrichment boundary
+### AI discovery and enrichment boundary
 
 AI is post-analysis and non-authoritative. The server caches an
-`AnalysisOutput`, gives the `:suggest` service the candidate context for that
-exact document version, and publishes candidate-only results on
-`cint/publishCandidates`. AI never runs in the scheduler, never owns an intent,
-and cannot create an established annotation. `.cint/suggestions.yml` gates the
-manual `cint/suggest` path and is disabled by default; deterministic pack
-candidates publish regardless.
+`AnalysisOutput` for an exact document version, builds the worklist for that
+version, and publishes candidate-only results on `cint/publishCandidates`. AI
+never runs in the scheduler, never owns an intent, and cannot create an
+established annotation. `.cint/suggestions.yml` gates the manual `cint/suggest`
+path and is disabled by default; deterministic pack candidates publish
+regardless.
+
+With `discoveryEnabled` (default true) and a provider that supports the session
+surface, the server enumerates expression units from the core syntax model,
+including leaves, and runs an internal tool loop. The worklist, tool execution,
+budgets, validation, and publication stay server-side; the agent only chooses
+`none` or add verdicts. Tools are read-only and scoped to the current document
+plus LSP type facts: unit list/expression/parent, enclosing statement/function,
+bounded range read, type lookup, and annotations, plus `submit_verdicts`. The
+session is asynchronous, one pass per document version, cancellable, and
+discarded when the version changes. `sessionTimeoutMs`, `timeoutMs`,
+`maxTurns`, `maxToolCalls`, `maxUnitsPerRequest`, `maxTokensPerRequest`, and the
+candidate/confidence caps bound the pass; exhaustion publishes graded units and
+reports uncovered units. `discoveryEnabled: false` keeps the legacy
+pack-candidate enrichment path.
 
 The remote provider is DeepSeek (`deepseek-chat`, key from
-`DEEPSEEK_CHAT_KEY`). `:suggest` owns the provider and the HTTP transport (JDK
-`HttpClient`, Authorization header, per-request timeout); the server resolves
-`.cint/suggestions.yml`, injects the config/key lookup, constructs the provider
-registry, and orchestrates the pass with no retries. The file accepts `provider`,
-`model`, `baseUrl`, `apiKeyEnv`, `maxTokens`, `maxConfidence`,
-`excerptRadiusBytes`, `allowGlobs`, and `redactPatterns` alongside the existing
-trigger and count/timeout settings. The context is
-a bounded excerpt (`excerptRadiusBytes`, default 400) plus candidate metadata,
-known/neighboring intents, path/language, and prompt version; imports and
-enclosing functions are not collected. `allowGlobs` gates the pass and
-`redactPatterns` redact the excerpt before sending. AI candidates carry
-`source = ai:deepseek` plus provider/model/promptVersion/rationale diagnostics.
-The key is never published in `initialize.suggestions` or logged.
+`DEEPSEEK_CHAT_KEY`). `:suggest` owns the provider, the session/tool loop, and
+the HTTP transport (JDK `HttpClient`, Authorization header, per-request
+timeout); the server resolves `.cint/suggestions.yml`, injects the config/key
+lookup, constructs the provider registry, and orchestrates the pass with no
+retries. The file accepts `provider`, `model`, `baseUrl`, `apiKeyEnv`,
+`maxTokens`, `maxConfidence`, `excerptRadiusBytes`, the discovery/session budget
+settings, `allowGlobs`, and `redactPatterns` alongside the existing trigger and
+count/timeout settings. The legacy path sends a bounded excerpt
+(`excerptRadiusBytes`, default 400) plus candidate metadata; discovery sends the
+current unit batch and tool results. Neither path reads other project files.
+`allowGlobs` gates the pass and `redactPatterns` redact every text result,
+including type lookups, before it reaches the model. The system instructions are
+transmitted as a `system` message. AI candidates carry `source = ai:deepseek`
+plus provider/model/promptVersion/rationale diagnostics (prompt
+`deepseek-intent-v3`). The key and raw provider prose are never published in
+`initialize.suggestions`, logged, or returned by `cint/suggest/log`; session
+events are structured.
 
-Confirmation writes an existing `.cint/user-annotations.json` record and the
-next analysis re-evaluates it as an established `user` source. Rejection
-persists suppression in `.cint/suggestions.json`; skip is session-only. The
-frozen `Annotation` shape is unchanged.
+Protocol 4 gates discovery and its `cint/suggest/progress` / `cint/suggest/log`
+messages. A protocol-3 client keeps the legacy enrichment path and sees no
+discovery progress or log. Confirmation writes an existing
+`.cint/user-annotations.json` record and the next analysis re-evaluates it as an
+established `user` source. Rejection persists suppression in
+`.cint/suggestions.json`; skip is session-only. The frozen `Annotation` shape is
+unchanged.
 
 ## 7. DSL and IR
 
@@ -321,8 +342,8 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 |---|---|
 | `api` | frozen v5 contract: `Intent`, `Relation`, `Rule`, `RulePack`, `View`, `RuleEmit`, `Emit`, `CandidateEmit`, `Annotation`, scheduler contract, DSL |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, boolean-combinatorics, data-transformation, return-value, chaining, and local-copy packs |
-| `core` | syntax facts, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
-| `suggest` | candidate context (bounded excerpt + metadata), provider SPI/registry, fake and DeepSeek providers, remote transport, privacy gate/redaction, validator, merge, grouping |
+| `core` | syntax facts including expression units, config, annotation store, CFG, scheduler, candidate identity/channel, composition, artifact writer |
+| `suggest` | annotation session/tool loop with budgets and coverage, candidate context, provider SPI/registry, fake and DeepSeek providers, remote transport, privacy gate/redaction, validator, merge, grouping |
 | `host` | host pipeline and project config loading shared by all hosts |
 | `treesitter` | parsers and per-language syntax profiles |
 | `lsp` | spec-driven LSP oracle |
@@ -339,10 +360,11 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
   `host` module assembles the production pack selection and applies project
   config; CLI, HTTP, and live server reuse it.
 - `suggest` depends on `api` and `core` (candidate identity/hash) only. It owns
-  the provider SPI, the fake and DeepSeek providers, and the remote transport
-  (`HttpClient`). The `server` depends on `suggest` and owns config/key
-  injection, provider construction, orchestration, and persistence. No provider
-  SDK or credential value leaks into `core` or `api`.
+  the expression-unit session/tool loop, provider SPI, the fake and DeepSeek
+  providers, and the remote transport (`HttpClient`). The `server` depends on
+  `suggest` and owns expression-unit construction, config/key injection,
+  provider construction, orchestration, and persistence. No provider SDK or
+  credential value leaks into `core` or `api`.
 - Loading reads `META-INF/services/dev.cint.api.RulePack` explicitly rather
   than iterating `ServiceLoader`. That keeps per-provider failure isolation,
   API-version checks, and deterministic ordering; there is no runtime Kotlin

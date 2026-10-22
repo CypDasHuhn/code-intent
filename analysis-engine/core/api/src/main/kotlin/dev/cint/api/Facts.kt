@@ -12,6 +12,8 @@ interface SyntaxNode {
     val parent: SyntaxNode?
     val children: List<SyntaxNode>
 
+    val isNamed: Boolean get() = true
+
     fun span(): Span = Span(startLine, startCol, endLine, endCol)
 
     fun child(kind: String): SyntaxNode? = children.firstOrNull { it.kind == kind }

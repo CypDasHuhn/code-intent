@@ -77,7 +77,38 @@ The Kotlin writer and Neovim writer share
   suppression in `.cint/suggestions.json`; skip is per-client/session.
 - Candidates never enter reads, composition, or annotation stores.
 
-## AI enrichment
+## AI discovery session
+
+Ticket 058 replaces pack-candidate-only enrichment with an expression-level
+session by default:
+
+```text
+cached analysis + established annotations
+  -> core expression units (including leaves)
+  -> batched worklist + known vocabulary
+  -> annotation agent (internal tool loop; current document + LSP facts)
+  -> add-only verdicts (none/add per unit)
+  -> validation (unit containment, vocabulary, duplicates, confidence)
+  -> merge with deterministic candidates -> group + publish
+```
+
+Tools are `list_expression_units`, `get_expression`, `get_parent`,
+`get_enclosing_statement`, `get_enclosing_function`, `read_range`,
+`lookup_type`, `get_annotations`, and `submit_verdicts`. All text results pass
+through `redactPatterns` (`allowGlobs` gates the pass). The session is asynchronous, one pass per
+document version, cancellable, and discarded when the version changes.
+
+Budgets: `sessionTimeoutMs` (120 s), per-request `timeoutMs` (10 s), `maxTurns`
+(50), `maxToolCalls` (200), `maxUnitsPerRequest` (24), `maxTokensPerRequest`
+(2048), plus the candidate and confidence caps. Budget exhaustion publishes the
+graded units and reports coverage; deterministic annotations are unaffected.
+
+Protocol 4 adds `discovery`/`restrictions`/`cache` capabilities,
+`cint/suggest/progress`, coverage/counts on the `cint/suggest` result, and
+`cint/suggest/log`. `discoveryEnabled: false` restores the legacy enrichment
+pipeline.
+
+## Legacy pack-candidate enrichment
 
 Pipeline:
 
@@ -94,7 +125,7 @@ cached analysis candidates
 DeepSeek defaults (`core/suggest`, current):
 
 - provider `deepseek`, model `deepseek-chat`
-- prompt version `deepseek-intent-v2`
+- prompt version `deepseek-intent-v3`
 - temperature `0.3`, max tokens `1024`
 - `maxCandidates: 0` and `maxEnrichmentCandidates: 0` mean **unlimited**
   (positive values cap)
@@ -105,11 +136,12 @@ DeepSeek defaults (`core/suggest`, current):
 
 Privacy and validation:
 
-- Only the candidate span plus bounded excerpt, path/language, candidate
-  metadata, known/neighboring intents, and prompt version are sent. Imports and
-  enclosing functions are not sent; whole files are never sent.
-- `allowGlobs` gates the pass; `redactPatterns` star out matches before sending
-  while preserving byte length/newlines.
+- Discovery sends the current batch of expression units plus tool results for the
+  current document. Legacy enrichment sends the candidate span plus bounded
+  excerpt, path/language, candidate metadata, known/neighboring intents, and
+  prompt version. Neither path reads other project files or sends whole files.
+- `allowGlobs` gates the pass; `redactPatterns` star out matches in every text
+  result before sending while preserving byte length/newlines.
 - The API key comes from `DEEPSEEK_CHAT_KEY` (or `apiKeyEnv`), is used in the
   Authorization header, and is never logged or published.
 - Provider failures, timeouts, and malformed output leave deterministic tags and

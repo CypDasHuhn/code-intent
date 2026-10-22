@@ -226,7 +226,7 @@ class LiveServerConfigTest {
                     .trim()
                     .lines()
                     .last()
-            assertTrue(initialized.contains("\"protocol\":3"))
+            assertTrue(initialized.contains("\"protocol\":4"))
             assertTrue(initialized.contains("\"packId\":\"logging\""))
             assertTrue(initialized.contains("\"key\":\"methods\""))
             assertTrue(initialized.contains("\"scope\":\"LANGUAGE\""))

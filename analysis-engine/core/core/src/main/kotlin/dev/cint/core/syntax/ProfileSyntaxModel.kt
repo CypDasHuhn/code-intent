@@ -72,6 +72,8 @@ internal class ProfileSyntaxKinds(
     val referenceKinds = profile.kinds(SyntaxGroups.REFERENCE)
     val effectKinds = profile.kinds(SyntaxGroups.EFFECT)
     val effectFragments = profile.kinds(SyntaxGroups.EFFECT_FRAGMENT)
+    val expressionKinds = profile.kinds(SyntaxGroups.EXPRESSION)
+    val expressionExcludedKinds = profile.kinds(SyntaxGroups.EXPRESSION_EXCLUDED)
     val incrementOperators = profile.operators(SyntaxOperators.INCREMENT)
     val exitKeywords = profile.keywords(SyntaxKeywords.EXIT)
     val throwKeyword = profile.token(SyntaxTokens.THROW_KEYWORD)
@@ -91,6 +93,13 @@ class ProfileSyntaxModel(
     private val semantics = SemanticFacts(kinds)
     private val controlFlow = ControlFlowFacts(kinds)
     private val declarations = DeclarationFacts(kinds, callFacts, semantics, controlFlow)
+    private val expressions = ExpressionNodes(kinds)
+
+    override fun expressions(tree: SyntaxTree): Sequence<SyntaxNode> = expressions.expressions(tree)
+
+    override fun isExpression(node: SyntaxNode): Boolean = expressions.isExpression(node)
+
+    override fun skipExpressionSubtree(node: SyntaxNode): Boolean = expressions.shouldSkipSubtree(node)
 
     override fun calls(tree: SyntaxTree): Sequence<CallFact> = callFacts.calls(tree)
 

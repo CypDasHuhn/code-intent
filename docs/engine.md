@@ -18,7 +18,7 @@ use `./gradlew` or `build/install` run from `analysis-engine/`.
 | `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
 | `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, data-transformation, return-value, and local-copy packs (boolean-combinatorics and chaining are implemented but currently disabled) |
 | `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
-| `suggest` | candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
+| `suggest` | expression-unit annotation session/tool loop, candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
 | `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
 | `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
 | `lsp` | spec-driven LSP oracle |
@@ -298,18 +298,26 @@ Candidate builders default to source `candidate`; deterministic candidates use
 anchor/content hash + byte span + sorted intents + reason. Confirmed candidates
 re-enter through the existing user-annotation path on the next analysis.
 
-AI enrichment is post-analysis and optional. The server resolves
+AI discovery is post-analysis and optional. The server resolves
 `.cint/suggestions.yml`, injects the provider config and key lookup, and
-orchestrates one pass per document; `:suggest` supplies the provider SPI and owns
-the remote transport. The only remote provider in this slice is DeepSeek
-(`deepseek-chat`, `DEEPSEEK_CHAT_KEY`), using the JDK `HttpClient` with no
-provider SDK and no retries. AI proposals carry `source = ai:deepseek`,
-`provider`/`model`/`promptVersion`/`rationale`, and the input candidate's reason.
-Their confidence is diagnostic: `maxConfidence` defaults to `0.84` and can only
-lower that ceiling. Completion uses a nonzero temperature (`0.3`) and a prompt
-that asks for several plausible alternatives, including lower-confidence
-guesses. Candidate-only is structural, not a confidence threshold: the output is
-a `CandidateEmit` and never enters the annotation store.
+orchestrates one pass per document version. When `discoveryEnabled` is true and
+the selected provider supports the session surface, the server enumerates every
+expression unit from the language syntax model, including leaves, and runs an
+internal tool loop over the current document and LSP type facts. The agent must
+return an explicit `none` or add verdict for each unit; missing verdicts are
+reported as uncovered, not as success. Adds are validated inside their unit,
+against the known vocabulary, existing spans, duplicates, and the confidence
+ceiling. Invalid proposals are dropped per unit without failing the pass.
+When discovery is disabled, the older pack-candidate enrichment path remains
+available. The only remote provider in this slice is DeepSeek
+(`deepseek-chat`, `DEEPSEEK_CHAT_KEY`, prompt `deepseek-intent-v3`), using the JDK
+`HttpClient` with no provider SDK and no retries. AI proposals carry
+`source = ai:deepseek`, `provider`/`model`/`promptVersion`/`rationale`, and a
+diagnostic confidence capped by `maxConfidence` (default `0.84`). The prompt is
+recall-oriented: it asks for plausible low-confidence alternatives and permits
+sub-span adds. Candidate-only is structural, not a confidence threshold: the
+output is a `CandidateEmit` and never enters the annotation store, scheduler, or
+composition.
 
 ### Renderer review UI
 
@@ -437,18 +445,24 @@ enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
 for the DeepSeek provider), `maxCandidates` (default `0`; `0` or less is
 unlimited, positive values cap validated proposals), `maxEnrichmentCandidates`
 (default `0`; `0` or less sends every AI-eligible candidate, positive values cap
-the pass), `promptVersion` (default `deepseek-intent-v2` for DeepSeek), `timeoutMs`
+the pass), `promptVersion` (default `deepseek-intent-v3` for DeepSeek), `timeoutMs`
 (default `10000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
+`discoveryEnabled` (default `true`), `discoveryIncludeLeaves` (default `true`),
+`discoveryMaxUnitsPerRequest` (default `24`, minimum `1`), `sessionTimeoutMs`
+(default `120000`, minimum `1`), `maxTurns` (default `50`, minimum `1`),
+`maxToolCalls` (default `200`, minimum `0`), and `maxTokensPerRequest` (default
+`2048`, minimum `1`),
 `apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
 `https://api.deepseek.com/chat/completions`), `maxTokens` (default `1024`),
 `maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
 (default `400`, minimum `0`), `allowGlobs` (default empty, which allows every
 path), and `redactPatterns` (default empty). This gate controls the
-`cint/suggest` enrichment pass; deterministic pack candidates still publish when
-it is disabled. Candidate generation remains pack-driven, so uncapping these
-settings does not scan arbitrary lines or tag every line. It can increase
-provider latency and cost because every AI-eligible candidate reaches the
-provider; the provider timeout remains the safety valve.
+`cint/suggest` discovery/enrichment pass; deterministic pack candidates still
+publish when it is disabled. Discovery scans expression units, not arbitrary
+lines, and is bounded by the session timeout, turn, tool-call, units-per-request,
+and token budgets. If a session budget is exhausted, the server publishes the
+graded units and reports coverage instead of discarding everything. Unchanged
+documents are still re-analyzed in this slice; reuse caches are ticket 060.
 
 The server resolves this file, injects the provider config and key lookup, and
 orchestrates the pass. `:suggest` owns the DeepSeek provider and its remote
@@ -462,11 +476,14 @@ candidates carry `source = ai:deepseek` plus `provider`/`model`/`promptVersion`/
 `rationale`, and their confidence is a diagnostic value capped at
 `maxConfidence`, not an auto-establish threshold.
 
-Only the candidate span plus `excerptRadiusBytes` per side is sent, with
-candidate metadata, known/neighboring intents, path/language, and the prompt
-version; imports and enclosing functions are not sent. `allowGlobs` gates the
-pass, and `redactPatterns` star out regex matches in the excerpt before sending
-while preserving byte length and line breaks. The suggestion and provider pools
+Discovery sends the current batch of expression units and tool results for the
+current document; legacy enrichment sends the candidate span plus
+`excerptRadiusBytes` per side with candidate metadata, known/neighboring intents,
+path/language, and the prompt version. Neither path reads other project files.
+`allowGlobs` gates the pass, and `redactPatterns` star out regex matches in every
+text result before sending while preserving byte length and line breaks. Batch
+prompts bound per-unit text and existing annotation lists to the same session
+byte budget as tool results. The suggestion and provider pools
 are bounded by `workerThreads`, and provider calls are interrupted after
 `timeoutMs`. Both pools stop when the server run loop exits or the JVM shutdown
 hook runs; the protocol `shutdown` request only acknowledges and leaves them
@@ -533,7 +550,7 @@ The server can run as a per-project daemon over a Unix socket:
 cint-server --socket /path/to/project.sock --root /path/to/project
 ```
 
-Transport is NDJSON JSON-RPC, protocol `3`. `initialize` takes
+Transport is NDJSON JSON-RPC, protocol `4`. `initialize` takes
 `{protocol, root, client}` and returns `{protocol, root, languages, config,
 suggestions}`. `config` is `{packs, overlay}`: `packs` lists pack descriptors
 (`packId`, `rules` with `id`/`owns`/`reads`, `languages`, and `fields` with
@@ -544,12 +561,18 @@ is `PACK` or `LANGUAGE`, and only language-scoped fields carry concrete
 `languages`.
 
 `suggestions` is a secret-free capability descriptor: `{enabled, trigger,
-provider, model, knownIntents}`. It comes from `.cint/suggestions.yml`; a
-missing file advertises `enabled: false`, `trigger: "manual"`, and null
-provider/model; an enabled file without a provider advertises `deepseek` and
-`deepseek-chat`. The server answers with its own protocol version and does not
-negotiate the client's requested value; client suggestion features are gated on
-a returned protocol of at least 3.
+provider, model, knownIntents, discovery, restrictions, cache,
+maxUnitsPerRequest}`. `discovery` is true when `discoveryEnabled` is set and the selected provider
+supports the session surface; `restrictions` and `cache` are false in this slice. It comes from `.cint/suggestions.yml`; a missing
+file advertises `enabled: false`, `trigger: "manual"`, and null provider/model;
+an enabled file without a provider advertises `deepseek` and `deepseek-chat`.
+The server answers with its own protocol version (`4`) and records each
+client's requested value during `initialize`; it does not downgrade the
+response. Discovery, `cint/suggest/progress`, and `cint/suggest/log` require the
+requesting client to have sent protocol `>= 4`. Protocol-3 clients keep the
+legacy enrichment path, receive deterministic tags and the existing candidate
+shapes, and see no discovery progress or log. Reuse/restriction capability
+flags remain false in this slice.
 
 The client sends `textDocument/didOpen`, `didChange`, and `didClose` with full
 text and a monotonic version. The server re-runs that file and emits
@@ -592,14 +615,20 @@ channel (see below). Config mutations remain unchanged:
   server-wide and monotonic. A candidate publish is dropped if its
   `analysisRevision` is older than the cached analysis or the last published
   candidates; the cached analysis revision advances with the config snapshot.
-- `cint/suggest` takes `{uri, version, requestId}` and asynchronously enriches
-  the cached analysis for that exact document version. It returns
-  `{accepted, cancelled, count}`; a disabled, stale-version, or already-busy
-  pass returns `{accepted: false, ...}` with `disabled`, `stale`, or `busy`.
-  A provider timeout returns `{accepted: false, cancelled: true, timeout: true,
-  count: 0}` after interrupting the provider. Only one pass runs per document,
-  and the result is dropped if the document, `analysisRevision`, or candidate
-  state changes before publish.
+- `cint/suggest` takes `{uri, version, requestId}` and asynchronously grades the
+  expression worklist for that exact document version. It returns
+  `{accepted, cancelled, count, total, graded, reused, additions, toolCalls,
+  turns, incomplete, budgetExhausted, skipped, uncovered}`; a disabled, stale-version, or
+  already-busy pass returns `{accepted: false, ...}` with `disabled`, `stale`, or
+  `busy`. A provider timeout returns `{accepted: false, cancelled: true,
+  timeout: true, count: 0}` after interrupting the provider. Only one pass runs
+  per document, and the result is dropped if the document, `analysisRevision`, or
+  candidate state changes before publish.
+- `cint/suggest/progress` is pushed during a discovery pass with
+  `{uri, version, graded, reused, total, activity}`.
+- `cint/suggest/log` takes `{uri}` and returns the last session's counts,
+  coverage, and tool/reuse events for `:CintAiLog` (the renderer command is
+  planned for ticket 061).
 - `cint/suggest/cancel` takes `{uri?, requestId?}`, marks the matching in-flight
   pass cancelled, and returns `true`. Cancelled request ids are pruned after 60
   seconds.

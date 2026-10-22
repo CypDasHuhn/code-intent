@@ -71,7 +71,7 @@ class DeepSeekIntentSuggestionProviderTest {
             val provider = provider(endpoint)
             val enriched = provider.suggest(context().copy(promptVersion = null)).single()
 
-            assertEquals("deepseek-intent-v2", DEEPSEEK_PROMPT_VERSION)
+            assertEquals("deepseek-intent-v3", DEEPSEEK_PROMPT_VERSION)
             assertEquals(DEEPSEEK_PROMPT_VERSION, enriched.promptVersion)
             val body = deepSeekMapper.readTree(endpoint.requests.single().body)
             val user = deepSeekMapper.readTree(body.path("messages")[1].path("content").asText())

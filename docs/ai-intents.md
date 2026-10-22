@@ -4,7 +4,7 @@ AI here means **intent inference**, not code completion. The deterministic
 pipeline remains the source of truth; AI only fills structural gaps and produces
 reviewable candidates.
 
-For the proposed expression-level annotation session, AI restrictions, and
+For the expression-level annotation session (058), AI restrictions, and
 verdict reuse, see [ai-annotation-session.md](ai-annotation-session.md). This
 document describes the currently implemented candidate channel.
 
@@ -25,6 +25,49 @@ source → deterministic pipeline → established annotations → publish
   established tags.
 - Confirmed candidates enter through the existing user-annotation path and are
   re-evaluated deterministically on the next analysis.
+
+## Expression discovery session (058)
+
+With AI enabled and `discoveryEnabled: true`, the server now grades every
+expression unit in the current document, including leaves, instead of only
+enriching pack candidates. Units come from the language syntax model as a core
+fact (`SyntaxModel.expressionUnits`), not from a rulepack. Each unit carries its
+id, span, text, parent expression, enclosing statement/function, existing intent
+spans, and the known vocabulary.
+
+The server owns the worklist, budgets, validation, and publication. The agent
+receives an internal MCP-shaped tool loop scoped to the current document plus LSP
+type facts:
+
+`list_expression_units`, `get_expression`, `get_parent`,
+`get_enclosing_statement`, `get_enclosing_function`, `read_range`,
+`lookup_type`, `get_annotations`, and `submit_verdicts`.
+
+`allowGlobs` gates the pass; every text result returned by a tool, including
+`lookup_type`, passes through `redactPatterns` before reaching the model.
+The agent cannot read other files, run commands, or write state. Every unit needs
+an explicit `none` or add verdict; add spans must lie inside the unit, use the
+known vocabulary, avoid duplicate existing intents, and respect the confidence
+ceiling. Remove verdicts and restriction groups are out of scope until 059;
+the 058 parser accepts only `none` or add operations. Invalid verdicts are
+dropped per unit.
+
+The session is asynchronous, one pass per document version, cancellable, and
+discarded if the version changes. Budgets cover the whole session timeout, a
+per-request timeout, turns, tool calls, units per request, tokens per request,
+and candidates. On exhaustion the server publishes graded units and reports
+coverage (`graded N/M, budget exhausted`) instead of failing the whole pass.
+AI output remains a `CandidateEmit` (`source = ai:<provider>`) and never enters
+the scheduler, annotation store, or composition.
+
+Protocol 4 adds discovery/cache/restriction capability flags,
+`cint/suggest/progress`, coverage/counts on the `cint/suggest` response, and
+`cint/suggest/log` for the last session. The DeepSeek prompt is now
+`deepseek-intent-v3` and recall-oriented: grade every unit, allow sub-spans,
+prefer plausible low-confidence intents, and never repeat an existing intent.
+
+When `discoveryEnabled` is false, the older pack-candidate enrichment path
+described below is still available.
 
 ## Rule output: one list, two emit types
 
@@ -117,7 +160,7 @@ data class AnalysisOutput(
 AI does not scan arbitrary code. It only processes candidates supplied to it,
 which keeps cost and privacy bounded and leaves trigger semantics with the pack.
 
-## AI service
+## Legacy pack-candidate enrichment
 
 ```
 CandidateEmit (aiEligible)
@@ -194,20 +237,23 @@ zeros. Established annotations and the frozen `Annotation` API are unchanged.
 
 ## Protocol
 
-Protocol 3 additions:
+Protocol 3 additions (kept in protocol 4):
 
 - `initialize.suggestions` — secret-free capability descriptor
-  `{enabled, trigger, provider, model, knownIntents}`. `enabled` comes from
-  `.cint/suggestions.yml` and defaults to false.
+  `{enabled, trigger, provider, model, knownIntents, discovery, restrictions,
+  cache, maxUnitsPerRequest}`. `enabled` comes from `.cint/suggestions.yml` and
+  defaults to false; discovery defaults to true.
 - `cint/publishCandidates` — `uri`, `version`, `analysisRevision`,
   `suggestionRevision`, flat `candidates`, and `groups`. A group is one anchor
   (`anchorId`, `path`, `contentHash`, span/positions) with its alternative
   candidates. The message is also emitted with empty `candidates`/`groups` after
   a decision resolves everything.
 - `cint/suggest` — `{uri, version, requestId}`; asynchronous, one pass per
-  document, returns `{accepted, cancelled, count}` or a disabled/stale/busy
-  result. A provider timeout returns `cancelled: true` with `timeout: true` and
-  publishes nothing. `cint/suggest/cancel` takes `{uri?, requestId?}`.
+  document, returns `{accepted, cancelled, count}` plus discovery coverage/counts
+  when the session path runs, or a disabled/stale/busy result. A provider timeout
+  returns `cancelled: true` with `timeout: true` and publishes nothing.
+  `cint/suggest/cancel` takes `{uri?, requestId?}`. `cint/suggest/log` returns
+  the last session for the `:CintAiLog` command (renderer UX planned for 061).
 - `cint/candidates/decide` — `{uri, version, candidateId, decision}` with
   confirm/reject/skip; the server validates version and anchor hash, persists,
   re-analyzes on confirm, and republishes. Confirming one alternative resolves
@@ -258,25 +304,32 @@ suggestions:
   provider: deepseek     # "deepseek" by default when enabled and unset; "fake" stays available
   model: deepseek-chat
   maxCandidates: 0                  # 0 or less is unlimited; positive caps validated proposals
-  maxEnrichmentCandidates: 0        # 0 or less sends every AI-eligible candidate per pass
-  promptVersion: deepseek-intent-v2
-  timeoutMs: 10000       # whole pass/provider interrupt/HTTP timeout, minimum 1
+  maxEnrichmentCandidates: 0        # legacy path; 0 or less sends every AI-eligible candidate
+  promptVersion: deepseek-intent-v3
+  timeoutMs: 10000       # per-request/provider interrupt/HTTP timeout, minimum 1
   workerThreads: 2       # bounded suggestion/provider pools, clamped 1..8
   apiKeyEnv: DEEPSEEK_CHAT_KEY
   baseUrl: https://api.deepseek.com/chat/completions
   maxTokens: 1024
   maxConfidence: 0.84    # diagnostic cap, clamped to at most 0.84
-  excerptRadiusBytes: 400
+  excerptRadiusBytes: 400          # legacy enrichment only
+  discoveryEnabled: true           # expression-level session by default
+  discoveryIncludeLeaves: true
+  discoveryMaxUnitsPerRequest: 24
+  sessionTimeoutMs: 120000
+  maxTurns: 50
+  maxToolCalls: 200
+  maxTokensPerRequest: 2048
   allowGlobs: []         # empty allows every path; globs gate the AI pass
-  redactPatterns: []     # regexes applied to the excerpt before sending
+  redactPatterns: []     # regexes applied to every text result before sending
 ```
 
-A missing file defaults to disabled/manual, unlimited candidates, unlimited
-enrichment candidates, a 10000 ms timeout, and 2 worker threads. Uncapping
-enrichment can increase provider latency and cost because every AI-eligible
-pack candidate reaches the provider; the provider timeout remains the safety
-valve. When disabled,
-`initialize.suggestions.enabled` is false and
+A missing file defaults to disabled/manual, unlimited candidates, discovery on,
+a 10000 ms per-request timeout, a 120000 ms session timeout, and 2 worker
+threads. Discovery grades expression units, not arbitrary lines, and is bounded
+by its session budgets. The legacy enrichment path can increase provider latency
+and cost when uncapped because every AI-eligible pack candidate reaches the
+provider. When disabled, `initialize.suggestions.enabled` is false and
 `cint/suggest` refuses, but pack candidates still publish. Both executor pools
 are bounded by `workerThreads` and stop on server/process close, not on the
 protocol `shutdown` request.

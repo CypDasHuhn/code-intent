@@ -25,6 +25,20 @@ data class LoopFact(
 )
 
 interface SyntaxModel {
+    fun expressions(tree: SyntaxTree): Sequence<SyntaxNode> =
+        buildList {
+            fun visit(node: SyntaxNode) {
+                if (skipExpressionSubtree(node)) return
+                if (isExpression(node)) add(node)
+                for (child in node.children) visit(child)
+            }
+            visit(tree.root)
+        }.asSequence()
+
+    fun isExpression(node: SyntaxNode): Boolean = node.parent != null && node.isNamed
+
+    fun skipExpressionSubtree(node: SyntaxNode): Boolean = false
+
     fun calls(tree: SyntaxTree): Sequence<CallFact>
 
     fun callsIn(node: SyntaxNode): Sequence<CallFact>
@@ -205,6 +219,8 @@ object SyntaxGroups {
     const val TYPE_DECLARATION = CLASS
     const val CLASS_BODY = "classBody"
     const val CALL_ARGUMENT = "callArgument"
+    const val EXPRESSION = "expression"
+    const val EXPRESSION_EXCLUDED = "expressionExcluded"
     const val PARAMETER = "parameter"
     const val PARAMETER_LIST = "parameterList"
     const val BINDING = "binding"

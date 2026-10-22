@@ -2,6 +2,8 @@ language: javascript
 
 groups:
   call: [call_expression]
+  expression: [identifier, property_identifier, private_property_identifier, shorthand_property_identifier, shorthand_property_identifier_pattern, string, template_string, number, regex, true, false, null, undefined, this, super, call_expression, member_expression, subscript_expression, new_expression, await_expression, yield_expression, binary_expression, unary_expression, update_expression, assignment_expression, augmented_assignment_expression, ternary_expression, sequence_expression, arrow_function, function_expression, class, object, array, spread_element, parenthesized_expression, optional_chain, tagged_template, jsx_element, jsx_self_closing_element]
+  expressionExcluded: [type_annotation, type_arguments, type_parameters, type_parameter, type_identifier, predefined_type, implicit_type, nullable_type, function_type, generic_type, type_projection, type_alias, union_type, intersection_type, array_type, tuple_type, object_type, parenthesized_type, type_predicate, literal_type, conditional_type, optional_type, rest_type, constructor_type, index_type_query, lookup_type, mapped_type, template_literal_type, infer_type, this_type, query_type, readonly_type]
   navigation: [member_expression]
   calleeSuffix: [property_identifier, private_property_identifier]
   callSuffix: [arguments]

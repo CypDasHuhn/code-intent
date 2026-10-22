@@ -3,6 +3,7 @@ package dev.cint.server.live
 import dev.cint.api.CandidateEmit
 import dev.cint.api.ConfigFieldDescriptor
 import dev.cint.core.runtime.scheduler.AnalysisOutput
+import dev.cint.suggest.session.SessionResult
 import java.io.BufferedWriter
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -40,6 +41,10 @@ internal data class CachedAnalysis(
     val textHash: String,
     val configRevision: Long,
     val analysisRevision: Long,
+)
+
+internal data class SessionLog(
+    val result: SessionResult,
 )
 
 internal data class SuggestPass(

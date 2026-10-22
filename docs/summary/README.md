@@ -38,5 +38,5 @@ just build && just test-engine && just lint && just test-nvim
   session/discovery, restrictions, reuse cache, and review UX; 017 remains
   blocked. 023/028 file frontmatter is stale (README says done).
 - Current product surface: deterministic intent tags plus AI candidate review,
-  user annotations with `PURE`/`READONLY`, live daemon protocol 3, and the
+  user annotations with `PURE`/`READONLY`, live daemon protocol 4, and the
   Neovim renderer with inline labels, stripes, hover, and candidate review.

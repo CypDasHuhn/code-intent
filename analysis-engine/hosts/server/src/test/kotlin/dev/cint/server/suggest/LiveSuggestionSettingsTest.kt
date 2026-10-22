@@ -20,7 +20,20 @@ class LiveSuggestionSettingsTest {
             val descriptor = disabled.initializeResult().path("suggestions")
             assertFalse(descriptor.path("enabled").asBoolean())
             val keys = descriptor.fieldNames().asSequence().toSet()
-            assertEquals(setOf("enabled", "trigger", "provider", "model", "knownIntents"), keys)
+            assertEquals(
+                setOf(
+                    "enabled",
+                    "trigger",
+                    "provider",
+                    "model",
+                    "knownIntents",
+                    "discovery",
+                    "restrictions",
+                    "cache",
+                    "maxUnitsPerRequest",
+                ),
+                keys,
+            )
             assertTrue(keys.none { it.contains("key", ignoreCase = true) || it.contains("secret", ignoreCase = true) })
 
             val uri = disabledRoot.resolve("Sample.kt").toString()
@@ -133,6 +146,48 @@ class LiveSuggestionSettingsTest {
             assertEquals(12, settings.excerptRadiusBytes)
             assertEquals(listOf("src/**/*.kt"), settings.allowGlobs)
             assertEquals(listOf("token=.*"), settings.redactPatterns)
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun discoverySessionSettingsLoadWithSafeDefaults() {
+        val defaults = SuggestionSettings()
+        assertTrue(defaults.discoveryEnabled)
+        assertTrue(defaults.discoveryIncludeLeaves)
+        assertEquals(24, defaults.discoveryMaxUnitsPerRequest)
+        assertEquals(120_000L, defaults.sessionTimeoutMs)
+        assertEquals(50, defaults.maxTurns)
+        assertEquals(200, defaults.maxToolCalls)
+        assertEquals(2048, defaults.maxTokensPerRequest)
+
+        val root = Files.createTempDirectory("cint-suggestion-settings-discovery")
+        try {
+            val file = root.resolve(".cint/suggestions.yml")
+            Files.createDirectories(file.parent)
+            Files.writeString(
+                file,
+                """
+                suggestions:
+                  enabled: true
+                  discoveryEnabled: false
+                  discoveryIncludeLeaves: false
+                  discoveryMaxUnitsPerRequest: 0
+                  sessionTimeoutMs: 0
+                  maxTurns: 0
+                  maxToolCalls: 0
+                  maxTokensPerRequest: 0
+                """.trimIndent(),
+            )
+            val settings = SuggestionSettingsLoader.load(root)
+            assertFalse(settings.discoveryEnabled)
+            assertFalse(settings.discoveryIncludeLeaves)
+            assertEquals(1, settings.discoveryMaxUnitsPerRequest)
+            assertEquals(1L, settings.sessionTimeoutMs)
+            assertEquals(1, settings.maxTurns)
+            assertEquals(0, settings.maxToolCalls)
+            assertEquals(1, settings.maxTokensPerRequest)
         } finally {
             root.toFile().deleteRecursively()
         }

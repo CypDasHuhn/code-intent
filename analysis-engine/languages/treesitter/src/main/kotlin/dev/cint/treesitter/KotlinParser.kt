@@ -64,6 +64,7 @@ class TsSyntaxNode(
     override val endLine: Int get() = node.endPoint.row
     override val endCol: Int get() = node.endPoint.column
     override val text: String get() = tree.text(startByte, endByte)
+    override val isNamed: Boolean get() = node.isNamed
     override val parent: SyntaxNode? get() {
         val parentNode = node.parent
         return if (parentNode == null || parentNode.isNull) null else TsSyntaxNode(tree, parentNode)

@@ -1,6 +1,6 @@
 ---
 name: ai expression discovery session
-status: todo
+status: in-progress
 depends-on: [057]
 reviewers: [correctness, architecture]
 ---

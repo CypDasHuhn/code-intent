@@ -50,6 +50,10 @@ internal class Harness(
         server.handleMessage(message, target)
     }
 
+    fun sendDirect(message: String) {
+        server.handleMessage(message, writer)
+    }
+
     fun newWriter(): BufferedWriter = BufferedWriter(StringWriter())
 
     fun rewriteDocumentTextForTest(
@@ -70,8 +74,8 @@ internal class Harness(
             packId,
         )},"language":${quote(language)},"field":${quote(field)},"value":${quote(value)}}}"""
 
-    fun initialize() {
-        send("""{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol":3}}""")
+    fun initialize(protocol: Int = 4) {
+        send("""{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol":$protocol}}""")
     }
 
     fun initializeResult(): JsonNode = lastResponse(1)
@@ -181,6 +185,22 @@ internal class Harness(
             }.path("result")
 
     fun waitForResponse(id: Int): JsonNode = waitFor { lastResponseOrNull(id) }.path("result")
+
+    fun waitForResponseDirect(id: Int): JsonNode =
+        waitFor {
+            messagesDirect()
+                .lastOrNull {
+                    it["id"]?.asInt() == id && it["method"] == null
+                }?.path("result")
+        }
+
+    fun messagesDirect(): List<JsonNode> =
+        output
+            .toString()
+            .trim()
+            .lines()
+            .filter { it.isNotBlank() }
+            .mapNotNull { line -> runCatching { mapper.readTree(line) }.getOrNull() }
 
     fun waitForCandidate(
         uri: String,

@@ -10,6 +10,12 @@ import dev.cint.suggest.model.SourceExcerpt
 import dev.cint.suggest.model.SuggestionOptions
 import dev.cint.suggest.provider.FakeIntentSuggestionProvider
 import dev.cint.suggest.provider.IntentSuggestionProvider
+import dev.cint.suggest.session.AnnotationSession
+import dev.cint.suggest.session.AnnotationSessionProvider
+import dev.cint.suggest.session.SessionDocument
+import dev.cint.suggest.session.SessionLimits
+import dev.cint.suggest.session.SessionProgress
+import dev.cint.suggest.session.SessionResult
 
 class SuggestionProviderRegistry(
     providers: List<IntentSuggestionProvider> = listOf(FakeIntentSuggestionProvider()),
@@ -17,6 +23,8 @@ class SuggestionProviderRegistry(
     private val providers = providers.associateBy { it.id }
 
     fun find(id: String?): IntentSuggestionProvider? = id?.let(providers::get)
+
+    fun findSession(id: String?): AnnotationSessionProvider? = find(id) as? AnnotationSessionProvider
 }
 
 class SuggestionService(
@@ -97,7 +105,37 @@ class SuggestionService(
         )
     }
 
+    fun discover(
+        document: SessionDocument,
+        options: SuggestionOptions,
+        limits: SessionLimits,
+        typeLookup: (Int, Int) -> Map<String, Any?>? = { _, _ -> null },
+        onProgress: (SessionProgress) -> Unit = {},
+        isCancelled: () -> Boolean = { false },
+    ): SessionResult {
+        val provider = registry.findSession(options.providerId)
+        if (provider == null || !SuggestionPrivacy.allows(document.path, options.allowGlobs)) {
+            return SessionResult(
+                candidates = emptyList(),
+                total = document.units.size,
+                graded = 0,
+                skipped = true,
+                uncovered = document.units.map { it.unitId },
+            )
+        }
+        val sanitize = { text: String -> SuggestionPrivacy.redact(text, options.redactPatterns) }
+        return AnnotationSession(
+            provider = provider,
+            sanitize = sanitize,
+            typeLookup = typeLookup,
+            isCancelled = isCancelled,
+            promptVersion = options.promptVersion,
+        ).run(document, limits, onProgress)
+    }
+
     fun findProvider(id: String?): IntentSuggestionProvider? = registry.find(id)
+
+    fun findSessionProvider(id: String?): AnnotationSessionProvider? = registry.findSession(id)
 
     fun group(
         document: CandidateDocument,

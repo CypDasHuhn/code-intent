@@ -2,6 +2,8 @@ language: csharp
 
 groups:
   call: [invocation_expression]
+  expression: [identifier, integer_literal, real_literal, string_literal, character_literal, boolean_literal, null_literal, interpolated_string_expression, interpolation, invocation_expression, member_access_expression, object_creation_expression, array_creation_expression, element_access_expression, conditional_access_expression, conditional_expression, binary_expression, assignment_expression, prefix_unary_expression, postfix_unary_expression, cast_expression, as_expression, is_expression, typeof_expression, sizeof_expression, await_expression, lambda_expression, anonymous_method_expression, query_expression, parenthesized_expression, tuple_expression, throw_expression, range_expression, switch_expression, with_expression, collection_expression, implicit_object_creation_expression, base_expression, this_expression, member_binding_expression, cref_expression]
+  expressionExcluded: [type_annotation, type_arguments, type_parameters, type_parameter, type_parameter_list, type_argument_list, type_identifier, predefined_type, implicit_type, nullable_type, function_type, generic_type, generic_name, qualified_name, alias_qualified_name, type_projection, type_alias, array_type, tuple_type, pointer_type, ref_type, scoped_type, function_pointer_type, nullable_directive]
   navigation: [member_access_expression]
   calleeSuffix: [identifier]
   callSuffix: [argument_list]

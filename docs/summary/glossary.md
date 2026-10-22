@@ -27,7 +27,7 @@
 | **suggestionRevision** | Monotonic ordering for candidate publishes. |
 | **oracle** | Type-information provider; `LspOracle` for Kotlin, `NullOracle` otherwise. |
 | **oracle budget/session** | Per-analysis memoization plus timeout/failure/elapsed circuit breaker. |
-| **live daemon** | `cint-server`, NDJSON JSON-RPC over a per-user Unix socket, protocol 3. |
+| **live daemon** | `cint-server`, NDJSON JSON-RPC over a per-user Unix socket, protocol 4. |
 | **split region** | Vue `<script>` region analyzed as JS/TS then shifted back to host coordinates. |
 | **meaning** | Client-side visual policy (`SHOW`, `HIGHLIGHT`, `IGNORE`, `CONCEAL`) resolved from intents/tags. |
 | **handler** | Client rendering primitive selected by a meaning (`color`, `highlight`, `ignore`, `conceal`). |

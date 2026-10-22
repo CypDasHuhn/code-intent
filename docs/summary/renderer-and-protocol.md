@@ -92,18 +92,22 @@ caches resolved config per buffer.
 ## Live protocol
 
 Transport: NDJSON JSON-RPC over a Unix socket (`cint-<uid>` directory), protocol
-`3`. The client spawns/attaches to `cint-server` per project root.
+`4`. The client spawns/attaches to `cint-server` per project root.
 
 Methods:
 
 - `initialize {protocol, root, client}` -> protocol/root/languages/config
-  descriptors (pack config + secret-free suggestions descriptor).
+  descriptors (pack config + secret-free suggestions descriptor with
+  `discovery`/`restrictions`/`cache` capability flags).
 - `cint/publishTags {uri, version, hash, revision, analysisRevision,
   annotations}`.
 - `cint/publishCandidates {uri, version, analysisRevision, suggestionRevision,
   candidates, groups}`.
 - `cint/analyze`.
 - `cint/suggest {uri, version, requestId}` and `cint/suggest/cancel`.
+- `cint/suggest/progress {uri, version, graded, reused, total, activity}` during
+  a discovery pass.
+- `cint/suggest/log {uri}` -> last session counts, coverage, and events.
 - `cint/candidates/decide {uri, version, candidateId, decision}`.
 - `cint/config/read|append|remove`.
 - `cint/error`.
@@ -126,3 +130,6 @@ to every client holding the URI. Skip is client/session-only.
 - `config_spec` — config/profile/shard behavior.
 - `candidates_spec` — passive/review candidates, revisions, decisions, AI UI,
   suggestion notifications.
+
+Protocol 4 is additive: protocol-3 clients keep deterministic tags and the
+existing candidate shapes and ignore unknown notifications.

@@ -64,6 +64,7 @@ class LiveSuggestionDeepSeekTest {
                     apiKeyEnv = "CINT_TEST_DEEPSEEK_KEY",
                     baseUrl = endpoint.url,
                     timeoutMs = 3_000,
+                    discoveryEnabled = false,
                 )
             val service = suggestionServiceFrom(suggestionSettings) { "fake-key" }
             val harness = harness(root, suggestionSettings = suggestionSettings, service = service)
@@ -78,7 +79,7 @@ class LiveSuggestionDeepSeekTest {
                 }
             assertEquals("deepseek", enriched["provider"].asText())
             assertEquals("deepseek-chat", enriched["model"].asText())
-            assertEquals("deepseek-intent-v2", enriched["promptVersion"].asText())
+            assertEquals("deepseek-intent-v3", enriched["promptVersion"].asText())
             assertEquals(0.84, enriched["confidence"].asDouble())
             assertFalse(enriched["aiEligible"].asBoolean())
             assertEquals("deepseek says logging", enriched["rationale"].asText())
@@ -152,6 +153,7 @@ class LiveSuggestionDeepSeekTest {
                     apiKeyEnv = "CINT_TEST_DEEPSEEK_KEY",
                     baseUrl = endpoint.url,
                     timeoutMs = 3_000,
+                    discoveryEnabled = false,
                 )
             val service = suggestionServiceFrom(suggestionSettings) { "fake-key" }
             val harness = harness(root, suggestionSettings = suggestionSettings, service = service)
@@ -210,6 +212,7 @@ class LiveSuggestionDeepSeekTest {
                     provider = "deepseek",
                     model = "deepseek-chat",
                     timeoutMs = 100,
+                    discoveryEnabled = false,
                 )
             val harness = harness(root, suggestionSettings = suggestionSettings, service = service)
             val uri = root.resolve("Sample.kt").toString()

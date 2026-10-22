@@ -1,6 +1,9 @@
 # AI Annotation Session, Restrictions, and Reuse
 
-Status: proposed, 2026-10-22.
+Status: partially implemented, 2026-10-22. Ticket 058 implements expression-level
+discovery, the internal tool loop, add-only verdicts, budgets/coverage, protocol 4
+progress/log, and the recall-oriented prompt. Restrictions (059), reuse (060), and
+the full review UX (061) remain proposed.
 
 This document designs the next AI layer above the deterministic pipeline:
 expression-level discovery, reviewable restrictions, and reuse across document
@@ -116,8 +119,8 @@ Tools are read-only except `submit_verdicts`:
 
 Scope is the current document plus LSP facts for that document. The agent does
 not read other project files, run commands, or access the network. Every text
-result passes through `allowGlobs` and `redactPatterns` before reaching the
-model.
+`allowGlobs` gates the pass, and `redactPatterns` sanitizes every text result
+before it reaches the model.
 
 The session is cancellable and discarded when the document version changes.
 
@@ -393,7 +396,8 @@ Deterministic candidates keep their current passive rendering.
 - `]c` / `[c` and `<Plug>` mappings jump between proposals.
 - `:CintRestrictions` lists active restriction groups; selecting one removes the
   record and re-analyzes, restoring the original annotation.
-- `:CintAiLog` shows the session's tool calls, reuse decisions, and verdicts.
+- `:CintAiLog` shows the session's tool calls, reuse decisions, and verdicts
+  (renderer command planned for 061).
 
 After an accepted group: `removed LOGGING, added SEARCH (AI)`.
 
@@ -410,8 +414,8 @@ The first slice requires new candidate shapes and progress reporting.
 - `cint/publishCandidates` groups carry explicit add/remove operations instead
   of only an intent set.
 - `cint/candidates/decide` accepts proposal-group ids for confirm/deny/skip.
-- `cint/suggest/log` returns the last session's tool/reuse events for
-  `:CintAiLog`.
+- `cint/suggest/log` returns the last session's structured tool/reuse events;
+  `:CintAiLog` is planned for 061.
 
 The v5 `CandidateEmit` cannot express removal. The preferred API change is a v6
 proposal model with explicit operations (`ADD` / `REMOVE`), while established
@@ -442,15 +446,16 @@ suggestions:
   passiveCandidates: status
 ```
 
-`allowGlobs` and `redactPatterns` continue to gate text sent to the provider and
-apply to tool results as well.
+`allowGlobs` continues to gate the pass, and `redactPatterns` applies to every
+text result sent to the provider, including tool results.
 
 ## Privacy and failure behavior
 
 - Scope is the current document plus LSP facts.
 - No source text in the disk cache.
 - No provider/response/key logging by default.
-- `allowGlobs` and `redactPatterns` apply to excerpts, tool results, and hints.
+- `allowGlobs` gates the pass; `redactPatterns` applies to excerpts, tool
+  results (including type lookups), and hints.
 - A missing key, provider failure, timeout, or invalid output leaves
   deterministic annotations and candidates untouched.
 - A stale document version discards the session; a new version starts from the
@@ -472,6 +477,31 @@ apply to tool results as well.
   not resurrect after formatting.
 - Renderer: passive minimal display, review groups, accept/deny, restrictions
   inspector, progress, cancellation.
+
+## Implementation snapshot (058)
+
+- Core exposes expression units through `SyntaxModel.expressionUnits`, including
+  leaf nodes. The server builds the worklist with overlapping established intents.
+- `core/suggest/session` owns the provider-neutral tool loop, tool schema,
+  verdict validation, batching, budgets, progress callbacks, and session events.
+  `AnnotationSessionProvider` is implemented by the fake and DeepSeek providers;
+  the DeepSeek prompt version is `deepseek-intent-v3`.
+- Tool text, including `lookup_type` results, is sanitized with `redactPatterns`;
+  `allowGlobs` gates the pass. Batch prompts bound per-unit text and existing
+  annotation lists to the same session byte budget as tool results. Scope is
+  the current document plus oracle type lookups. No shell, file, or network
+  tools exist.
+- The live server runs one cancellable pass per document version, publishes
+  `cint/suggest/progress`, returns coverage/counts, and stores the last session
+  for `cint/suggest/log`. Discovery defaults on; disabling it preserves the
+  legacy pack-candidate enrichment path.
+- Protocol is 4. `initialize.suggestions` advertises `discovery` (true),
+  `restrictions`/`cache` (false), and `maxUnitsPerRequest`. Add-only candidates
+  keep the v5 `CandidateEmit` shape.
+- Tests cover core unit enumeration (including leaves), tool-loop verdicts,
+  sub-span adds, validation, duplicate/nested collapse, budget exhaustion,
+  sanitization, DeepSeek tool-call parsing, server progress/log/coverage, and the
+  regex-find fixture with no pack candidate producing `SEARCH`.
 
 ## Phasing
 

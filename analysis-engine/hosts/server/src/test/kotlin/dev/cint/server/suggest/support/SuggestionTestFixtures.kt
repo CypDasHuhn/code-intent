@@ -83,6 +83,7 @@ internal fun harness(
             trigger = "manual",
             provider = "fake",
             model = "fake-intent-v1",
+            discoveryEnabled = false,
         ),
     service: SuggestionService? = null,
 ): Harness {

@@ -28,6 +28,13 @@ data class SuggestionSettings(
     val maxTokens: Int = DEEPSEEK_MAX_TOKENS,
     val maxConfidence: Double = DEEPSEEK_MAX_CONFIDENCE,
     val excerptRadiusBytes: Int = SourceExcerpt.DEFAULT_RADIUS_BYTES,
+    val discoveryEnabled: Boolean = true,
+    val discoveryIncludeLeaves: Boolean = true,
+    val discoveryMaxUnitsPerRequest: Int = 24,
+    val sessionTimeoutMs: Long = 120_000L,
+    val maxTurns: Int = 50,
+    val maxToolCalls: Int = 200,
+    val maxTokensPerRequest: Int = 2048,
     val allowGlobs: List<String> = emptyList(),
     val redactPatterns: List<String> = emptyList(),
 ) {
@@ -71,6 +78,16 @@ object SuggestionSettingsLoader {
             excerptRadiusBytes =
                 (suggestions["excerptRadiusBytes"] as? Number)?.toInt()?.coerceAtLeast(0)
                     ?: SourceExcerpt.DEFAULT_RADIUS_BYTES,
+            discoveryEnabled = suggestions["discoveryEnabled"] as? Boolean ?: true,
+            discoveryIncludeLeaves = suggestions["discoveryIncludeLeaves"] as? Boolean ?: true,
+            discoveryMaxUnitsPerRequest =
+                (suggestions["discoveryMaxUnitsPerRequest"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 24,
+            sessionTimeoutMs =
+                (suggestions["sessionTimeoutMs"] as? Number)?.toLong()?.coerceAtLeast(1L) ?: 120_000L,
+            maxTurns = (suggestions["maxTurns"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 50,
+            maxToolCalls = (suggestions["maxToolCalls"] as? Number)?.toInt()?.coerceAtLeast(0) ?: 200,
+            maxTokensPerRequest =
+                (suggestions["maxTokensPerRequest"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 2048,
             allowGlobs = stringList(suggestions["allowGlobs"]),
             redactPatterns = stringList(suggestions["redactPatterns"]),
         )

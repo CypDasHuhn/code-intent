@@ -5,6 +5,11 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.CandidateEmit
 import dev.cint.suggest.CandidateValidator
 import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.session.AgentMessage
+import dev.cint.suggest.session.AgentRequest
+import dev.cint.suggest.session.AgentTurn
+import dev.cint.suggest.session.AnnotationSessionProvider
+import dev.cint.suggest.session.ToolCall
 import dev.cint.suggest.transport.DeepSeekChatTransport
 import java.net.http.HttpClient
 
@@ -12,7 +17,7 @@ const val DEEPSEEK_PROVIDER_ID: String = "deepseek"
 const val DEEPSEEK_MODEL_ID: String = "deepseek-chat"
 const val DEEPSEEK_BASE_URL: String = "https://api.deepseek.com/chat/completions"
 const val DEEPSEEK_API_KEY_ENV: String = "DEEPSEEK_CHAT_KEY"
-const val DEEPSEEK_PROMPT_VERSION: String = "deepseek-intent-v2"
+const val DEEPSEEK_PROMPT_VERSION: String = "deepseek-intent-v3"
 const val DEEPSEEK_MAX_TOKENS: Int = 1024
 const val DEEPSEEK_MAX_CONFIDENCE: Double = 0.84
 private const val DEEPSEEK_TEMPERATURE: Double = 0.3
@@ -30,12 +35,90 @@ class DeepSeekIntentSuggestionProvider(
     private val config: DeepSeekProviderConfig = DeepSeekProviderConfig(),
     private val client: HttpClient = HttpClient.newBuilder().build(),
     private val apiKey: (String) -> String? = { name -> System.getenv(name) },
-) : IntentSuggestionProvider {
+) : IntentSuggestionProvider,
+    AnnotationSessionProvider {
     override val id: String = DEEPSEEK_PROVIDER_ID
     override val model: String = config.model
     override val defaultPromptVersion: String = DEEPSEEK_PROMPT_VERSION
 
     private val mapper = jacksonObjectMapper()
+
+    override fun complete(request: AgentRequest): AgentTurn {
+        val key =
+            apiKey(config.apiKeyEnv)?.takeIf { it.isNotBlank() }
+                ?: return AgentTurn.Failure("provider is not configured")
+        val payload =
+            linkedMapOf<String, Any?>(
+                "model" to model,
+                "temperature" to DEEPSEEK_TEMPERATURE,
+                "max_tokens" to request.maxTokens.coerceAtLeast(1),
+                "messages" to request.messages.map(::wireMessage),
+                "tools" to
+                    request.tools.map { tool ->
+                        linkedMapOf(
+                            "type" to "function",
+                            "function" to
+                                linkedMapOf(
+                                    "name" to tool.name,
+                                    "description" to tool.description,
+                                    "parameters" to tool.inputSchema,
+                                ),
+                        )
+                    },
+            )
+        val transport = DeepSeekChatTransport(config.baseUrl, request.timeoutMs, key, client, mapper)
+        val body = transport.post(payload) ?: return AgentTurn.Failure("provider request failed")
+        val message =
+            runCatching {
+                mapper
+                    .readTree(body)
+                    .path("choices")
+                    .path(0)
+                    .path("message")
+            }.getOrNull()?.takeIf { !it.isMissingNode } ?: return AgentTurn.Failure("provider response is malformed")
+        val calls =
+            message
+                .path("tool_calls")
+                .takeIf { it.isArray }
+                ?.mapIndexedNotNull { index, item ->
+                    val function = item.path("function")
+                    val name = function.path("name").asText("").takeIf { it.isNotBlank() } ?: return@mapIndexedNotNull null
+                    val arguments =
+                        function.path("arguments").let { arguments ->
+                            if (arguments.isTextual) arguments.asText() else arguments.toString()
+                        }
+                    ToolCall(
+                        id = item.path("id").asText("").takeIf { it.isNotBlank() } ?: "call-$index",
+                        name = name,
+                        arguments = arguments,
+                    )
+                }.orEmpty()
+        if (calls.isNotEmpty()) {
+            return AgentTurn.Calls(calls, message.path("content").asText("").takeIf { it.isNotBlank() })
+        }
+        val content = message.path("content").asText("").takeIf { it.isNotBlank() }
+        return AgentTurn.Message(content)
+    }
+
+    private fun wireMessage(message: AgentMessage): Map<String, Any?> =
+        linkedMapOf<String, Any?>(
+            "role" to message.role,
+            "content" to message.content,
+        ).apply {
+            if (message.toolCalls.isNotEmpty()) {
+                put(
+                    "tool_calls",
+                    message.toolCalls.map { call ->
+                        linkedMapOf(
+                            "id" to call.id,
+                            "type" to "function",
+                            "function" to linkedMapOf("name" to call.name, "arguments" to call.arguments),
+                        )
+                    },
+                )
+            }
+            message.toolCallId?.let { put("tool_call_id", it) }
+        }
 
     override fun suggest(context: CandidateContext): List<CandidateEmit> {
         val candidate = context.candidate
@@ -182,9 +265,9 @@ class DeepSeekIntentSuggestionProvider(
               "intent": one string from the provided knownIntents vocabulary,
               "confidence": number from 0 to 1,
               "rationale": short string explaining the choice.
-            Propose several plausible alternatives when the span is ambiguous, including lower-confidence
-            guesses; do not require certainty. Prefer the most specific intent and use distinct intents for
-            alternatives.
+            Be recall-oriented: propose several plausible alternatives when the span is ambiguous, including
+            lower-confidence guesses; do not require certainty. Prefer the most specific intent and use distinct
+            intents for alternatives.
             Only propose intents for the provided candidate span: startByte must be >= the candidate startByte,
             endByte must be <= the candidate endByte, and both must lie inside the provided excerpt.
             Do not invent intents. Do not edit code. Do not return established annotations.

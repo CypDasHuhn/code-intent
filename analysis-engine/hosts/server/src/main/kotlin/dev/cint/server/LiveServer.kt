@@ -12,6 +12,7 @@ import dev.cint.server.live.CachedAnalysis
 import dev.cint.server.live.DocState
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.PublishedCandidate
+import dev.cint.server.live.SessionLog
 import dev.cint.server.live.SuggestPass
 import dev.cint.server.live.clearDocument
 import dev.cint.server.live.configAppend
@@ -22,9 +23,11 @@ import dev.cint.server.live.docFrom
 import dev.cint.server.live.docsFor
 import dev.cint.server.live.publish
 import dev.cint.server.live.republishOpenDocs
+import dev.cint.server.suggestions.cancelInFlightSuggestion
 import dev.cint.server.suggestions.handleCandidateDecision
 import dev.cint.server.suggestions.handleSuggest
 import dev.cint.server.suggestions.handleSuggestCancel
+import dev.cint.server.suggestions.handleSuggestLog
 import dev.cint.server.suggestions.suggestionCapability
 import dev.cint.suggest.SuggestionService
 import java.io.BufferedReader
@@ -44,7 +47,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicLong
 
 internal const val LIVE_LSP_TIMEOUT_MS: Long = 750L
-internal const val LIVE_PROTOCOL_VERSION: Int = 3
+internal const val LIVE_PROTOCOL_VERSION: Int = 4
 
 class LiveServer(
     internal val root: Path,
@@ -76,6 +79,8 @@ class LiveServer(
     internal val anchorLocks = ConcurrentHashMap<String, Any>()
     internal val candidateStateRevisions = ConcurrentHashMap<DocumentKey, Long>()
     internal val inFlightSuggestions = ConcurrentHashMap<DocumentKey, SuggestPass>()
+    internal val sessionLogs = ConcurrentHashMap<DocumentKey, SessionLog>()
+    internal val clientProtocols = ConcurrentHashMap<BufferedWriter, Int>()
     internal val inFlightFutures = ConcurrentHashMap<DocumentKey, Future<*>>()
     internal val providerFutures = ConcurrentHashMap<DocumentKey, Future<*>>()
     internal val cancelledSuggestions = ConcurrentHashMap<String, Long>()
@@ -152,6 +157,7 @@ class LiveServer(
                 }
             } finally {
                 docs.remove(writer)?.keys?.forEach { uri -> clearDocument(writer, uri) }
+                clientProtocols.remove(writer)
             }
         }
     }
@@ -168,6 +174,8 @@ class LiveServer(
         when (method) {
             "initialize" -> {
                 val overlay = configReadState()
+                val requestedProtocol = params?.get("protocol")?.asInt() ?: 0
+                clientProtocols[writer] = requestedProtocol
                 respond(
                     writer,
                     id,
@@ -176,7 +184,7 @@ class LiveServer(
                         "root" to root.toString(),
                         "languages" to Frontends.languages(),
                         "config" to configPayload(overlay.packs, overlay.error),
-                        "suggestions" to suggestionCapability(),
+                        "suggestions" to suggestionCapability(requestedProtocol),
                     ),
                 )
             }
@@ -228,6 +236,7 @@ class LiveServer(
 
             "textDocument/didChange" -> {
                 val doc = docFrom(params) ?: return
+                cancelInFlightSuggestion(writer, doc.uri)
                 docsFor(writer)[doc.uri] = doc
                 publish(writer, doc)
             }
@@ -251,6 +260,10 @@ class LiveServer(
 
             "cint/suggest/cancel" -> {
                 handleSuggestCancel(writer, params, id)
+            }
+
+            "cint/suggest/log" -> {
+                handleSuggestLog(writer, params, id)
             }
 
             "cint/candidates/decide" -> {

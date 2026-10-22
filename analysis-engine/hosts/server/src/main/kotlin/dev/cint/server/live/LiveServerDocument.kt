@@ -64,6 +64,7 @@ internal fun LiveServer.clearDocument(
     candidateLocks.remove(key)
     candidateStateRevisions.remove(key)
     sessionSkipped.remove(key)
+    sessionLogs.remove(key)
 }
 
 internal fun LiveServer.docFrom(params: JsonNode?): DocState? {
@@ -137,7 +138,7 @@ internal fun LiveServer.nextAnalysisRevision(key: DocumentKey): Long =
 
 internal fun LiveServer.oracleOptions(useLsp: Boolean = this.useLsp): OracleOptions = settings.oracleOptions(useLsp, LIVE_LSP_TIMEOUT_MS)
 
-private fun LiveServer.oracleFor(frontend: LanguageFrontend): TypeOracle {
+internal fun LiveServer.oracleFor(frontend: LanguageFrontend): TypeOracle {
     val options = oracleOptions()
     if (!options.enabled) return NullOracle
     return oracles.computeIfAbsent(frontend.language) {

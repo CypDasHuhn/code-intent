@@ -2,6 +2,8 @@ language: kotlin
 
 groups:
   call: [call_expression]
+  expression: [call_expression, navigation_expression, simple_identifier, string_literal, character_literal, integer_literal, hex_literal, real_literal, boolean_literal, null, collection_literal, function_literal, object_literal, lambda_literal, annotated_lambda, parenthesized_expression, indexing_expression, range_expression, additive_expression, multiplicative_expression, conjunction_expression, disjunction_expression, equality_expression, comparison_expression, elvis_expression, infix_expression, unary_expression, prefix_expression, postfix_expression, as_expression, is_expression, if_expression, when_expression, try_expression, jump_expression, assignment, directly_assignable_expression, this_expression, super_expression, spread_expression, type_test_expression, binary_expression, string_template, interpolated_identifier, callable_reference, anonymous_function]
+  expressionExcluded: [type_annotation, type_arguments, type_parameters, type_parameter, type_identifier, predefined_type, implicit_type, nullable_type, function_type, generic_type, type_projection, type_alias, user_type, parenthesized_type, definitely_non_nullable_type, intersection_type, dynamic_type, captured_type, variance_modifier]
   navigation: [navigation_expression]
   calleeSuffix: [navigation_suffix]
   callSuffix: [call_suffix]

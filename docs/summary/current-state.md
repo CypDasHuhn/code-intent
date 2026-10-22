@@ -1,6 +1,6 @@
 # Current State and Continuation Notes
 
-As of 2026-10-22, after tickets 041–057. Branch `main` is clean apart from
+As of 2026-10-22, after tickets 041–058. Branch `main` is clean apart from
 local `.cint/**` project state.
 
 ## Where the project is
@@ -11,7 +11,7 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   tree-sitter, optionally queries `kotlin-lsp` for types, runs bundled
   rulepacks through a stratified scheduler, composes return/derivative/scaffold
   annotations, and publishes tags plus candidates.
-- The client speaks a local Unix-socket JSON-RPC protocol 3 to a per-project
+- The client speaks a local Unix-socket JSON-RPC protocol 4 to a per-project
   daemon (`cint-server`). It renders annotations through configurable meanings
   and handlers, supports user annotations, AI candidate review, intent labels,
   mixed-intent stripes, and a cursor hover inspector.
@@ -34,6 +34,7 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 | 055 | AI arrival UI: distinct `AI` sign/badge/highlight, one arrival notification per AI-count increase, `(N AI)` status. |
 | 056 | Scaffold `UNTAGGED` visibility, whole-statement `RETURN_VALUE`, nested return-flow propagation, SEARCH/LOOKUP clarification, broader AI prompt/defaults. |
 | 057 | AI candidate/enrichment caps default to unlimited (`0`); positive caps remain configurable. |
+| 058 | AI expression discovery session: core expression units including leaves, internal tool loop, add-only verdicts with validation, budgets/coverage, protocol 4 progress/log, and a recall-oriented prompt. |
 
 ## Current behavior worth knowing
 
@@ -44,10 +45,12 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   retrieving a known-to-exist static/preset value (map/table/enum/config/
   registry). `findById`/`getById`/`loadById` are SEARCH without a default
   LOOKUP alternative; `getBytes` is not SEARCH; `getByKey` is LOOKUP.
-- AI enrichment is uncapped by default: every AI-eligible pack candidate is
-  sent to the provider and every validated proposal is retained. Candidate
-  generation is still pack-driven, not per-line. The provider timeout remains
-  the safety valve, so large files can cost more and time out.
+- AI discovery is enabled by default and grades every expression unit, including
+  leaves, through an internal tool loop over the current document plus LSP type
+  facts. It is add-only in this slice; restrictions arrive in 059. Budget
+  exhaustion publishes graded units and reports coverage. Setting
+  `discoveryEnabled: false` restores pack-candidate enrichment, which remains
+  uncapped by default.
 - Hover shows only the innermost span under the caret and never shows
   `UNTAGGED`.
 - AI candidates render differently from deterministic candidates (AI sign,
@@ -55,9 +58,10 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 
 ## Open work
 
-- **058-061 (proposed): AI annotation session.** Expression-level discovery,
-  reviewable remove+add restrictions, per-unit verdict reuse, and the renderer
-  review UX. Design: [../ai-annotation-session.md](../ai-annotation-session.md).
+- **059-061 (proposed): AI annotation session follow-ups.** Reviewable remove+add
+  restrictions (059), per-unit verdict reuse (060), and the renderer review UX
+  (061). Ticket 058 implements expression-level discovery. Design:
+  [../ai-annotation-session.md](../ai-annotation-session.md).
 - **017 (blocked): fixpoint metadata convergence.** Decide whether
   `source`/`confidence` metadata participates in convergence or whether
   metadata-only changes are non-convergent; the evidence field no longer
@@ -74,8 +78,9 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   - Return-flow propagation relies on the smallest covering annotation, so
     exotic nested-argument shapes can shadow the enclosing `RETURN_VALUE`.
   - Hover content is truncated at 12 lines/60 columns with no overflow marker.
-  - AI with unlimited defaults can be slow/costly; timeout cancels without
-    partial results.
+  - Discovery grades every expression unit and large files can be slow/costly;
+    budgets publish partial coverage, while an outer provider timeout cancels
+    without partial results. Reuse caches are deferred to 060.
   - Accepted OVERCROWDED roots: `analysis-engine`, `core/core`, and the
     `rulepacks-tests` package root; single-file packages are out of scope.
 - **Local state:** `.cint/config.overlay.yml`, `.cint/suggestions*.json/yml`,
