@@ -1,8 +1,6 @@
-package dev.cint.rulepacks
+package dev.cint.rulepacks.intents.mutation
 
 import dev.cint.api.RulePackConfigException
-import dev.cint.rulepacks.intents.mutation.MutationConfig
-import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
