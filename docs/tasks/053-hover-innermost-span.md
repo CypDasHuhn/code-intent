@@ -1,6 +1,6 @@
 ---
 name: hover innermost span
-status: in-progress
+status: done
 depends-on: [052]
 reviewers: [correctness]
 ---
