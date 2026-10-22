@@ -4,12 +4,16 @@ import dev.cint.api.CandidateReason
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
+import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
+import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.service.SERVICE_DELEGATION_INTENT
 import dev.cint.rulepacks.intents.service.SERVICE_DELEGATION_RULE_ID
 import dev.cint.rulepacks.intents.service.SERVICE_INIT_INTENT
 import dev.cint.rulepacks.intents.service.SERVICE_INIT_RULE_ID
 import dev.cint.rulepacks.intents.service.ServiceConfig
 import dev.cint.rulepacks.intents.service.ServiceRulePack
+import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.test.fixtures.text
 import kotlin.test.Test
@@ -260,6 +264,74 @@ class ServiceDelegationRulePackTest {
 
         assertTrue(analysis.source(SERVICE_DELEGATION_INTENT).isEmpty())
         assertEquals(1, analysis.candidates(SERVICE_DELEGATION_INTENT).size)
+    }
+
+    @Test
+    fun functionTypedParameterInvocationsAreDelegationCandidates() {
+        val source =
+            """
+            class NeighboursCli {
+                fun publish(move: (Path, Path) -> Unit, notify: (Path) -> Unit) {
+                    move(Paths.get("a"), Paths.get("b"))
+                    notify(Paths.get("a"))
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_DELEGATION_INTENT).isEmpty())
+        assertEquals(
+            setOf(
+                "move(Paths.get(\"a\"), Paths.get(\"b\"))",
+                "notify(Paths.get(\"a\"))",
+            ),
+            analysis.candidates(SERVICE_DELEGATION_INTENT).map { source.substring(it.startByte, it.endByte) }.toSet(),
+        )
+        assertTrue(analysis.candidates(SERVICE_DELEGATION_INTENT).all { it.reason == CandidateReason.LOW_CONFIDENCE })
+    }
+
+    @Test
+    fun durableCallbackDefaultsAreNotGenericDelegationCandidates() {
+        val source =
+            """
+            class NeighboursCli {
+                fun publish(move: (Path, Path) -> Unit = Files::move, notify: (Path) -> Unit) {
+                    move(Paths.get("a"), Paths.get("b"))
+                    notify(Paths.get("a"))
+                }
+            }
+            """.trimIndent()
+
+        val analysis =
+            analyzePack("kotlin", source, listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ServiceRulePack()))
+
+        assertEquals(
+            setOf("move(Paths.get(\"a\"), Paths.get(\"b\"))"),
+            analysis.texts(DATA_MODIFY_INTENT).toSet(),
+        )
+        assertEquals(
+            setOf("notify(Paths.get(\"a\"))"),
+            analysis.candidates(SERVICE_DELEGATION_INTENT).map { source.substring(it.startByte, it.endByte) }.toSet(),
+        )
+    }
+
+    @Test
+    fun durableCallbackDefaultWithoutMutationOwnerRemainsAChainableCandidate() {
+        val source =
+            """
+            fun publish(move: (Path, Path) -> Unit = Files::move) {
+                move(Paths.get("a"), Paths.get("b"))
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_DELEGATION_INTENT).isEmpty())
+        assertEquals(
+            setOf("move(Paths.get(\"a\"), Paths.get(\"b\"))"),
+            analysis.candidates(SERVICE_DELEGATION_INTENT).map { source.substring(it.startByte, it.endByte) }.toSet(),
+        )
     }
 
     @Test

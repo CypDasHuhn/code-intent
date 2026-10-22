@@ -185,7 +185,7 @@ config/explicit patterns exist; candidates for the ambiguous remainder.
 | `SERVICE_DELEGATION` | transfer responsibility to another service/component | controller→service, facade, adapter, thin call-through/argument adaptation | constructing/wiring (`SERVICE_INIT`), local business logic, the inner call's own intent |
 | `SERVICE_INIT` | build/configure/wire a service or resource | construction, client creation, connection setup, DI/bootstrap | initializing business data, delegation, every constructor call |
 | `DATA_MODIFY` | change that persists beyond the process | repository save/update/delete, ORM writes, durable file writes, queue/event publication, durable compound writes such as `findOneAndUpdate`/`findAndModify` | in-memory mutation (`LOCAL_VALUE_MODIFY`), bookkeeping counters |
-| `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, atomic `getAndIncrement`/`getAndUpdate`/`getAndDecrement`, configured mutable collection operations | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, implicit `for`-loop counters |
+| `LOCAL_VALUE_MODIFY` | mutate a local/field/in-memory object | assignment, increment/decrement, atomic `getAndIncrement`/`getAndUpdate`/`getAndDecrement`, configured mutable collection operations; opt-in mutable local declarations with later writes | persistence (`DATA_MODIFY`), bookkeeping writes unless configured, implicit `for`-loop counters, unwritten/`val` declarations, declarations used only for pure copies |
 | `BOOL_COMBINATORICS` | complex boolean composition | multiple/mixed `&&`/`||`, nested/negated compounds, `all`/`any`/`none` (and `every`/`some`) over predicates, two or more distinct classified predicates | simple `if (x != null)`, single comparisons, trivial `a && b`, negation-only guards, plain literals, `is`/`has` prefix collisions such as `issue`/`hashCode` |
 | `DATA_TRANSFORMATION` | shape/transform an existing value or collection | `map`, `filter`, `flatMap`, `fold`, `reduce`, `collect`, `distinct`, `sorted`, `groupBy`, `all`/`any`/`none`; in-place JS mutators such as `sort`/`reverse` may co-occur with `LOCAL_VALUE_MODIFY` | fetching data (`SEARCH`), single-value canonicalization (`NORMALIZATION`), persistence (`DATA_MODIFY`); unclassified/unknown receivers stay candidates |
 | `RETURN_VALUE` | explicitly return a computed value | `return expr`, including value-bearing labeled returns (`return@map expr`); emitted on the returned expression | bare `return`, bare `return@label`, literal/constant-only returns unless `includeLiterals` is enabled; never suppresses other intents |
@@ -205,10 +205,26 @@ Bundled ownership and deployment:
   intent, and factory/connection/DI work belongs to init.
 - `mutation:data-modify` and `mutation:local-value-modify` own `DATA_MODIFY` and
   `LOCAL_VALUE_MODIFY`; persistence needs durable receiver/path evidence, and
-  local writes exclude bookkeeping and implicit `for`-loop counters; explicit `while`-loop increments/decrements and atomic `getAnd*` operations are local modifications. `local-value-modify` also
+  local writes exclude bookkeeping and implicit `for`/`foreach` counters;
+  explicit `while`-loop increments/decrements and atomic `getAnd*` operations
+  are local modifications. `local-value-modify` also
   reads `LOCAL_COPY` (so the local-copy owner must be in the plan) and
   suppresses a write's local mutation by default when that write is an
-  established `LOCAL_COPY`.
+  established `LOCAL_COPY`. Mutable local declaration tagging is opt-in via
+  `mutableLocalDeclarations` (default off) and covers mutable Kotlin `var`,
+  JavaScript/TypeScript `let`/`var`, and mutable C# locals, emitting on each
+  written declarator rather than the shared statement wrapper. The default
+  established set stays write-only and does not add noise for
+  `val`/`const`/`readonly` or unwritten multi-declarator siblings.
+- Callback calls to function-typed parameters are `SERVICE_DELEGATION`
+  candidates when generic. If the parameter's default/known implementation
+  references a qualified configured durable path/call such as `Files::move` or
+  `fs.rename`, the call establishes `DATA_MODIFY` instead; this uses
+  declaration-local callback evidence, not whole-program dataflow, and the call
+  is not treated as a local mutation. The service rule consumes the mutation
+  pack's `DATA_MODIFY` classification as an optional read, so configured target
+  additions/removals stay coherent instead of relying on a separate hardcoded
+  service list.
 - `bool-combinatorics:bool-combinatorics` owns `BOOL_COMBINATORICS`. It is
   deliberately selective: simple conditions stay untagged, and borderline
   compound booleans (`a && b`) are low-confidence candidates. Nested booleans
@@ -280,7 +296,25 @@ Concrete overlaps and precedence:
   write suppresses that write's generic local mutation. Setting
   `ignorePureCopies: false` restores co-occurrence; candidate copies never
   suppress because they are not annotations. Persistence (`DATA_MODIFY`) is
-  unaffected.
+  unaffected. With `mutableLocalDeclarations` enabled, a declaration is also
+  suppressed when it is an established copy or when all of its later writes are
+  pure copies/bookkeeping/loop-counter writes.
+- **Callback `SERVICE_DELEGATION` / `DATA_MODIFY` / `LOCAL_VALUE_MODIFY`** — a
+  generic function-typed parameter invocation may carry a
+  `SERVICE_DELEGATION` candidate. This includes direct invocations, bare
+  JS/TS function-reference defaults in function declarations and arrow
+  functions, and interface-aware SAM calls such as `Consumer.accept`,
+  `Runnable.run`, `Supplier.get`, `Callable.call`, `Predicate.test`,
+  `Function.apply`, and Kotlin function-type `invoke`. The outer SAM type wins
+  over function arrows in type arguments, so `Consumer<(Path) -> Unit>` maps to
+  `accept`. Function-typed aliases/custom delegates fall back to their default
+  reference evidence for direct invocation, while receiver-SAM mapping stays
+  declared-type-only. A callback whose default/known implementation is a
+  qualified configured durable operation
+  establishes `DATA_MODIFY`; service suppression reads that classification
+  optionally, so it does not keep a second hardcoded target set. Neither shape
+  becomes `LOCAL_VALUE_MODIFY` solely because the callee is a function
+  parameter; local mutation still needs an actual write to a local.
 
 Structural scratchpad examples:
 
@@ -654,6 +688,8 @@ Fixtures:
 - `testing-grounds/kotlin/LoggerInteractions.kt` — typed/heuristic sources.
 - `testing-grounds/kotlin/Mutation.kt` — persistence, local writes, collection
   operations.
+- `testing-grounds/kotlin/NeighboursCli.kt` — callback effect classification
+  and mutable local writes.
 - `testing-grounds/kotlin/ServiceIntents.kt` — delegation and service init.
 - `testing-grounds/kotlin/Composition.kt` — mixed composition fixture: boolean
   combinatorics, transformations, search, validation, and declaration

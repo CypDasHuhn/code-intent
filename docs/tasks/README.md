@@ -59,7 +59,7 @@ host and client cutover at the end.
 | 045 | [composition intent coverage and read-only semantics](045-composition-intent-coverage.md) | done | 037, 038, 040 | Propagate initializer intents, add BOOL_COMBINATORICS/DATA_TRANSFORMATION, read-only guards. |
 | 046 | [structural intents: return value, chaining, local copy](046-structural-intents.md) | done | 037, 038, 040, 045 | Add RETURN_VALUE, CHAINING, LOCAL_COPY as additive structural intents. |
 | 047 | [striped mixed-intent rendering experiment](047-striped-mixed-intent-rendering.md) | done | 016 | Opt-in ABABAB tag-color striping for active multi-intent spans. |
-| 048 | [local mutation and callback effect coverage](048-local-mutation-callback-coverage.md) | todo | 040, 046 | Stronger mutable-local declarations and callback effect classification. |
+| 048 | [local mutation and callback effect coverage](048-local-mutation-callback-coverage.md) | done | 040, 046 | Stronger mutable-local declarations and callback effect classification. |
 | 049 | [user readonly directive](049-user-readonly-directive.md) | done | 030 | `READONLY` user directive for side-effect-free reads without a determinism claim. |
 | 050 | [automated cross-writer annotation lock test](050-cross-writer-annotation-lock-test.md) | todo | 041 | Kotlin-plus-Neovim contention on one root; deferred from 041 because the engine harness has no cross-process orchestration. |
 

@@ -160,7 +160,7 @@ class RuleEngine(
             store.replaceRule(id, contributions)
         }
         val context = AnalysisContext(file, tree, syntax, flow, oracle, config, store)
-        val view = context.view(rule.owns, rule.reads)
+        val view = context.view(rule.owns, rule.reads + rule.optionalReads)
 
         fun run(): RuleOutcome = outcomeOf(rule, rule.run(view))
 

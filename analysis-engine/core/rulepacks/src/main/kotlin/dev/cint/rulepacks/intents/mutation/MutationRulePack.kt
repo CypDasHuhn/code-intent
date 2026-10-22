@@ -20,6 +20,8 @@ import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.api.emit
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
+import dev.cint.rulepacks.intents.callbackParameterAt
+import dev.cint.rulepacks.intents.containsConfiguredTarget
 import dev.cint.rulepacks.intents.structural.LOCAL_COPY_INTENT
 
 const val MUTATION_PACK_ID: String = "mutation"
@@ -135,6 +137,10 @@ private class DataModifyRule(
         val persistence = PersistenceMatch(language)
         return view.calls().mapNotNull { call ->
             when {
+                durableCallback(view, call, language) -> {
+                    call.emit(DATA_MODIFY_INTENT, confidence = ESTABLISHED_CONFIDENCE)
+                }
+
                 persistence.established(view, call) -> {
                     call.emit(DATA_MODIFY_INTENT, confidence = ESTABLISHED_CONFIDENCE)
                 }
@@ -155,6 +161,16 @@ private class DataModifyRule(
             }
         }
     }
+
+    private fun durableCallback(
+        view: View,
+        call: CallFact,
+        language: MutationLanguageConfig,
+    ): Boolean {
+        val callback = callbackParameterAt(view, call) ?: return false
+        val default = callback.default ?: return false
+        return containsConfiguredTarget(default, language.persistencePaths + language.persistenceCalls)
+    }
 }
 
 private class LocalValueModifyRule(
@@ -172,10 +188,7 @@ private class LocalValueModifyRule(
         val result = mutableListOf<RuleEmit>()
 
         for (write in view.writes()) {
-            if (!accepts(write, language.assignmentPatterns)) continue
-            if (language.ignorePureCopies && LOCAL_COPY_INTENT in view.intentsAt(write.node)) continue
-            if (isBookkeeping(write.node, bookkeeping)) continue
-            if (language.ignoreLoopCounters && isLoopCounter(view, write)) continue
+            if (!effectiveWrite(view, write, language, bookkeeping)) continue
             val local = owners[write.node.startByte to write.node.endByte]?.kind == DeclarationKind.VARIABLE
             result +=
                 if (local) {
@@ -185,8 +198,21 @@ private class LocalValueModifyRule(
                 }
         }
 
+        if (language.mutableLocalDeclarations) {
+            val emittedDeclarations = mutableSetOf<Pair<Int, Int>>()
+            for (declaration in view.declarations()) {
+                val node = mutableLocalDeclarationNode(declaration, view.language()) ?: continue
+                if (declaration.writes().none { effectiveWrite(view, it, language, bookkeeping) }) continue
+                if (language.ignorePureCopies && LOCAL_COPY_INTENT in view.intentsAt(declaration.node)) continue
+                if (emittedDeclarations.add(node.startByte to node.endByte)) {
+                    result += Emit.of(LOCAL_VALUE_MODIFY_INTENT, node, confidence = LOCAL_CONFIDENCE)
+                }
+            }
+        }
+
         for (call in view.calls()) {
             val callee = call.callee ?: continue
+            if (callbackParameterAt(view, call) != null) continue
             if (persistence.established(view, call)) continue
             if (persistence.persistentReceiver(view, call)) continue
             if (persistence.candidate(view, call)) continue
@@ -209,6 +235,19 @@ private class LocalValueModifyRule(
             }
         }
         return result
+    }
+
+    private fun effectiveWrite(
+        view: View,
+        write: WriteFact,
+        language: MutationLanguageConfig,
+        bookkeeping: Set<Pair<Int, Int>>,
+    ): Boolean {
+        if (!accepts(write, language.assignmentPatterns)) return false
+        if (language.ignorePureCopies && LOCAL_COPY_INTENT in view.intentsAt(write.node)) return false
+        if (isBookkeeping(write.node, bookkeeping)) return false
+        if (language.ignoreLoopCounters && isLoopCounter(view, write)) return false
+        return true
     }
 
     private fun writeCandidate(write: WriteFact): CandidateEmit =
@@ -486,6 +525,66 @@ private fun isBookkeeping(
     node: SyntaxNode,
     spans: Set<Pair<Int, Int>>,
 ): Boolean = (node.startByte to node.endByte) in spans
+
+private val KOTLIN_MUTABLE_LOCAL = Regex("""(?:^|\s)var(?:\s|<|$)""")
+private val JS_MUTABLE_DECLARATION = Regex("""^(?:export\s+)?(?:let|var)\b""")
+private val JS_IMMUTABLE_DECLARATION = Regex("""^(?:export\s+)?const\b""")
+private val CSHARP_IMMUTABLE_DECLARATION = Regex("""(?:^|\s)(?:const|readonly)\b""")
+
+private val JS_DECLARATION_WRAPPERS =
+    setOf("lexical_declaration", "variable_declaration", "export_statement")
+
+private val CSHARP_DECLARATION_WRAPPERS =
+    setOf("variable_declaration", "local_declaration_statement", "field_declaration")
+
+private fun mutableLocalDeclarationNode(
+    declaration: DeclarationFact,
+    language: String,
+): SyntaxNode? {
+    if (declaration.kind != DeclarationKind.VARIABLE) return null
+    return when (language.lowercase()) {
+        "kotlin" -> {
+            if (KOTLIN_MUTABLE_LOCAL.containsMatchIn(declaration.node.text.trimStart())) declaration.node else null
+        }
+
+        "javascript", "typescript" -> {
+            val wrapper = declarationWrapper(declaration.node, JS_DECLARATION_WRAPPERS) ?: return null
+            val text = wrapper.text.trimStart()
+            when {
+                JS_IMMUTABLE_DECLARATION.containsMatchIn(text) -> null
+                JS_MUTABLE_DECLARATION.containsMatchIn(text) -> declaration.node
+                else -> null
+            }
+        }
+
+        "csharp" -> {
+            val wrapper = declarationWrapper(declaration.node, CSHARP_DECLARATION_WRAPPERS) ?: return null
+            if (CSHARP_IMMUTABLE_DECLARATION.containsMatchIn(wrapper.text)) null else declaration.node
+        }
+
+        else -> {
+            val text = declaration.node.text.trimStart()
+            if (text.startsWith("val ") || text.startsWith("const ") || text.startsWith("readonly ")) null else declaration.node
+        }
+    }
+}
+
+private fun declarationWrapper(
+    node: SyntaxNode,
+    wrappers: Set<String>,
+): SyntaxNode? {
+    var current: SyntaxNode? = node
+    while (current != null && current.kind !in wrappers) {
+        current = current.parent
+    }
+    var wrapper = current ?: return null
+    var parent = wrapper.parent
+    while (parent != null && parent.kind in wrappers) {
+        wrapper = parent
+        parent = wrapper.parent
+    }
+    return wrapper
+}
 
 private fun isLoopCounter(
     view: View,

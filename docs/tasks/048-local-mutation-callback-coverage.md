@@ -1,6 +1,6 @@
 ---
 name: local mutation and callback effect coverage
-status: todo
+status: done
 depends-on: [040, 046]
 reviewers: [correctness, detection-fidelity]
 ---

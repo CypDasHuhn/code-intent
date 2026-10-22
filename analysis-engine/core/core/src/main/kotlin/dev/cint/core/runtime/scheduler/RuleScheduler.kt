@@ -132,10 +132,16 @@ class RuleScheduler {
         owners: Map<Intent, Rule>,
     ): List<Relation> =
         rules.flatMap { reader ->
-            reader.reads.sorted().map { intent ->
-                val owner = owners[intent] ?: throw UnknownDependency(intent, reader)
-                Relation(reader, intent, owner)
-            }
+            val required =
+                reader.reads.sorted().map { intent ->
+                    val owner = owners[intent] ?: throw UnknownDependency(intent, reader)
+                    Relation(reader, intent, owner)
+                }
+            val optional =
+                reader.optionalReads.sorted().mapNotNull { intent ->
+                    owners[intent]?.let { Relation(reader, intent, it) }
+                }
+            required + optional
         }
 
     private fun strataOf(
