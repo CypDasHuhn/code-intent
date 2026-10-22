@@ -435,6 +435,37 @@ LSP queries are read-only (`textDocument/hover` for the receiver type). The
 engine does not share document sync, diagnostics, or capabilities with the
 editor.
 
+Receiver types are memoized per analysis, so rules asking about the same
+receiver/offset share one result. A session key includes the file path and
+content hash; reusing a session for new text resets its per-analysis cache,
+counters and budget. The oracle keeps a bounded per-document-version cache for
+positive and negative hover results. It invalidates a URI lazily when a later
+query sees changed text, sending `didClose` then `didOpen` with a bumped
+version; other URIs survive. Positive types are durable for a document version.
+Empty hovers use a bounded negative TTL (500 ms by default, configurable at the
+oracle seam): they are reused for immediate analyses and re-hovered after the
+TTL, so a cold or partially indexed server can recover without pinning a
+negative for the whole version. Timeouts and failures are not stored in the
+document cache; they are memoized only within one analysis by `OracleSession`, so
+duplicate hovers are still impossible in an analysis while a later analysis
+retries. A revalidated negative or retried failure is a hover call, not a cache
+hit. Each analysis also has an oracle budget/circuit breaker: after two
+timeouts, three failures, or 1500 ms of cumulative hover time, further queries
+return no type and detection degrades to text/config evidence. Split documents
+use one budget per analyzed region because each region has its own frontend and
+oracle; the bundled split languages currently use the null oracle, so this has
+no live hover cost today.
+
+Data-access lookup/search and enum queries gate the oracle behind callee,
+qualifier, known-map, enum-shape and AST receiver-shape evidence, so literals,
+binary expressions and lambdas do not hover while call/index/navigation
+receivers remain typeable. Service delegation applies the same receiver-shape
+gate before its type fallback. The live server reports per-analysis counters on
+stderr: `requests`, `queries` (actual hover/delegate calls), `cacheHits`,
+`sessionHits`, `delegateHits`, `timeouts`, `failures`, `blocked` and
+`elapsedMs`; prompts and keys are never logged. Null-oracle analyses emit no
+oracle diagnostic.
+
 ## Live server
 
 The server can run as a per-project daemon over a Unix socket:

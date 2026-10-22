@@ -1,6 +1,6 @@
 ---
 name: analysis oracle caching and budgeting
-status: todo
+status: done
 depends-on: [040]
 reviewers: [correctness, detection-fidelity]
 ---

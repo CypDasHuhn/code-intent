@@ -51,6 +51,13 @@ intent set and provenance; they are not pack-owned.
 - Weak heuristics (`receiver-name`, import-gated) consult the oracle when
   available; a resolved non-logger type vetoes them.
 - Live LSP hover timeout is capped; failures fall back to heuristics.
+- Receiver types are memoized per analysis, and the live oracle caches positive
+  hovers per document version. Empty hovers use a bounded negative TTL and are
+  revalidated after it instead of becoming durable negatives. Timeouts and
+  failures are memoized only within one analysis and retried by later analyses;
+  they are not durable cache hits. A per-analysis timeout, failure and
+  elapsed-time budget stops further oracle queries so repeated unresolved
+  receivers degrade to text/config evidence.
 - Trailing lambda arguments are included in the call span.
 
 ### `ERROR_HANDLING`

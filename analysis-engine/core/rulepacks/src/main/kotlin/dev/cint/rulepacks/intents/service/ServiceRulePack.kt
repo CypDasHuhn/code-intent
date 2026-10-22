@@ -16,6 +16,7 @@ import dev.cint.api.RuleEmit
 import dev.cint.api.ScopeKind
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
+import dev.cint.rulepacks.intents.isTypeQueryableReceiver
 
 const val SERVICE_DELEGATION_INTENT: Intent = "SERVICE_DELEGATION"
 const val SERVICE_INIT_INTENT: Intent = "SERVICE_INIT"
@@ -428,16 +429,18 @@ private fun initCallEvidence(
     if (call.receiver == null && typeMatches(callee, language.initTypes, emptySet())) {
         return Evidence(Emit.DEFAULT_SOURCE, 0.9)
     }
+    val connectionCall = callee in language.connectionCalls || pathMatches(path, language.connectionCalls)
+    val diCall = callee in language.diCalls || pathMatches(path, language.diCalls)
+    if (!connectionCall && !diCall) return null
     val receiverName =
         call.receiver
             ?.text
             ?.substringAfterLast('.')
             ?.trim('_')
     val receiverType =
-        call.receiver?.let { receiver ->
-            view.receiverType(call)?.fqName ?: view.typeAt(receiver)?.fqName
-        }
-    val connectionCall = callee in language.connectionCalls || pathMatches(path, language.connectionCalls)
+        call.receiver
+            ?.takeIf(::isTypeQueryableReceiver)
+            ?.let { view.receiverType(call)?.fqName }
     if (connectionCall) {
         return if (isConnectionReceiver(path, receiverName, receiverType, language)) {
             Evidence(Emit.DEFAULT_SOURCE, 0.85)
@@ -445,7 +448,6 @@ private fun initCallEvidence(
             Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
         }
     }
-    val diCall = callee in language.diCalls || pathMatches(path, language.diCalls)
     if (diCall) {
         return if (isDiReceiver(path, receiverName, receiverType, language)) {
             Evidence(Emit.DEFAULT_SOURCE, 0.85)
@@ -611,7 +613,8 @@ private fun delegationEvidence(
     if (language.serviceSuffixes.any { receiverName.endsWith(it, ignoreCase = true) }) {
         return Evidence(HEURISTIC_SOURCE, 0.75)
     }
-    val type = view.receiverType(call)?.fqName ?: view.typeAt(receiver)?.fqName ?: return null
+    if (!isTypeQueryableReceiver(receiver)) return null
+    val type = view.receiverType(call)?.fqName ?: return null
     if (!typeMatches(type, language.serviceTypes, language.serviceSuffixes)) return null
     return Evidence(Emit.DEFAULT_SOURCE, 0.8)
 }

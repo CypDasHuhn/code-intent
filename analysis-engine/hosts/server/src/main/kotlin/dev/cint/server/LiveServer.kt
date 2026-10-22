@@ -1086,19 +1086,34 @@ class LiveServer(
         source: SourceFile,
         config: IntentConfig,
     ): AnalysisOutput {
-        if (frontend is SplitHandler) {
-            return SplitAnalyzer.analyze(
-                source,
-                frontend,
-                root,
-                oracleOptions(),
-                packs::plan,
-                packs::userContributionsFor,
-            ) { language -> settings.intentConfig(language) }
-        }
-        val tree = frontend.parse(source)
-        val syntax = frontend.syntax(tree)
-        return packs.analyze(source, tree, syntax, oracleFor(frontend), config)
+        val output =
+            if (frontend is SplitHandler) {
+                SplitAnalyzer.analyze(
+                    source,
+                    frontend,
+                    root,
+                    oracleOptions(),
+                    packs::plan,
+                    packs::userContributionsFor,
+                ) { language -> settings.intentConfig(language) }
+            } else {
+                val tree = frontend.parse(source)
+                val syntax = frontend.syntax(tree)
+                packs.analyze(source, tree, syntax, oracleFor(frontend), config)
+            }
+        logOracleDiagnostics(output)
+        return output
+    }
+
+    private fun logOracleDiagnostics(output: AnalysisOutput) {
+        val stats = output.oracle
+        if (stats.queries == 0L && stats.cacheHits == 0L && stats.timeouts == 0L && stats.failures == 0L) return
+        System.err.println(
+            "cint oracle: requests=${stats.requests} queries=${stats.hoverCalls} " +
+                "cacheHits=${stats.cacheHits} sessionHits=${stats.sessionHits} delegateHits=${stats.delegateHits} " +
+                "timeouts=${stats.timeouts} failures=${stats.failures} blocked=${stats.blocked} " +
+                "elapsedMs=${stats.elapsedMs}",
+        )
     }
 
     private fun analyzeHeuristic(

@@ -130,6 +130,7 @@ class AnalysisContext(
     private var exactIndex: Map<Long, List<Annotation>>? = null
     private var intervalIndex: IntervalIndex? = null
     private var indexRevision = -1L
+    private val receiverTypes = HashMap<Int, TypeRef?>()
 
     override val calls: List<CallFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.calls(tree).toList() }
     override val properties: List<PropertyFact> by lazy(LazyThreadSafetyMode.NONE) { syntax.properties(tree).toList() }
@@ -166,12 +167,17 @@ class AnalysisContext(
             .toList()
     }
 
-    override fun receiverType(call: CallFact): TypeRef? =
-        call.receiver?.let { receiver ->
+    override fun receiverType(call: CallFact): TypeRef? {
+        val receiver = call.receiver ?: return null
+        val offset = syntax.receiverOffset(receiver)
+        if (receiverTypes.containsKey(offset)) return receiverTypes[offset]
+        val type =
             oracle
-                .typeAt(file, syntax.receiverOffset(receiver))
+                .typeAt(file, offset)
                 ?.let { TypeRef(it.fqName, it.source, it.confidence) }
-        }
+        receiverTypes[offset] = type
+        return type
+    }
 
     override fun commentBefore(node: SyntaxNode): CommentFact? = syntax.commentBefore(node)
 

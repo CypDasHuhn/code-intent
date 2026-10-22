@@ -1,6 +1,8 @@
 package dev.cint.lsp
 
 import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.OracleMetrics
+import dev.cint.core.facts.oracle.OracleStats
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.core.facts.oracle.TypeOracle
 import org.eclipse.lsp4j.*
@@ -13,6 +15,8 @@ import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicLong
 
 data class LspServerSpec(
     val languageId: String,
@@ -49,30 +53,83 @@ val KotlinLspSpec =
         hoverFence = "```kotlin",
     )
 
-class LspOracle private constructor(
+class LspOracle internal constructor(
     private val root: Path,
     private val spec: LspServerSpec,
-    private val socket: Socket,
-    private val executor: java.util.concurrent.ExecutorService,
+    private val socket: Socket?,
+    private val executor: java.util.concurrent.ExecutorService?,
     private val server: LanguageServer,
     private val typeTimeoutMs: Long,
+    private val negativeTtlMs: Long = NEGATIVE_TTL_MS,
+    private val nanoTime: () -> Long = System::nanoTime,
 ) : TypeOracle,
+    OracleMetrics,
     AutoCloseable {
-    private val opened = mutableMapOf<String, String>()
+    init {
+        require(negativeTtlMs > 0) { "negativeTtlMs must be positive" }
+    }
 
+    private val opened = mutableMapOf<String, String>()
+    private val versions = mutableMapOf<String, Long>()
+    private val cache = DocumentTypeCache(CACHE_ENTRIES)
+    private val negativeTtlNanos = TimeUnit.MILLISECONDS.toNanos(negativeTtlMs)
+    private val hoverCalls = AtomicLong()
+    private val cacheHits = AtomicLong()
+    private val timeouts = AtomicLong()
+    private val failures = AtomicLong()
+
+    @Synchronized
     override fun typeAt(
         file: SourceFile,
         byteOffset: Int,
     ): TypeFact? {
         val uri = uriFor(file)
-        open(uri, file.text)
+        val version = open(uri, file.text)
+        val key = DocumentTypeKey(uri, version, byteOffset)
+        val cached = cache.lookup(key)
+        if (cached.present) {
+            val entry = cached.entry
+            if (entry != null) {
+                val fresh = entry.fact != null || nanoTime() - entry.cachedAtNanos <= negativeTtlNanos
+                if (fresh) {
+                    cacheHits.incrementAndGet()
+                    return entry.fact
+                }
+                cache.remove(key)
+            }
+        }
         val position = positionAt(file.text, byteOffset)
-        val hover =
-            server.textDocumentService
-                .hover(HoverParams(TextDocumentIdentifier(uri), position))
-                .get(typeTimeoutMs, TimeUnit.MILLISECONDS)
-        val type = hoverText(hover)?.let { extractType(it, spec) } ?: return null
-        return TypeFact(type, "lsp", 0.95)
+        hoverCalls.incrementAndGet()
+        return try {
+            val hover =
+                server.textDocumentService
+                    .hover(HoverParams(TextDocumentIdentifier(uri), position))
+                    .get(typeTimeoutMs, TimeUnit.MILLISECONDS)
+            val type = hoverText(hover)?.let { extractType(it, spec) }?.let { TypeFact(it, "lsp", 0.95) }
+            cache.put(key, DocumentTypeEntry(type, nanoTime()))
+            type
+        } catch (error: Exception) {
+            failures.incrementAndGet()
+            if (isTimeout(error)) timeouts.incrementAndGet()
+            throw error
+        }
+    }
+
+    override fun oracleStats(): OracleStats =
+        OracleStats(
+            hoverCalls = hoverCalls.get(),
+            delegateHits = cacheHits.get(),
+            timeouts = timeouts.get(),
+            failures = failures.get(),
+        )
+
+    private fun isTimeout(error: Throwable): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (current is TimeoutException) return true
+            current = current.cause
+        }
+        return false
     }
 
     private fun uriFor(file: SourceFile): String {
@@ -80,24 +137,30 @@ class LspOracle private constructor(
         return (if (path.isAbsolute) path else root.resolve(path)).toUri().toString()
     }
 
+    @Synchronized
     private fun open(
         uri: String,
         text: String,
-    ) {
-        if (opened[uri] == text) return
+    ): Long {
+        if (opened[uri] == text) return versions.getValue(uri)
         if (opened.containsKey(uri)) {
             server.textDocumentService.didClose(
                 org.eclipse.lsp4j.DidCloseTextDocumentParams(TextDocumentIdentifier(uri)),
             )
         }
+        val version = (versions[uri] ?: 0L) + 1L
+        versions[uri] = version
+        cache.invalidate(uri)
         server.textDocumentService.didOpen(
             org.eclipse.lsp4j.DidOpenTextDocumentParams(
-                TextDocumentItem(uri, spec.languageId, 1, text),
+                TextDocumentItem(uri, spec.languageId, version.toInt(), text),
             ),
         )
         opened[uri] = text
+        return version
     }
 
+    @Synchronized
     override fun close() {
         for (uri in opened.keys) {
             runCatching {
@@ -107,11 +170,15 @@ class LspOracle private constructor(
             }
         }
         opened.clear()
-        socket.close()
-        executor.shutdownNow()
+        versions.clear()
+        socket?.close()
+        executor?.shutdownNow()
     }
 
     companion object {
+        private const val CACHE_ENTRIES = 1_024
+        private const val NEGATIVE_TTL_MS = 500L
+
         fun connect(
             root: Path,
             spec: LspServerSpec,
