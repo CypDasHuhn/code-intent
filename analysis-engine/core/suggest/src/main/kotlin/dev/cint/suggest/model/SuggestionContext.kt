@@ -1,4 +1,4 @@
-package dev.cint.suggest
+package dev.cint.suggest.model
 
 import dev.cint.api.CandidateEmit
 import dev.cint.api.Span
@@ -14,14 +14,6 @@ data class CandidateContext(
     val language: String? = null,
     val sourceExcerpt: SourceExcerpt? = null,
 )
-
-interface IntentSuggestionProvider {
-    val id: String
-    val model: String
-    val defaultPromptVersion: String get() = FAKE_PROMPT_VERSION
-
-    fun suggest(context: CandidateContext): List<CandidateEmit>
-}
 
 data class SourceExcerpt(
     val text: String,

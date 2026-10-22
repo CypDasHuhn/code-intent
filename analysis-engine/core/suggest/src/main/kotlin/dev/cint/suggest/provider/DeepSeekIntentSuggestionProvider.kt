@@ -1,14 +1,12 @@
-package dev.cint.suggest
+package dev.cint.suggest.provider
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.CandidateEmit
-import java.net.URI
+import dev.cint.suggest.CandidateValidator
+import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.transport.DeepSeekChatTransport
 import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.nio.charset.StandardCharsets
-import java.time.Duration
 
 const val DEEPSEEK_PROVIDER_ID: String = "deepseek"
 const val DEEPSEEK_MODEL_ID: String = "deepseek-chat"
@@ -44,32 +42,12 @@ class DeepSeekIntentSuggestionProvider(
         val key = apiKey(config.apiKeyEnv)?.takeIf { it.isNotBlank() } ?: return emptyList()
         val promptVersion = context.promptVersion ?: defaultPromptVersion
         val payload = requestPayload(context, promptVersion)
-        val request =
-            runCatching {
-                HttpRequest
-                    .newBuilder()
-                    .uri(URI.create(config.baseUrl))
-                    .timeout(Duration.ofMillis(config.timeoutMs.coerceAtLeast(1L)))
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .header("Authorization", "Bearer $key")
-                    .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(payload), StandardCharsets.UTF_8))
-                    .build()
-            }.getOrNull() ?: return emptyList()
-        val response =
-            try {
-                client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-            } catch (_: InterruptedException) {
-                Thread.currentThread().interrupt()
-                return emptyList()
-            } catch (_: Exception) {
-                return emptyList()
-            }
-        if (response.statusCode() !in 200..299) return emptyList()
+        val transport = DeepSeekChatTransport(config.baseUrl, config.timeoutMs, key, client, mapper)
+        val body = transport.post(payload) ?: return emptyList()
         val content =
             runCatching {
                 mapper
-                    .readTree(response.body())
+                    .readTree(body)
                     .path("choices")
                     .path(0)
                     .path("message")

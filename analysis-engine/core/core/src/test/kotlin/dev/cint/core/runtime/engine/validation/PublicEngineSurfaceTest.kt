@@ -1,6 +1,7 @@
-package dev.cint.core.runtime.engine
+package dev.cint.core.runtime.engine.validation
 
 import dev.cint.core.runtime.context.RuleContext
+import dev.cint.core.runtime.engine.AnalysisContext
 import java.lang.reflect.Method
 import kotlin.test.Test
 import kotlin.test.assertTrue
