@@ -25,6 +25,10 @@ test-lsp:
 test-nvim:
     ./{{renderer}}/tests/run.sh
 
+# Run the cross-writer test on its own; test-engine and CI already run it.
+test-cross-writer:
+    cd {{engine}} && ./gradlew :core:test --tests 'dev.cint.core.user.CrossWriterAnnotationLockTest'
+
 # Run engine and renderer tests.
 test: test-engine test-nvim
 
