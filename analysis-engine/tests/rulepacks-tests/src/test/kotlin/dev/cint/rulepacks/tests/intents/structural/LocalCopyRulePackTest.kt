@@ -237,7 +237,7 @@ class LocalCopyRulePackTest {
         assertEquals(setOf("_db = db"), analysis.texts(LOCAL_COPY_INTENT).toSet())
         assertTrue(analysis.source(LOCAL_VALUE_MODIFY_INTENT).isEmpty())
         assertEquals(setOf("repository.findAll()"), analysis.texts(SEARCH_INTENT).toSet())
-        assertEquals(setOf("repository.findAll()"), analysis.texts(RETURN_VALUE_INTENT).toSet())
+        assertEquals(setOf("return repository.findAll()"), analysis.texts(RETURN_VALUE_INTENT).toSet())
         assertTrue(analysis.source(DATA_MODIFY_INTENT).isEmpty())
     }
 

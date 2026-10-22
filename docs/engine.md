@@ -85,8 +85,10 @@ Every annotation has:
 - `role`: `SOURCE_INTENT`, `DERIVATIVE_USE`, or `SCAFFOLD`
 - `intents`: a set such as `{LOGGING}` or `{LOGGING, ERROR_HANDLING}`
 
-`UNTAGGED` is a reserved intent label for unclassified effects. Clients decide
-how `UNTAGGED` should influence a scaffold or derivative.
+`UNTAGGED` is a reserved intent label for unclassified effects. Clients ignore
+it when resolving a scaffold's visual meaning/tag and when deciding whether a
+scaffold is mixed-intent; a scaffold carrying one real intent plus `UNTAGGED`
+renders as that intent instead of suppressing color/highlight.
 
 Detection rulepacks and core composition:
 
@@ -119,10 +121,12 @@ is present. Unbraced bodies are
   configured qualifier or oracle-resolved type. Ambiguous display formatting,
   unprefixed unconfigured helpers, and chain tails after an established transform
   are candidates.
-- `data-access:search` — configured repository/query calls and prefixes on a
-  configured search qualifier/type; ambiguous `get`/`find`/`fetch*` wrappers and
-  bare configured calls stay candidates. `findBy*` also gets a `LOOKUP` boundary
-  candidate.
+- `data-access:search` — configured repository/query calls and prefixes
+  (`findBy`, `getBy`, `loadBy`, `search`, `query`) on a configured search
+  qualifier/type; ambiguous `get`/`find`/`fetch*` wrappers and bare configured
+  calls stay candidates. Repository criteria calls such as `findById`,
+  `getById`, and `loadById` remain `SEARCH`; the default `boundaryPrefixes` set is empty, so no
+  `LOOKUP` alternative is emitted unless the project configures one.
 - `data-access:lookup` — known-map/table index reads, configured lookup calls on
   known receivers/types, and enum/constant resolution (`valueOf`, `fromCode`,
   ...). Write targets and unknown indexes are not lookup; ambiguous calls are
@@ -199,12 +203,15 @@ is present. Unbraced bodies are
   receivers, and offline-oracle receivers stay candidates. In-place JS mutators
   may overlap `LOCAL_VALUE_MODIFY`.
 - `return-value:return-value` — explicit value returns from CFG return sites.
-  Emission lands on the returned expression, so it is additive with `SEARCH`,
-  `VALIDATION`, `DATA_MODIFY`, `CHAINING`, and other intents at the same span.
-  Bare `return` and bare `return@label` do not qualify; a labeled return with a
-  value emits that value. Constant/literal-only expressions are excluded unless
-  `includeLiterals` (alias `allowLiterals`) is enabled. The rule reads no other
-  intent.
+  Emission lands on the whole return statement from the `return` keyword
+  through the expression, so it is additive with `SEARCH`, `VALIDATION`,
+  `DATA_MODIFY`, `CHAINING`, and other intents on the expression. Bare `return`
+  and bare `return@label` do not qualify; a labeled return with a value emits
+  the labeled return statement. Constant/literal-only expressions are excluded
+  unless `includeLiterals` (alias `allowLiterals`) is enabled. The rule reads no
+  other intent. `RETURN_VALUE` is not a scaffold category: core subtracts it
+  when resolving return/branch/function scaffolds so the returned domain intent
+  (`ERROR_HANDLING`, `SEARCH`, ...) is preserved.
 - `chaining:chaining` — fluent call shape with at least `minimumLinks` (default
   2, alias `minLinks`). The walker keeps a call only when it covers the
   receiver's exact node/site span, so array/index/binary bases contribute only
@@ -235,7 +242,11 @@ is present. Unbraced bodies are
   annotations, not validation-specific config.
 - `core:derivative-use` — a local whose initializer is read-only (no known
   writes or `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`/`BOOKKEEPING` mutation) and whose
-  reads flow into classified statements. Known read-only initializers derive at
+  reads flow into classified statements. Every read normally must be classified;
+  when any read carries `RETURN_VALUE`, the local and its writes receive
+  `RETURN_VALUE` even if sibling reads (for example `result.errors` before a
+  throw) are unclassified. Other intents still require every read to be
+  classified. Known read-only initializers derive at
   `0.7`; unknown read-only initializers derive at `0.55`. External reads are
   allowed, while known writes/mutations block promotion. A read-only property
   initializer or assignment RHS propagates its source intents to the whole
@@ -295,8 +306,10 @@ the remote transport. The only remote provider in this slice is DeepSeek
 provider SDK and no retries. AI proposals carry `source = ai:deepseek`,
 `provider`/`model`/`promptVersion`/`rationale`, and the input candidate's reason.
 Their confidence is diagnostic: `maxConfidence` defaults to `0.84` and can only
-lower that ceiling. Candidate-only is structural, not a confidence threshold:
-the output is a `CandidateEmit` and never enters the annotation store.
+lower that ceiling. Completion uses a nonzero temperature (`0.3`) and a prompt
+that asks for several plausible alternatives, including lower-confidence
+guesses. Candidate-only is structural, not a confidence threshold: the output is
+a `CandidateEmit` and never enters the annotation store.
 
 ### Renderer review UI
 
@@ -320,7 +333,9 @@ The engine deliberately emits only `role` and `intents`; it has no meaning
 labels or resolution table. Clients (for example the nvim renderer) map intents
 to labels and merge sets, so presentation can change without re-running analysis.
 A client might map `LOGGING -> CONCEAL`, `ERROR_HANDLING -> SHOW`, and let `SHOW`
-win for mixed scaffolds.
+win for mixed scaffolds. The nvim renderer filters `UNTAGGED` from meaning/tag
+resolution and from the mixed-intent decision, so `{ERROR_HANDLING, UNTAGGED}`
+renders as `ERROR_HANDLING`.
 
 ## Config
 
@@ -419,12 +434,12 @@ Suggestion settings are discovered at `<root>/.cint/suggestions.yml` under a
 top-level `suggestions:` mapping. Implemented keys are `enabled` (default
 `false`), `trigger` (default `manual`), `provider` (default `deepseek` when
 enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
-for the DeepSeek provider), `maxCandidates` (default `5`, minimum `1`), `maxEnrichmentCandidates`
-(default `5`, minimum `0`),
-`promptVersion` (default `deepseek-intent-v1` for DeepSeek), `timeoutMs`
+for the DeepSeek provider), `maxCandidates` (default `10`, minimum `1`), `maxEnrichmentCandidates`
+(default `12`, minimum `0`),
+`promptVersion` (default `deepseek-intent-v2` for DeepSeek), `timeoutMs`
 (default `10000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
 `apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
-`https://api.deepseek.com/chat/completions`), `maxTokens` (default `512`),
+`https://api.deepseek.com/chat/completions`), `maxTokens` (default `1024`),
 `maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
 (default `400`, minimum `0`), `allowGlobs` (default empty, which allows every
 path), and `redactPatterns` (default empty). This gate controls the

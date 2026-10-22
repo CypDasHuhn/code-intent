@@ -1,6 +1,6 @@
 ---
 name: detection and AI sensitivity bundle
-status: in-progress
+status: done
 depends-on: [042, 048, 055]
 reviewers: [correctness, detection-fidelity]
 ---

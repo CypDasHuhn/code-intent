@@ -78,7 +78,7 @@ class LiveSuggestionDeepSeekTest {
                 }
             assertEquals("deepseek", enriched["provider"].asText())
             assertEquals("deepseek-chat", enriched["model"].asText())
-            assertEquals("deepseek-intent-v1", enriched["promptVersion"].asText())
+            assertEquals("deepseek-intent-v2", enriched["promptVersion"].asText())
             assertEquals(0.84, enriched["confidence"].asDouble())
             assertFalse(enriched["aiEligible"].asBoolean())
             assertEquals("deepseek says logging", enriched["rationale"].asText())

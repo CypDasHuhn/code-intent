@@ -20,6 +20,7 @@ internal class DataAccessSearchMatcher(
         val result = mutableListOf<RuleEmit>()
         for (call in view.calls()) {
             val callee = call.callee ?: continue
+            if (isLookupOnly(callee)) continue
             when {
                 isEstablishedSearch(view, call, callee) -> result += call.emit(SEARCH_INTENT)
                 isAmbiguous(callee, language) -> result += candidate(SEARCH_INTENT, call, ruleId)
@@ -40,9 +41,10 @@ internal class DataAccessSearchMatcher(
         call: CallFact,
         callee: String,
     ): Boolean {
+        if (isLookupOnly(callee)) return false
         if (isAmbiguous(callee, language)) return false
         val configured =
-            language.searchPrefixes.any { callee.startsWith(it, ignoreCase = true) } ||
+            matchesConfiguredPrefix(callee, language.searchPrefixes) ||
                 containsName(language.searchCalls, callee)
         if (!configured) return false
         val receiver = call.receiver ?: return false
@@ -51,6 +53,12 @@ internal class DataAccessSearchMatcher(
     }
 
     private fun isConfiguredSearchCall(callee: String): Boolean =
-        containsName(language.searchCalls, callee) ||
-            language.searchPrefixes.any { callee.startsWith(it, ignoreCase = true) }
+        !isLookupOnly(callee) &&
+            (
+                containsName(language.searchCalls, callee) ||
+                    matchesConfiguredPrefix(callee, language.searchPrefixes)
+            )
+
+    private fun isLookupOnly(callee: String): Boolean =
+        containsName(language.lookupCalls, callee) && !containsName(language.searchCalls, callee)
 }

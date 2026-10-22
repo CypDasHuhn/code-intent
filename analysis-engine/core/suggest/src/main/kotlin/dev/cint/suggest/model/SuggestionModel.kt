@@ -15,8 +15,8 @@ data class CandidateDocument(
 data class SuggestionOptions(
     val providerId: String? = null,
     val model: String? = null,
-    val maxCandidates: Int = 5,
-    val maxEnrichmentCandidates: Int = 5,
+    val maxCandidates: Int = 10,
+    val maxEnrichmentCandidates: Int = 12,
     val promptVersion: String? = null,
     val excerptRadiusBytes: Int = SourceExcerpt.DEFAULT_RADIUS_BYTES,
     val allowGlobs: List<String> = emptyList(),

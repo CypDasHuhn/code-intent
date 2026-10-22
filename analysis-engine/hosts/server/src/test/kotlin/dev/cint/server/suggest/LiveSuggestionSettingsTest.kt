@@ -73,6 +73,9 @@ class LiveSuggestionSettingsTest {
             assertEquals("deepseek", settings.provider)
             assertEquals("deepseek", settings.effectiveProvider)
             assertEquals("deepseek-chat", settings.effectiveModel)
+            assertEquals(10, settings.maxCandidates)
+            assertEquals(12, settings.maxEnrichmentCandidates)
+            assertEquals(1024, settings.maxTokens)
         } finally {
             root.toFile().deleteRecursively()
         }

@@ -12,6 +12,7 @@ import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
+import dev.cint.rulepacks.tests.intents.dataaccess.support.candidateTexts
 import dev.cint.rulepacks.tests.intents.dataaccess.support.dataAccess
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
@@ -35,7 +36,7 @@ private val LOCAL_ATOMIC_DEFAULTS = setOf("getAndUpdate", "getAndIncrement", "ge
 
 class DataAccessOverlapTest {
     @Test
-    fun findByIdIsExplicitSearchWithLookupBoundaryCandidate() {
+    fun findByIdRemainsSearchWithoutDefaultLookupBoundary() {
         val text =
             """
             fun f(repo: UserRepository, id: String) {
@@ -46,7 +47,83 @@ class DataAccessOverlapTest {
         val analysis = dataAccess("kotlin", text)
 
         assertTrue(analysis.texts(SEARCH_INTENT).any { it.startsWith("repo.findById") })
-        val lookupCandidate = analysis.candidates(LOOKUP_INTENT).first { it.startByte == analysis.source(SEARCH_INTENT).first().startByte }
+        analysis.assertNoSource(LOOKUP_INTENT)
+        assertTrue(analysis.candidates(LOOKUP_INTENT).isEmpty())
+    }
+
+    @Test
+    fun getByAndLoadByRepositoryCriteriaRemainSearchWithoutLookupAlternative() {
+        for (callee in listOf("getById", "loadById")) {
+            val text =
+                """
+                fun f(repo: UserRepository, id: String) {
+                    repo.$callee(id)
+                }
+                """.trimIndent()
+
+            val analysis = dataAccess("kotlin", text)
+
+            assertTrue(analysis.texts(SEARCH_INTENT).any { it.startsWith("repo.$callee") }, callee)
+            analysis.assertNoSource(LOOKUP_INTENT)
+            assertTrue(analysis.candidates(LOOKUP_INTENT).isEmpty(), callee)
+        }
+    }
+
+    @Test
+    fun searchPrefixDoesNotMatchLowercaseContinuation() {
+        val text =
+            """
+            fun f(service: ByteService, client: ByteClient) {
+                service.getBytes()
+                client.loadBytes()
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text)
+
+        analysis.assertNoSource(SEARCH_INTENT)
+        assertEquals(
+            setOf("service.getBytes()", "client.loadBytes()"),
+            analysis.candidateTexts(SEARCH_INTENT).toSet(),
+        )
+    }
+
+    @Test
+    fun explicitLookupCallTakesPrecedenceOverSearchPrefix() {
+        val text =
+            """
+            fun f(config: Config, key: String) {
+                val value = config.getByKey(key)
+            }
+            """.trimIndent()
+
+        val analysis = dataAccess("kotlin", text)
+
+        assertTrue(analysis.texts(LOOKUP_INTENT).any { it.startsWith("config.getByKey") })
+        assertTrue(analysis.candidates(SEARCH_INTENT).isEmpty())
+        assertTrue(analysis.candidates(LOOKUP_INTENT).isEmpty())
+    }
+
+    @Test
+    fun configuredBoundaryPrefixStillEmitsLookupCandidate() {
+        val text =
+            """
+            fun f(repo: UserRepository, id: String) {
+                repo.findById(id)
+            }
+            """.trimIndent()
+        val pack =
+            DataAccessRulePack().configure(
+                mapOf("kotlin" to mapOf("boundaryPrefixes" to listOf("findBy"))),
+            )
+
+        val analysis = dataAccess("kotlin", text, pack)
+
+        assertTrue(analysis.texts(SEARCH_INTENT).any { it.startsWith("repo.findById") })
+        val lookupCandidate =
+            analysis.candidates(LOOKUP_INTENT).first {
+                it.startByte == analysis.source(SEARCH_INTENT).first().startByte
+            }
         assertEquals(CandidateReason.PACK_DOMAIN, lookupCandidate.reason)
         assertTrue(lookupCandidate.aiEligible)
         assertEquals("rule:data-access:lookup", lookupCandidate.source)

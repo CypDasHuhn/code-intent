@@ -28,6 +28,8 @@ class DataAccessConfigTest {
         val kotlin = config.forLanguage("kotlin")
         assertTrue("findAll" in kotlin.searchCalls)
         assertTrue("findBy" in kotlin.searchPrefixes)
+        assertTrue("getBy" in kotlin.searchPrefixes)
+        assertTrue("loadBy" in kotlin.searchPrefixes)
         assertTrue("repository" in kotlin.searchQualifiers)
         assertTrue("getValue" in kotlin.lookupCalls)
         assertTrue("valueOf" in kotlin.enumCalls)
@@ -52,6 +54,7 @@ class DataAccessConfigTest {
             kotlin.compoundMutationCalls,
         )
         assertTrue("getPersist" !in kotlin.compoundMutationCalls)
+        assertTrue(kotlin.boundaryPrefixes.isEmpty())
         assertEquals(setOf("indexing_expression", "indexing_suffix"), kotlin.indexKinds)
         assertEquals(setOf("element_access_expression"), config.forLanguage("csharp").indexKinds)
     }

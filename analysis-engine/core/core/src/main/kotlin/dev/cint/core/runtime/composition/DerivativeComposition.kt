@@ -10,6 +10,7 @@ import dev.cint.api.WriteKind
 import dev.cint.core.runtime.context.RuleContext
 
 private val MUTATION_INTENTS = setOf("DATA_MODIFY", "LOCAL_VALUE_MODIFY", "BOOKKEEPING")
+private const val RETURN_VALUE_INTENT = "RETURN_VALUE"
 private val EFFECT_INTENTS = MUTATION_INTENTS + setOf("LOGGING", "ERROR_HANDLING")
 private val ASSIGNMENT_OPERATORS = setOf("=", "+=", "-=", "*=", "/=", "%=", "?:=", "||=", "&&=")
 private val COMMENT_KINDS = setOf("comment", "line_comment", "multiline_comment")
@@ -50,11 +51,17 @@ internal fun derivativeContributions(
             useIntents.all { intents ->
                 UNTAGGED_INTENT !in intents && intents.any { it != UNTAGGED_INTENT }
             }
-        if (!allClassified) continue
+        val carriesReturnValue = useIntents.any { RETURN_VALUE_INTENT in it }
+        if (!allClassified && !carriesReturnValue) continue
 
         val confidence = readOnlyConfidence(ctx, initializer, pureAnnotations) ?: continue
-        val intents = useIntents.flatten().toSet()
-        if (intents.none { it != UNTAGGED_INTENT }) continue
+        val intents =
+            if (allClassified) {
+                useIntents.flatten().filter { it != UNTAGGED_INTENT }.toSet()
+            } else {
+                setOf(RETURN_VALUE_INTENT)
+            }
+        if (intents.isEmpty()) continue
 
         result +=
             node.raw(

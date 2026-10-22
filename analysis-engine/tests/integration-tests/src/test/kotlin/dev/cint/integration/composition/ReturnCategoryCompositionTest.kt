@@ -10,6 +10,8 @@ import dev.cint.integration.composition.support.ReplayPack
 import dev.cint.integration.composition.support.ReplayRule
 import dev.cint.integration.composition.support.analyzePipeline
 import dev.cint.integration.composition.support.emitFor
+import dev.cint.rulepacks.errorhandling.ErrorHandlingRulePack
+import dev.cint.rulepacks.intents.structural.returnvalue.ReturnValueRulePack
 import dev.cint.test.fixtures.text
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
@@ -152,5 +154,55 @@ class ReturnCategoryCompositionTest {
         val expression = functions.first { it.text(text).contains("fun expression") }
         assertEquals(setOf("ERROR_HANDLING"), bare.intents)
         assertEquals(setOf("ERROR_HANDLING"), expression.intents)
+    }
+
+    @Test
+    fun returnValueDoesNotSuppressReturnedErrorHandlingFunctionScaffold() {
+        val text =
+            """
+            fun expression(value: String?) {
+                return requireNotNull(value)
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(
+                text,
+                listOf(ReturnValueRulePack(), ErrorHandlingRulePack()),
+            )
+
+        val function =
+            annotations.first {
+                it.rule == CoreContributors.SCAFFOLD && it.text(text).contains("fun expression")
+            }
+        assertEquals(setOf("ERROR_HANDLING"), function.intents)
+        assertTrue(
+            annotations.any {
+                "RETURN_VALUE" in it.intents && it.text(text) == "return requireNotNull(value)"
+            },
+        )
+    }
+
+    @Test
+    fun returnValueDoesNotSuppressReturnedErrorHandlingBranchScaffold() {
+        val text =
+            """
+            fun conditional(value: String?) {
+                if (value != null) {
+                    return requireNotNull(value)
+                }
+            }
+            """.trimIndent()
+        val annotations =
+            analyzePipeline(
+                text,
+                listOf(ReturnValueRulePack(), ErrorHandlingRulePack()),
+            )
+
+        val branch =
+            annotations.first {
+                it.rule == CoreContributors.SCAFFOLD &&
+                    it.text(text).trim().startsWith("if (value != null)")
+            }
+        assertEquals(setOf("ERROR_HANDLING"), branch.intents)
     }
 }

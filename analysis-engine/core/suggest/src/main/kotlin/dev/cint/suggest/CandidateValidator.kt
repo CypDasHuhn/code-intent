@@ -8,7 +8,7 @@ object CandidateValidator {
         candidates: List<CandidateEmit>,
         documentLength: Int,
         knownIntents: Set<String>,
-        maxCandidates: Int = 5,
+        maxCandidates: Int = 10,
     ): List<CandidateEmit> {
         if (maxCandidates <= 0) return emptyList()
         return candidates
@@ -28,7 +28,7 @@ object CandidateValidator {
     fun valid(
         candidate: CandidateEmit,
         knownIntents: Set<String>,
-        maxCandidates: Int = 5,
+        maxCandidates: Int = 10,
     ): Boolean =
         maxCandidates > 0 &&
             validate(

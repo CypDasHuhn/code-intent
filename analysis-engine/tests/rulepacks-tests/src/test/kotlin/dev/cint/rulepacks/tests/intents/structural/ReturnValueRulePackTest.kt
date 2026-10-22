@@ -48,7 +48,7 @@ class ReturnValueRulePackTest {
 
         val analysis = analyze("kotlin", text)
 
-        assertEquals(listOf("id.trim()"), analysis.texts(RETURN_VALUE_INTENT))
+        assertEquals(listOf("return id.trim()"), analysis.texts(RETURN_VALUE_INTENT))
         assertEquals(RETURN_VALUE_RULE_ID, analysis.source(RETURN_VALUE_INTENT).single().rule)
     }
 
@@ -60,7 +60,7 @@ class ReturnValueRulePackTest {
         val configured = ReturnValueRulePack().configure(mapOf("kotlin" to mapOf("includeLiterals" to true)))
         val analysis = analyze("kotlin", text, listOf(configured))
 
-        assertEquals(listOf("\"missing\""), analysis.texts(RETURN_VALUE_INTENT))
+        assertEquals(listOf("return \"missing\""), analysis.texts(RETURN_VALUE_INTENT))
     }
 
     @Test
@@ -112,11 +112,12 @@ class ReturnValueRulePackTest {
                     ReturnValueRulePack(),
                 ),
             )
-        val returned = analysis.source(RETURN_VALUE_INTENT).first { it.text(text) == "repository.findAll()" }
+        val returned = analysis.source(RETURN_VALUE_INTENT).single()
         val searched = analysis.source(SEARCH_INTENT).single { it.text(text) == "repository.findAll()" }
 
-        assertEquals(returned.startByte, searched.startByte)
-        assertEquals(returned.endByte, searched.endByte)
+        assertEquals("return repository.findAll()", returned.text(text))
+        assertEquals(text.indexOf("return repository.findAll()"), returned.startByte)
+        assertEquals(searched.endByte, returned.endByte)
         assertEquals(setOf("repository.findAll()"), analysis.texts(SEARCH_INTENT).toSet())
         assertTrue(analysis.texts(VALIDATION_INTENT).any { "name.isEmpty()" in it })
     }

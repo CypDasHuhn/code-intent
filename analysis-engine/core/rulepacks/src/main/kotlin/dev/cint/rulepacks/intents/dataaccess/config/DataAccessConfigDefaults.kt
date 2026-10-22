@@ -30,7 +30,7 @@ private val SEARCH_CALLS =
         "findAsync",
         "scan",
     )
-private val SEARCH_PREFIXES = setOf("findBy", "search", "query", "findAllBy")
+private val SEARCH_PREFIXES = setOf("findBy", "getBy", "loadBy", "search", "query", "findAllBy")
 private val SEARCH_QUALIFIERS =
     setOf(
         "repository",
@@ -149,7 +149,6 @@ private val COMPOUND_MUTATION_CALLS =
         "getAndIncrement",
         "getAndDecrement",
     )
-private val BOUNDARY_PREFIXES = setOf("findBy", "getBy", "loadBy")
 
 private fun common(indexKinds: Set<String>): DataAccessLanguageConfig =
     DataAccessLanguageConfig(
@@ -169,7 +168,7 @@ private fun common(indexKinds: Set<String>): DataAccessLanguageConfig =
         ambiguousCalls = AMBIGUOUS_CALLS,
         ambiguousPrefixes = AMBIGUOUS_PREFIXES,
         compoundMutationCalls = COMPOUND_MUTATION_CALLS,
-        boundaryPrefixes = BOUNDARY_PREFIXES,
+        boundaryPrefixes = emptySet(),
         indexKinds = indexKinds,
     )
 

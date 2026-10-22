@@ -422,11 +422,12 @@ Authoritative for resuming. Older sections are historical where they conflict.
   annotations, contributions, evidence, confidence, or magic comments.
 - Suggestion config: `<root>/.cint/suggestions.yml` under `suggestions:` with
   `enabled` (default false), `trigger`, `provider` (default `deepseek` when
-  enabled and unset), `model` (default `deepseek-chat`), `maxCandidates`,
-  `promptVersion` (default `deepseek-intent-v1`), `timeoutMs` (default 4000,
+  enabled and unset), `model` (default `deepseek-chat`), `maxCandidates`
+  (default 10), `maxEnrichmentCandidates` (default 12),
+  `promptVersion` (default `deepseek-intent-v2`), `timeoutMs` (default 10000,
   min 1), `workerThreads` (default 2, clamped 1..8), `apiKeyEnv` (default
   `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
-  `https://api.deepseek.com/chat/completions`), `maxTokens` (default 512),
+  `https://api.deepseek.com/chat/completions`), `maxTokens` (default 1024),
   `maxConfidence` (default 0.84, clamped to at most 0.84),
   `excerptRadiusBytes` (default 400, min 0), `allowGlobs` (default empty, which
   allows every path), and `redactPatterns` (default empty). It gates

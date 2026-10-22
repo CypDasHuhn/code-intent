@@ -36,14 +36,19 @@ private class ReturnValueRule(
     private val config: ReturnValueLanguageConfig,
 ) : Matcher {
     override fun match(view: View): List<RuleEmit> {
-        val selected = linkedMapOf<Pair<Int, Int>, SyntaxNode>()
+        val selected = linkedMapOf<Pair<Int, Int>, Pair<SyntaxNode, SyntaxNode>>()
         for (site in view.returnSites()) {
             val expression = returnExpression(site) ?: continue
             if (!config.includeLiterals && isLiteral(view, expression)) continue
-            selected.putIfAbsent(expression.startByte to expression.endByte, expression)
+            selected.putIfAbsent(site.node.startByte to expression.endByte, site.node to expression)
         }
-        return selected.values.map { expression ->
-            Emit.of(RETURN_VALUE_INTENT, expression, confidence = ESTABLISHED_CONFIDENCE)
+        return selected.values.map { (statement, expression) ->
+            Emit.range(
+                RETURN_VALUE_INTENT,
+                statement,
+                expression,
+                confidence = ESTABLISHED_CONFIDENCE,
+            )
         }
     }
 

@@ -19,7 +19,7 @@ class ReturnValueLabeledReturnTest {
 
         val analysis = analyzePack("kotlin", text, listOf(ReturnValueRulePack()))
 
-        assertEquals(listOf("it + 1"), analysis.texts(RETURN_VALUE_INTENT))
+        assertEquals(listOf("return@map it + 1"), analysis.texts(RETURN_VALUE_INTENT))
         assertEquals(1, analysis.source(RETURN_VALUE_INTENT).size)
     }
 }
