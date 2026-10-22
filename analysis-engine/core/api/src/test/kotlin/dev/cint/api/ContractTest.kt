@@ -88,6 +88,15 @@ class ContractTest {
     }
 
     @Test
+    fun optionalReadsDefaultsToEmptyAndRemainsABinaryCompatibleAccessor() {
+        val rule = TestRule("demo:optional", "OPTIONAL")
+
+        assertTrue(rule.optionalReads.isEmpty())
+        assertTrue(Rule::class.java.getMethod("getOptionalReads").isDefault)
+        assertEquals(5, CINT_API_VERSION)
+    }
+
+    @Test
     fun configurableRulePackIsAdditiveAndVersionPinned() {
         assertEquals(5, CINT_API_VERSION)
 

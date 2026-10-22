@@ -125,6 +125,12 @@ private val DEFAULT_PERSISTENCE_PATHS =
         "fs.promises.appendFile",
         "fs.promises.unlink",
         "fs.promises.rm",
+        "fs.promises.rename",
+        "fs.promises.copyFile",
+        "fs.rename",
+        "fs.renameSync",
+        "fs.copyFile",
+        "fs.copyFileSync",
         "File.WriteAllText",
         "File.WriteAllTextAsync",
         "File.WriteAllBytes",
@@ -353,6 +359,7 @@ data class MutationLanguageConfig(
     val ignoreLoopCounters: Boolean = true,
     val ignoreBookkeeping: Boolean = true,
     val ignorePureCopies: Boolean = true,
+    val mutableLocalDeclarations: Boolean = false,
 ) {
     fun withOverrides(
         values: Map<String, Any?>,
@@ -421,6 +428,11 @@ data class MutationLanguageConfig(
                     "ignorePureCopies",
                     { it.ignorePureCopies },
                     { config, value -> config.copy(ignorePureCopies = value) },
+                ),
+                ConfigField.boolean<MutationLanguageConfig>(
+                    "mutableLocalDeclarations",
+                    { it.mutableLocalDeclarations },
+                    { config, value -> config.copy(mutableLocalDeclarations = value) },
                 ),
             )
 

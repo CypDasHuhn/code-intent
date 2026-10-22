@@ -16,7 +16,9 @@ import dev.cint.api.RuleEmit
 import dev.cint.api.ScopeKind
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
+import dev.cint.rulepacks.intents.callbackParameterAt
 import dev.cint.rulepacks.intents.isTypeQueryableReceiver
+import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 
 const val SERVICE_DELEGATION_INTENT: Intent = "SERVICE_DELEGATION"
 const val SERVICE_INIT_INTENT: Intent = "SERVICE_INIT"
@@ -66,6 +68,7 @@ private class ServiceDelegationRule(
     override val id: String = SERVICE_DELEGATION_RULE_ID
     override val owns: Intent = SERVICE_DELEGATION_INTENT
     override val reads: Set<Intent> = emptySet()
+    override val optionalReads: Set<Intent> = setOf(DATA_MODIFY_INTENT)
 
     override fun run(view: View): List<RuleEmit> {
         val language = config.forLanguage(view.language())
@@ -95,6 +98,15 @@ private class ServiceDelegationRule(
                 if (call != null && initCallEvidence(view, call, language) == null) {
                     result += delegationCandidate(call)
                 }
+            }
+        }
+
+        val emitted = result.mapTo(mutableSetOf()) { it.startByte to it.endByte }
+        for (call in view.calls()) {
+            if (callbackParameterAt(view, call) == null) continue
+            if (DATA_MODIFY_INTENT in view.intentsAt(call.node)) continue
+            if (emitted.add(call.node.startByte to call.node.endByte)) {
+                result += delegationCandidate(call)
             }
         }
 

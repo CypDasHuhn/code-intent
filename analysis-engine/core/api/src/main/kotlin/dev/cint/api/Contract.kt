@@ -19,6 +19,15 @@ interface Rule {
     val owns: Intent
     val reads: Set<Intent>
 
+    /**
+     * Additive v5 dependency edge: when the intent owner is present, the
+     * scheduler orders this rule after it; when the owner is absent, no edge is
+     * created. [reads] remains the hard dependency set whose missing owners are
+     * load errors. This JVM default method is source and binary compatible with
+     * existing rules, so it does not require a `CINT_API_VERSION` bump.
+     */
+    val optionalReads: Set<Intent> get() = emptySet()
+
     fun run(view: View): List<RuleEmit>
 }
 

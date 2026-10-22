@@ -21,6 +21,7 @@ class MutationConfigTest {
         assertTrue("findAndModify" in config.forLanguage("kotlin").persistenceCalls)
         assertTrue("findOneAndReplace" in config.forLanguage("javascript").persistenceCalls)
         assertTrue("getAndIncrement" !in config.forLanguage("javascript").persistenceCalls)
+        assertEquals(false, config.forLanguage("kotlin").mutableLocalDeclarations)
     }
 
     @Test
@@ -30,6 +31,8 @@ class MutationConfigTest {
         assertTrue("put" in config.persistenceCalls)
         assertTrue("putObject" in config.persistenceCalls)
         assertTrue("File.WriteAllTextAsync" in config.persistencePaths)
+        assertTrue("fs.rename" in config.persistencePaths)
+        assertTrue("fs.copyFile" in config.persistencePaths)
         assertTrue("stream" !in config.persistenceQualifiers)
         assertTrue("channel" !in config.persistenceQualifiers)
         assertTrue("writer" !in config.persistenceQualifiers)
@@ -59,6 +62,7 @@ class MutationConfigTest {
                             "mutableOperations" to listOf("frobnicate"),
                             "mutableReceiverNames" to listOf("widget"),
                             "ignoreLoopCounters" to false,
+                            "mutableLocalDeclarations" to true,
                         ),
                 ),
             )
@@ -67,6 +71,7 @@ class MutationConfigTest {
         assertEquals(setOf("persistRecord"), kotlin.persistenceCalls)
         assertEquals(setOf("frobnicate"), kotlin.mutableOperations)
         assertEquals(false, kotlin.ignoreLoopCounters)
+        assertEquals(true, kotlin.mutableLocalDeclarations)
         assertTrue("repository" in kotlin.persistenceQualifiers)
         assertTrue("save" in config.forLanguage("javascript").persistenceCalls)
     }

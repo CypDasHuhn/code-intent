@@ -18,6 +18,7 @@ private class TestRule(
     override val id: String,
     override val owns: Intent,
     override val reads: Set<Intent> = emptySet(),
+    override val optionalReads: Set<Intent> = emptySet(),
 ) : Rule {
     override fun run(view: View): List<RuleEmit> = emptyList()
 }
@@ -92,6 +93,27 @@ class RuleSchedulerTest {
         assertEquals("MISSING", error.intent)
         assertEquals(reader, error.reader)
         assertTrue(error.message.orEmpty().contains("MISSING"))
+    }
+
+    @Test
+    fun optionalDependencyIsIgnoredWhenItsOwnerIsAbsent() {
+        val optional = TestRule("example:optional", "OUTPUT", optionalReads = setOf("MISSING"))
+
+        val plan = RuleScheduler().plan(listOf(TestPack("example", listOf(optional))))
+
+        assertEquals(listOf(listOf(optional)), plan.strata)
+        assertTrue(plan.relations.isEmpty())
+    }
+
+    @Test
+    fun optionalDependencyOrdersTheReaderWhenItsOwnerIsPresent() {
+        val owner = TestRule("example:owner", "OPTIONAL")
+        val optional = TestRule("example:optional", "OUTPUT", optionalReads = setOf("OPTIONAL"))
+
+        val plan = RuleScheduler().plan(listOf(TestPack("example", listOf(optional, owner))))
+
+        assertEquals(listOf(listOf(owner), listOf(optional)), plan.strata)
+        assertEquals(listOf(Relation(optional, "OPTIONAL", owner)), plan.relations)
     }
 
     @Test

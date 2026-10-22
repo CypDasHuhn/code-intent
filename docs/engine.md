@@ -145,13 +145,44 @@ is present. Unbraced bodies are
   and unknown wrappers stay candidates.
 - `mutation:local-value-modify` — writes to declaration-local variables and
   configured mutable collection operations on proven collection receivers.
-  Member/external assignments, unproven `add`/`put`/`remove` calls, loop
-  counters, and bookkeeping writes stay out of the established set. The rule
-  reads `LOCAL_COPY` (and `BOOKKEEPING`); with `ignorePureCopies` default-on, a
-  write carrying established `LOCAL_COPY` is skipped entirely, while setting it
-  false restores `LOCAL_COPY` + `LOCAL_VALUE_MODIFY` co-occurrence. Candidate
-  copies do not suppress because only established annotations enter the reads
-  graph.
+  Member/external assignments, unproven `add`/`put`/`remove` calls, implicit
+  `for`/`foreach` counters, and bookkeeping writes stay out of the established
+  set. Explicit `while`-loop increments/decrements and their declarations
+  intentionally remain local modifications. The rule reads `LOCAL_COPY` (and
+  `BOOKKEEPING`); with `ignorePureCopies` default-on, a write carrying
+  established `LOCAL_COPY` is skipped entirely, while setting it false restores
+  `LOCAL_COPY` + `LOCAL_VALUE_MODIFY` co-occurrence. Candidate copies do not
+  suppress because only established annotations enter the reads graph.
+  `mutableLocalDeclarations` is off by default; when enabled it also emits on
+  mutable Kotlin `var`, JavaScript/TypeScript `let`/`var`, and mutable C# local
+  declarations that have a later effective write. `val`/`const`/`readonly`
+  declarations, declarations used only for pure copies, bookkeeping locals,
+  implicit `for`/`foreach` counters, and unwritten locals stay out. The emit
+  lands on the individual written declarator, so a multi-declarator statement
+  does not paint unwritten siblings.
+- Callback invocations are classified without whole-program dataflow. Direct
+  calls to function-typed parameters (for example `move(from, to)`), including
+  JS/TS callbacks in function declarations and arrow functions, interface-aware
+  SAM invocations (`Consumer`→`accept`, `Runnable`→`run`, `Supplier`→`get`,
+  `Callable`→`call`, `Predicate`→`test`, `Function`→`apply`, and
+  Kotlin function types→`invoke`), and annotated functions are resolved from the
+  callable's parameter list rather than the raw first `(`. The outer SAM type
+  takes precedence over function arrows in its type arguments, so
+  `Consumer<(Path) -> Unit>` maps to `accept`. Declared types with no function or
+  SAM marker (Kotlin type aliases, TypeScript function aliases, C# custom
+  delegates) fall back to their default function/durable reference evidence, so
+  a durable default still establishes `DATA_MODIFY`; the receiver-SAM mapping
+  remains declared-type-only to avoid scope-function false positives. A generic
+  callback is a `SERVICE_DELEGATION` candidate. When the parameter's default or known implementation references a
+  qualified configured durable path/call (for example
+  `move: (Path, Path) -> Unit = Files::move`, a lambda body containing
+  `Files.move`, or a bare JS/TS `fs.rename` default), the mutation pack
+  establishes `DATA_MODIFY`. Service delegation treats that `DATA_MODIFY`
+  classification as the shared policy through an optional read (`DATA_MODIFY`
+  is optional because the service pack can be loaded alone), so custom or
+  removed durable targets keep `DATA_MODIFY`/candidate outcomes coherent. The
+  callback call is never painted as a local mutation merely because its callee
+  is a parameter.
 - `bool-combinatorics:bool-combinatorics` — complex boolean shape from guard
   conditions, return expressions, and initializers. Established when the
   expression has multiple/mixed `&&`/`||`, a negated compound, a configured
@@ -330,6 +361,7 @@ mutation:
     mutableReceiverNames: [items, values, cache]
     assignmentPatterns: [assignment, increment, decrement]
     ignorePureCopies: true
+    mutableLocalDeclarations: false
 
 return-value:
   kotlin:

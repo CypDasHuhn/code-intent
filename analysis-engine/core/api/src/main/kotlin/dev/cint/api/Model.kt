@@ -16,6 +16,9 @@ const val UNTAGGED_INTENT: Intent = "UNTAGGED"
  * Additive user overlays are opt-in through
  * `ConfigurableRulePack.configureAdditive` and `ConfigSchema.decodeAdditive`;
  * the default rejects additive config instead of replacing project values.
+ * `Rule.optionalReads` is another additive v5 surface: it is a JVM default
+ * accessor whose absent-owner dependency is ignored, while required `reads`
+ * keep the hard unknown-dependency error. It does not require a version bump.
  */
 const val CINT_API_VERSION: Int = 5
 

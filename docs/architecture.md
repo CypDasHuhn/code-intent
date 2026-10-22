@@ -82,9 +82,10 @@ interface RulePack {
 }
 
 interface Rule {
-    val id: String          // "<packId>:<localName>", globally unique
-    val owns: Intent        // exactly one
-    val reads: Set<Intent>  // cross-rule dependencies, by intent name
+    val id: String                  // "<packId>:<localName>", globally unique
+    val owns: Intent                // exactly one
+    val reads: Set<Intent>          // hard cross-rule dependencies
+    val optionalReads: Set<Intent>  // additive; ignored when the owner is absent
     fun run(view: View): List<RuleEmit>
 }
 ```
@@ -107,8 +108,15 @@ free-for-all.
 - Because ownership is 1:1 (§2), "depend on a rule" and "depend on an intent"
   are the same edge. The declaration names the intent; the node is the rule.
   Consumers never couple to pack structure or rule ids.
-- **Unknown dependency is a load error.** A declared intent with no owning rule
-  fails the load.
+- **Unknown required dependency is a load error.** An intent declared in
+  `reads` with no owning rule fails the load.
+- **Optional reads are additive edges.** An intent declared in `optionalReads`
+  creates a rule → rule edge only when its owner is present; when the owner is
+  absent the edge is ignored and the rule still runs. This lets a pack consume
+  another pack's classification when both are loaded without making that pack a
+  hard prerequisite. `optionalReads` is a JVM default accessor on the frozen
+  `Rule` contract, so existing packs remain source/binary compatible and the API
+  version is unchanged.
 - **Resolution happens after all packs register**, so pack load order is
   irrelevant.
 - Topologically sort the rule graph into **strata**.
@@ -125,12 +133,14 @@ Worked example of strata:
 ```
 stratum 0:  logging, error-handling-<language>, bookkeeping,
             normalization:normalization, data-access:search,
-            data-access:lookup, service:delegation, service:init,
+            data-access:lookup, service:init,
             mutation:data-modify, bool-combinatorics,
             return-value:return-value, chaining:chaining,
-            local-copy:local-copy (no dependencies)
-stratum 1:  mutation:local-value-modify (reads BOOKKEEPING, LOCAL_COPY),
-            data-transformation (reads SEARCH; its self-read is ignored)
+            local-copy:local-copy (no required dependencies)
+stratum 1:  service:delegation (optionally reads DATA_MODIFY when its owner
+            is present), mutation:local-value-modify (reads BOOKKEEPING,
+            LOCAL_COPY), data-transformation (reads SEARCH; its self-read is
+            ignored)
 stratum 2:  validation (reads BOOKKEEPING, DATA_MODIFY,
             LOCAL_VALUE_MODIFY)
 terminal:   core composition    (scaffold, derivative-use, return-category)
@@ -363,7 +373,6 @@ Explicitly out of scope, none of which constrains the API:
 - node-anchored candidate identity; the stable node anchor is reserved in `api`,
   while the current identity uses content hash + byte span + intents + reason
 - packs exporting named derived relations (dependency currency stays intents)
-- optional dependencies (unknown dependency is a hard error)
 - full IR reification / CEL predicates
 
 ## 11. Sequencing
