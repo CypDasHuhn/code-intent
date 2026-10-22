@@ -1,6 +1,6 @@
 ---
 name: nvim intent hover
-status: in-progress
+status: done
 depends-on: [016]
 reviewers: [correctness]
 ---
