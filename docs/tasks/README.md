@@ -67,6 +67,7 @@ host and client cutover at the end.
 | 053 | [hover innermost span](053-hover-innermost-span.md) | done | 052 | Show only the intents of the innermost annotation span under the caret. |
 | 054 | [hover omit untagged](054-hover-omit-untagged.md) | done | 052, 053 | Never show the reserved UNTAGGED marker in the intent hover. |
 | 055 | [ai candidate arrival ui](055-ai-candidate-arrival-ui.md) | done | 052 | Distinct AI candidate rendering, arrival notification, and AI count. |
+| 056 | [detection and AI sensitivity bundle](056-detection-and-ai-sensitivity.md) | in-progress | 042, 048, 055 | Scaffold/return rendering, SEARCH vs LOOKUP, and broader AI recall. |
 
 ## Resolved decisions
 
