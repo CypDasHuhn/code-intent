@@ -1,10 +1,12 @@
-package dev.cint.rulepacks.tests.intents.dataaccess
+package dev.cint.rulepacks.tests.intents.dataaccess.lookup
 
 import dev.cint.core.facts.oracle.MapOracle
 import dev.cint.core.facts.oracle.TypeFact
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
+import dev.cint.rulepacks.tests.intents.dataaccess.support.candidateTexts
+import dev.cint.rulepacks.tests.intents.dataaccess.support.typedDataAccess
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parsePackInput
 import kotlin.test.Test

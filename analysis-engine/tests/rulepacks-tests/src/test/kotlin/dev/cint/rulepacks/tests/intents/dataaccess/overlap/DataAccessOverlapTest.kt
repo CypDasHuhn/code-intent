@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.intents.dataaccess
+package dev.cint.rulepacks.tests.intents.dataaccess.overlap
 
 import dev.cint.api.CandidateReason
 import dev.cint.core.facts.oracle.MapOracle
@@ -12,6 +12,7 @@ import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+import dev.cint.rulepacks.tests.intents.dataaccess.support.dataAccess
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parsePackInput

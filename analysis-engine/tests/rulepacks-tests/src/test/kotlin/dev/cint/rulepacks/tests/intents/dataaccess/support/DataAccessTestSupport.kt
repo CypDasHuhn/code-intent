@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.intents.dataaccess
+package dev.cint.rulepacks.tests.intents.dataaccess.support
 
 import dev.cint.api.Intent
 import dev.cint.api.RulePack

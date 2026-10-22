@@ -1,7 +1,9 @@
-package dev.cint.rulepacks.tests.intents.dataaccess
+package dev.cint.rulepacks.tests.intents.dataaccess.search
 
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
+import dev.cint.rulepacks.tests.intents.dataaccess.support.candidateTexts
+import dev.cint.rulepacks.tests.intents.dataaccess.support.dataAccess
 import kotlin.test.Test
 import kotlin.test.assertTrue
 

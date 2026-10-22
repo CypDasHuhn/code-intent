@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.intents.dataaccess
+package dev.cint.rulepacks.tests.intents.dataaccess.search
 
 import dev.cint.rulepacks.intents.dataaccess.DATA_ACCESS_PACK_ID
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
@@ -6,6 +6,8 @@ import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_RULE_ID
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_RULE_ID
+import dev.cint.rulepacks.tests.intents.dataaccess.support.candidateTexts
+import dev.cint.rulepacks.tests.intents.dataaccess.support.dataAccess
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
