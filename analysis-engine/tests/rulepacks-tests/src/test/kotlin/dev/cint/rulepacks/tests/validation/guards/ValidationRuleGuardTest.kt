@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.validation
+package dev.cint.rulepacks.tests.validation.guards
 
 import dev.cint.api.Role
 import dev.cint.api.UNTAGGED_INTENT

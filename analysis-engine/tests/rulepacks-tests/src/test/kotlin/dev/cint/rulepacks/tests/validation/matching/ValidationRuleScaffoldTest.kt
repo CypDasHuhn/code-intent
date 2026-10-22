@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.validation
+package dev.cint.rulepacks.tests.validation.matching
 
 import dev.cint.api.Role
 import dev.cint.core.CoreContributors

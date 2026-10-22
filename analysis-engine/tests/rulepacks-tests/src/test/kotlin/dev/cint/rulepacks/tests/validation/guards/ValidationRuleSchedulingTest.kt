@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.validation
+package dev.cint.rulepacks.tests.validation.guards
 
 import dev.cint.core.facts.flow.ControlFlowBuilder
 import dev.cint.core.facts.oracle.NullOracle

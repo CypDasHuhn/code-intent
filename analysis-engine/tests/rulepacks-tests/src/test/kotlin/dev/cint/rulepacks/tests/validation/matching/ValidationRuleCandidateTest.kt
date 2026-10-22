@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.tests.validation
+package dev.cint.rulepacks.tests.validation.matching
 
 import dev.cint.api.CandidateReason
 import dev.cint.rulepacks.tests.support.parseValidationInput
