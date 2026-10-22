@@ -31,6 +31,11 @@ Index of the written contract for CodeIntent.
 - [reviews/README.md](reviews/README.md) — review report format.
 - [reviews/](reviews/) — one directory per ticket, one report per reviewer.
 
+## Summary
+
+- [summary/README.md](summary/README.md) — compact continuation map and domain
+  summary; start with [summary/current-state.md](summary/current-state.md).
+
 ## Repository
 
 - [../README.md](../README.md) — project overview, components, flow, quick start.
