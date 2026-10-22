@@ -11,6 +11,7 @@ import dev.cint.core.facts.frontend.SplitHandler
 import dev.cint.core.facts.frontend.SplitRegion
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
+import dev.cint.core.facts.oracle.OracleStats
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.runtime.scheduler.AnalysisOutput
 import dev.cint.core.runtime.scheduler.ExecutionPlan
@@ -70,6 +71,7 @@ object SplitAnalyzer {
     ): AnalysisOutput {
         val result = mutableListOf<Annotation>()
         val candidates = mutableListOf<CandidateEmit>()
+        var oracleTotals = OracleStats.EMPTY
         for (region in handler.regions(host)) {
             val frontend = Frontends.require(region.language)
             val config = configFor(region.language)
@@ -102,6 +104,7 @@ object SplitAnalyzer {
                 }
             result += output.annotations.map { it.shift(region) }
             candidates += output.candidates.map { it.shift(region) }
+            oracleTotals += output.oracle
         }
         return AnalysisOutput(
             result.sortedWith(
@@ -116,6 +119,7 @@ object SplitAnalyzer {
                     { it.source },
                 ),
             ),
+            oracleTotals,
         )
     }
 

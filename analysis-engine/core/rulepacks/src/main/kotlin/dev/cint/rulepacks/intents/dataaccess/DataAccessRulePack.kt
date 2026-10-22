@@ -16,6 +16,7 @@ import dev.cint.api.View
 import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.api.emit
+import dev.cint.rulepacks.intents.isTypeQueryableReceiver
 
 const val SEARCH_INTENT: Intent = "SEARCH"
 const val LOOKUP_INTENT: Intent = "LOOKUP"
@@ -129,7 +130,7 @@ private class DataAccessRule(
         if (!configured) return false
         val receiver = call.receiver ?: return false
         return matchesName(receiver.text, language.searchQualifiers) ||
-            typeMatches(view.receiverType(call), language.searchTypes)
+            (isTypeQueryableReceiver(receiver) && typeMatches(view.receiverType(call), language.searchTypes))
     }
 
     private fun isConfiguredSearchCall(
@@ -146,15 +147,18 @@ private class DataAccessRule(
         language: DataAccessLanguageConfig,
     ): Boolean {
         val receiver = call.receiver ?: return false
+        val enumCall = containsName(language.enumCalls, callee)
+        val lookupCall = containsName(language.lookupCalls, callee)
+        if (!enumCall && !lookupCall && !isAmbiguous(callee, language)) return false
         val knownReceiver =
             isKnownMap(receiver.text, language) || matchesName(receiver.text, language.lookupQualifiers)
-        val typed = typeMatches(view.receiverType(call), language.lookupTypes)
-        val enumReceiver = isEnumReceiver(view, call, language)
-        return when {
-            containsName(language.enumCalls, callee) -> enumReceiver || knownReceiver || typed
-            containsName(language.lookupCalls, callee) -> knownReceiver || typed
-            else -> isAmbiguous(callee, language) && (knownReceiver || typed)
-        }
+        val enumReceiver = if (enumCall) isEnumReceiver(view, call, language) else false
+        val typed =
+            !knownReceiver &&
+                !enumReceiver &&
+                isTypeQueryableReceiver(receiver) &&
+                typeMatches(view.receiverType(call), language.lookupTypes)
+        return if (enumCall) enumReceiver || knownReceiver || typed else knownReceiver || typed
     }
 
     private fun isEnumCandidate(
@@ -175,7 +179,7 @@ private class DataAccessRule(
         val name = receiverName(receiver.text)
         if (name.isEmpty() || !name.first().isUpperCase()) return false
         if (matchesName(receiver.text, language.enumExclusions)) return false
-        val type = view.receiverType(call)
+        val type = if (isTypeQueryableReceiver(receiver)) view.receiverType(call) else null
         return type == null || !matchesTypeSuffix(type, language.enumExclusions)
     }
 
@@ -186,12 +190,16 @@ private class DataAccessRule(
     ): Boolean {
         val receiver = call.receiver ?: return false
         if (matchesName(receiver.text, language.enumTypes)) return true
-        val type = view.receiverType(call)
-        if (typeMatches(type, language.enumTypes)) return true
-        if (matchesTypeSuffix(type, language.enumTypeSuffixes)) return true
         val name = receiverName(receiver.text)
-        if (name.isEmpty() || !name.first().isUpperCase()) return false
-        return language.enumTypeSuffixes.any { hasTokenSuffix(tokenize(name), tokenize(it)) }
+        if (name.isNotEmpty() &&
+            name.first().isUpperCase() &&
+            language.enumTypeSuffixes.any { hasTokenSuffix(tokenize(name), tokenize(it)) }
+        ) {
+            return true
+        }
+        if (!isTypeQueryableReceiver(receiver)) return false
+        val type = view.receiverType(call)
+        return typeMatches(type, language.enumTypes) || matchesTypeSuffix(type, language.enumTypeSuffixes)
     }
 
     private fun isBoundaryLookup(

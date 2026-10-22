@@ -14,6 +14,10 @@ import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.flow.ControlFlow
 import dev.cint.core.facts.flow.ControlFlowBuilder
 import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.facts.oracle.NullOracle
+import dev.cint.core.facts.oracle.OracleBudget
+import dev.cint.core.facts.oracle.OracleSession
+import dev.cint.core.facts.oracle.OracleStats
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.facts.store.AnnotationStore
 import dev.cint.core.runtime.composition.Composition
@@ -44,6 +48,7 @@ private data class AnnotationIdentity(
 class RuleEngine(
     private val scheduler: RuleScheduler = RuleScheduler(),
     private val maxIterationsPerRule: Int? = null,
+    private val oracleBudget: OracleBudget = OracleBudget(),
 ) {
     init {
         require(maxIterationsPerRule == null || maxIterationsPerRule > 0) {
@@ -73,6 +78,15 @@ class RuleEngine(
         userContributions: List<Contribution> = emptyList(),
     ): AnalysisOutput {
         val flow = ControlFlowBuilder(tree, syntax).build()
+        val source = (oracle as? OracleSession)?.source() ?: oracle
+        val session =
+            when {
+                source === NullOracle -> null
+                oracle is OracleSession -> oracle
+                else -> OracleSession(source, oracleBudget)
+            }
+        session?.beginAnalysis(file)
+        val effective = session ?: source
         val settled = linkedMapOf<String, List<Contribution>>()
         val candidates = mutableListOf<CandidateEmit>()
         if (userContributions.isNotEmpty()) {
@@ -82,7 +96,7 @@ class RuleEngine(
         for (stratum in plan.strata) {
             val settledStratum = mutableListOf<Pair<String, List<Contribution>>>()
             for (rule in stratum) {
-                val settlement = settle(rule, settled, file, tree, syntax, flow, oracle, config)
+                val settlement = settle(rule, settled, file, tree, syntax, flow, effective, config)
                 settledStratum += rule.id to settlement.contributions
                 candidates += settlement.candidates
             }
@@ -107,7 +121,7 @@ class RuleEngine(
                 tree,
                 syntax,
                 flow,
-                oracle,
+                effective,
                 config,
                 sources,
                 userContributions,
@@ -127,6 +141,7 @@ class RuleEngine(
                     { it.source },
                 ),
             ),
+            session?.oracleStats() ?: OracleStats.EMPTY,
         )
     }
 
