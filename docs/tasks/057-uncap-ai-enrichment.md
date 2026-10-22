@@ -1,6 +1,6 @@
 ---
 name: uncap ai enrichment
-status: in-progress
+status: done
 depends-on: [055, 056]
 reviewers: [correctness, detection-fidelity]
 ---

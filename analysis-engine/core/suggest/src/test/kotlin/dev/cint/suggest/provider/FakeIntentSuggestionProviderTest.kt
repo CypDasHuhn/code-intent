@@ -109,6 +109,42 @@ class FakeIntentSuggestionProviderTest {
     }
 
     @Test
+    fun validatorTreatsNonPositiveMaximumsAsUnlimited() {
+        val known = (1..15).map { "INTENT_$it" }.toSet() + "VALIDATION"
+        val input = candidate.copy(span = Span(0, 0, 0, 100), startByte = 0, endByte = 100)
+        val proposals =
+            (1..15).map {
+                candidate.copy(
+                    intents = setOf("INTENT_$it"),
+                    startByte = it,
+                    endByte = it + 1,
+                    source = "ai:test",
+                )
+            }
+
+        val unlimited =
+            CandidateValidator.validate(
+                input = input,
+                candidates = proposals,
+                documentLength = 100,
+                knownIntents = known,
+                maxCandidates = 0,
+            )
+        val negative =
+            CandidateValidator.validate(
+                input = input,
+                candidates = proposals,
+                documentLength = 100,
+                knownIntents = known,
+                maxCandidates = -3,
+            )
+
+        assertEquals(15, unlimited.size)
+        assertEquals(proposals, unlimited)
+        assertEquals(proposals, negative)
+    }
+
+    @Test
     fun serviceMergesAiAlternativeWithDeterministicCandidate() {
         val provider =
             object : IntentSuggestionProvider {

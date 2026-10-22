@@ -68,7 +68,7 @@ host and client cutover at the end.
 | 054 | [hover omit untagged](054-hover-omit-untagged.md) | done | 052, 053 | Never show the reserved UNTAGGED marker in the intent hover. |
 | 055 | [ai candidate arrival ui](055-ai-candidate-arrival-ui.md) | done | 052 | Distinct AI candidate rendering, arrival notification, and AI count. |
 | 056 | [detection and AI sensitivity bundle](056-detection-and-ai-sensitivity.md) | done | 042, 048, 055 | Scaffold/return rendering, SEARCH vs LOOKUP, and broader AI recall. |
-| 057 | [uncap ai enrichment](057-uncap-ai-enrichment.md) | in-progress | 055, 056 | Let every AI-eligible candidate and validated proposal through by default. |
+| 057 | [uncap ai enrichment](057-uncap-ai-enrichment.md) | done | 055, 056 | Let every AI-eligible candidate and validated proposal through by default. |
 
 ## Resolved decisions
 

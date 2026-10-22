@@ -145,11 +145,14 @@ CandidateEmit (aiEligible)
   uses a nonzero temperature (`0.3`) and a `1024`-token default budget.
 - `CandidateValidator` enforces intent vocabulary, confidence range, byte bounds
   and containment inside the input candidate, dedupes, and applies
-  `maxCandidates`. Only the top `maxEnrichmentCandidates` deterministic
-  candidates (GAP first, then LOW_CONFIDENCE, then PACK_DOMAIN) are sent to the
-  provider per pass, so a file with many deterministic candidates cannot exhaust
-  the timeout. Raw out-of-range or non-finite model confidence is dropped
-  before the cap. Invalid output is dropped. No tool calls, no edits.
+  `maxCandidates` when it is positive. A value of `0` or less means unlimited,
+  so every validated proposal survives. Only the top
+  `maxEnrichmentCandidates` deterministic candidates (GAP first, then
+  LOW_CONFIDENCE, then PACK_DOMAIN) are sent to the provider per pass when that
+  setting is positive; `0` or less sends every AI-eligible deterministic
+  candidate. Candidate generation is still pack-driven: AI enrichment never
+  scans arbitrary lines. Raw out-of-range or non-finite model confidence is
+  dropped before the cap. Invalid output is dropped. No tool calls, no edits.
 - AI output is a `CandidateEmit` (`source = ai:deepseek`), so candidate-only is
   structural. It never becomes an established annotation without Confirm, and
   its confidence is diagnostic rather than a promotion threshold.
@@ -250,8 +253,8 @@ suggestions:
   trigger: manual        # manual; idle is a follow-up
   provider: deepseek     # "deepseek" by default when enabled and unset; "fake" stays available
   model: deepseek-chat
-  maxCandidates: 10
-  maxEnrichmentCandidates: 12  # deterministic candidates sent to AI per pass
+  maxCandidates: 0                  # 0 or less is unlimited; positive caps validated proposals
+  maxEnrichmentCandidates: 0        # 0 or less sends every AI-eligible candidate per pass
   promptVersion: deepseek-intent-v2
   timeoutMs: 10000       # whole pass/provider interrupt/HTTP timeout, minimum 1
   workerThreads: 2       # bounded suggestion/provider pools, clamped 1..8
@@ -264,8 +267,11 @@ suggestions:
   redactPatterns: []     # regexes applied to the excerpt before sending
 ```
 
-A missing file defaults to disabled/manual, 10 candidates, 12 enrichment
-candidates, a 10000 ms timeout, and 2 worker threads. When disabled,
+A missing file defaults to disabled/manual, unlimited candidates, unlimited
+enrichment candidates, a 10000 ms timeout, and 2 worker threads. Uncapping
+enrichment can increase provider latency and cost because every AI-eligible
+pack candidate reaches the provider; the provider timeout remains the safety
+valve. When disabled,
 `initialize.suggestions.enabled` is false and
 `cint/suggest` refuses, but pack candidates still publish. Both executor pools
 are bounded by `workerThreads` and stop on server/process close, not on the

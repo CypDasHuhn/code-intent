@@ -434,9 +434,10 @@ Suggestion settings are discovered at `<root>/.cint/suggestions.yml` under a
 top-level `suggestions:` mapping. Implemented keys are `enabled` (default
 `false`), `trigger` (default `manual`), `provider` (default `deepseek` when
 enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
-for the DeepSeek provider), `maxCandidates` (default `10`, minimum `1`), `maxEnrichmentCandidates`
-(default `12`, minimum `0`),
-`promptVersion` (default `deepseek-intent-v2` for DeepSeek), `timeoutMs`
+for the DeepSeek provider), `maxCandidates` (default `0`; `0` or less is
+unlimited, positive values cap validated proposals), `maxEnrichmentCandidates`
+(default `0`; `0` or less sends every AI-eligible candidate, positive values cap
+the pass), `promptVersion` (default `deepseek-intent-v2` for DeepSeek), `timeoutMs`
 (default `10000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
 `apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
 `https://api.deepseek.com/chat/completions`), `maxTokens` (default `1024`),
@@ -444,7 +445,10 @@ for the DeepSeek provider), `maxCandidates` (default `10`, minimum `1`), `maxEnr
 (default `400`, minimum `0`), `allowGlobs` (default empty, which allows every
 path), and `redactPatterns` (default empty). This gate controls the
 `cint/suggest` enrichment pass; deterministic pack candidates still publish when
-it is disabled.
+it is disabled. Candidate generation remains pack-driven, so uncapping these
+settings does not scan arbitrary lines or tag every line. It can increase
+provider latency and cost because every AI-eligible candidate reaches the
+provider; the provider timeout remains the safety valve.
 
 The server resolves this file, injects the provider config and key lookup, and
 orchestrates the pass. `:suggest` owns the DeepSeek provider and its remote
