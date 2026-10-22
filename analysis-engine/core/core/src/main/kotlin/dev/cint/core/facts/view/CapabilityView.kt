@@ -90,7 +90,12 @@ class CapabilityView(
 
     override fun isConstant(node: SyntaxNode): Boolean = context.syntax.isConstant(node)
 
-    override fun isSideEffectFree(node: SyntaxNode): Boolean = context.syntax.isSideEffectFree(node)
+    override fun isSideEffectFree(node: SyntaxNode): Boolean =
+        context.syntax.isSideEffectFree(node) ||
+            context.isUserPure(node) ||
+            context.isUserReadOnly(node) ||
+            context.isUserPureCall(node) ||
+            context.isUserReadOnlyCall(node)
 
     override fun statements(container: SyntaxNode): List<SyntaxNode>? = context.syntax.statements(container)
 

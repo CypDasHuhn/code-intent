@@ -15,6 +15,8 @@ import dev.cint.core.runtime.scheduler.RuleEngine
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.core.test.testConfig
+import dev.cint.core.user.UserAnnotation
+import dev.cint.core.user.UserAnnotationResolver
 import dev.cint.test.fixtures.TestFixtures
 import dev.cint.test.fixtures.defaultFileName
 import dev.cint.test.fixtures.parseFile
@@ -112,6 +114,7 @@ internal fun analyzePack(
     input: PackInput,
     packs: List<RulePack>,
     oracle: TypeOracle = NullOracle,
+    userAnnotations: List<UserAnnotation> = emptyList(),
 ): PackAnalysis {
     val output =
         RuleEngine().analyze(
@@ -121,6 +124,7 @@ internal fun analyzePack(
             oracle,
             input.config,
             packs,
+            UserAnnotationResolver.resolve(userAnnotations, input.source, input.tree, input.syntax, null),
         )
     return PackAnalysis(input, output.annotations, output.candidates)
 }

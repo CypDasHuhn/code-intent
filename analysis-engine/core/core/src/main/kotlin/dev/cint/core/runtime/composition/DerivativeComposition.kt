@@ -245,7 +245,8 @@ private fun readOnlyConfidence(
             ctx.syntax.isIdentifier(node) ||
             ctx.syntax.isSideEffectFree(node) ||
             ctx.syntax.isAnnotatedPureCall(ctx.tree, node, pureAnnotations) ||
-            isUserPureCall(ctx, node) -> DERIVATIVE_CONFIDENCE
+            ctx.isUserPureCall(node) ||
+            ctx.isUserReadOnlyCall(node) -> DERIVATIVE_CONFIDENCE
 
         else -> DERIVATIVE_UNKNOWN_READ_ONLY_CONFIDENCE
     }
@@ -261,13 +262,3 @@ private fun hasKnownWrite(
         allSourceAnnotations(ctx, node).any { annotation ->
             annotation.intents.any { it in MUTATION_INTENTS }
         }
-
-private fun isUserPureCall(
-    ctx: RuleContext,
-    call: SyntaxNode,
-): Boolean {
-    if (ctx.syntax.receiverNode(call) != null) return false
-    val callee = ctx.syntax.calleeName(call) ?: return false
-    val function = ctx.syntax.findFunction(ctx.tree, callee) ?: return false
-    return ctx.isUserPure(function)
-}

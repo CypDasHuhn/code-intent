@@ -22,9 +22,24 @@ intents into visual meanings.
 - The engine has no colors or visual policy. `tags[intent].meaning` and
   `rules[meaning]` live on the client.
 
-Each annotation carries `rule`, `source`, `confidence`, `evidence`, and a span.
-That provenance is part of the product: it is what makes review/explain
-possible.
+Each annotation carries `rule`, `source`, `confidence`, a span, and contributor
+`provenance`. That provenance is part of the product: it is what makes
+review/explain possible.
+
+## User directives
+
+User annotations may carry any intent name, and the engine preserves unknown
+names as user intent facts. Two names have built-in directive semantics:
+
+- `PURE` — the function has no side effects and is deterministic.
+- `READONLY` — the function does not write state, but may read external state.
+
+`PURE` therefore implies both determinism and no side effects; `READONLY`
+implies only that the function does not write state. Calls to a function
+annotated with either directive are treated as side-effect-free reads by
+derivative-use and validation composition. `PURE` also participates in the
+pure-function derivative path. Both directives remain part of the annotation's
+intent set and provenance; they are not pack-owned.
 
 ## 2. Current sources
 
@@ -286,7 +301,7 @@ Local derivative promotion uses a **read-only** policy, not purity:
   annotation inside it.
 - external reads are allowed. Known read-only initializers derive at `0.7`:
   literals/constants, identifiers, side-effect-free expressions, annotated pure
-  calls, and user-pure calls.
+  calls, user-pure calls, and user-readonly calls.
 - an initializer without that evidence is treated as **unknown read-only** and
   derives at `0.55`. This lowers confidence; it does not promote a candidate to
   established and it does not certify purity.

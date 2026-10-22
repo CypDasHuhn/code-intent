@@ -13,12 +13,13 @@ const val USER_CONTRIBUTOR_ID: String = "${CoreContributors.PREFIX}user-annotati
 const val USER_SOURCE: String = "user"
 
 /**
- * `PURE` is a user-layer directive. It is not reserved from pack owners and is
- * intentionally visible in provenance so clients can inspect the original
- * record; it does not participate in occurrence persistence, so user
- * annotations keep `nodeAnchor = null`.
+ * `PURE` and `READONLY` are user-layer directives. They are not reserved from
+ * pack owners and are intentionally visible in provenance so clients can inspect
+ * the original record; they do not participate in occurrence persistence, so
+ * user annotations keep `nodeAnchor = null`.
  */
 const val USER_PURE_INTENT: String = "PURE"
+const val USER_READONLY_INTENT: String = "READONLY"
 
 data class UserAnnotation(
     val path: String,

@@ -41,7 +41,7 @@ host and client cutover at the end.
 | 027 | [docs snapshots and tooling](027-docs-snapshots-and-tooling.md) | done | 021, 022, 023 | Truthful snapshots, docs reconciliation, CI and just recipes. |
 | 028 | [renderer structural cleanup](028-renderer-structural-cleanup.md) | done | — | Split Lua monolith; live transport tests; docs config. |
 | 029 | [rulepack registration consistency](029-rulepack-registration-consistency.md) | done | 023 | Uniform pack identity/selection. |
-| 030 | [client-authored annotations](030-client-authored-annotations.md) | todo | — | Experimental: runtime user annotations persisted per project. |
+| 030 | [client-authored annotations](030-client-authored-annotations.md) | done | — | Experimental: runtime user annotations persisted per project. |
 | 031 | [size hygiene after support refactors](031-size-hygiene-after-support.md) | done | 019, 020, 021, 026, 029 | Split new EXTREME files; reduce new overcrowded dirs. |
 | 032 | [remove evidence from annotation contract](032-remove-evidence-from-contract.md) | done | 019, 025 | Drop evidence from API/provenance/output/tests; API v4. |
 | 033 | [renderer package layout](033-renderer-package-layout.md) | done | 028 | Group lua/cint modules into subpackages. |
@@ -60,6 +60,7 @@ host and client cutover at the end.
 | 046 | [structural intents: return value, chaining, local copy](046-structural-intents.md) | done | 037, 038, 040, 045 | Add RETURN_VALUE, CHAINING, LOCAL_COPY as additive structural intents. |
 | 047 | [striped mixed-intent rendering experiment](047-striped-mixed-intent-rendering.md) | done | 016 | Opt-in ABABAB tag-color striping for active multi-intent spans. |
 | 048 | [local mutation and callback effect coverage](048-local-mutation-callback-coverage.md) | todo | 040, 046 | Stronger mutable-local declarations and callback effect classification. |
+| 049 | [user readonly directive](049-user-readonly-directive.md) | done | 030 | `READONLY` user directive for side-effect-free reads without a determinism claim. |
 
 ## Resolved decisions
 

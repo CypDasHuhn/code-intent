@@ -27,9 +27,13 @@ import dev.cint.core.facts.store.AnnotationStore
 import dev.cint.core.facts.view.CapabilityView
 import dev.cint.core.runtime.context.RuleContext
 import dev.cint.core.runtime.engine.AnalysisContext
+import dev.cint.core.support.hashing.contentHash
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
 import dev.cint.core.test.testConfig
+import dev.cint.core.user.USER_CONTRIBUTOR_ID
+import dev.cint.core.user.UserAnnotation
+import dev.cint.core.user.UserAnnotationResolver
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import kotlin.test.Test
@@ -160,6 +164,56 @@ class CapabilityViewTest {
 
         assertTrue(view.coverage(pure).hasUntagged)
         assertTrue(view.intentsAt(pure).isEmpty())
+    }
+
+    @Test
+    fun userReadOnlyAnnotationsAreSideEffectFreeReadsButNotAnnotatedPure() {
+        val userText =
+            """
+            fun pureCandidate(): String = "x"
+            fun readOnlyCandidate(): String = "y"
+            fun pureCaller(): String = pureCandidate()
+            fun caller(): String = readOnlyCandidate()
+            """.trimIndent()
+        val userSource = SourceFile("UserDirectives.kt", userText)
+        val userTree = KotlinParser().parse(userSource)
+        val flow = ControlFlowBuilder(userTree, syntax).build()
+        val pure = syntax.functions(userTree).first { it.name == "pureCandidate" }.node
+        val readOnly = syntax.functions(userTree).first { it.name == "readOnlyCandidate" }.node
+        val users =
+            UserAnnotationResolver.resolve(
+                listOf(
+                    UserAnnotation(
+                        path = userSource.path,
+                        span = pure.span(),
+                        intents = setOf("PURE"),
+                        symbol = "pureCandidate",
+                        contentHash = contentHash(pure.text),
+                    ),
+                    UserAnnotation(
+                        path = userSource.path,
+                        span = readOnly.span(),
+                        intents = setOf("READONLY"),
+                        symbol = "readOnlyCandidate",
+                        contentHash = contentHash(readOnly.text),
+                    ),
+                ),
+                userSource,
+                userTree,
+                syntax,
+                null,
+            )
+        val store = AnnotationStore()
+        store.replaceRule(USER_CONTRIBUTOR_ID, users)
+        val context = AnalysisContext(userSource, userTree, syntax, flow, NullOracle, config, store)
+        val view = context.view("VALIDATION", emptySet())
+        val pureCall = context.calls.first { it.callee == "pureCandidate" }
+        val readOnlyCall = context.calls.first { it.callee == "readOnlyCandidate" }
+
+        assertTrue(view.isAnnotatedPure(pure))
+        assertFalse(view.isAnnotatedPure(readOnly))
+        assertTrue(view.isSideEffectFree(pureCall.node))
+        assertTrue(view.isSideEffectFree(readOnlyCall.node))
     }
 
     @Test

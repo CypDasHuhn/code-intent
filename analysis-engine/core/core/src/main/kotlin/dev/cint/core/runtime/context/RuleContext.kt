@@ -68,4 +68,23 @@ interface RuleContext {
         covering(node).any { annotation ->
             annotation.provenance.any(UserAnnotationResolver::isUserPure)
         }
+
+    fun isUserReadOnly(node: SyntaxNode): Boolean =
+        covering(node).any { annotation ->
+            annotation.provenance.any(UserAnnotationResolver::isUserReadOnly)
+        }
+
+    fun isUserPureCall(node: SyntaxNode): Boolean = isUserCall(node, ::isUserPure)
+
+    fun isUserReadOnlyCall(node: SyntaxNode): Boolean = isUserCall(node, ::isUserReadOnly)
+
+    private fun isUserCall(
+        node: SyntaxNode,
+        predicate: (SyntaxNode) -> Boolean,
+    ): Boolean {
+        if (syntax.receiverNode(node) != null) return false
+        val callee = syntax.calleeName(node) ?: return false
+        val function = syntax.findFunction(tree, callee) ?: return false
+        return predicate(function)
+    }
 }

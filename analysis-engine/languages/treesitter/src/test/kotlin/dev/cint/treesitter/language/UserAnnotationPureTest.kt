@@ -1,5 +1,6 @@
 package dev.cint.treesitter.language
 
+import dev.cint.api.Annotation
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit
 import dev.cint.api.Intent
@@ -18,6 +19,8 @@ import dev.cint.core.user.UserAnnotationResolver
 import dev.cint.treesitter.KotlinParser
 import dev.cint.treesitter.KotlinSyntaxModel
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 private class UserPureLoggingRule : Rule {
@@ -93,6 +96,73 @@ class UserAnnotationPureTest {
         assertTrue(derivatives.any { slice(text, it.startByte, it.endByte).contains("val source") })
         assertTrue(derivatives.any { slice(text, it.startByte, it.endByte).contains("val message") })
         assertTrue(derivatives.all { "LOGGING" in it.intents })
+    }
+
+    @Test
+    fun userReadOnlyAnnotationPromotesDerivativeUse() {
+        val text =
+            """
+            private val log = LoggerFactory.getLogger(Foo::class.java)
+            private val π = 1
+            fun make(): String = "x"
+            fun f() {
+                val source = make()
+                val message = source
+                log.warn(message)
+            }
+            """.trimIndent()
+        val derivatives = analyzeDerivatives(text, "READONLY")
+        val sourceDerivative =
+            derivatives.first { slice(text, it.startByte, it.endByte).contains("val source") }
+        val controlDerivative =
+            analyzeDerivatives(text, null).first { slice(text, it.startByte, it.endByte).contains("val source") }
+
+        assertEquals(0.7, sourceDerivative.confidence)
+        assertEquals(0.55, controlDerivative.confidence)
+        assertTrue(derivatives.any { slice(text, it.startByte, it.endByte).contains("val message") })
+        assertFalse(derivatives.any { slice(text, it.startByte, it.endByte).contains("fun make") })
+        assertTrue(derivatives.all { "LOGGING" in it.intents })
+    }
+
+    private fun analyzeDerivatives(
+        text: String,
+        directive: String?,
+    ): List<Annotation> {
+        val source = SourceFile("Sample.kt", text)
+        val tree = KotlinParser().parse(source)
+        val syntax = KotlinSyntaxModel
+        val users =
+            if (directive == null) {
+                emptyList()
+            } else {
+                val function = syntax.functions(tree).first { it.name == "make" }.node
+                UserAnnotationResolver.resolve(
+                    listOf(
+                        UserAnnotation(
+                            path = "Sample.kt",
+                            span = function.span(),
+                            intents = setOf(directive),
+                            symbol = "make",
+                            contentHash = contentHash(function.text),
+                        ),
+                    ),
+                    source,
+                    tree,
+                    syntax,
+                    null,
+                )
+            }
+        return RuleEngine()
+            .analyze(
+                source,
+                tree,
+                syntax,
+                NullOracle,
+                testConfig("kotlin"),
+                listOf(UserPureLoggingPack()),
+                users,
+            ).annotations
+            .filter { it.role == Role.DERIVATIVE_USE }
     }
 
     private fun slice(

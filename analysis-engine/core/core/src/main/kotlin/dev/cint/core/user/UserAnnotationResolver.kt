@@ -27,6 +27,9 @@ object UserAnnotationResolver {
     fun isUserPure(contribution: Contribution): Boolean =
         contribution.rule == USER_CONTRIBUTOR_ID && USER_PURE_INTENT in contribution.intents
 
+    fun isUserReadOnly(contribution: Contribution): Boolean =
+        contribution.rule == USER_CONTRIBUTOR_ID && USER_READONLY_INTENT in contribution.intents
+
     fun selectionText(
         file: SourceFile,
         span: Span,

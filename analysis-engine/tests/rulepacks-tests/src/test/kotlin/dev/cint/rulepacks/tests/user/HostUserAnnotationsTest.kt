@@ -69,7 +69,7 @@ class HostUserAnnotationsTest {
                     UserAnnotation(
                         path = "Sample.kt",
                         span = function.node.span(),
-                        intents = setOf("PURE", "TEAM_CUSTOM_INTENT"),
+                        intents = setOf("PURE", "READONLY", "TEAM_CUSTOM_INTENT"),
                         symbol = "make",
                         contentHash = contentHash(function.node.text),
                     ),
@@ -81,11 +81,11 @@ class HostUserAnnotationsTest {
                         it.role == Role.SOURCE_INTENT && "TEAM_CUSTOM_INTENT" in it.intents
                     }
 
-                assertEquals(setOf("USER_MERGE_INTENT", "PURE", "TEAM_CUSTOM_INTENT"), annotation.intents)
+                assertEquals(setOf("USER_MERGE_INTENT", "PURE", "READONLY", "TEAM_CUSTOM_INTENT"), annotation.intents)
                 assertEquals(null, annotation.nodeAnchor)
                 assertTrue(
                     pipeline.intents(listOf("kotlin")).containsAll(
-                        listOf("USER_MERGE_INTENT", "PURE", "TEAM_CUSTOM_INTENT", "UNTAGGED"),
+                        listOf("USER_MERGE_INTENT", "PURE", "READONLY", "TEAM_CUSTOM_INTENT", "UNTAGGED"),
                     ),
                 )
                 assertEquals(
@@ -93,6 +93,7 @@ class HostUserAnnotationsTest {
                     annotation.provenance.map { it.rule }.toSet(),
                 )
                 assertTrue(annotation.provenance.any { it.rule == USER_CONTRIBUTOR_ID && it.intents.contains("PURE") })
+                assertTrue(annotation.provenance.any { it.rule == USER_CONTRIBUTOR_ID && it.intents.contains("READONLY") })
 
                 write(root)
                 val removed = pipeline.analyze(source, tree, syntax, NullOracle, config).annotations

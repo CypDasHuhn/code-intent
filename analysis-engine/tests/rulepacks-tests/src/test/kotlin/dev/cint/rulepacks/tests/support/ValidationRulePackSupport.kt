@@ -9,6 +9,7 @@ import dev.cint.api.Rule
 import dev.cint.api.RuleEmit
 import dev.cint.api.RulePack
 import dev.cint.api.View
+import dev.cint.core.user.UserAnnotation
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
@@ -42,6 +43,16 @@ internal fun validationSources(input: ValidationInput): List<Annotation> =
 
 internal fun validationAnalysis(input: ValidationInput): PackAnalysis =
     analyzePack(input, listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ValidationRulePack()))
+
+internal fun validationAnalysis(
+    input: ValidationInput,
+    userAnnotations: List<UserAnnotation>,
+): PackAnalysis =
+    analyzePack(
+        input,
+        listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack(), ValidationRulePack()),
+        userAnnotations = userAnnotations,
+    )
 
 internal fun parseValidationInput(
     language: String,

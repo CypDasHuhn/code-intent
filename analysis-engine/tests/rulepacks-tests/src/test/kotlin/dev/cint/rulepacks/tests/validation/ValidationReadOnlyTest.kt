@@ -1,5 +1,7 @@
 package dev.cint.rulepacks.tests.validation
 
+import dev.cint.core.support.hashing.contentHash
+import dev.cint.core.user.UserAnnotation
 import dev.cint.rulepacks.tests.support.parseValidationInput
 import dev.cint.rulepacks.tests.support.validationAnalysis
 import dev.cint.rulepacks.validation.VALIDATION_INTENT
@@ -37,6 +39,51 @@ class ValidationReadOnlyTest {
         assertEquals(setOf(VALIDATION_INTENT), readOnly.intents)
         assertTrue(readOnly.confidence < predicate.confidence)
         assertTrue(readOnly.confidence > 0.0)
+    }
+
+    @Test
+    fun userDirectivesUseSideEffectFreeValidationConfidence() {
+        val source =
+            """
+            fun readOnlyGuard(): Boolean = true
+            fun pureGuard(): Boolean = true
+            fun plainGuard(): Boolean = true
+            fun f(): Boolean {
+                if (readOnlyGuard()) return false
+                if (pureGuard()) return false
+                if (plainGuard()) return false
+                return true
+            }
+            """.trimIndent()
+        val input = parseValidationInput("kotlin", "Sample.kt", source)
+        val functions = input.syntax.functions(input.tree).associateBy { it.name }
+        val readOnly = functions.getValue("readOnlyGuard").node
+        val pure = functions.getValue("pureGuard").node
+        val analysis =
+            validationAnalysis(
+                input,
+                listOf(
+                    UserAnnotation(
+                        path = input.source.path,
+                        span = readOnly.span(),
+                        intents = setOf("READONLY"),
+                        symbol = "readOnlyGuard",
+                        contentHash = contentHash(readOnly.text),
+                    ),
+                    UserAnnotation(
+                        path = input.source.path,
+                        span = pure.span(),
+                        intents = setOf("PURE"),
+                        symbol = "pureGuard",
+                        contentHash = contentHash(pure.text),
+                    ),
+                ),
+            )
+        val values = analysis.source(VALIDATION_INTENT)
+
+        assertEquals(0.6, values.first { it.text(source) == "readOnlyGuard()" }.confidence)
+        assertEquals(0.6, values.first { it.text(source) == "pureGuard()" }.confidence)
+        assertEquals(0.5, values.first { it.text(source) == "plainGuard()" }.confidence)
     }
 
     @Test
