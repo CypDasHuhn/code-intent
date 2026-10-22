@@ -63,6 +63,7 @@ host and client cutover at the end.
 | 049 | [user readonly directive](049-user-readonly-directive.md) | done | 030 | `READONLY` user directive for side-effect-free reads without a determinism claim. |
 | 050 | [automated cross-writer annotation lock test](050-cross-writer-annotation-lock-test.md) | done | 041 | Kotlin-plus-Neovim contention on one root; automated by `CrossWriterAnnotationLockTest` and `just test-cross-writer`. |
 | 051 | [size hygiene splits](051-size-hygiene-splits.md) | done | 042, 044, 048, 050 | Split remaining EXTREME files and OVERCROWDED directories by responsibility. |
+| 052 | [nvim intent hover](052-nvim-intent-hover.md) | in-progress | 016 | LSP-like non-blocking floating intent inspector for the caret span. |
 
 ## Resolved decisions
 
