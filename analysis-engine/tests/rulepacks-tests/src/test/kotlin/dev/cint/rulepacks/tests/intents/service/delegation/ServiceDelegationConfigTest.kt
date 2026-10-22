@@ -9,7 +9,7 @@ import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.service.SERVICE_DELEGATION_INTENT
 import dev.cint.rulepacks.intents.service.ServiceConfig
 import dev.cint.rulepacks.intents.service.ServiceRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.test.fixtures.text
 import kotlin.test.Test

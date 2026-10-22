@@ -1,7 +1,7 @@
 package dev.cint.rulepacks.tests.intents.structural
 
-import dev.cint.rulepacks.intents.structural.RETURN_VALUE_INTENT
-import dev.cint.rulepacks.intents.structural.ReturnValueRulePack
+import dev.cint.rulepacks.intents.structural.returnvalue.RETURN_VALUE_INTENT
+import dev.cint.rulepacks.intents.structural.returnvalue.ReturnValueRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test
 import kotlin.test.assertEquals

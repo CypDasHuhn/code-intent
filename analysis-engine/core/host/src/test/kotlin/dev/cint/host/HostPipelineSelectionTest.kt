@@ -3,6 +3,7 @@ package dev.cint.host
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.runtime.rulepack.RulePackLoadFailureKind
 import dev.cint.core.runtime.rulepack.RulePackLoader
+import dev.cint.host.support.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

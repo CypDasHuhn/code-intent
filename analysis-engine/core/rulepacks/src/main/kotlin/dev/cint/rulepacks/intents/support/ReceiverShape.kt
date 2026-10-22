@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.intents
+package dev.cint.rulepacks.intents.support
 
 import dev.cint.api.SyntaxNode
 

@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.callback
+package dev.cint.rulepacks.intents.support
 
 import dev.cint.api.CallFact
 import dev.cint.api.SyntaxNode

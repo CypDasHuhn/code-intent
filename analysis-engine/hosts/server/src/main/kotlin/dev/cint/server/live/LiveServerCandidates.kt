@@ -1,35 +1,13 @@
-package dev.cint.server.review
+package dev.cint.server.live
 
 import dev.cint.api.CandidateEmit
 import dev.cint.core.candidate.CandidateIdentity
 import dev.cint.core.user.UserAnnotationsFile
-import dev.cint.frontend.Frontends
 import dev.cint.server.LiveServer
-import dev.cint.server.live.DocState
-import dev.cint.server.live.DocumentKey
-import dev.cint.server.live.PublishedCandidate
-import dev.cint.server.live.relativePath
 import dev.cint.suggest.model.CandidateDocument
 import dev.cint.suggest.model.CandidateGroup
 import java.io.BufferedWriter
 import java.util.concurrent.ConcurrentHashMap
-
-internal fun LiveServer.suggestionCapability(): Map<String, Any?> {
-    val selectedProvider = suggestionSettings.effectiveProvider
-    val provider = suggestionService.findProvider(selectedProvider)
-    return linkedMapOf(
-        "enabled" to suggestionSettings.enabled,
-        "trigger" to suggestionSettings.trigger,
-        "provider" to (selectedProvider ?: provider?.id),
-        "model" to (suggestionSettings.model ?: provider?.model),
-        "knownIntents" to knownIntents(),
-    )
-}
-
-internal fun LiveServer.knownIntents(): List<String> =
-    runCatching {
-        packs.intents(Frontends.languages())
-    }.getOrDefault(emptyList())
 
 internal fun LiveServer.publishCandidates(
     writer: BufferedWriter,

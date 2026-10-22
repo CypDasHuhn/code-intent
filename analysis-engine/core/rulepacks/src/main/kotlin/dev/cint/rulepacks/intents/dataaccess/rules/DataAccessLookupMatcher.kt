@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.intents.dataaccess
+package dev.cint.rulepacks.intents.dataaccess.rules
 
 import dev.cint.api.CallFact
 import dev.cint.api.Emit
@@ -9,7 +9,10 @@ import dev.cint.api.View
 import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.api.emit
-import dev.cint.rulepacks.intents.isTypeQueryableReceiver
+import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
+import dev.cint.rulepacks.intents.dataaccess.config.DataAccessLanguageConfig
+import dev.cint.rulepacks.intents.dataaccess.dataAccessCandidate
+import dev.cint.rulepacks.intents.support.isTypeQueryableReceiver
 
 private val INCREMENT_OPERATORS = setOf("++", "--")
 

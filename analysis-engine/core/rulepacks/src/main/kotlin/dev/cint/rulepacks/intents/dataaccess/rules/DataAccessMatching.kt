@@ -1,6 +1,7 @@
-package dev.cint.rulepacks.intents.dataaccess
+package dev.cint.rulepacks.intents.dataaccess.rules
 
 import dev.cint.api.TypeRef
+import dev.cint.rulepacks.intents.dataaccess.config.DataAccessLanguageConfig
 
 internal fun isAmbiguous(
     callee: String,

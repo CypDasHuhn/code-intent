@@ -4,8 +4,8 @@ import dev.cint.api.Emit
 import dev.cint.api.FunctionFact
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.intents.isTypeQueryableReceiver
 import dev.cint.rulepacks.intents.service.ServiceLanguageConfig
+import dev.cint.rulepacks.intents.support.isTypeQueryableReceiver
 
 internal const val HEURISTIC_SOURCE: String = "heuristic"
 

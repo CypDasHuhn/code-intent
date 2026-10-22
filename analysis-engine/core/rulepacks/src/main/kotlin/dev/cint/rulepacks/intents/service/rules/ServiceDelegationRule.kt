@@ -9,12 +9,12 @@ import dev.cint.api.Rule
 import dev.cint.api.RuleEmit
 import dev.cint.api.SyntaxNode
 import dev.cint.api.View
-import dev.cint.rulepacks.callback.callbackParameterAt
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.service.SERVICE_DELEGATION_INTENT
 import dev.cint.rulepacks.intents.service.SERVICE_DELEGATION_RULE_ID
 import dev.cint.rulepacks.intents.service.ServiceConfig
 import dev.cint.rulepacks.intents.service.ServiceLanguageConfig
+import dev.cint.rulepacks.intents.support.callbackParameterAt
 
 private data class ForwardingUnit(
     val serviceCalls: List<Pair<CallFact, Evidence>>,

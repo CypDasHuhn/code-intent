@@ -7,5 +7,5 @@ dev.cint.rulepacks.intents.normalization.NormalizationRulePack
 dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 dev.cint.rulepacks.intents.service.ServiceRulePack
 dev.cint.rulepacks.intents.transformation.TransformationRulePack
-dev.cint.rulepacks.intents.structural.ReturnValueRulePack
-dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+dev.cint.rulepacks.intents.structural.returnvalue.ReturnValueRulePack
+dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack

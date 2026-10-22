@@ -10,6 +10,9 @@ import dev.cint.api.Intent
 import dev.cint.api.Rule
 import dev.cint.api.RuleEmit
 import dev.cint.api.View
+import dev.cint.rulepacks.intents.dataaccess.config.DataAccessConfig
+import dev.cint.rulepacks.intents.dataaccess.rules.DataAccessLookupMatcher
+import dev.cint.rulepacks.intents.dataaccess.rules.DataAccessSearchMatcher
 
 const val SEARCH_INTENT: Intent = "SEARCH"
 const val LOOKUP_INTENT: Intent = "LOOKUP"

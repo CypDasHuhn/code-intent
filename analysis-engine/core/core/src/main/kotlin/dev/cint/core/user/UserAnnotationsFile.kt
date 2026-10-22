@@ -1,10 +1,13 @@
 package dev.cint.core.user
 
+import dev.cint.core.user.layout.AnnotationLayout
+import dev.cint.core.user.lock.AnnotationFileLock
+import dev.cint.core.user.lock.AnnotationLockObserver
 import java.nio.file.Path
 
 object UserAnnotationsFile {
-    const val DIRECTORY: String = ".cint"
-    const val FILE_NAME: String = "user-annotations.json"
+    const val DIRECTORY: String = AnnotationLayout.DIRECTORY
+    const val FILE_NAME: String = AnnotationLayout.FILE_NAME
 
     internal var lockObserver: AnnotationLockObserver?
         get() = AnnotationFileLock.observer
@@ -12,7 +15,7 @@ object UserAnnotationsFile {
             AnnotationFileLock.observer = value
         }
 
-    fun path(root: Path): Path = root.resolve(DIRECTORY).resolve(FILE_NAME)
+    fun path(root: Path): Path = AnnotationLayout.path(root)
 
     fun load(root: Path): List<UserAnnotation> = AnnotationFileStore.load(path(root))
 
@@ -39,7 +42,7 @@ object UserAnnotationsFile {
                             it.intents == annotation.intents
                     }
                 val updated = kept + annotation
-                AnnotationFileLock.write(root, updated, token)
+                writeLocked(root, updated, token)
                 updated
             }
         }
@@ -50,7 +53,7 @@ object UserAnnotationsFile {
     ) {
         synchronized(AnnotationFileLock.lockFor(root)) {
             AnnotationFileLock.withFileLockToken(root) { token ->
-                AnnotationFileLock.write(root, annotations, token)
+                writeLocked(root, annotations, token)
             }
         }
     }
@@ -105,4 +108,15 @@ object UserAnnotationsFile {
             acquireTimeoutMillis,
             block,
         )
+
+    private fun writeLocked(
+        root: Path,
+        annotations: List<UserAnnotation>,
+        token: String,
+    ) {
+        AnnotationFileLock.assertOwned(root, token)
+        AnnotationFileStore.write(path(root), annotations) {
+            AnnotationFileLock.assertOwned(root, token)
+        }
+    }
 }

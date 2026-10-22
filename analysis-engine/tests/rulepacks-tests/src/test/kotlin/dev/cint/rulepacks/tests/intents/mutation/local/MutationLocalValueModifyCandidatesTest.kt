@@ -7,7 +7,7 @@ import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_RULE_ID
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test

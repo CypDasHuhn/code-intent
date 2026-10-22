@@ -9,7 +9,7 @@ import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NORMALIZATION_INTENT
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
 import dev.cint.rulepacks.intents.transformation.DATA_TRANSFORMATION_INTENT
 import dev.cint.rulepacks.intents.transformation.TransformationRulePack
 import dev.cint.rulepacks.validation.VALIDATION_INTENT

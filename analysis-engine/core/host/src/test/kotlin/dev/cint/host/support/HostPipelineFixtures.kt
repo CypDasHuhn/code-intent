@@ -1,4 +1,4 @@
-package dev.cint.host
+package dev.cint.host.support
 
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.ConfigField
@@ -13,6 +13,7 @@ import dev.cint.api.RulePackConfigResolver
 import dev.cint.api.View
 import dev.cint.core.config.ProjectConfig
 import dev.cint.core.runtime.rulepack.RulePackLoader
+import dev.cint.host.HostPipeline
 import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Path

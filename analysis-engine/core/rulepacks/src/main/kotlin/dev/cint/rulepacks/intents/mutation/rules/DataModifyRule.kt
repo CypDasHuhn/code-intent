@@ -7,8 +7,6 @@ import dev.cint.api.Rule
 import dev.cint.api.RuleEmit
 import dev.cint.api.View
 import dev.cint.api.emit
-import dev.cint.rulepacks.callback.callbackParameterAt
-import dev.cint.rulepacks.callback.containsConfiguredTarget
 import dev.cint.rulepacks.intents.mutation.CANDIDATE_CONFIDENCE
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_RULE_ID
@@ -16,6 +14,8 @@ import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_SOURCE
 import dev.cint.rulepacks.intents.mutation.ESTABLISHED_CONFIDENCE
 import dev.cint.rulepacks.intents.mutation.MutationConfig
 import dev.cint.rulepacks.intents.mutation.MutationLanguageConfig
+import dev.cint.rulepacks.intents.support.callbackParameterAt
+import dev.cint.rulepacks.intents.support.containsConfiguredTarget
 
 internal class DataModifyRule(
     private val config: MutationConfig,

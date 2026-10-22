@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.intents.dataaccess
+package dev.cint.rulepacks.intents.dataaccess.config
 
 private val SEARCH_CALLS =
     setOf(

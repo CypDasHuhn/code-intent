@@ -4,10 +4,10 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
-import dev.cint.rulepacks.intents.structural.RETURN_VALUE_INTENT
-import dev.cint.rulepacks.intents.structural.RETURN_VALUE_RULE_ID
-import dev.cint.rulepacks.intents.structural.ReturnValueRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.returnvalue.RETURN_VALUE_INTENT
+import dev.cint.rulepacks.intents.structural.returnvalue.RETURN_VALUE_RULE_ID
+import dev.cint.rulepacks.intents.structural.returnvalue.ReturnValueRulePack
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.validation.VALIDATION_INTENT

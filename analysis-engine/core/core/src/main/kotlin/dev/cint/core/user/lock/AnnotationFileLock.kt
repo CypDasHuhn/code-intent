@@ -1,5 +1,6 @@
-package dev.cint.core.user
+package dev.cint.core.user.lock
 
+import dev.cint.core.user.layout.AnnotationLayout
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -31,7 +32,7 @@ internal interface AnnotationLockObserver {
 internal object AnnotationFileLock {
     private const val ACQUIRE_TIMEOUT_MILLIS: Long = 15_000
     private const val RETRY_MILLIS: Long = 10
-    private const val LOCK_NAME: String = "${UserAnnotationsFile.FILE_NAME}.lock"
+    private const val LOCK_NAME: String = "${AnnotationLayout.FILE_NAME}.lock"
     private const val CLAIM_NAME: String = "$LOCK_NAME.steal"
     private const val GUARD_NAME: String = "$LOCK_NAME.guard"
     private const val TOMBSTONE_MARKER: String = ".stale-"
@@ -48,7 +49,7 @@ internal object AnnotationFileLock {
         root: Path,
         token: String,
     ): Boolean {
-        val directory = UserAnnotationsFile.path(root).parent
+        val directory = AnnotationLayout.path(root).parent
         Files.createDirectories(directory)
         val lockPath = directory.resolve(LOCK_NAME)
         return release(lockPath, token, null, null) == ReleaseResult.RELEASED
@@ -88,7 +89,7 @@ internal object AnnotationFileLock {
         acquireTimeoutMillis: Long = ACQUIRE_TIMEOUT_MILLIS,
         block: (String) -> T,
     ): T {
-        val directory = UserAnnotationsFile.path(root).parent
+        val directory = AnnotationLayout.path(root).parent
         Files.createDirectories(directory)
         val lockPath = directory.resolve(LOCK_NAME)
         val claimPath = directory.resolve(CLAIM_NAME)
@@ -130,25 +131,17 @@ internal object AnnotationFileLock {
         }
     }
 
-    fun write(
+    fun assertOwned(
         root: Path,
-        annotations: List<UserAnnotation>,
         token: String,
     ) {
-        val path = UserAnnotationsFile.path(root)
-        Files.createDirectories(path.parent)
-        val lockPath = path.parent.resolve(LOCK_NAME)
+        val lockPath = lockPath(root)
         if (AnnotationLockOwner.read(lockPath)?.token != token) {
             throw IllegalStateException("lost annotation lock at $lockPath")
         }
-        AnnotationFileStore.write(path, annotations) {
-            if (AnnotationLockOwner.read(lockPath)?.token != token) {
-                throw IllegalStateException("lost annotation lock at $lockPath")
-            }
-        }
     }
 
-    private fun lockPath(root: Path): Path = UserAnnotationsFile.path(root).parent.resolve(LOCK_NAME)
+    private fun lockPath(root: Path): Path = AnnotationLayout.path(root).parent.resolve(LOCK_NAME)
 
     private fun acquireLock(
         lockPath: Path,

@@ -3,7 +3,7 @@ package dev.cint.rulepacks.tests.validation.guards
 import dev.cint.api.Role
 import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.rulepacks.tests.support.parseValidationInput
 import dev.cint.rulepacks.tests.support.validationSources

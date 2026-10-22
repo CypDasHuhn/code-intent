@@ -1,10 +1,12 @@
-package dev.cint.server.review
+package dev.cint.server.suggestions
 
 import com.fasterxml.jackson.databind.JsonNode
+import dev.cint.frontend.Frontends
 import dev.cint.server.LiveServer
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.SuggestPass
 import dev.cint.server.live.docsFor
+import dev.cint.server.live.publishCandidates
 import dev.cint.server.live.relativePath
 import dev.cint.suggest.model.CandidateDocument
 import dev.cint.suggest.model.SuggestionOptions
@@ -13,6 +15,23 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+
+internal fun LiveServer.suggestionCapability(): Map<String, Any?> {
+    val selectedProvider = suggestionSettings.effectiveProvider
+    val provider = suggestionService.findProvider(selectedProvider)
+    return linkedMapOf(
+        "enabled" to suggestionSettings.enabled,
+        "trigger" to suggestionSettings.trigger,
+        "provider" to (selectedProvider ?: provider?.id),
+        "model" to (suggestionSettings.model ?: provider?.model),
+        "knownIntents" to knownIntents(),
+    )
+}
+
+internal fun LiveServer.knownIntents(): List<String> =
+    runCatching {
+        packs.intents(Frontends.languages())
+    }.getOrDefault(emptyList())
 
 internal fun LiveServer.handleSuggest(
     writer: BufferedWriter,

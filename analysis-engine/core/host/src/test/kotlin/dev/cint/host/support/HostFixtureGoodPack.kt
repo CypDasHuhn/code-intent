@@ -1,4 +1,4 @@
-package dev.cint.host
+package dev.cint.host.support
 
 import dev.cint.api.CINT_API_VERSION
 import dev.cint.api.Emit

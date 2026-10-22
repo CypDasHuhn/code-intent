@@ -115,6 +115,26 @@ class ServiceInitCreationRulePackTest {
     }
 
     @Test
+    fun unconfiguredConstructorsAndPlainCallsAreNotInit() {
+        val source =
+            """
+            class Holder {
+                val helper = Helper()
+
+                fun build() {
+                    helper.run()
+                    data.clear()
+                }
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
+        assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
+    }
+
+    @Test
     fun leadingFileCommentsDoNotDisableCreationDetection() {
         val cases =
             listOf(

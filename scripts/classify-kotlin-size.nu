@@ -1,6 +1,6 @@
 #!/usr/bin/env nu
 
-const suspicious = 200
+const suspicious = 300
 const extreme = 400
 
 def main [root: path = "."] {

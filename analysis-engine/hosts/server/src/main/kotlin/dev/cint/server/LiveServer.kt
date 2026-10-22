@@ -22,10 +22,10 @@ import dev.cint.server.live.docFrom
 import dev.cint.server.live.docsFor
 import dev.cint.server.live.publish
 import dev.cint.server.live.republishOpenDocs
-import dev.cint.server.review.handleCandidateDecision
-import dev.cint.server.review.handleSuggest
-import dev.cint.server.review.handleSuggestCancel
-import dev.cint.server.review.suggestionCapability
+import dev.cint.server.suggestions.handleCandidateDecision
+import dev.cint.server.suggestions.handleSuggest
+import dev.cint.server.suggestions.handleSuggestCancel
+import dev.cint.server.suggestions.suggestionCapability
 import dev.cint.suggest.SuggestionService
 import java.io.BufferedReader
 import java.io.BufferedWriter

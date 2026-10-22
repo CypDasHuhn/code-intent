@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.callback
+package dev.cint.rulepacks.intents.support
 
 internal fun outerTypeName(type: String): String {
     val trimmed = type.trim().removePrefix("suspend ").trim()

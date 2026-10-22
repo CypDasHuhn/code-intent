@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.intents.structural
+package dev.cint.rulepacks.intents.structural.returnvalue
 
 import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema

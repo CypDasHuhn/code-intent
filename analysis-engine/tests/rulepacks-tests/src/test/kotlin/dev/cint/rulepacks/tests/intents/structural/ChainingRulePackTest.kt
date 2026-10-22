@@ -3,9 +3,9 @@ package dev.cint.rulepacks.tests.intents.structural
 import dev.cint.api.CandidateReason
 import dev.cint.rulepacks.intents.service.SERVICE_INIT_INTENT
 import dev.cint.rulepacks.intents.service.ServiceRulePack
-import dev.cint.rulepacks.intents.structural.CHAINING_INTENT
-import dev.cint.rulepacks.intents.structural.CHAINING_RULE_ID
-import dev.cint.rulepacks.intents.structural.ChainingRulePack
+import dev.cint.rulepacks.intents.structural.chaining.CHAINING_INTENT
+import dev.cint.rulepacks.intents.structural.chaining.CHAINING_RULE_ID
+import dev.cint.rulepacks.intents.structural.chaining.ChainingRulePack
 import dev.cint.rulepacks.tests.support.PackAnalysis
 import dev.cint.rulepacks.tests.support.analyzePack
 import kotlin.test.Test

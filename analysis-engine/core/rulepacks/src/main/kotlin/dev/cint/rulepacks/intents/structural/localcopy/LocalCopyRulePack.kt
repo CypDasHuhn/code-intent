@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.intents.structural
+package dev.cint.rulepacks.intents.structural.localcopy
 
 import dev.cint.api.CandidateEmit
 import dev.cint.api.CandidateReason

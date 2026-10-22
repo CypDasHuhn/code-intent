@@ -1,11 +1,14 @@
-package dev.cint.rulepacks.intents.dataaccess
+package dev.cint.rulepacks.intents.dataaccess.rules
 
 import dev.cint.api.CallFact
 import dev.cint.api.Intent
 import dev.cint.api.RuleEmit
 import dev.cint.api.View
 import dev.cint.api.emit
-import dev.cint.rulepacks.intents.isTypeQueryableReceiver
+import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
+import dev.cint.rulepacks.intents.dataaccess.config.DataAccessLanguageConfig
+import dev.cint.rulepacks.intents.dataaccess.dataAccessCandidate
+import dev.cint.rulepacks.intents.support.isTypeQueryableReceiver
 
 internal class DataAccessSearchMatcher(
     private val language: DataAccessLanguageConfig,

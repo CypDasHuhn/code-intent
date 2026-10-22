@@ -15,7 +15,7 @@ import dev.cint.rulepacks.bookkeeping.BookkeepingRulePack
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
 import dev.cint.rulepacks.tests.support.analyzePack
 import dev.cint.test.fixtures.text
 import kotlin.test.Test

@@ -1,4 +1,4 @@
-package dev.cint.rulepacks.intents.dataaccess
+package dev.cint.rulepacks.intents.dataaccess.config
 
 import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema

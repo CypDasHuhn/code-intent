@@ -7,8 +7,8 @@ import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.mutation.MutationRulePack
 import dev.cint.rulepacks.intents.normalization.NormalizationRulePack
 import dev.cint.rulepacks.intents.service.ServiceRulePack
-import dev.cint.rulepacks.intents.structural.LocalCopyRulePack
-import dev.cint.rulepacks.intents.structural.ReturnValueRulePack
+import dev.cint.rulepacks.intents.structural.localcopy.LocalCopyRulePack
+import dev.cint.rulepacks.intents.structural.returnvalue.ReturnValueRulePack
 import dev.cint.rulepacks.intents.transformation.TransformationRulePack
 import dev.cint.rulepacks.logging.LoggingRulePack
 import dev.cint.rulepacks.validation.ValidationRulePack

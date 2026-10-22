@@ -12,7 +12,6 @@ import dev.cint.api.WriteFact
 import dev.cint.api.WriteKind
 import dev.cint.api.emit
 import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
-import dev.cint.rulepacks.callback.callbackParameterAt
 import dev.cint.rulepacks.intents.mutation.CANDIDATE_CONFIDENCE
 import dev.cint.rulepacks.intents.mutation.LOCAL_CANDIDATE_EXACT
 import dev.cint.rulepacks.intents.mutation.LOCAL_CONFIDENCE
@@ -21,7 +20,8 @@ import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_RULE_ID
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_SOURCE
 import dev.cint.rulepacks.intents.mutation.MutationConfig
 import dev.cint.rulepacks.intents.mutation.MutationLanguageConfig
-import dev.cint.rulepacks.intents.structural.LOCAL_COPY_INTENT
+import dev.cint.rulepacks.intents.structural.localcopy.LOCAL_COPY_INTENT
+import dev.cint.rulepacks.intents.support.callbackParameterAt
 
 private val LOCAL_CANDIDATE_PREFIXES =
     setOf(

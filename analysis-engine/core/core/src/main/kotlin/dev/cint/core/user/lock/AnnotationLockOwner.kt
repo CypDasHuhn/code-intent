@@ -1,4 +1,4 @@
-package dev.cint.core.user
+package dev.cint.core.user.lock
 
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.FileAlreadyExistsException

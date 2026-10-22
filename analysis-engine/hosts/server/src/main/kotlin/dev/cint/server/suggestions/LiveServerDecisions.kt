@@ -1,4 +1,4 @@
-package dev.cint.server.review
+package dev.cint.server.suggestions
 
 import com.fasterxml.jackson.databind.JsonNode
 import dev.cint.core.user.UserAnnotation
@@ -8,6 +8,7 @@ import dev.cint.server.SuggestionDecision
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.docsFor
 import dev.cint.server.live.nextAnalysisRevision
+import dev.cint.server.live.publishCandidates
 import dev.cint.server.live.relativePath
 import dev.cint.server.live.republishUri
 import java.io.BufferedWriter

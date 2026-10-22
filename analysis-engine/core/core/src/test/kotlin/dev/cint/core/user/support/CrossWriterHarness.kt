@@ -1,6 +1,9 @@
-package dev.cint.core.user
+package dev.cint.core.user.support
 
 import dev.cint.api.Span
+import dev.cint.core.user.UserAnnotation
+import dev.cint.core.user.UserAnnotationsFile
+import dev.cint.core.user.lock.AnnotationLockObserver
 import org.junit.Assume.assumeTrue
 import java.nio.file.Files
 import java.nio.file.Path

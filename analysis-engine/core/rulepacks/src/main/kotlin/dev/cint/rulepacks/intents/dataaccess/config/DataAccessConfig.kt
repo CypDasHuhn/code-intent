@@ -1,7 +1,8 @@
-package dev.cint.rulepacks.intents.dataaccess
+package dev.cint.rulepacks.intents.dataaccess.config
 
 import dev.cint.api.ConfigSchema
 import dev.cint.api.LanguageConfig
+import dev.cint.rulepacks.intents.dataaccess.DATA_ACCESS_PACK_ID
 
 data class DataAccessLanguageConfig(
     val searchCalls: Set<String> = emptySet(),

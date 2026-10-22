@@ -1,4 +1,4 @@
-package dev.cint.core.user
+package dev.cint.core.user.support
 
 internal val CROSS_WRITER_LUA_SCRIPT =
     """

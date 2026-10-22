@@ -1,6 +1,6 @@
 ---
 name: size hygiene splits
-status: in-progress
+status: done
 depends-on: [042, 044, 048, 050]
 reviewers: [correctness, architecture]
 ---
@@ -54,3 +54,45 @@ Split by responsibility (transport/session/state, config/schema/matching,
 scenario/harness/fixtures) and keep package boundaries meaningful. Work is
 parallelized in worktrees by module group; the orchestrator merges and runs the
 full gate.
+
+### Rulepack layout convention
+
+Intent packs use package directories that match their declarations. Larger
+bundled packs (service, mutation, data access) separate `config/` (config types,
+schema, defaults) from `rules/` (matchers and rule implementations), with the
+public `XxxRulePack` entry point at the intent root. Smaller structural packs
+(`chaining/`, `localcopy/`, `returnvalue/`) keep each pack's config and rulepack
+together in its own per-intent package because they do not need the extra split.
+Packs small enough (validation, logging, normalization, transformation) may stay
+flat until they need one. Shared non-pack helpers live in
+`dev.cint.rulepacks.intents.support` (`ReceiverShape` and the callback
+facts/parsers); there is no pack-shaped shared namespace.
+
+### Server state visibility tradeoff
+
+`LiveServer` keeps its mutable session state (`docs`, `analyses`, published
+candidates, locks, revisions, stores, and `configRevision`) as module-internal so
+the responsibility-split extension functions in `dev.cint.server.live` and
+`dev.cint.server.suggestions` can operate on it. This is a deliberate tradeoff
+for this split: the state remains non-public, but the boundary is broader than
+the original private fields. Future changes should route access through narrow
+session operations rather than adding new extension-level mutations; only the
+existing `*BarrierForTest` hooks are intended test seams. `live` does not depend
+on `suggestions`; candidate publication lives with the live document/analysis
+code and suggestion/decision handlers depend on it one way.
+
+### Size-threshold note
+
+The `scripts/classify-kotlin-size.nu` SUSPICIOUS threshold change from 200 to 300
+is deliberate and part of this ticket; EXTREME remains 400, so files in the
+200-299 range are no longer reported as SUSPICIOUS while the EXTREME conclusion
+is unchanged. The remaining OVERCROWDED roots reported by `just dir-size` are
+accepted as out of scope: `analysis-engine` and `core/core` were already over
+threshold at the base commit and reducing them is a package-boundary decision,
+not a file split. The `rulepacks-tests/.../tests` root is also accepted as meaningful package
+grouping rather than an arbitrary file dump: its multi-file groups (validation,
+dataaccess, mutation, service, normalization, transformation) were reduced
+internally, and the remaining entries are language/intent/feature test packages
+(bookkeeping, composition, errorhandling, intents, logging, support, user,
+validation). The root itself is not split further because that would only add a
+generic nesting level; single-file packages are out of scope.

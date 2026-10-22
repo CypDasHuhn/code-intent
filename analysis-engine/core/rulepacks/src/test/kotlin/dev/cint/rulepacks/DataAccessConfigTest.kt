@@ -4,12 +4,12 @@ import dev.cint.api.ConfigFieldScope
 import dev.cint.api.RulePackConfigException
 import dev.cint.api.configDescriptor
 import dev.cint.rulepacks.intents.dataaccess.DATA_ACCESS_PACK_ID
-import dev.cint.rulepacks.intents.dataaccess.DataAccessConfig
 import dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_RULE_ID
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_RULE_ID
+import dev.cint.rulepacks.intents.dataaccess.config.DataAccessConfig
 import dev.cint.rulepacks.intents.mutation.DURABLE_COMPOUND_MUTATION_CALLS
 import dev.cint.rulepacks.intents.mutation.LOCAL_ATOMIC_MUTATION_CALLS
 import dev.cint.rulepacks.intents.mutation.LOCAL_CANDIDATE_EXACT

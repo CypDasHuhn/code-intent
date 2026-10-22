@@ -14,7 +14,7 @@ import dev.cint.rulepacks.bookkeeping.BOOKKEEPING_INTENT
 import dev.cint.rulepacks.intents.mutation.DATA_MODIFY_INTENT
 import dev.cint.rulepacks.intents.mutation.LOCAL_VALUE_MODIFY_INTENT
 
-private val MUTATION_INTENTS = setOf(DATA_MODIFY_INTENT, LOCAL_VALUE_MODIFY_INTENT, BOOKKEEPING_INTENT)
+internal val VALIDATION_READS = setOf(DATA_MODIFY_INTENT, LOCAL_VALUE_MODIFY_INTENT, BOOKKEEPING_INTENT)
 
 private val NESTED_SCOPE_KINDS =
     setOf(
@@ -93,7 +93,7 @@ internal class ValidationRule(
         view.writes().any { write ->
             write.node.startByte >= node.startByte && write.node.endByte <= node.endByte
         } ||
-            MUTATION_INTENTS.any { intent ->
+            VALIDATION_READS.any { intent ->
                 view.annotations(intent).any { annotation ->
                     annotation.startByte >= node.startByte && annotation.endByte <= node.endByte
                 }
