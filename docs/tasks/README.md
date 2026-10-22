@@ -53,7 +53,7 @@ host and client cutover at the end.
 | 039 | [service delegation and init intents](039-service-intents.md) | done | 036 | `SERVICE_DELEGATION` and `SERVICE_INIT` service pack. |
 | 040 | [data and local mutation intents](040-mutation-intents.md) | done | 036 | `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` mutation pack. |
 | 041 | [annotation lock protocol hardening](041-annotation-lock-hardening.md) | done | 036 | Fix shared annotation lock acquisition/release races. |
-| 042 | [intent pack fidelity hardening](042-intent-pack-fidelity-hardening.md) | todo | 037, 038, 039, 040 | Deferred structural write targets, DI shapes, factory boundary, persistence typing, and read-prefix ordering. |
+| 042 | [intent pack fidelity hardening](042-intent-pack-fidelity-hardening.md) | done | 037, 038, 039, 040 | Deferred structural write targets, DI shapes, factory boundary, persistence typing, and read-prefix ordering. |
 | 043 | [DeepSeek intent provider](043-deepseek-intent-provider.md) | done | 036 | Real DeepSeek-backed AI intent candidates, confirmable only. |
 | 044 | [analysis oracle caching and budgeting](044-analysis-oracle-caching.md) | todo | 040 | Memoize receiver types, cache LSP results, gate/limit oracle queries. |
 | 045 | [composition intent coverage and read-only semantics](045-composition-intent-coverage.md) | done | 037, 038, 040 | Propagate initializer intents, add BOOL_COMBINATORICS/DATA_TRANSFORMATION, read-only guards. |

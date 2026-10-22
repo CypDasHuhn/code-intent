@@ -12,3 +12,7 @@ class ClientHolder {
         client.connect()
     }
 }
+
+class AnnotatedUserController @Inject constructor(private val annotatedService: UserService) {
+    fun find(id: String): User = annotatedService.find(id)
+}

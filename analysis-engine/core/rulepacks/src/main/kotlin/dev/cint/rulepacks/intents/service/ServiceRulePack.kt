@@ -142,7 +142,7 @@ private class ServiceInitRule(
         }
 
         for ((node, type) in creations) {
-            if (!typeMatches(type ?: continue, language.initTypes, emptySet())) continue
+            if (!typeMatches(type ?: continue, language.initTypes, language.initSuffixes)) continue
             if (emitted.add(node.startByte to node.endByte)) {
                 result += Emit.of(SERVICE_INIT_INTENT, node, Emit.DEFAULT_SOURCE, 0.85)
             }
@@ -249,6 +249,7 @@ private fun constructorInjectionEvidence(
 ): List<Pair<SyntaxNode, Evidence>> {
     val result = mutableListOf<Pair<SyntaxNode, Evidence>>()
     val seenScopes = mutableSetOf<Pair<Int, Int>>()
+    val languageName = view.language()
 
     for ((node, kind, owner) in view.scopes()) {
         if (kind != ScopeKind.CLASS) continue
@@ -256,14 +257,7 @@ private fun constructorInjectionEvidence(
         if (!seenScopes.add(classNode.startByte to classNode.endByte)) continue
         val params = PRIMARY_CONSTRUCTOR.find(classNode.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
-            val declaration = parameter.substringBefore('=').trim()
-            val property = PROPERTY_PARAMETER.find(declaration)
-            val type =
-                when {
-                    property != null -> property.groupValues[2].trim()
-                    view.language().equals("csharp", ignoreCase = true) -> parameterType(declaration)
-                    else -> null
-                } ?: continue
+            val type = injectionParameterType(parameter, languageName) ?: continue
             if (!isWiringType(type, language)) continue
             result += (findTextNode(classNode, parameter) ?: classNode) to Evidence(HEURISTIC_SOURCE, 0.8)
         }
@@ -272,16 +266,37 @@ private fun constructorInjectionEvidence(
     for ((node, name) in view.functions()) {
         val classNode = view.enclosingScope(node)?.owner ?: continue
         val className = classNameOf(classNode) ?: continue
-        if (name != className) continue
+        val constructor =
+            name == className ||
+                (languageName.equals("typescript", ignoreCase = true) && name == "constructor")
+        if (!constructor) continue
         val params = FUNCTION_PARAMETERS.find(node.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
-            val type = parameterType(parameter) ?: continue
+            val type = injectionParameterType(parameter, languageName) ?: continue
             if (!isWiringType(type, language)) continue
             result += (findTextNode(node, parameter) ?: node) to Evidence(HEURISTIC_SOURCE, 0.8)
         }
     }
 
     return result.distinctBy { it.first.startByte to it.first.endByte }
+}
+
+private fun injectionParameterType(
+    parameter: String,
+    language: String,
+): String? {
+    val declaration = parameter.substringBefore('=').trim()
+    val property = PROPERTY_PARAMETER.find(declaration)
+    if (property != null) return property.groupValues[2].trim()
+    if (language.equals("csharp", ignoreCase = true)) return parameterType(declaration)
+    if (language.equals("typescript", ignoreCase = true)) {
+        return TYPESCRIPT_PARAMETER_PROPERTY
+            .find(declaration)
+            ?.groupValues
+            ?.get(2)
+            ?.trim()
+    }
+    return null
 }
 
 private fun functionHasInitEvidence(
@@ -294,7 +309,10 @@ private fun functionHasInitEvidence(
         val evidence = initCallEvidence(view, call, language)
         evidence != null && !evidence.candidateOnly
     } ||
-        creations.any { creationWithin(view, it, function) && typeMatches(it.type ?: return@any false, language.initTypes, emptySet()) }
+        creations.any {
+            creationWithin(view, it, function) &&
+                typeMatches(it.type ?: return@any false, language.initTypes, language.initSuffixes)
+        }
 
 private fun mostlyInit(
     view: View,
@@ -311,7 +329,7 @@ private fun mostlyInit(
                 creations.any {
                     within(it.node, unit) &&
                         creationWithin(view, it, function) &&
-                        typeMatches(it.type ?: return@any false, language.initTypes, emptySet())
+                        typeMatches(it.type ?: return@any false, language.initTypes, language.initSuffixes)
                 }
         }
     return initUnits > 0 && initUnits * 2 >= units.size
@@ -425,7 +443,7 @@ private fun initCallEvidence(
     if (language.initQualifiers.any { path == it || path.startsWith("$it.") }) {
         return Evidence(Emit.DEFAULT_SOURCE, 0.85)
     }
-    if (call.receiver == null && typeMatches(callee, language.initTypes, emptySet())) {
+    if (call.receiver == null && typeMatches(callee, language.initTypes, language.initSuffixes)) {
         return Evidence(Emit.DEFAULT_SOURCE, 0.9)
     }
     val receiverName =
@@ -465,7 +483,7 @@ private fun isConnectionReceiver(
     language.connectionQualifiers.any { path.startsWith("$it.") || receiverName == it } ||
         (
             receiverType != null &&
-                typeMatches(receiverType, language.initTypes + language.serviceTypes, language.serviceSuffixes)
+                typeMatches(receiverType, language.initTypes + language.serviceTypes, language.serviceSuffixes + language.initSuffixes)
         )
 
 private fun isDiReceiver(
@@ -475,7 +493,10 @@ private fun isDiReceiver(
     language: ServiceLanguageConfig,
 ): Boolean =
     language.diQualifiers.any { path.startsWith("$it.") || receiverName == it } ||
-        (receiverType != null && typeMatches(receiverType, language.serviceTypes, language.serviceSuffixes))
+        (
+            receiverType != null &&
+                typeMatches(receiverType, language.serviceTypes, language.serviceSuffixes + language.initSuffixes)
+        )
 
 private fun bodyUnits(
     view: View,
@@ -642,7 +663,13 @@ private fun isWiringType(
 ): Boolean =
     TYPE_TOKEN
         .findAll(type)
-        .any { match -> typeMatches(match.value, language.serviceTypes + language.initTypes, language.serviceSuffixes) }
+        .any { match ->
+            typeMatches(
+                match.value,
+                language.serviceTypes + language.initTypes,
+                language.serviceSuffixes + language.initSuffixes,
+            )
+        }
 
 private fun splitParameters(params: String): List<String> {
     val result = mutableListOf<String>()
@@ -740,10 +767,18 @@ private fun pathMatches(
     }
 
 private val TYPE_NAME = Regex("""\b(?:class|object|interface|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)""")
-private val PRIMARY_CONSTRUCTOR = Regex("""\b(?:class|record)\s+\w+(?:<[^>]*>)?\s*\(([^)]*)\)""", RegexOption.DOT_MATCHES_ALL)
+private val PRIMARY_CONSTRUCTOR =
+    Regex(
+        """\b(?:class|record)\s+\w+(?:<[^>]*>)?(?:\s*@[A-Za-z_][\w.]*(?:\s*\([^)]*\))?)*\s*(?:(?:public|private|protected|internal)\s+)?(?:constructor\s*)?\(([^)]*)\)""",
+        RegexOption.DOT_MATCHES_ALL,
+    )
 private val PROPERTY_PARAMETER =
     Regex(
         """(?:^|\s)(?:private|public|protected|internal|open|override|lateinit)?\s*(?:val|var)\s+(\w+)\s*:\s*(.+?)\s*$""",
+    )
+private val TYPESCRIPT_PARAMETER_PROPERTY =
+    Regex(
+        """^(?:(?:public|private|protected|readonly|override)\s+)+([A-Za-z_$][A-Za-z0-9_$]*\??)\s*:\s*(.+?)\s*$""",
     )
 private val FUNCTION_PARAMETERS = Regex("""^[^(]*\(([^)]*)\)""")
 private val PARAMETER_TYPE = Regex("""^(.+?)\s+[A-Za-z_][A-Za-z0-9_]*$""")

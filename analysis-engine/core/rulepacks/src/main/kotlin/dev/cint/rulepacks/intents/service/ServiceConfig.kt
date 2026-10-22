@@ -17,6 +17,7 @@ data class ServiceLanguageConfig(
     val initCalls: Set<String> = emptySet(),
     val initQualifiers: Set<String> = emptySet(),
     val initTypes: Set<String> = emptySet(),
+    val initSuffixes: Set<String> = emptySet(),
     val initMethods: Set<String> = emptySet(),
     val connectionCalls: Set<String> = emptySet(),
     val connectionQualifiers: Set<String> = emptySet(),
@@ -88,6 +89,11 @@ data class ServiceConfig(
                     "initTypes",
                     { it.initTypes },
                     { config, value -> config.copy(initTypes = value) },
+                ),
+                ConfigField.strings<ServiceLanguageConfig>(
+                    "initSuffixes",
+                    { it.initSuffixes },
+                    { config, value -> config.copy(initSuffixes = value) },
                 ),
                 ConfigField.strings<ServiceLanguageConfig>(
                     "initMethods",
@@ -169,9 +175,10 @@ data class ServiceConfig(
                 "Gateway",
                 "Client",
                 "Provider",
-                "Factory",
                 "Controller",
             )
+
+        private val COMMON_INIT_SUFFIXES = setOf("Factory")
 
         private val COMMON_INIT_TYPES =
             setOf(
@@ -274,6 +281,7 @@ data class ServiceConfig(
                     ),
                 initQualifiers = COMMON_INIT_QUALIFIERS,
                 initTypes = COMMON_INIT_TYPES,
+                initSuffixes = COMMON_INIT_SUFFIXES,
                 initMethods =
                     setOf(
                         "init",

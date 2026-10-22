@@ -48,14 +48,19 @@ statement count as one statement, not multiple forwarding units.
 Configured construction types, factory/init calls, qualified connection setup,
 dependency-injection annotations (including annotations with arguments), and
 constructor injection emit established `SERVICE_INIT`. Kotlin property
-parameters, classic C# constructors, and C# primary/record parameters are
-recognized, including generic parameter lists that contain commas. Lifecycle
-method names alone are candidate-only; they are established only when the
-function also has strong construction/connection/DI evidence.
+parameters (including annotation-qualified `@Inject constructor` forms),
+TypeScript constructor parameter properties, classic C# constructors, and C#
+primary/record parameters are recognized, including generic parameter lists
+that contain commas. Lifecycle method names alone are candidate-only; they are
+established only when the function also has strong construction/connection/DI
+evidence.
 
-Known fidelity gaps: Kotlin `@Inject constructor` properties and TypeScript
-`constructor` parameter properties are not yet recognized, and `Factory` remains
-in the shared service suffix set. Ticket 042 tracks both.
+`Factory` is an init suffix, not a delegation suffix. Construction through a
+factory (`UserFactory()`/`new UserFactory()`) establishes `SERVICE_INIT` and is
+excluded from delegation. A thin non-construction factory call such as
+`widgetFactory.create()` requires explicit `delegationCalls`,
+`delegationQualifiers`, service-name/type, or oracle evidence before it is
+established as `SERVICE_DELEGATION`.
 
 `new`/object creation is detected wherever it occurs (initializer, return,
 assignment, or argument), including C# target-typed `new()`, and the emitted span
@@ -65,9 +70,9 @@ is scoped to the enclosing function so nested helpers do not certify an outer
 lifecycle method. Call-based init spans use the call node rather than an outer
 chained call site.
 
-Config fields: `initCalls`, `initQualifiers`, `initTypes`, `initMethods`,
-`connectionCalls`, `connectionQualifiers`, `diAnnotations`, `diCalls`,
-`diQualifiers`.
+Config fields: `initCalls`, `initQualifiers`, `initTypes`, `initSuffixes`,
+`initMethods`, `connectionCalls`, `connectionQualifiers`, `diAnnotations`,
+`diCalls`, `diQualifiers`.
 
 Generic connection/DI names (`connect`, `resolve`, `getInstance`, and similar)
 require a configured receiver/qualifier/type to be established; unqualified uses

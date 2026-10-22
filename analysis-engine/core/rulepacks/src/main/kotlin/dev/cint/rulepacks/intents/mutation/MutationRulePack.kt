@@ -37,7 +37,7 @@ private const val CANDIDATE_CONFIDENCE: Double = 0.4
 private val LOOP_COUNTER_NAMES =
     setOf("i", "j", "k", "n", "idx", "index", "counter", "pos", "position")
 
-private val LOCAL_CANDIDATE_EXACT =
+internal val LOCAL_CANDIDATE_EXACT =
     setOf(
         "mutate",
         "modify",
@@ -49,7 +49,7 @@ private val LOCAL_CANDIDATE_EXACT =
         "touch",
         "edit",
         "adjust",
-    )
+    ) + LOCAL_ATOMIC_MUTATION_CALLS
 
 private val LOCAL_CANDIDATE_PREFIXES =
     setOf(
@@ -303,7 +303,9 @@ private class PersistenceMatch(
         val callee = call.callee ?: return false
         if (established(view, call)) return false
         val receiver = call.receiver ?: return configuredCandidate(callee, call.path)
-        if (isReadCall(callee)) return false
+        val configured = configuredCandidate(callee, call.path)
+        val configuredCompound = configured && isReadCall(callee)
+        if (!configured && isReadCall(callee)) return false
         if (persistentReceiver(view, call)) {
             return mutationShaped(callee, call.path)
         }
@@ -313,11 +315,11 @@ private class PersistenceMatch(
             config.mutableReceiverNames.any { name ->
                 name.equals(receiverName(receiver), ignoreCase = true)
             }
-        if (mutableReceiver) return false
+        if (mutableReceiver && !configuredCompound) return false
         if (callee in config.mutableOperations) {
             return config.persistenceCalls.any { matchesName(callee, call.path, it) }
         }
-        if (!configuredCandidate(callee, call.path)) return false
+        if (!configured) return false
         if (isLocalCandidate(callee) && config.persistenceCalls.none { it == callee }) return false
         return true
     }
@@ -453,7 +455,10 @@ private val IN_MEMORY_TYPE_SUFFIXES =
         "Map",
         "Set",
         "Deque",
+        "Queue",
         "Stack",
+        "Table",
+        "Session",
         "StringBuilder",
         "Buffer",
     )

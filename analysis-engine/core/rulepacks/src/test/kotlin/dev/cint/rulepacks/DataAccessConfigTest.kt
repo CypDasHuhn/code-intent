@@ -10,6 +10,10 @@ import dev.cint.rulepacks.intents.dataaccess.LOOKUP_INTENT
 import dev.cint.rulepacks.intents.dataaccess.LOOKUP_RULE_ID
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_INTENT
 import dev.cint.rulepacks.intents.dataaccess.SEARCH_RULE_ID
+import dev.cint.rulepacks.intents.mutation.DURABLE_COMPOUND_MUTATION_CALLS
+import dev.cint.rulepacks.intents.mutation.LOCAL_ATOMIC_MUTATION_CALLS
+import dev.cint.rulepacks.intents.mutation.LOCAL_CANDIDATE_EXACT
+import dev.cint.rulepacks.intents.mutation.MutationConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,6 +36,22 @@ class DataAccessConfigTest {
         assertTrue("String" in kotlin.enumExclusions)
         assertTrue("statusById" in kotlin.knownMaps)
         assertTrue("ById" in kotlin.knownMapSuffixes)
+        assertEquals(
+            setOf(
+                "findOneAndUpdate",
+                "findOneAndDelete",
+                "findOneAndReplace",
+                "findOneAndIncrement",
+                "findOneAndDecrement",
+                "findOneAndModify",
+                "findAndModify",
+                "getAndUpdate",
+                "getAndIncrement",
+                "getAndDecrement",
+            ),
+            kotlin.compoundMutationCalls,
+        )
+        assertTrue("getPersist" !in kotlin.compoundMutationCalls)
         assertEquals(setOf("indexing_expression", "indexing_suffix"), kotlin.indexKinds)
         assertEquals(setOf("element_access_expression"), config.forLanguage("csharp").indexKinds)
     }
@@ -76,6 +96,46 @@ class DataAccessConfigTest {
         assertTrue("scanAll" in kotlin.searchCalls)
         assertTrue("statusById" in kotlin.knownMaps)
         assertTrue("myTable" in kotlin.knownMaps)
+    }
+
+    @Test
+    fun additiveCompoundMutationExclusionsUnionWithDefaults() {
+        val config =
+            DataAccessConfig.SCHEMA.decodeAdditive(
+                DataAccessConfig(),
+                mapOf("kotlin" to mapOf("compoundMutationCalls" to listOf("getPersist"))),
+                DATA_ACCESS_PACK_ID,
+            )
+
+        val kotlin = config.forLanguage("kotlin")
+        assertTrue("findOneAndUpdate" in kotlin.compoundMutationCalls)
+        assertTrue("getPersist" in kotlin.compoundMutationCalls)
+    }
+
+    @Test
+    fun defaultCompoundMutationCallsAlignWithMutationVocabularies() {
+        val dataAccess = DataAccessConfig.from(emptyMap())
+        val mutation = MutationConfig.from(emptyMap())
+        val expected = DURABLE_COMPOUND_MUTATION_CALLS + LOCAL_ATOMIC_MUTATION_CALLS
+
+        for (language in listOf("kotlin", "javascript", "typescript", "csharp")) {
+            val compounds = dataAccess.forLanguage(language).compoundMutationCalls
+            val persistence = mutation.forLanguage(language).persistenceCalls
+
+            assertEquals(expected, compounds, "$language compound mutations")
+            assertTrue(
+                (DURABLE_COMPOUND_MUTATION_CALLS - persistence).isEmpty(),
+                "$language missing durable compound mutations",
+            )
+            assertTrue(
+                LOCAL_ATOMIC_MUTATION_CALLS.all { it in LOCAL_CANDIDATE_EXACT },
+                "$language missing local atomic candidates",
+            )
+            assertTrue(
+                (LOCAL_ATOMIC_MUTATION_CALLS intersect persistence).isEmpty(),
+                "$language local atomic calls are persistence",
+            )
+        }
     }
 
     @Test

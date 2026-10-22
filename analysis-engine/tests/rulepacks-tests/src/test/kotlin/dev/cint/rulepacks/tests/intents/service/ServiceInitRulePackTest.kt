@@ -105,6 +105,55 @@ class ServiceInitRulePackTest {
     }
 
     @Test
+    fun kotlinAnnotatedConstructorInjectionEmitsInitWiring() {
+        val source =
+            """
+            class UserController @Named("users") @Inject constructor(
+                private val userService: UserService,
+                private val name: String
+            ) {}
+            """.trimIndent()
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.contains("private val userService: UserService") })
+        assertTrue(texts.none { it.contains("private val name: String") })
+    }
+
+    @Test
+    fun typescriptParameterPropertiesEmitInitWiring() {
+        val source =
+            """
+            class UserController {
+                constructor(private readonly userService: UserService, public repository: UserRepository, name: string) {}
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("typescript", source, listOf(ServiceRulePack()))
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.contains("private readonly userService: UserService") })
+        assertTrue(texts.any { it.contains("public repository: UserRepository") })
+        assertTrue(texts.none { it.contains("name: string") })
+    }
+
+    @Test
+    fun typescriptPlainConstructorParametersAreNotInjection() {
+        val source =
+            """
+            class UserController {
+                constructor(userService: UserService, name: string) {}
+            }
+            """.trimIndent()
+
+        val analysis = analyzePack("typescript", source, listOf(ServiceRulePack()))
+
+        assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
+        assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
+    }
+
+    @Test
     fun csharpConstructorInjectionEmitsInitWiring() {
         val source =
             """
@@ -480,5 +529,86 @@ class ServiceInitRulePackTest {
         val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()), oracle)
 
         assertTrue(analysis.source(SERVICE_INIT_INTENT).isEmpty())
+    }
+
+    @Test
+    fun factoryConstructionIsInitAndNotDelegation() {
+        val cases =
+            mapOf(
+                "kotlin" to "fun build() { val factory = UserFactory() }",
+                "javascript" to "function build() { return new UserFactory(); }",
+                "typescript" to "function build(): UserFactory { return new UserFactory(); }",
+                "csharp" to "class C { UserFactory Build() { return new UserFactory(); } }",
+            )
+
+        for ((language, source) in cases) {
+            val analysis = analyzePack(language, source, listOf(ServiceRulePack()))
+
+            assertTrue(analysis.source(SERVICE_INIT_INTENT).isNotEmpty(), language)
+            assertTrue(analysis.source(SERVICE_DELEGATION_INTENT).isEmpty(), language)
+        }
+    }
+
+    @Test
+    fun factoryTypedDiReceiversAreEstablishedInit() {
+        val source =
+            """
+            fun wire() {
+                serviceFactory.getBean("client")
+                serviceFactory.resolve(path)
+                serviceFactory.getInstance()
+            }
+            """.trimIndent()
+        val oracle = InitOracle(TypeFact("com.acme.ServiceFactory", "lsp", 0.9))
+
+        val analysis = analyzePack("kotlin", source, listOf(ServiceRulePack()), oracle)
+        val texts = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(texts.any { it.contains("serviceFactory.getBean") })
+        assertTrue(texts.any { it.contains("serviceFactory.resolve") })
+        assertTrue(texts.any { it.contains("serviceFactory.getInstance") })
+        assertTrue(analysis.candidates(SERVICE_INIT_INTENT).isEmpty())
+
+        val delegationSource = "class WidgetController { fun build() = serviceFactory.create() }"
+        val delegation =
+            analyzePack(
+                "kotlin",
+                delegationSource,
+                listOf(ServiceRulePack()),
+                InitOracle(TypeFact("com.acme.ServiceFactory", "lsp", 0.9)),
+            )
+
+        assertTrue(delegation.source(SERVICE_DELEGATION_INTENT).isEmpty())
+        assertEquals(1, delegation.candidates(SERVICE_DELEGATION_INTENT).size)
+    }
+
+    @Test
+    fun thinFactoryCallsRequireExplicitDelegationEvidence() {
+        val source =
+            """
+            class WidgetController {
+                fun build() = widgetFactory.create()
+            }
+
+            fun log() {
+                loggerFactory.info("x")
+            }
+            """.trimIndent()
+
+        val unconfigured = analyzePack("kotlin", source, listOf(ServiceRulePack()))
+
+        assertTrue(unconfigured.source(SERVICE_DELEGATION_INTENT).isEmpty())
+        assertEquals(1, unconfigured.candidates(SERVICE_DELEGATION_INTENT).size)
+
+        val configured =
+            ServiceRulePack().configure(
+                mapOf("kotlin" to mapOf("delegationCalls" to listOf("create"))),
+            )
+        val analysis = analyzePack("kotlin", source, listOf(configured))
+
+        assertEquals(
+            setOf("widgetFactory.create()"),
+            analysis.source(SERVICE_DELEGATION_INTENT).map { it.text(source) }.toSet(),
+        )
     }
 }

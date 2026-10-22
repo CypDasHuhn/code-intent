@@ -16,6 +16,8 @@ class ServiceConfigTest {
         assertEquals(ServiceConfig.defaults(), config.languages)
         assertTrue("service" in config.forLanguage("kotlin").serviceNames)
         assertTrue("HttpClient" in config.forLanguage("kotlin").initTypes)
+        assertTrue("Factory" in config.forLanguage("kotlin").initSuffixes)
+        assertTrue("Factory" !in config.forLanguage("kotlin").serviceSuffixes)
         assertTrue("container" in config.forLanguage("kotlin").diQualifiers)
         assertTrue("find" !in config.forLanguage("kotlin").initMethods)
     }

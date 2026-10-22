@@ -24,6 +24,7 @@ const val SEARCH_RULE_ID: String = "$DATA_ACCESS_PACK_ID:search"
 const val LOOKUP_RULE_ID: String = "$DATA_ACCESS_PACK_ID:lookup"
 
 private const val CANDIDATE_CONFIDENCE: Double = 0.4
+private val INCREMENT_OPERATORS = setOf("++", "--")
 
 class DataAccessRulePack(
     private val config: DataAccessConfig = DataAccessConfig(),
@@ -202,6 +203,7 @@ private class DataAccessRule(
         callee: String,
         language: DataAccessLanguageConfig,
     ): Boolean {
+        if (containsName(language.compoundMutationCalls, callee)) return false
         if (containsName(language.lookupCalls, callee)) return false
         if (containsName(language.searchCalls, callee)) return false
         if (language.searchPrefixes.any { callee.startsWith(it, ignoreCase = true) }) return false
@@ -234,7 +236,7 @@ private class DataAccessRule(
     private fun writeTarget(write: WriteFact): SyntaxNode? =
         when (write.kind) {
             WriteKind.ASSIGNMENT -> write.node.childByField("left") ?: write.node.children.firstOrNull()
-            WriteKind.INCREMENT -> write.node.children.firstOrNull { child -> child.text.trim().none { it == '+' || it == '-' } }
+            WriteKind.INCREMENT -> write.node.children.firstOrNull { child -> child.text.trim() !in INCREMENT_OPERATORS }
             else -> null
         }
 

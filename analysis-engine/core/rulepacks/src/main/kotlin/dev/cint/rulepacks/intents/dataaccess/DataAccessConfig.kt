@@ -20,6 +20,7 @@ data class DataAccessLanguageConfig(
     val knownMapSuffixes: Set<String> = emptySet(),
     val ambiguousCalls: Set<String> = emptySet(),
     val ambiguousPrefixes: Set<String> = emptySet(),
+    val compoundMutationCalls: Set<String> = emptySet(),
     val boundaryPrefixes: Set<String> = emptySet(),
     val indexKinds: Set<String> = emptySet(),
 )
@@ -170,6 +171,19 @@ data class DataAccessConfig(
         private val KNOWN_MAP_SUFFIXES = setOf("ById", "ByCode", "ByName", "Map", "Lookup", "Table")
         private val AMBIGUOUS_CALLS = setOf("get", "find", "fetch", "load", "read", "resolve")
         private val AMBIGUOUS_PREFIXES = setOf("get", "find", "fetch", "load", "read", "resolve")
+        private val COMPOUND_MUTATION_CALLS =
+            setOf(
+                "findOneAndUpdate",
+                "findOneAndDelete",
+                "findOneAndReplace",
+                "findOneAndIncrement",
+                "findOneAndDecrement",
+                "findOneAndModify",
+                "findAndModify",
+                "getAndUpdate",
+                "getAndIncrement",
+                "getAndDecrement",
+            )
         private val BOUNDARY_PREFIXES = setOf("findBy", "getBy", "loadBy")
 
         private fun common(indexKinds: Set<String>): DataAccessLanguageConfig =
@@ -189,6 +203,7 @@ data class DataAccessConfig(
                 knownMapSuffixes = KNOWN_MAP_SUFFIXES,
                 ambiguousCalls = AMBIGUOUS_CALLS,
                 ambiguousPrefixes = AMBIGUOUS_PREFIXES,
+                compoundMutationCalls = COMPOUND_MUTATION_CALLS,
                 boundaryPrefixes = BOUNDARY_PREFIXES,
                 indexKinds = indexKinds,
             )
@@ -277,6 +292,11 @@ data class DataAccessConfig(
                     "ambiguousPrefixes",
                     { it.ambiguousPrefixes },
                     { config, value -> config.copy(ambiguousPrefixes = value) },
+                ),
+                ConfigField.strings<DataAccessLanguageConfig>(
+                    "compoundMutationCalls",
+                    { it.compoundMutationCalls },
+                    { config, value -> config.copy(compoundMutationCalls = value) },
                 ),
                 ConfigField.strings<DataAccessLanguageConfig>(
                     "boundaryPrefixes",
