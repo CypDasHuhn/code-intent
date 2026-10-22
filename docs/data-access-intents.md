@@ -29,6 +29,15 @@ set of strings and additive overlays union with the defaults.
   known-key resolution.
 - `ambiguousCalls`, `ambiguousPrefixes`: calls such as `get`, `find`, and
   `fetch*` wrappers that produce candidates instead of established output.
+- `compoundMutationCalls`: known read-shaped mutation calls that must not produce
+  SEARCH/LOOKUP ambiguity. Durable defaults (`findOneAndUpdate`,
+  `findOneAndDelete`, `findOneAndReplace`, `findOneAndIncrement`,
+  `findOneAndDecrement`, `findOneAndModify`, `findAndModify`) are mutation
+  persistence defaults and classify as `DATA_MODIFY`. Local atomic defaults
+  (`getAndUpdate`, `getAndIncrement`, `getAndDecrement`) are local-candidate
+  defaults and classify as `LOCAL_VALUE_MODIFY`. Additive overlays can add
+  project wrappers such as `getPersist`; add the same wrapper to the mutation
+  vocabulary to give it a data or local classification.
 - `boundaryPrefixes`: `findBy*`-style prefixes that also receive a LOOKUP
   boundary candidate.
 - `indexKinds`: language node kinds for index/subscript/element access.
@@ -65,15 +74,13 @@ token-based: camel/snake boundaries form tokens, so `userRepository` matches the
   value; the search rule still adds a `SEARCH` candidate for the boundary.
 - Index access that is the assigned target of an assignment, compound
   assignment, or increment/decrement emits no `LOOKUP`; that write boundary
-  belongs to the mutation pack. Reads on the right-hand side
-  (`copy = statusById[id]`) and nested reads inside a target
-  (`codeMap[id].field = value`, `translationTable[statusById[id]] = value`) still
-  emit `LOOKUP`.
+  belongs to the mutation pack. Increment/decrement targets are selected from
+  the write syntax rather than from operator characters in the target text, so
+  `counts[i - 1]++` and `statusById["x-y"]++` are writes. Reads on the
+  right-hand side (`copy = statusById[id]`) and nested reads inside a target
+  (`codeMap[id].field = value`, `translationTable[statusById[id]] = value`,
+  `statusById[otherById[id] - 1]++`) still emit `LOOKUP`.
 - Unknown index access is not LOOKUP.
-
-Known fidelity gap: structural increment/decrement targets such as
-`counts[i - 1]++` and `statusById["x-y"]++` are still missed by the text-based
-target filter. Ticket 042 tracks the syntax-based target fix.
 
 ## Overlap policy
 
@@ -84,9 +91,12 @@ legitimately co-occur on different spans in the same function or call chain.
   call's business meaning. The service pack may tag a thin wrapper while the
   inner repository/search call remains `SEARCH` or `LOOKUP`.
 - `DATA_MODIFY` describes persistence. A persistence write is not silently
-  re-labelled as search/lookup; the persistence boundary wins for writes. This
-  pack only classifies read-shaped data access and does not model calls that both
-  query and mutate.
+  re-labelled as search/lookup; the persistence boundary wins for writes. Calls
+  in `compoundMutationCalls` (plus configured wrappers) are excluded from
+  SEARCH/LOOKUP ambiguity so the mutation pack owns their classification:
+  durable compound names as `DATA_MODIFY`, atomic `getAnd*` names as
+  `LOCAL_VALUE_MODIFY`. Genuine reads such as `findByStatus`, `count`, and `get`
+  remain read-shaped.
 - The data-access rules are independent and composable; neither suppresses the
   other or the service/mutation packs.
 

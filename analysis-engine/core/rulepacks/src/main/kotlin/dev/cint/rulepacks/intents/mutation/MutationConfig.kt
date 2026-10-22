@@ -4,6 +4,24 @@ import dev.cint.api.ConfigField
 import dev.cint.api.ConfigSchema
 import dev.cint.api.LanguageConfig
 
+internal val DURABLE_COMPOUND_MUTATION_CALLS =
+    setOf(
+        "findOneAndUpdate",
+        "findOneAndDelete",
+        "findOneAndReplace",
+        "findOneAndIncrement",
+        "findOneAndDecrement",
+        "findOneAndModify",
+        "findAndModify",
+    )
+
+internal val LOCAL_ATOMIC_MUTATION_CALLS =
+    setOf(
+        "getAndUpdate",
+        "getAndIncrement",
+        "getAndDecrement",
+    )
+
 private val DEFAULT_PERSISTENCE_CALLS =
     setOf(
         "save",
@@ -79,7 +97,7 @@ private val DEFAULT_PERSISTENCE_CALLS =
         "Move",
         "Copy",
         "CreateDirectory",
-    )
+    ) + DURABLE_COMPOUND_MUTATION_CALLS
 
 private val DEFAULT_PERSISTENCE_PATHS =
     setOf(
@@ -165,7 +183,7 @@ private val DEFAULT_PERSISTENCE_TYPES =
         "JpaRepository",
         "MongoRepository",
         "EntityManager",
-        "Session",
+        "org.hibernate.Session",
         "Database",
         "File",
         "FileInfo",
@@ -176,8 +194,8 @@ private val DEFAULT_PERSISTENCE_TYPES =
         "Producer",
         "FileSystem",
         "Bucket",
-        "Queue",
-        "Table",
+        "javax.jms.Queue",
+        "jakarta.jms.Queue",
         "DbContext",
         "DbSet",
         "Connection",

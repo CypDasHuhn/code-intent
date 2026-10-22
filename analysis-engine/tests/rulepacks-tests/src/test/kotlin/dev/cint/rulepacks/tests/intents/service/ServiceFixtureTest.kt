@@ -22,5 +22,17 @@ class ServiceFixtureTest {
         assertTrue("userService.save(value)" in delegation)
         assertTrue(init.any { it.contains("HttpClient()") })
         assertTrue(init.any { it.contains("client.connect()") })
+        assertTrue(init.any { it.contains("private val annotatedService: UserService") })
+    }
+
+    @Test
+    fun typescriptFixtureCoversParameterPropertiesAndFactoryInit() {
+        val source = fixture("typescript/ServiceIntents.ts")
+        val analysis = analyzePack("typescript", source, listOf(ServiceRulePack()))
+
+        val init = analysis.source(SERVICE_INIT_INTENT).map { it.text(source) }
+
+        assertTrue(init.any { it.contains("private readonly userService: UserService") })
+        assertTrue(init.any { it.contains("new UserFactory()") })
     }
 }

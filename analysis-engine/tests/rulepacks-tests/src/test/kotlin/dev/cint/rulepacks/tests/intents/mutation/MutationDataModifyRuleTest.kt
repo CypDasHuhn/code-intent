@@ -304,10 +304,10 @@ class MutationDataModifyRuleTest {
     }
 
     @Test
-    fun typedSessionTableAndQueueCallsAreEstablished() {
+    fun genericSessionTableAndQueueTypesAreNotDurable() {
         val cases =
             mapOf(
-                "session.save(item)" to "org.hibernate.Session",
+                "session.save(item)" to "jakarta.servlet.http.HttpSession",
                 "table.put(key, item)" to "com.example.Table",
                 "queue.send(item)" to "java.util.concurrent.BlockingQueue",
             )
@@ -322,8 +322,87 @@ class MutationDataModifyRuleTest {
                     FixedOracle(TypeFact(type)),
                 )
 
+            analysis.assertNoSource(DATA_MODIFY_INTENT)
+            assertTrue(analysis.candidates(DATA_MODIFY_INTENT).isEmpty(), type)
+        }
+    }
+
+    @Test
+    fun qualifiedDurableSessionAndQueueTypesAreEstablished() {
+        val cases =
+            mapOf(
+                "session.save(item)" to "org.hibernate.Session",
+                "queue.send(item)" to "javax.jms.Queue",
+            )
+
+        for ((call, type) in cases) {
+            val text = "fun f(item: Item) { $call }"
+            val analysis =
+                analyzePack(
+                    "kotlin",
+                    text,
+                    listOf(BookkeepingRulePack(), MutationRulePack(), LocalCopyRulePack()),
+                    FixedOracle(TypeFact(type)),
+                )
+
             assertEquals(setOf(call), analysis.texts(DATA_MODIFY_INTENT).toSet(), type)
         }
+    }
+
+    @Test
+    fun configuredReadPrefixedMutationsAreClassifiedForJavascriptAndTypescript() {
+        val text =
+            """
+            function f() {
+                model.findOneAndUpdate({}, { active: true });
+                model.findOneAndDelete({});
+            }
+            """.trimIndent()
+
+        for (language in listOf("javascript", "typescript")) {
+            val analysis = analyze(language, text)
+
+            analysis.assertNoSource(DATA_MODIFY_INTENT)
+            assertEquals(
+                setOf("model.findOneAndUpdate({}, { active: true })", "model.findOneAndDelete({})"),
+                analysis.candidates(DATA_MODIFY_INTENT).map { text.substring(it.startByte, it.endByte) }.toSet(),
+                language,
+            )
+        }
+
+        val durable = "function f() { repository.findOneAndUpdate({}, { active: true }); }"
+        assertEquals(
+            setOf("repository.findOneAndUpdate({}, { active: true })"),
+            analyze("javascript", durable).texts(DATA_MODIFY_INTENT).toSet(),
+        )
+    }
+
+    @Test
+    fun configuredReadPrefixedWrappersAreClassified() {
+        val pack =
+            MutationRulePack().configure(
+                mapOf(
+                    "kotlin" to
+                        mapOf(
+                            "persistenceCalls" to listOf("getPersist", "getAndIncrement"),
+                        ),
+                ),
+            )
+        val text =
+            """
+            fun f(item: Item, key: String) {
+                handler.getPersist(item)
+                handler.getAndIncrement(key)
+            }
+            """.trimIndent()
+
+        val analysis = analyze("kotlin", text, pack)
+
+        analysis.assertNoSource(DATA_MODIFY_INTENT)
+        assertEquals(
+            setOf("handler.getPersist(item)", "handler.getAndIncrement(key)"),
+            analysis.candidates(DATA_MODIFY_INTENT).map { text.substring(it.startByte, it.endByte) }.toSet(),
+        )
     }
 
     @Test

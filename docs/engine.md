@@ -126,17 +126,23 @@ is present. Unbraced bodies are
 - `data-access:lookup` — known-map/table index reads, configured lookup calls on
   known receivers/types, and enum/constant resolution (`valueOf`, `fromCode`,
   ...). Write targets and unknown indexes are not lookup; ambiguous calls are
-  candidates.
+  candidates, while configured compound mutation calls are excluded from
+  SEARCH/LOOKUP ambiguity.
 - `service:delegation` — a thin whole-body forwarding expression to a configured
   service call. Mixed bodies, local-write/guard/try bodies, and controller or
   facade patterns without configured service evidence are candidates.
 - `service:init` — configured construction, client creation, factory/connection
-  setup, DI calls, and constructor injection. Lifecycle names alone are
-  candidates; init call spans use the call/creation node.
+  setup, DI calls, and constructor injection (Kotlin `@Inject constructor`,
+  TypeScript parameter properties, and C# primary/record constructors). Factory
+  suffixes are init-only, so factory construction is not delegation. Lifecycle
+  names alone are candidates; init call spans use the call/creation node.
 - `mutation:data-modify` — configured persistence calls on repository/ORM,
   file, queue, event, and object-store receivers. A receiver must prove a
-  durable qualifier, type, or templated client; bare configured calls and
-  unknown wrappers stay candidates.
+  durable qualifier, qualified durable type, or templated client; generic
+  `Queue`/`Table`/`Session` names do not establish persistence on their own.
+  Configured read-prefixed mutations such as `findOneAndUpdate` and
+  `findOneAndDelete` are checked before the read filter; bare configured calls
+  and unknown wrappers stay candidates.
 - `mutation:local-value-modify` — writes to declaration-local variables and
   configured mutable collection operations on proven collection receivers.
   Member/external assignments, unproven `add`/`put`/`remove` calls, loop
@@ -316,7 +322,8 @@ mutation:
     persistenceCalls: [save, update, delete, put, sendMessage, convertAndSend]
     persistencePaths: [Files.write, File.WriteAllTextAsync]
     persistenceQualifiers: [repository, dao, bucket, kafka]
-    persistenceTypes: [Repository, EntityManager, Session, Table, Queue]
+    persistenceTypes:
+      [Repository, EntityManager, org.hibernate.Session, javax.jms.Queue]
     persistencePrefixes: [persist, publish, send, write, flush, commit]
     mutableOperations: [add, put, remove, clear]
     mutableTypes: [MutableList, MutableMap, ArrayList]

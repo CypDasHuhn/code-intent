@@ -1,6 +1,6 @@
 ---
 name: intent pack fidelity hardening
-status: todo
+status: done
 depends-on: [037, 038, 039, 040]
 reviewers: [correctness, detection-fidelity]
 ---
