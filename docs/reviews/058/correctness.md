@@ -231,3 +231,91 @@ partially addressed. Not ready to close.
    `inFlightFutures.remove(key, future)` so an old task cannot evict a new one.
    Add tests for `didChange` while the suggestion task is still queued, and for
    two rapid edits while a replacement pass is running.
+
+## Round 3
+
+Verdict: Finding 8 is resolved and the round-3 delta introduces no new
+correctness defect on the server lifecycle, response, pass-identity,
+provider-future, executor, or stale/close paths. The `inFlightFutures` map is
+gone, cancellation now only marks the pass and cancels the provider future, and a
+queued task always gets to write its own cancelled response. Zero open
+correctness findings. One test caveat is recorded under Verified: the new
+two-edit test would also pass on the prior tree, so the queued-close test is the
+one that actually reproduces the old failure.
+
+### Per-finding status
+
+8. **Concur — addressed.** `LiveServer.kt:81-84,135-140` no longer owns or
+   cancels outer suggestion futures. `cancelInFlightSuggestion`
+   (`LiveServerSuggestions.kt:338-347`) sets `pass.cancelled`, removes the pass
+   with `remove(key, pass)`, and cancels only the provider future;
+   `clearDocument` (`LiveServerDocument.kt:53-69`) does the same instead of
+   cancelling the queued `FutureTask`. The task keeps its entry check
+   (`LiveServerSuggestions.kt:101-104`), so a task that never started still
+   writes `cancelled`; a task past the entry check is stopped by the cancelled
+   provider future and also writes `cancelled` (catch at `:220-225`). Pass
+   identity is value-checked on both the task `finally` (`:227`) and the cancel
+   path (`:345`), and `providerFutures.compute` (`:160-168`) refuses to register
+   an old pass's future, so an old task cannot evict or cancel a newer pass's
+   future. Not cancelling the outer task also removes the risk of interrupting a
+   response write on the shared writer.
+
+   Tests: `closeWhileSuggestionIsQueuedStillWritesACancelledResponse`
+   (`LiveSuggestionDiscoveryTest.kt:232-261`) queues a second document's
+   suggestion on a one-thread executor and closes it; on HEAD `clearDocument`
+   cancelled the queued `FutureTask`, its `call` never ran, and response 3 was
+   never written, so the test times out. It now asserts response 2 accepted and
+   response 3 cancelled. `editCancelsAQueuedSuggestionWithoutDroppingItsResponse`
+   (`:196-229`, already present) covers the `didChange` queue.
+   `twoRapidEditsWhileReplacementPassRunsKeepTheNewPassResponsive`
+   (`:263-299`) exercises the two-edit/replacement path and the final pass
+   staying responsive, but it would pass on HEAD: HEAD's task `finally` already
+   used the two-arg identity removal (`git show HEAD:...:229`) and `didChange`
+   did not cancel outer futures, so the eviction half of finding 8 was not
+   reproducible in the prior tree. The production conclusion is unaffected
+   because provider-future cancellation still stops the pass.
+
+### New findings
+
+None.
+
+### Concurs / dissents
+
+- Concurs with finding 8. The queued-response defect was real in `clearDocument`
+  and is fixed; the map removal also makes the eviction concern structurally
+  impossible.
+- Concurs with the accompanying `ExpressionUnits` delta:
+  `annotationKinds`/`modifierKinds`/`typeReferenceKinds` are no longer skipped as
+  whole subtrees, type exclusion is now profile-driven
+  (`ExpressionUnits.kt:23-26`), and annotation names/types are excluded via
+  `isDeclarationName` (`:49-54`) while annotation arguments are enumerated.
+- Dissents: none.
+
+### Verified
+
+- Lifecycle/close: a queued task for a closed document still runs its entry
+  check and writes `cancelled`; a running task is stopped by
+  `providerFutures`/`pass.cancelled`, and no publish happens after cancellation
+  (`LiveServerSuggestions.kt:194-216`). `shutdownSuggestions` still marks passes
+  and interrupts both executors (`LiveServer.kt:135-140`), so removing the outer
+  future map does not leave shutdown unable to stop work.
+- Response writing: the only `respond` for a cancelled pass now comes from the
+  task itself (entry check, provider-cancel catch, or cancelled-at-publish), so
+  responses are no longer dropped by cancelling a queued `FutureTask` and no
+  outer interruption can hit `write` mid-message.
+- Pass identity: `inFlightSuggestions.remove(key, pass)` and
+  `providerFutures.remove(key, providerFuture)` are value-checked; a replacement
+  pass cannot be removed or its provider future cancelled by an old task.
+- Expression delta: `kotlinAnnotationArgumentsAreUnitsWithoutAnnotationNames`
+  fails on HEAD (the annotation subtree was skipped) and passes now;
+  `profilesRouteTypeNodesThroughExpressionExcluded` and the two default-parameter
+  tests pin the profile-driven type exclusion. The type-group loop is vacuous for
+  empty `typeReference` groups, but the full `expressionExcluded` lists keep the
+  behavior correct.
+- Residual, not filed: named annotation-argument labels
+  (`@Deprecated(message = "x")`) are `simple_identifier` children of
+  `value_argument`, not of `annotation`, so the new annotation traversal exposes
+  `message` as a unit. The same pattern already exists for named call arguments
+  and is a pre-existing heuristic limitation rather than a round-3 regression; if
+  the worklist is meant to be expression positions only, handle the name side of
+  `value_argument` in `isDeclarationName` and add a named-argument fixture.

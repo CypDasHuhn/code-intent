@@ -238,3 +238,73 @@ because of new finding 9.
   `cache`, and `maxUnitsPerRequest`; update it when the protocol section is next
   touched. Untracked `.cint/*` state remains local and must stay out of the
   commit.
+
+## Round 3
+
+Verdict: Finding 9 is resolved. Expression enumeration is fully profile-driven:
+core carries no grammar-specific type/parameter node names, and the worklist
+descends into both default parameter-value expressions and annotation
+arguments. The round-3 delta is confined to that enumeration, server-side
+cancellation bookkeeping, and tests; it introduces no boundary or contract
+regression. Zero open architecture findings from this dimension.
+
+### Per-finding verification
+
+9. **Concur — addressed.**
+   - `ExpressionUnits.kt:23-26` now prunes only comments, imports, and
+     `expressionExcluded`; `parameterKinds`, `parameterListKinds`, and
+     `typeReferenceKinds` are no longer skipped subtrees, and the hardcoded
+     type-kind set is gone (no grammar-specific node strings remain anywhere in
+     `core/.../syntax`). At HEAD the parameter groups were only in `excluded`,
+     so the substantive delta is annotation/modifier traversal; the remaining
+     finding-9 conditions are nevertheless met.
+   - Type-node names live in each profile's `expressionExcluded`
+     (`kotlin.yaml:6`, `javascript.yaml:6`, `typescript.yaml:6`, `csharp.yaml:6`,
+     `vue.yaml:5`); `ExpressionUnits` references them only through
+     `ProfileSyntaxKinds.expressionExcludedKinds`.
+   - Parameter handling (`ExpressionUnits.kt:59-63`) skips only children before
+     the `=` that are identifier/type/excluded nodes and returns early for
+     children after `=`, so default-value expressions are enumerated.
+     Annotations and modifiers are no longer whole-subtree skips, and
+     `isDeclarationName` (`:51-54`) prunes only annotation names/types, leaving
+     annotation arguments as units.
+   - Tests: `kotlinDefaultParameterExpressionsAreUnitsWithoutNamesOrTypes` and
+     `typescriptDefaultParameterExpressionsAreUnitsWithoutNamesOrTypes` cover
+     default values; new `kotlinAnnotationArgumentsAreUnitsWithoutAnnotationNames`
+     covers class-, function-, and parameter-level annotation arguments (including
+     a default `= "a"` beside a parameter annotation); new
+     `profilesRouteTypeNodesThroughExpressionExcluded` asserts the
+     `typeReference ⊆ expressionExcluded` invariant for all five profiles.
+   - Docs already state "every expression node in the document, including
+     leaves" (`ai-annotation-session.md:66`, `architecture.md:264`,
+     `ai-intents.md:32`, `engine.md:305`), so annotation-argument and
+     default-value units require no doc change.
+
+### New findings
+
+None. The server delta (removing `inFlightFutures`, cancelling via
+`pass.cancelled` + `providerFutures`, identity-safe `remove(key, pass)`) stays
+inside the server lifecycle seam and does not change the provider contract,
+candidate-only AI boundary, or core/profile dependency direction.
+
+### Concurs / dissents
+
+- Concurs: Round 1 findings 1-8 and Round 2 finding 9 remain resolved. Expression
+  units are a core syntax fact with all grammar vocabulary in profiles; AI output
+  is still post-analysis `CandidateEmit`; `suggest` still depends only on
+  `api`/`core`; the server owns pass registration, cancellation, worklist
+  construction, and publication.
+- Dissents: none.
+
+### Residuals (not filed)
+
+- Annotation-name exclusion is necessarily grammar-shaped: Kotlin annotation
+  names are `user_type` and are skipped, while call-style decorators
+  (JS/TS `@Component(...)`) expose the callee identifier as a leaf unit. This is
+  consistent with "every expression including leaves"; exclude callees only if
+  the design later asks for it, and that would need field-aware handling rather
+  than a parent-kind check.
+- `profilesRouteTypeNodesThroughExpressionExcluded` guards a real invariant but
+  iterates a hardcoded five-language list and is vacuous for Vue (empty
+  `typeReference`); a newly added profile is only covered if added to that list.
+- Untracked `.cint/*` state remains local and must stay out of the commit.
