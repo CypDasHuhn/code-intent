@@ -109,7 +109,7 @@ class LspOracleCacheWiringTest {
     fun unchangedTextDoesNotReopenAndLaterAnalysisHitsTheCache() {
         val fake = FakeLspServer()
         val oracle = oracleFor(fake)
-        oracle.use { oracle ->
+        oracle.use {
             val file = SourceFile("Sample.kt", "fun f() {}")
 
             assertEquals("Acme.Type", oracle.typeAt(file, 0)?.fqName)
@@ -130,7 +130,7 @@ class LspOracleCacheWiringTest {
     fun changedTextBumpsVersionInvalidatesOnlyThatUriAndRehovers() {
         val fake = FakeLspServer()
         val oracle = oracleFor(fake)
-        oracle.use { oracle ->
+        oracle.use {
             val first = SourceFile("A.kt", "a")
             val other = SourceFile("B.kt", "b")
             oracle.typeAt(first, 0)
@@ -157,7 +157,7 @@ class LspOracleCacheWiringTest {
         fake.ready = false
         var now = 0L
         val oracle = oracleFor(fake, negativeTtlMs = 100L, nanoTime = { now })
-        oracle.use { oracle ->
+        oracle.use {
             val file = SourceFile("Sample.kt", "fun f() {}")
 
             assertNull(oracle.typeAt(file, 0))
@@ -185,7 +185,7 @@ class LspOracleCacheWiringTest {
         fake.ready = false
         var now = 0L
         val oracle = oracleFor(fake, negativeTtlMs = 100L, nanoTime = { now })
-        oracle.use { oracle ->
+        oracle.use {
             val text = requireNotNull(javaClass.getResource("/fixtures/many-unresolved.kt.txt")).readText()
             val file = SourceFile("many-unresolved.kt", text)
             val offsets = 0 until 24
@@ -209,7 +209,7 @@ class LspOracleCacheWiringTest {
         val fake = FakeLspServer()
         fake.failure = TimeoutException("hover timed out")
         val oracle = oracleFor(fake)
-        oracle.use { oracle ->
+        oracle.use {
             val file = SourceFile("Sample.kt", "fun f() {}")
 
             val first = OracleSession(oracle)

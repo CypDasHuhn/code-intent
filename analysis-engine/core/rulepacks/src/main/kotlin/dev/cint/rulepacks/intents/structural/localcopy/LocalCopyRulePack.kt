@@ -67,17 +67,17 @@ private class LocalCopyRule(
             val result = copy.assignment(write, declared, parameterNames(view, write.node, parameters)) ?: continue
             select(selected, write.node, result)
         }
-        for ((node, name, _, initializer) in view.properties()) {
+        for (property in view.properties()) {
             val result =
                 copy.declaration(
-                    name,
-                    initializer,
-                    view.enclosingFunction(node) != null ||
-                        view.enclosingScope(node)?.kind == ScopeKind.CLASS,
+                    property.name,
+                    property.initializer,
+                    view.enclosingFunction(property.node) != null ||
+                        view.enclosingScope(property.node)?.kind == ScopeKind.CLASS,
                     declared,
-                    parameterNames(view, node, parameters),
+                    parameterNames(view, property.node, parameters),
                 ) ?: continue
-            select(selected, node, result)
+            select(selected, property.node, result)
         }
         return selected.values.map { (node, result) -> emit(node, result) }
     }

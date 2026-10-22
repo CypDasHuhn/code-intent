@@ -60,7 +60,6 @@ internal fun initCallEvidence(
     } else {
         Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
     }
-    return null
 }
 
 private fun isConnectionReceiver(

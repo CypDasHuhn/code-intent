@@ -93,16 +93,16 @@ internal fun derivativeContributions(
             )
     }
 
-    for ((node, kind) in ctx.writes) {
-        if (kind != WriteKind.ASSIGNMENT) continue
-        val value = assignmentValue(node) ?: continue
+    for (write in ctx.writes) {
+        if (write.kind != WriteKind.ASSIGNMENT) continue
+        val value = assignmentValue(write.node) ?: continue
         readOnlyConfidence(ctx, value, pureAnnotations) ?: continue
         val valueIntents = valueSourceIntents(ctx, value)
         val intents = valueIntents.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) continue
 
         result +=
-            node.raw(
+            write.node.raw(
                 Role.DERIVATIVE_USE,
                 intents,
                 DERIVATIVE_RULE,
