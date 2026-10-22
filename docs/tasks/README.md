@@ -52,7 +52,7 @@ host and client cutover at the end.
 | 038 | [search and lookup intents](038-search-lookup-intents.md) | done | 036 | `SEARCH` and `LOOKUP` data-access pack. |
 | 039 | [service delegation and init intents](039-service-intents.md) | done | 036 | `SERVICE_DELEGATION` and `SERVICE_INIT` service pack. |
 | 040 | [data and local mutation intents](040-mutation-intents.md) | done | 036 | `DATA_MODIFY` and `LOCAL_VALUE_MODIFY` mutation pack. |
-| 041 | [annotation lock protocol hardening](041-annotation-lock-hardening.md) | todo | 036 | Fix shared annotation lock acquisition/release races. |
+| 041 | [annotation lock protocol hardening](041-annotation-lock-hardening.md) | done | 036 | Fix shared annotation lock acquisition/release races. |
 | 042 | [intent pack fidelity hardening](042-intent-pack-fidelity-hardening.md) | todo | 037, 038, 039, 040 | Deferred structural write targets, DI shapes, factory boundary, persistence typing, and read-prefix ordering. |
 | 043 | [DeepSeek intent provider](043-deepseek-intent-provider.md) | done | 036 | Real DeepSeek-backed AI intent candidates, confirmable only. |
 | 044 | [analysis oracle caching and budgeting](044-analysis-oracle-caching.md) | todo | 040 | Memoize receiver types, cache LSP results, gate/limit oracle queries. |
@@ -61,6 +61,7 @@ host and client cutover at the end.
 | 047 | [striped mixed-intent rendering experiment](047-striped-mixed-intent-rendering.md) | done | 016 | Opt-in ABABAB tag-color striping for active multi-intent spans. |
 | 048 | [local mutation and callback effect coverage](048-local-mutation-callback-coverage.md) | todo | 040, 046 | Stronger mutable-local declarations and callback effect classification. |
 | 049 | [user readonly directive](049-user-readonly-directive.md) | done | 030 | `READONLY` user directive for side-effect-free reads without a determinism claim. |
+| 050 | [automated cross-writer annotation lock test](050-cross-writer-annotation-lock-test.md) | todo | 041 | Kotlin-plus-Neovim contention on one root; deferred from 041 because the engine harness has no cross-process orchestration. |
 
 ## Resolved decisions
 
