@@ -12,9 +12,9 @@ internal fun constructorInjectionEvidence(
     val seenScopes = mutableSetOf<Pair<Int, Int>>()
     val languageName = view.language()
 
-    for ((node, kind, owner) in view.scopes()) {
-        if (kind != ScopeKind.CLASS) continue
-        val classNode = owner ?: node
+    for (scope in view.scopes()) {
+        if (scope.kind != ScopeKind.CLASS) continue
+        val classNode = scope.owner ?: scope.node
         if (!seenScopes.add(classNode.startByte to classNode.endByte)) continue
         val params = PRIMARY_CONSTRUCTOR.find(classNode.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
@@ -24,18 +24,19 @@ internal fun constructorInjectionEvidence(
         }
     }
 
-    for ((node, name) in view.functions()) {
-        val classNode = view.enclosingScope(node)?.owner ?: continue
+    for (function in view.functions()) {
+        val classNode = view.enclosingScope(function.node)?.owner ?: continue
         val className = classNameOf(classNode) ?: continue
+        val name = function.name
         val constructor =
             name == className ||
                 (languageName.equals("typescript", ignoreCase = true) && name == "constructor")
         if (!constructor) continue
-        val params = FUNCTION_PARAMETERS.find(node.text)?.groupValues?.get(1) ?: continue
+        val params = FUNCTION_PARAMETERS.find(function.node.text)?.groupValues?.get(1) ?: continue
         for (parameter in splitParameters(params)) {
             val type = injectionParameterType(parameter, languageName) ?: continue
             if (!isWiringType(type, language)) continue
-            result += (findTextNode(node, parameter) ?: node) to Evidence(HEURISTIC_SOURCE, 0.8)
+            result += (findTextNode(function.node, parameter) ?: function.node) to Evidence(HEURISTIC_SOURCE, 0.8)
         }
     }
 

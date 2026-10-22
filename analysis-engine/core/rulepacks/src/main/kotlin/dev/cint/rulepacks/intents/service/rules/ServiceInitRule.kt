@@ -62,11 +62,11 @@ internal class ServiceInitRule(
             }
         }
 
-        for ((node1, kind, name1, nameNode) in view.declarations()) {
-            if (kind != DeclarationKind.FUNCTION) continue
-            val name = name1 ?: continue
+        for (lifecycleDeclaration in view.declarations()) {
+            if (lifecycleDeclaration.kind != DeclarationKind.FUNCTION) continue
+            val name = lifecycleDeclaration.name ?: continue
             if (name !in language.initMethods) continue
-            val span = node1.startByte to node1.endByte
+            val span = lifecycleDeclaration.node.startByte to lifecycleDeclaration.node.endByte
             lifecycleFunctions += span
             if (span in annotatedFunctions) continue
             val function = view.functions().firstOrNull { it.node.startByte == span.first && it.node.endByte == span.second } ?: continue
@@ -77,7 +77,7 @@ internal class ServiceInitRule(
                 } else {
                     Evidence(HEURISTIC_SOURCE, 0.4, candidateOnly = true)
                 }
-            val node = nameNode ?: node1
+            val node = lifecycleDeclaration.nameNode ?: lifecycleDeclaration.node
             if (emitted.add(node.startByte to node.endByte)) {
                 result += initEmit(node, evidence)
             }

@@ -101,7 +101,12 @@ private fun catchScaffolds(ctx: RuleContext): List<Contribution> =
 
 private fun tryScaffolds(ctx: RuleContext): List<Contribution> {
     val result = mutableListOf<Contribution>()
-    for ((node, _, catches, finallyBlock, start, end) in ctx.tries) {
+    for (tryFact in ctx.tries) {
+        val node = tryFact.node
+        val catches = tryFact.catches
+        val finallyBlock = tryFact.finallyBlock
+        val start = tryFact.headerStart
+        val end = tryFact.headerEnd
         if (catches.isEmpty()) continue
 
         val tryBodyIntents = bodyIntents(ctx, node)

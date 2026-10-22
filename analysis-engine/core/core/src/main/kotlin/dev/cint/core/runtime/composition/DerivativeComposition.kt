@@ -29,10 +29,11 @@ internal fun derivativeContributions(
     val result = mutableListOf<Contribution>()
     val references = ctx.references
 
-    for ((node, name1, nameNode1, initializer1) in ctx.properties) {
-        val name = name1 ?: continue
-        val nameNode = nameNode1 ?: continue
-        val initializer = initializer1 ?: continue
+    for (property in ctx.properties) {
+        val name = property.name ?: continue
+        val nameNode = property.nameNode ?: continue
+        val initializer = property.initializer ?: continue
+        val node = property.node
 
         val scope = ctx.syntax.enclosingFunction(node) ?: ctx.tree.root
         val uses =
@@ -76,15 +77,15 @@ internal fun derivativeContributions(
         }
     }
 
-    for ((node, _, _, initializer1) in ctx.properties) {
-        val initializer = initializer1 ?: continue
+    for (property in ctx.properties) {
+        val initializer = property.initializer ?: continue
         readOnlyConfidence(ctx, initializer, pureAnnotations) ?: continue
         val valueIntents = valueSourceIntents(ctx, initializer)
         val intents = valueIntents.flatMap { it.intents }.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) continue
 
         result +=
-            node.raw(
+            property.node.raw(
                 Role.DERIVATIVE_USE,
                 intents,
                 DERIVATIVE_RULE,
@@ -111,8 +112,9 @@ internal fun derivativeContributions(
             )
     }
 
-    for ((node, _, nameNode1) in ctx.functions) {
-        val nameNode = nameNode1 ?: continue
+    for (function in ctx.functions) {
+        val nameNode = function.nameNode ?: continue
+        val node = function.node
         val name = nameNode.text
         if (name.isEmpty()) continue
         if (!ctx.syntax.isAnnotatedPure(node, pureAnnotations) && !ctx.isUserPure(node)) continue

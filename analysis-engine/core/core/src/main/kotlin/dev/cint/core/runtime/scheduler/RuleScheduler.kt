@@ -150,10 +150,10 @@ class RuleScheduler {
     ): List<List<Rule>> {
         val dependencies = mutableMapOf<Rule, MutableSet<Rule>>()
         val dependents = mutableMapOf<Rule, MutableSet<Rule>>()
-        for ((reader, _, owner) in relations) {
-            if (owner == reader) continue
-            dependencies.getOrPut(reader) { mutableSetOf() } += owner
-            dependents.getOrPut(owner) { mutableSetOf() } += reader
+        for (relation in relations) {
+            if (relation.owner == relation.reader) continue
+            dependencies.getOrPut(relation.reader) { mutableSetOf() } += relation.owner
+            dependents.getOrPut(relation.owner) { mutableSetOf() } += relation.reader
         }
 
         val remaining = rules.toMutableSet()
