@@ -1,6 +1,6 @@
 ---
 name: ai candidate arrival ui
-status: in-progress
+status: done
 depends-on: [052]
 reviewers: [correctness]
 ---

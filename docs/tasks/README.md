@@ -66,7 +66,7 @@ host and client cutover at the end.
 | 052 | [nvim intent hover](052-nvim-intent-hover.md) | done | 016 | LSP-like non-blocking floating intent inspector for the caret span. |
 | 053 | [hover innermost span](053-hover-innermost-span.md) | done | 052 | Show only the intents of the innermost annotation span under the caret. |
 | 054 | [hover omit untagged](054-hover-omit-untagged.md) | done | 052, 053 | Never show the reserved UNTAGGED marker in the intent hover. |
-| 055 | [ai candidate arrival ui](055-ai-candidate-arrival-ui.md) | in-progress | 052 | Distinct AI candidate rendering, arrival notification, and AI count. |
+| 055 | [ai candidate arrival ui](055-ai-candidate-arrival-ui.md) | done | 052 | Distinct AI candidate rendering, arrival notification, and AI count. |
 
 ## Resolved decisions
 
