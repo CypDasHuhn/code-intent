@@ -1,9 +1,15 @@
-package dev.cint.suggest
+package dev.cint.suggest.provider
 
 import dev.cint.api.CandidateEmit
 import dev.cint.api.CandidateReason
 import dev.cint.api.Span
 import dev.cint.core.candidate.CandidateIdentity
+import dev.cint.suggest.CandidateValidator
+import dev.cint.suggest.SuggestionProviderRegistry
+import dev.cint.suggest.SuggestionService
+import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.model.CandidateDocument
+import dev.cint.suggest.model.SuggestionOptions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals

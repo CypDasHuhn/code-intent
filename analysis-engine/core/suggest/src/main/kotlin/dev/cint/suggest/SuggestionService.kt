@@ -3,26 +3,13 @@ package dev.cint.suggest
 import dev.cint.api.CandidateEmit
 import dev.cint.api.CandidateReason
 import dev.cint.core.candidate.CandidateIdentity
-
-data class CandidateDocument(
-    val path: String,
-    val version: Int,
-    val text: String,
-    val knownIntents: Set<String>,
-    val neighboringIntents: Set<String> = emptySet(),
-    val language: String? = null,
-)
-
-data class SuggestionOptions(
-    val providerId: String? = null,
-    val model: String? = null,
-    val maxCandidates: Int = 5,
-    val maxEnrichmentCandidates: Int = 5,
-    val promptVersion: String? = null,
-    val excerptRadiusBytes: Int = SourceExcerpt.DEFAULT_RADIUS_BYTES,
-    val allowGlobs: List<String> = emptyList(),
-    val redactPatterns: List<String> = emptyList(),
-)
+import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.model.CandidateDocument
+import dev.cint.suggest.model.CandidateGroup
+import dev.cint.suggest.model.SourceExcerpt
+import dev.cint.suggest.model.SuggestionOptions
+import dev.cint.suggest.provider.FakeIntentSuggestionProvider
+import dev.cint.suggest.provider.IntentSuggestionProvider
 
 class SuggestionProviderRegistry(
     providers: List<IntentSuggestionProvider> = listOf(FakeIntentSuggestionProvider()),

@@ -1,4 +1,4 @@
-package dev.cint.core.runtime.engine
+package dev.cint.core.runtime.engine.behavior
 
 import dev.cint.api.Intent
 import dev.cint.core.config.IntentConfig

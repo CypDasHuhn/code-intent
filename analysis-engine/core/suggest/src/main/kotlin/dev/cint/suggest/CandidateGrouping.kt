@@ -1,19 +1,9 @@
 package dev.cint.suggest
 
 import dev.cint.api.CandidateEmit
-import dev.cint.api.Span
 import dev.cint.core.candidate.CandidateIdentity
 import dev.cint.core.user.UserAnnotationResolver
-
-data class CandidateGroup(
-    val anchorId: String,
-    val path: String,
-    val contentHash: String,
-    val span: Span,
-    val startByte: Int,
-    val endByte: Int,
-    val candidates: List<CandidateEmit>,
-)
+import dev.cint.suggest.model.CandidateGroup
 
 object CandidateGrouping {
     fun group(

@@ -1,6 +1,7 @@
-package dev.cint.suggest
+package dev.cint.suggest.provider
 
 import dev.cint.api.CandidateEmit
+import dev.cint.suggest.model.CandidateContext
 
 const val FAKE_PROVIDER_ID: String = "fake"
 const val FAKE_MODEL_ID: String = "fake-intent-v1"

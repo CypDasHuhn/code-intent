@@ -3,6 +3,10 @@ package dev.cint.suggest
 import dev.cint.api.CandidateEmit
 import dev.cint.api.CandidateReason
 import dev.cint.api.Span
+import dev.cint.suggest.model.CandidateContext
+import dev.cint.suggest.model.CandidateDocument
+import dev.cint.suggest.model.SuggestionOptions
+import dev.cint.suggest.provider.IntentSuggestionProvider
 import java.nio.charset.StandardCharsets
 import kotlin.test.Test
 import kotlin.test.assertEquals

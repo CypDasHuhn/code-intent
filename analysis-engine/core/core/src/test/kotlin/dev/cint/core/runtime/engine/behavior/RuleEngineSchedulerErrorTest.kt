@@ -1,4 +1,4 @@
-package dev.cint.core.runtime.engine
+package dev.cint.core.runtime.engine.behavior
 
 import dev.cint.core.config.IntentConfig
 import dev.cint.core.facts.model.SourceFile
