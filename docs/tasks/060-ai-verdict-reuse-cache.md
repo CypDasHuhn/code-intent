@@ -1,6 +1,6 @@
 ---
 name: ai verdict reuse cache
-status: todo
+status: done
 depends-on: [058, 059]
 reviewers: [correctness, architecture]
 ---
@@ -70,3 +70,20 @@ See [../ai-annotation-session.md](../ai-annotation-session.md).
 - AI verdicts are candidates only, so similarity hints are safe, but they must
   be clearly marked as prior hypotheses in the session log.
 - Deterministic reuse must be exact; do not apply hint-style reuse there.
+
+## Deferred
+
+Round 13 closed the cache scope. The remaining split/legacy ownership findings
+are deferred to ticket 062 with the review evidence:
+
+- Legacy records without a `unitFingerprint` bypass the split ownership
+  classifier, so status, scoping, host analysis, and suppression can disagree
+  (`docs/reviews/060/correctness.md` round 13 finding 31;
+  `docs/reviews/060/architecture.md` round 13 finding 31).
+- Straddling/host-context suppression lacks the shared ownership check.
+- Short-circuit republishing bypasses suppression.
+- Residual coverage and known limits: overlapping split regions, legacy
+  ordinal-only nested records, content-addressed region-key migration, external
+  pack helper fingerprints, process-local diff baselines, memory-only hints,
+  one cache header per language, and `aiEnv` not covering every suggestion-layer
+  parameter.

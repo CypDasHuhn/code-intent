@@ -248,7 +248,8 @@ Protocol 3 additions (kept in protocol 4):
 - `initialize.suggestions` — secret-free capability descriptor
   `{enabled, trigger, provider, model, knownIntents, discovery, restrictions,
   cache, maxUnitsPerRequest}`. `enabled` comes from `.cint/suggestions.yml` and
-  defaults to false; discovery defaults to true.
+  defaults to false; discovery defaults to true. `cache` is true for protocol-4
+  clients when `cacheEnabled` is set.
 - `cint/publishCandidates` — `uri`, `version`, `analysisRevision`,
   `suggestionRevision`, flat `candidates`, and `groups`. A group is one anchor
   (`anchorId`, `path`, `contentHash`, span/positions) with its alternative
@@ -347,6 +348,12 @@ suggestions:
   maxTurns: 50
   maxToolCalls: 200
   maxTokensPerRequest: 2048
+  restrictionsEnabled: true
+  cacheEnabled: true
+  cachePersist: true
+  cacheMaxEntries: 5000
+  cacheTtlHours: 720
+  similarHintThreshold: 0.8
   allowGlobs: []         # empty allows every path; globs gate the AI pass
   redactPatterns: []     # regexes applied to every text result before sending
 ```

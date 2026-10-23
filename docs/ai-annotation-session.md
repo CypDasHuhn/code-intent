@@ -4,8 +4,10 @@ Status: partially implemented, 2026-10-23. Ticket 058 implements expression-leve
 discovery, the internal tool loop, add-only verdicts, budgets/coverage, protocol 4
 progress/log, and the recall-oriented prompt. Ticket 059 implements grouped
 remove+add restriction proposals, `.cint/ai-restrictions.json`, pre-composition
-application, and the restriction inspector API. Reuse (060) and the full review
-UX (061) remain proposed.
+application, and the restriction inspector API. Ticket 060 implements the
+deterministic document short circuit, per-unit verdict reuse with diff
+invalidation and hints, normalized decision anchors, and the disk verdict cache.
+The full review UX (061) remains proposed.
 
 This document designs the next AI layer above the deterministic pipeline:
 expression-level discovery, reviewable restrictions, and reuse across document
@@ -226,14 +228,15 @@ annotations; only restriction groups use this file.
       "symbol": "magicCommentIn",
       "contentHash": "3f0c...",
       "unitFingerprint": "b41d...",
+      "fingerprintVersion": 2,
       "anchor": {
         "startLine": 215,
         "startCol": 8,
         "endLine": 215,
         "endCol": 55
       },
-      "remove": [{ "intent": "LOGGING", "startOffset": -12, "endOffset": 47 }],
-      "add": [{ "intent": "SEARCH", "startOffset": 0, "endOffset": 47 }],
+      "remove": [{ "intent": "LOGGING", "startOffset": -12, "endOffset": 47, "startToken": -4, "endToken": 9 }],
+      "add": [{ "intent": "SEARCH", "startOffset": 0, "endOffset": 47, "startToken": 0, "endToken": 9 }],
       "provider": "deepseek",
       "model": "deepseek-chat",
       "promptVersion": "deepseek-intent-v3",
@@ -292,8 +295,8 @@ aiEnv = H(
 
 ### Document short circuit
 
-If the content hash and `deterministicEnv` match, reuse the parsed facts and
-`AnalysisOutput`. Do not parse, query LSP, run rules, or call AI. Publish for the
+If the content hash and `deterministicEnv` match, reuse the analyzed
+`AnalysisOutput`; do not parse, query LSP, run rules, or call AI. Publish for the
 new buffer version with a fresh publish revision; only the analysis work is
 reused.
 
@@ -317,7 +320,10 @@ unitKey = H(
 - Imports are included so identical text in different files does not share a
   verdict blindly.
 - Negative verdicts are cached; most expression leaves are `none`.
-- Operation offsets are stored relative to the unit start and remapped on reuse.
+- Positive operations store token offsets relative to the unit anchor (and raw
+  offsets for legacy/out-of-anchor operations); they are remapped on reuse and
+  revalidated against the current text. Existing-intent fingerprints use token
+  positions when the annotation is token-aligned.
 
 ### Invalidation
 
@@ -346,9 +352,14 @@ not silently lose a previously reviewed decision.
 
 ### Decision reuse
 
-Rejections, confirmations, and restriction records are keyed by the normalized
-anchor fingerprint rather than only the file content hash. A formatting edit
-must not resurrect a rejected suggestion or drop an accepted restriction.
+Rejections, confirmations, and restriction records are keyed by versioned
+normalized anchor fingerprints rather than only the file content hash. Candidate
+and proposal fingerprints include the containing unit identity and normalized
+operation shape so duplicate expressions stay independent. Confirmed add-only
+annotations persist the containing unit fingerprint, its version, token range,
+and normalized offsets, so a formatting edit does not drop them. A formatting
+edit must not resurrect a rejected suggestion or drop an accepted annotation or
+restriction.
 
 ### Persistence
 
@@ -570,6 +581,148 @@ text result sent to the provider, including tool results.
   Protocol-3 clients receive neither that field nor `operations` group fields.
 - The restriction file `version` is checked; unknown versions are not applied and
   writes refuse to rewrite them, preserving existing records.
+
+## Implementation snapshot (060)
+
+- `DeterministicEnvironment` hashes engine code fingerprint, pack/rule code
+  fingerprint, config fingerprint, the user-annotation file and AI-restriction
+  file contents, the language-profile code/resource fingerprint, and the oracle
+  mode. `AiEnvironment` adds provider, model, prompt version, and a hash of the
+  known intent vocabulary.
+- A `didChange`/`cint/analyze` whose content hash, language, and
+  `deterministicEnv` match the cached analysis does not parse, query LSP, run
+  rules, compose, or call the provider. It allocates a fresh analysis revision
+  and republishes the cached annotations and deterministic candidates for the
+  new buffer version. A short circuit republish filters decisions by their
+  stored candidate/anchor ids instead of building anchor contexts, so it performs
+  no parse even when the project has stored decisions.
+- Unit verdicts are keyed by language, import-set digest, node kind, normalized
+  text (comments stripped, whitespace tokenized), enclosing symbol and signature,
+  sorted referenced names, existing-intent token fingerprint, and `aiEnv`.
+  Negative verdicts are cached. Positive operations store token offsets relative
+  to the unit anchor (and raw offsets for legacy/out-of-anchor operations); they
+  are remapped to the current text and revalidated before use. Formatting inside
+  a unit therefore keeps the same token span, including annotations that are
+  part of the existing-intent fingerprint. An existing annotation that is not
+  token-aligned falls back to relative offsets and may miss a reformat; that is a
+  deliberate no-stale-reuse fallback.
+- The suggestion pass keeps the text of the last completed grading pass per
+  document and diffs that against the new text. Units that overlap a changed
+  range or reference a declaration whose normalized body changed are graded
+  again. Pure formatting produces no changed range because the normalized
+  document is unchanged. Insertions and deletions are represented as point
+  ranges so they still invalidate adjacent/containing units. The baseline is
+  process-local: after a daemon restart or a budget-exhausted pass the first
+  suggestion has no diff basis and falls back to exact cache keys.
+- Similar changed units (token similarity at or above `similarHintThreshold`)
+  are carried into the batch prompt as `prior:` hypotheses even when
+  invalidation forces the unit to be regraded. Prior restrictions are collected
+  independently of the verdict-cache toggle. Hints are never published directly.
+- Reject/confirm decisions and restriction records use a versioned normalized
+  anchor fingerprint built from the unit identity (symbol, siblings, ordinal)
+  plus the normalized operation shape. Identical expressions in the same symbol
+  and different proposal shapes therefore stay independent, while formatting
+  keeps the decision. Confirmed proposals are also matched against the stored
+  restriction unit fingerprint, not only the raw `proposalId`. Confirmed
+  add-only annotations persist the containing unit fingerprint and its version,
+  normalized anchor fingerprint, token range, and normalized offsets, which
+  `UserAnnotationResolver` prefers over the raw span/hash path. A non-token-
+  aligned confirmation falls back from token offsets to normalized offsets, and
+  only a record with no token or normalized anchors uses the raw-range/content-
+  hash check. A versioned anchor that no longer matches is dormant rather than
+  rebinding to an enclosing declaration or a duplicate expression.
+- Restriction fingerprints are versioned. Version 1 records use the 059
+  whitespace-collapse normalization; new records use token normalization with
+  comments stripped from the anchor and preserved in sibling context. Records
+  without a version field are read as version 1, and an unmatched legacy
+  fingerprint falls back to the stored span when its content hash still matches.
+  New restriction operations store relative token offsets so formatting or
+  moving the anchor remaps removals and replacements instead of dropping them.
+  Version-1 records cannot survive an intra-anchor formatting edit because they
+  carry no token offsets; reconfirming upgrades them to version 2.
+- Split-document decisions compute their unit/token/normalized anchors against
+  the containing script region (using that region's language frontend) while the
+  persisted span/content hash stays in host coordinates. They persist a stable
+  region identity derived from region language plus normalized region text.
+  Region ordinal/language are legacy fallback fields only; duplicate region
+  identities are dormant, not resolved by ordinal. Ambiguity is computed over
+  the flattened leaf set shared by scoping, status, and suppression. Scoping,
+  status, and proposal
+  suppression all use that identity and require the same region; if two regions
+  normalize to the same identity, the record is treated as ambiguous and dormant
+  rather than applying or suppressing across regions. Line insertions,
+  region insertion/removal, and reordering therefore preserve unique region
+  identities. The scoping step passes region-relative anchors through and the
+  region resolver matches them; legacy unanchored records keep the raw
+  host-span/hash clip. Split analysis also runs the host frontend over host-level
+  source outside leaf regions and merges those annotations/candidates, so
+  confirmed host-level user annotations and restrictions are applied rather than
+  stored only. Status and proposal suppression share the cached applicability
+  check (`restrictionApplies`) instead of treating any non-empty resolution as
+  applicable. Host analysis receives only host-level records, while region
+  analysis receives only records owned by that leaf; host-level restrictions
+  suppress only host-level proposals and region records only same-region
+  proposals. The restriction inspector and proposal suppression resolve region
+  records against their region source, not the host Vue document, and use the same
+  recursive leaf-region enumeration as discovery.
+  `SuggestionDecision` stores an anchor-fingerprint version alongside restriction
+  records, with unversioned round-2 records read at version 2.
+- Split discovery recursively enumerates nested leaf regions and also includes
+  host-level expression units outside regions. Batch prompts carry the document
+  language plus per-unit `language` when it differs and a deduplicated sorted
+  `languages` set when units introduce a non-host language, so providers see
+  JavaScript/TypeScript region languages rather than only the host language.
+  `lookup_type` routes each requested host span through the containing region's
+  frontend and oracle; declaration invalidation diffs declarations from every
+  split region with its own frontend. Nested leaf selection is recursive for
+  discovery, anchoring, status, and suppression; overlapping split regions and
+  legacy ordinal-only nested records remain the region-selection limitations.
+- Engine/language-profile identity is package-derived: engine identity hashes
+  `api`, `core`, `suggest`, `host`, `server`, `lsp`, and `rulepacks` class files;
+  language identity hashes `frontend`/`treesitter` classes plus every syntax YAML
+  for the registered languages. Rulepack shared helpers are hashed through the
+  rulepack package as well as the pack/rule class digests. Missing code,
+  resources, or unreadable code roots make the fingerprint fail loudly, and the
+  guard test asserts prefix/entry coverage as well as the Gradle module list.
+- `.cint/cache/ai-verdicts.json` is versioned with the full deterministic and AI
+  environment, not only provider/model/prompt/vocabulary. Entries store key
+  digests, raw-text digest, token operations, intents, confidence, spans, and
+  timestamps; they never store unit source text or rationale. Rationale is kept
+  for an in-memory reuse but omitted at the disk boundary. The file is bounded by
+  `cacheMaxEntries` and `cacheTtlHours`; a changed environment discards it, and
+  loaded entries are filtered by the current `aiEnv`. `cachePersist: false` keeps
+  reuse in memory only. The file has one environment header, so alternating
+  languages in one project replace the persisted entries for the previous
+  language; in-memory reuse is unaffected until the daemon restarts.
+- `cint/suggest` reports `reused`, `graded`, `total`, and `overhead` (cache
+  bookkeeping milliseconds); progress reports `reused`. `graded` counts units the
+  provider actually graded, so `reused + graded == total` when coverage is full.
+- Accepted staleness limit: an external type change with unchanged text does not
+  bump the environment, so a reused verdict can be stale until the next text or
+  environment change. This is intentional for the current slice because the LSP
+  document version is not part of the persisted identity.
+- Accepted migration/scope notes: pre-060 suggestions decisions without an
+  `anchorFingerprint` still use their content-hash ids; old restriction records
+  are read through the version-1 fingerprint. Similar-unit hints are memory-only
+  because normalized text is not persisted. The unit key intentionally omits
+  path, so files with matching language/imports/symbol/text share verdicts.
+- Stability contract: `AnchorFingerprint.of` and the raw/normalized offset
+  mapping are part of the version-2 unit identity. They are frozen for version 2;
+  changing either recipe requires a new `UnitIdentity` version and a versioned
+  read path for existing decisions/user annotations. They do not carry an
+  independent version field.
+- Region identity is content-addressed: changing a region's normalized content
+  changes its key, so old decisions become dormant until reconfirmed. If the
+  original region disappears while an identical-content region remains, that
+  region can adopt the key; duplicate identical regions are ambiguous and
+  dormant. There is no automatic migration across content changes.
+- Shared external rulepack helpers are not covered by the bundled package
+  fingerprint. The bundled `dev/cint/rulepacks` package is covered; third-party
+  pack artifacts must bump their pack code/version to invalidate their entries.
+  Follow-up: hash each external pack artifact/checksum when third-party pack
+  loading is supported. Splitting a restriction whose remove/add target extends
+  outside the region is treated as inapplicable/dormant in the region, not
+  partially applied.
 
 ## Phasing
 

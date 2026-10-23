@@ -183,6 +183,50 @@ re-analysis. User annotations always win over a restriction.
 `cint/restrictions/remove` takes `{id}` and returns `{accepted, removed}`. Both
 require protocol 4 and `restrictionsEnabled`.
 
+## AI reuse and caching
+
+Analysis and AI verdict reuse split identity into two hashes:
+
+- `deterministicEnv`: engine code, pack/rule code, config, user annotations,
+  AI restrictions, language-profile code/resources, and oracle mode.
+- `aiEnv`: `deterministicEnv` plus provider, model, prompt version, and vocabulary.
+
+An unchanged content hash and language under the same `deterministicEnv`
+republishes the cached analysis for the new buffer version without parsing, LSP,
+rules, composition, or a provider call. Anchor contexts are built lazily only if
+a stored decision needs one. A per-unit verdict cache keys language, import set,
+node kind, normalized text, enclosing symbol/signature, referenced names,
+existing-intent token fingerprint, and `aiEnv`. Negative verdicts are stored,
+positive operations use token-relative offsets, and cache hits are remapped and
+revalidated against current text.
+
+The suggestion pass diffs the text of its last completed grading pass, so
+matching non-overlapping units are reused while changed units and units
+referencing changed declarations are graded again. Formatting reuses every
+normalized fingerprint, including annotations inside units. Similar changed
+units and same-symbol restrictions are sent as `prior:` hints even when the unit
+is invalidated; prior restrictions do not depend on cache enablement. Hints are
+never published directly. Rejections, confirmations, and restrictions use a
+versioned unit identity plus operation shape, so formatting does not resurrect or
+drop them and duplicate identical expressions stay independent. Confirmed
+add-only annotations persist the same versioned identity, token range, and
+normalized offsets; split-region decisions compute region-relative anchors and
+persist a stable region identity from language plus normalized region text, with
+ambiguous identities dormant. Scoping, status, and proposal suppression require
+the same region; legacy unanchored records keep the clipped span/hash path.
+Split analysis also analyzes host-level source outside leaf regions, so host-level
+confirmations apply; status and proposal suppression share cached applicability.
+Split discovery recursively enumerates leaf regions plus host-level units and
+carries per-unit/per-region languages through the prompt and type lookup.
+
+Verdicts persist in `.cint/cache/ai-verdicts.json`, versioned with the full
+deterministic/AI environment, bounded by `cacheMaxEntries`/`cacheTtlHours`, with
+no source text or rationale on disk. `cacheEnabled`/`cachePersist` gate in-memory
+and disk reuse; `cint/suggest` reports `reused`, `graded`, `total`, and
+`overhead`. Restriction records are fingerprint-versioned: 059 records keep their
+original normalization, and new records use token identity/offsets. External type
+changes with unchanged text are an accepted staleness limit.
+
 ## Legacy pack-candidate enrichment
 
 Pipeline:

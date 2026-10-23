@@ -1,6 +1,6 @@
 # Current State and Continuation Notes
 
-As of 2026-10-23, after tickets 041–059. Branch `main` is clean apart from
+As of 2026-10-23, after tickets 041–060. Branch `main` is clean apart from
 local `.cint/**` project state.
 
 ## Where the project is
@@ -36,6 +36,7 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 | 057 | AI candidate/enrichment caps default to unlimited (`0`); positive caps remain configurable. |
 | 058 | AI expression discovery session: core expression units including leaves, internal tool loop, add-only verdicts with validation, budgets/coverage, protocol 4 progress/log, and a recall-oriented prompt. |
 | 059 | AI restriction proposals: grouped remove+add operation groups, `.cint/ai-restrictions.json` persistence under the shared annotation lock, pre-composition application with `ai-confirmed` replacements, dormant/user-wins handling, and restriction inspection/removal. |
+| 060 | AI verdict reuse cache: deterministic document short circuit, per-unit verdict reuse with diff invalidation and hints, normalized decision anchors, and bounded `.cint/cache/ai-verdicts.json` persistence. |
 
 ## Current behavior worth knowing
 
@@ -58,6 +59,10 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   anchor text is gone are dormant; user annotations and `PURE`/`READONLY` cannot
   be removed. `cint/restrictions/list` and `cint/restrictions/remove` inspect and
   remove active records.
+- Unchanged documents reuse their cached analysis; AI verdicts are cached per
+  expression unit in `.cint/cache/ai-verdicts.json`. Formatting reuses all units,
+  a lint edit grades only changed units, and prompt/provider/annotation/
+  restriction changes invalidate the relevant layer.
 - Hover shows only the innermost span under the caret and never shows
   `UNTAGGED`.
 - AI candidates render differently from deterministic candidates (AI sign,
@@ -66,9 +71,9 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 ## Open work
 
 - **060-061 (proposed): AI annotation session follow-ups.** Per-unit verdict reuse
-  (060) and the renderer review UX (061). Tickets 058 and 059 implement
-  expression-level discovery and grouped restriction proposals. Design:
-  [../ai-annotation-session.md](../ai-annotation-session.md).
+  (060) is implemented; ticket 061 covers the renderer review UX. Tickets 058 and
+  059 implement expression-level discovery and grouped restriction proposals.
+  Design: [../ai-annotation-session.md](../ai-annotation-session.md).
 - **017 (blocked): fixpoint metadata convergence.** Decide whether
   `source`/`confidence` metadata participates in convergence or whether
   metadata-only changes are non-convergent; the evidence field no longer
@@ -87,12 +92,14 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   - Hover content is truncated at 12 lines/60 columns with no overflow marker.
   - Discovery grades every expression unit and large files can be slow/costly;
     budgets publish partial coverage, while an outer provider timeout cancels
-    without partial results. Reuse caches are deferred to 060.
+    without partial results. Document and per-unit reuse bound repeated work;
+    external type changes with unchanged text remain an accepted staleness limit.
   - Accepted OVERCROWDED roots: `analysis-engine`, `core/core`, and the
     `rulepacks-tests` package root; single-file packages are out of scope.
 - **Local state:** `.cint/config.overlay.yml`, `.cint/suggestions*.json/yml`,
-  `.cint/ai-restrictions.json*`, and `.cint/user-annotations.json*` are untracked
-  runtime/test state. Do not commit them blindly.
+  `.cint/ai-restrictions.json*`, `.cint/cache/ai-verdicts.json*`, and
+  `.cint/user-annotations.json*` are untracked runtime/test state. Do not commit
+  them blindly.
 
 ## Resume commands
 

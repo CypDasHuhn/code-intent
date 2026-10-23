@@ -253,12 +253,14 @@ is structural because the AI output type is `CandidateEmit`, never an establishe
 ### AI discovery and enrichment boundary
 
 AI is post-analysis and non-authoritative. The server caches an
-`AnalysisOutput` for an exact document version, builds the worklist for that
-version, and publishes candidate-only results on `cint/publishCandidates`. AI
-never runs in the scheduler, never owns an intent, and cannot create an
-established annotation. `.cint/suggestions.yml` gates the manual `cint/suggest`
-path and is disabled by default; deterministic pack candidates publish
-regardless.
+`AnalysisOutput` for an exact document version and a deterministic environment,
+builds the worklist for that version, and publishes candidate-only results on
+`cint/publishCandidates`. An unchanged content hash under the same environment
+skips parsing, LSP, rules, composition, and AI and republishes the cached output
+under a fresh analysis revision. AI never runs in the scheduler, never owns an
+intent, and cannot create an established annotation. `.cint/suggestions.yml`
+gates the manual `cint/suggest` path and is disabled by default; deterministic
+pack candidates publish regardless.
 
 With `discoveryEnabled` (default true) and a provider that supports the session
 surface, the server enumerates expression units from the core syntax model,
@@ -315,7 +317,24 @@ events are structured.
 Protocol 4 gates discovery and its `cint/suggest/progress` / `cint/suggest/log`
 messages. A protocol-3 client keeps the legacy enrichment path and sees no
 discovery progress or log, no `operations` group field, and no `restrictions`
-response field. Confirmation writes an existing `.cint/user-annotations.json`
+response field. Deterministic analysis short-circuits on an unchanged content
+hash, language, and deterministic environment without parsing when no decision
+needs an anchor context. The AI verdict cache is keyed per expression unit and
+`aiEnv`, persists digests and token-relative operations in
+`.cint/cache/ai-verdicts.json` without source text, and is invalidated by the
+last completed suggestion diff, declaration changes, formatting, and environment
+changes; `cint/suggest` reports `reused`, `graded`, `total`, and `overhead`.
+Decision suppression, confirmed user annotations, and restriction anchors use
+versioned unit identities and normalized operation shapes; confirmed add-only
+annotations persist the same identity plus normalized token offsets, so
+formatting does not resurrect rejected proposals or drop confirmed
+annotations/restrictions. Split-region decisions compute region-relative anchors
+at confirmation time and persist a stable region identity from language plus
+normalized region text; scoping, status, and proposal suppression all require the
+same region, and ambiguous region identities are dormant. Legacy unanchored
+records keep the clipped span/hash path. The engine/language-profile fingerprint
+is package-scoped over api/core/suggest/host/server/lsp/rulepacks and
+frontend/treesitter code plus syntax resources. Confirmation writes an existing `.cint/user-annotations.json`
 record and the next analysis re-evaluates it as an established `user` source.
 Proposal groups use `cint/publishCandidates` groups with
 `proposalId`/`groupId` and explicit `operations`; a decision republish preserves

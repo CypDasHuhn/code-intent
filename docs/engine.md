@@ -75,8 +75,10 @@ host file coordinates. Vue uses this to analyze `<script>` and
 `<script setup lang="ts">` blocks as JavaScript or TypeScript while reporting
 positions in the `.vue` file.
 
-Split handlers can nest. The host file itself is not analyzed unless a handler
-returns a region for it.
+Split handlers can nest. Region content is analyzed by the region language; the
+host source outside leaf regions is analyzed separately with the host frontend so
+host-level expressions (for example Vue template expressions) keep their
+annotations and restrictions. Overlapping regions remain unsupported.
 
 ## Classification
 
@@ -327,13 +329,46 @@ Candidate-only is structural, not a confidence threshold: the output is a
 `CandidateEmit` (or a suggest-layer proposal group) and never enters the
 annotation store, scheduler, or composition directly.
 
+Reuse is exact for documents and per-unit for AI verdicts. A deterministic
+environment hashes engine code, pack/rule code, config, user annotations, AI
+restrictions, language-profile code/resources, and oracle mode; the AI
+environment adds provider, model, prompt version, and known vocabulary. An
+unchanged content hash and language under the same deterministic environment
+republishes the cached `AnalysisOutput` without parsing, LSP, rules, composition,
+or a provider call; anchor contexts are built only when a decision actually needs
+a fingerprint. Unit verdicts are keyed by language, import set, node kind,
+normalized text, enclosing symbol/signature, referenced names, existing-intent
+token fingerprint, and `aiEnv`; negative verdicts and token-relative operation
+offsets are stored, with raw offsets retained for legacy/out-of-anchor
+operations. The suggestion pass diffs the text of its last completed grading
+pass, so changed ranges and changed declaration names invalidate dependent units
+while formatting still reuses every normalized fingerprint. Similar changed units
+and same-symbol restrictions are passed to the provider as `prior:` hints only;
+prior-restriction hints do not depend on the verdict-cache toggle. Decisions and
+restriction records use a normalized unit identity plus operation shape so
+formatting does not resurrect a rejected suggestion or drop a confirmed
+restriction, and duplicate identical expressions stay independent. Confirmed
+add-only annotations persist the containing unit fingerprint and token range so
+they survive formatting. Restriction fingerprints are versioned: version-1 059
+records use the old normalization, new records use token identity and token
+offsets, and an unmatched legacy fingerprint falls back to the stored
+content-hash span. Entries live in `.cint/cache/ai-verdicts.json`, versioned with
+the full deterministic/AI environment, bounded by
+`cacheMaxEntries`/`cacheTtlHours`, and contain no source text or rationale
+(rationale is kept only for in-memory reuse). Changing the engine, pack, config,
+annotations, restrictions, language profile, oracle mode, provider, model,
+prompt, or vocabulary discards/invalidates the relevant layer. External type
+changes without text changes are an accepted staleness limit until the next text
+or environment change.
+
 Confirming a proposal group writes `.cint/ai-restrictions.json` under the shared
 `.cint/user-annotations.json.lock` protocol. Each record stores `path`, `symbol`,
-bare lowercase SHA-256 `contentHash`, a real `unitFingerprint`, anchor span,
-relative `remove`/`add` offsets, and provider/model/prompt provenance. Analysis
-resolves records by path plus anchor content hash, stored symbol, and unit
-fingerprint (including adjacent sibling context); duplicate, moved-by-insertion,
-or missing identities are dormant rather than rebound.
+bare lowercase SHA-256 `contentHash`, `unitFingerprint`, `fingerprintVersion`,
+anchor span, `remove`/`add` operations with raw offsets and token offsets, and
+provider/model/prompt provenance. Analysis resolves records by path plus a
+versioned unit fingerprint (including adjacent sibling context), falling back to
+the stored content-hash/symbol span for legacy version-1 records; duplicate,
+moved-by-insertion, or missing identities are dormant rather than rebound.
 Removals are applied after user contributions and before composition, and
 replacements are added as `source = ai-confirmed` with contributor
 `core:ai-confirmed` and structured provider/model/prompt contribution fields;
@@ -477,8 +512,11 @@ the pass), `promptVersion` (default `deepseek-intent-v3` for DeepSeek), `timeout
 `discoveryMaxUnitsPerRequest` (default `24`, minimum `1`), `sessionTimeoutMs`
 (default `120000`, minimum `1`), `maxTurns` (default `50`, minimum `1`),
 `maxToolCalls` (default `200`, minimum `0`), and `maxTokensPerRequest` (default
-`2048`, minimum `1`), `restrictionsEnabled` (default `true`),
-`apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
+`2048`, minimum `1`), `restrictionsEnabled` (default `true`), `cacheEnabled`
+(default `true`), `cachePersist` (default `true`), `cacheMaxEntries` (default
+`5000`, `0` disables entries), `cacheTtlHours` (default `720`, `0` disables
+expiry), `similarHintThreshold` (default `0.8`), `apiKeyEnv` (default
+`DEEPSEEK_CHAT_KEY`), `baseUrl` (default
 `https://api.deepseek.com/chat/completions`), `maxTokens` (default `1024`),
 `maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
 (default `400`, minimum `0`), `allowGlobs` (default empty, which allows every
@@ -487,10 +525,9 @@ path), and `redactPatterns` (default empty). This gate controls the
 publish when it is disabled. Discovery scans expression units, not arbitrary
 lines, and is bounded by the session timeout, turn, tool-call, units-per-request,
 and token budgets. If a session budget is exhausted, the server publishes the
-graded units and reports coverage instead of discarding everything. Unchanged
-documents are still re-analyzed in this slice; reuse caches are ticket 060.
+graded units and reports coverage instead of discarding everything.
 
-The server resolves this file, injects the provider config and key lookup, and
+Analysis reuse is documented in the AI discovery section above. The server resolves this file, injects the provider config and key lookup, and
 orchestrates the pass. `:suggest` owns the DeepSeek provider and its remote
 transport: it builds the `Authorization` header, uses the JDK `HttpClient`, and
 applies `timeoutMs` to the HTTP request. `baseUrl` and `apiKeyEnv` are
@@ -604,7 +641,8 @@ maxUnitsPerRequest}`. `discovery` is true when `discoveryEnabled` is set and the
 supports the session surface; `restrictions` is true when `restrictionsEnabled`
 is set (default true) for a protocol-4 client, independent of provider support
 because the inspector remains usable; proposal generation additionally needs the
-discovery session surface and `discoveryEnabled`; `cache` is false in this slice. It comes
+discovery session surface and `discoveryEnabled`; `cache` is true for a
+protocol-4 client when `cacheEnabled` is set (default true). It comes
 from `.cint/suggestions.yml`; a missing
 file advertises `enabled: false`, `trigger: "manual"`, and null provider/model;
 an enabled file without a provider advertises `deepseek` and `deepseek-chat`.
@@ -616,12 +654,14 @@ restriction inspector require the requesting client to have sent protocol
 keep the legacy enrichment path, receive deterministic tags and the existing
 candidate shapes (no `operations` group field and no `restrictions` response
 field), and see no discovery progress, log, or restriction groups. The cache
-capability flag remains false in this slice.
+capability flag is true only for protocol-4 clients when caching is enabled.
 
 The client sends `textDocument/didOpen`, `didChange`, and `didClose` with full
 text and a monotonic version. The server re-runs that file and emits
 `cint/publishTags` with `uri`, `version`, content `hash`, config `revision`,
-`analysisRevision`, and `annotations`. `revision` tracks pack/config changes;
+`analysisRevision`, and `annotations`. A `didChange` with the same content hash
+under the same deterministic environment skips analysis and republishes the
+cached annotations under a fresh `analysisRevision`. `revision` tracks pack/config changes;
 `analysisRevision` is a monotonic per-document counter for every analysis
 publish. The analysis, its config snapshot, and the new `analysisRevision` are
 allocated together under the global lock, so revision order always matches
@@ -666,7 +706,7 @@ channel (see below). Config mutations remain unchanged:
 - `cint/suggest` takes `{uri, version, requestId}` and asynchronously grades the
   expression worklist for that exact document version. It returns
   `{accepted, cancelled, count, total, graded, reused, additions, toolCalls,
-  turns, incomplete, budgetExhausted, skipped, uncovered}` plus
+  turns, incomplete, budgetExhausted, skipped, overhead, uncovered}` plus
   `restrictions` for protocol-4 clients; `restrictions` is the post-filter
   published proposal count, not the raw session count. A disabled, stale-version,
   or already-busy pass returns `{accepted: false, ...}` with `disabled`, `stale`,
