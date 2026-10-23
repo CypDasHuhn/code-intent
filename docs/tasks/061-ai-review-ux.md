@@ -1,6 +1,6 @@
 ---
 name: ai review ux for discovery and restrictions
-status: todo
+status: done
 depends-on: [058, 059, 060]
 reviewers: [correctness]
 ---
