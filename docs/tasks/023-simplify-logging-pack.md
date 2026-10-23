@@ -1,6 +1,6 @@
 ---
 name: simplify logging pack
-status: todo
+status: done
 depends-on: [020]
 reviewers: [correctness, detection-fidelity]
 ---

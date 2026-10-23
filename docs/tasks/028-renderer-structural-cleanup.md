@@ -1,6 +1,6 @@
 ---
 name: renderer structural cleanup
-status: todo
+status: done
 depends-on: []
 reviewers: [correctness]
 ---
