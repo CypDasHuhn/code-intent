@@ -4,9 +4,10 @@ This directory is a compact, continuation-oriented map of CodeIntent. It is
 derived from the canonical docs and the current code; when they disagree, the
 canonical docs and the code win.
 
-As of 2026-10-22, `main` contains the rule/engine restructure, the user
-annotation and AI candidate channels, the Neovim hover/candidate UI, and the
-size-hygiene split. `just build`, `just test-engine`, `just lint`, and
+As of 2026-10-23, `main` contains the rule/engine restructure, the user
+annotation and AI candidate channels, expression-level AI discovery, grouped
+restriction proposals, the verdict reuse cache, the full Neovim review UX, and
+the size-hygiene split. `just build`, `just test-engine`, `just lint`, and
 `just test-nvim` pass.
 
 ## Reading order
@@ -34,9 +35,10 @@ just build && just test-engine && just lint && just test-nvim
 
 - Engine: `analysis-engine/` (Gradle, Kotlin, tree-sitter, optional kotlin-lsp).
 - Client: `nvim-renderer/` (Lua, headless Neovim tests).
-- Task queue: `docs/tasks/README.md`. 058-061 are the proposed AI annotation
-  session/discovery, restrictions, reuse cache, and review UX; 017 remains
-  blocked. 023/028 file frontmatter is stale (README says done).
-- Current product surface: deterministic intent tags plus AI candidate review,
-  user annotations with `PURE`/`READONLY`, live daemon protocol 4, and the
-  Neovim renderer with inline labels, stripes, hover, and candidate review.
+- Task queue: `docs/tasks/README.md`. 058-061 (AI discovery, restrictions,
+  reuse cache, review UX) are done; 062 covers deferred split-host record
+  ownership, and 017 remains blocked.
+- Current product surface: deterministic intent tags plus AI discovery and
+  grouped review, user annotations with `PURE`/`READONLY`, live daemon protocol
+  4, and the Neovim renderer with inline labels, stripes, hover, candidates,
+  review list/navigation, restrictions inspector, and AI session log.

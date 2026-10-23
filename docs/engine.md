@@ -717,8 +717,9 @@ channel (see below). Config mutations remain unchanged:
 - `cint/suggest/progress` is pushed during a discovery pass with
   `{uri, version, graded, reused, total, activity}`.
 - `cint/suggest/log` takes `{uri}` and returns the last session's counts,
-  coverage, and tool/reuse events for `:CintAiLog` (the renderer command is
-  planned for ticket 061).
+  coverage, and tool/reuse events for `:CintAiLog`. The log includes the
+  built-in provider's safe failure detail (missing key environment variable,
+  HTTP status, transport error class) but not prompt text or raw prose.
 - `cint/suggest/cancel` takes `{uri?, requestId?}`, marks the matching in-flight
   pass cancelled, and returns `true`. Cancelled request ids are pruned after 60
   seconds.

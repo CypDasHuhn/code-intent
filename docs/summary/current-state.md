@@ -1,7 +1,7 @@
 # Current State and Continuation Notes
 
-As of 2026-10-23, after tickets 041–060. Branch `main` is clean apart from
-local `.cint/**` project state.
+As of 2026-10-23, after tickets 041–061. Ticket 062 is queued and `017` remains
+blocked. Branch `main` is clean apart from local `.cint/**` project state.
 
 ## Where the project is
 
@@ -36,7 +36,13 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 | 057 | AI candidate/enrichment caps default to unlimited (`0`); positive caps remain configurable. |
 | 058 | AI expression discovery session: core expression units including leaves, internal tool loop, add-only verdicts with validation, budgets/coverage, protocol 4 progress/log, and a recall-oriented prompt. |
 | 059 | AI restriction proposals: grouped remove+add operation groups, `.cint/ai-restrictions.json` persistence under the shared annotation lock, pre-composition application with `ai-confirmed` replacements, dormant/user-wins handling, and restriction inspection/removal. |
-| 060 | AI verdict reuse cache: deterministic document short circuit, per-unit verdict reuse with diff invalidation and hints, normalized decision anchors, and bounded `.cint/cache/ai-verdicts.json` persistence. |
+| 060 | AI verdict reuse cache: deterministic document short circuit, per-unit verdict reuse with diff invalidation and hints, normalized decision anchors, bounded `.cint/cache/ai-verdicts.json` persistence, and split/host record identity. |
+| 061 | AI review UX: capability-gated passive/review modes, `+`/`−`/`− +` groups, quickfix review list and navigation, restrictions inspector/removal, AI session log, progress/cancel, and deduped completion notices. |
+
+Recent follow-up fixes: `fix(nvim): connect before ai log and restrictions`
+(`:CintAiLog`/`:CintRestrictions` connect on demand and report the actual
+protocol) and `fix(suggest): surface provider failure details in ai log`
+(structured safe failure detail instead of a generic event).
 
 ## Current behavior worth knowing
 
@@ -65,21 +71,29 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   restriction changes invalidate the relevant layer.
 - Hover shows only the innermost span under the caret and never shows
   `UNTAGGED`.
-- AI candidates render differently from deterministic candidates (AI sign,
-  purple underline, ` AI` badge, arrival notification).
+- Protocol-4 discovery is quiet in passive mode: no AI undercurl/sign/badge or
+  conceal, while status still counts additions, restrictions, reuse, and
+  coverage. Review mode renders `+`/`−`/`− +` groups with confidence, source, and
+  rationale; `:CintReviewList`, `]c`/`[c`, and `:CintReviewAccept`/`:CintReviewDeny`
+  work from the quickfix window. Protocol-3 clients keep the legacy AI marks and
+  arrival notification.
+- `:CintAiLog` connects on demand and shows the provider failure detail for the
+  built-in DeepSeek provider (missing API-key environment variable, HTTP status
+  and error snippet, transport error class). Arbitrary provider prose is still
+  not logged.
 
 ## Open work
 
-- **060-061 (proposed): AI annotation session follow-ups.** Per-unit verdict reuse
-  (060) is implemented; ticket 061 covers the renderer review UX. Tickets 058 and
-  059 implement expression-level discovery and grouped restriction proposals.
-  Design: [../ai-annotation-session.md](../ai-annotation-session.md).
+- **062 (todo): split host record ownership for legacy records.** Deferred from
+  060 round 13. Status, scoping, host analysis, and proposal suppression still
+  disagree for records without a `unitFingerprint`; a shared ownership classifier
+  (region identity, unique leaf containment, host, dormant) is the fix. Evidence
+  and the full residual list are in
+  [../tasks/062-split-host-record-ownership.md](../tasks/062-split-host-record-ownership.md).
 - **017 (blocked): fixpoint metadata convergence.** Decide whether
   `source`/`confidence` metadata participates in convergence or whether
   metadata-only changes are non-convergent; the evidence field no longer
   exists.
-- **023 and 028 file frontmatter says `todo`** while `docs/tasks/README.md`
-  says `done`. Reconcile the status when touching docs.
 - **Manual gate entries still unverified:** live editor/daemon restart paths
   (`m009`, `m010`, `m012`), live DeepSeek (`m014`), and live oracle latency
   (`m016`). Cross-writer compaction `m015` is verified and automated.
@@ -100,6 +114,28 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   `.cint/ai-restrictions.json*`, `.cint/cache/ai-verdicts.json*`, and
   `.cint/user-annotations.json*` are untracked runtime/test state. Do not commit
   them blindly.
+
+## Handoff to another machine
+
+The Neovim plugin is installed from GitHub (`CypDasHuhn/code-intent`), not from a
+local checkout. On a new machine:
+
+1. Pull `main` in `~/dotfiles` and let lazy install the plugin, or update the
+   existing clone at `stdpath('data')/lazy/code-intent`.
+2. Run `:Lazy update code-intent`, then `:Lazy build code-intent`. The build is
+   `cd analysis-engine && ./gradlew :server:installDist`; the renderer lives in
+   `<lazy>/code-intent/nvim-renderer`.
+3. Export `DEEPSEEK_CHAT_KEY` (or the configured `apiKeyEnv`) in the environment
+   that starts nvim; the daemon inherits it. Quick check:
+   `:echo $DEEPSEEK_CHAT_KEY != ''`.
+4. Run `:CintServerRestart` after updating the engine or provider defaults. The
+   daemon is per project root and survives nvim restarts. `:CintServerStatus`
+   shows its protocol; protocol 4 is required for discovery, restrictions, cache,
+   and `:CintAiLog`.
+5. If a pass fails, `:CintAiLog` now reports the missing environment variable or
+   HTTP status. Daemon output is at `stdpath('log')/cint-live.log`.
+
+Push all local commits before switching; `062` and `017` remain open.
 
 ## Resume commands
 

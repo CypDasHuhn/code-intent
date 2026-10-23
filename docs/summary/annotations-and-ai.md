@@ -265,6 +265,11 @@ Privacy and validation:
   Authorization header, and is never logged or published.
 - Provider failures, timeouts, and malformed output leave deterministic tags and
   candidates untouched. A timeout cancels the pass without partial results.
+- Provider failure events carry structured detail from the built-in provider:
+  a missing API-key environment variable, `HTTP <status>: <error snippet>`, the
+  transport error class, or a malformed-response marker. Arbitrary provider
+  prose and raw exception messages are still not stored; custom providers get
+  only the generic `provider failure` event unless they supply a safe `detail`.
 - AI candidates carry provider/model/prompt/rationale diagnostics. Confidence is
   diagnostic, not an establishment threshold.
 
@@ -273,16 +278,25 @@ file means disabled/manual with the defaults above. Pack candidates still
 publish when AI is disabled. `initialize.suggestions` is a secret-free
 capability descriptor.
 
-## Client candidate UI
+## Client candidate and review UI
 
 - Passive deterministic candidates: muted `?` sign + dotted undercurl.
-- Passive AI candidates: `AI` sign, purple AI highlight/undercurl, and one ` AI`
-  end-of-line badge per line.
-- New AI candidates notify once per AI-count increase:
-  `AI added N candidate(s); :CintReview to inspect`.
-- `status_text` includes the AI count:
-  `CodeIntent: N unsure (M AI)`.
-- `:CintSuggest` reports start, busy, disabled, no-new-candidates, and errors.
-- Review mode adds a visible highlight and a virtual evidence line with intent,
-  confidence, source, reason, and rationale. `:CintReviewAccept [intent]` and
-  `:CintReviewDeny` act on the candidate group under the caret.
+- Protocol-3 passive AI candidates: `AI` sign, purple AI highlight/undercurl,
+  one ` AI` end-of-line badge per line, and one arrival notification per
+  AI-count increase.
+- Protocol-4 discovery passive mode is quiet: no AI undercurl, sign, badge, or
+  conceal. The status still reports AI additions, pending restrictions, reused
+  units, and coverage. Deterministic candidates keep their normal marks.
+- Review mode renders `+` additions, `−` removals, and `− +` reclassification
+  groups with confidence, source, rationale, and a virtual evidence line.
+  `:CintReviewList` fills a cint-owned quickfix list; `]c`/`[c` and
+  `:CintReviewAccept`/`:CintReviewDeny` follow the entry under the quickfix
+  cursor and open a picker for overlapping groups.
+- `:CintRestrictions` lists active/dormant restriction records and removes one
+  through `cint/restrictions/remove`, then re-analyzes.
+- `:CintAiLog` fetches `cint/suggest/log` and shows coverage, reuse, tool calls,
+  verdicts, budgets, uncovered units, and provider failure detail. It connects on
+  demand when the buffer has no live session.
+- `:CintSuggestCancel` cancels the running pass. Progress is
+  `grading N/M · reused R · activity`; completion notifies once with additions,
+  restrictions, reuse, and tool-call counts.

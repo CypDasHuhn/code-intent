@@ -10,6 +10,7 @@
 | `lua/cint/core/api.lua` | published annotation lookups, position-aware lookups, provenance |
 | `lua/cint/core/state.lua` | rendered/live state, profiles, candidates, review buffers |
 | `lua/cint/core/config.lua` | defaults, root resolution, profile/shard resolution, language mapping |
+| `lua/cint/core/capabilities.lua` | protocol/capability gating for discovery, restrictions, cache, and review operations |
 | `lua/cint/core/profiles.lua` | profile file loading/merging/caching |
 | `lua/cint/core/colors.lua` | highlight group names and fallback palette |
 | `lua/cint/handlers/` | meaning handlers: color, conceal, highlight, ignore |
@@ -35,8 +36,9 @@ Profiles/shards: `:CintProfile`, `:CintProfile <name>`, `:CintProfile!`,
 Annotations: `:CintAnnotate <INTENT>[,<INTENT>] [note]` (range-aware),
 `:CintUnannotate`, `:CintAnnotations`, `:CintAnnotationsReload`.
 
-AI candidates: `:CintSuggest`, `:CintReview`, `:CintReviewAccept [intent]`,
-`:CintReviewDeny`.
+AI candidates/review: `:CintSuggest`, `:CintSuggestCancel`, `:CintReview`,
+`:CintReviewAccept [intent]`, `:CintReviewDeny`, `:CintReviewList`,
+`:CintRestrictions`, `:CintAiLog`.
 
 Config/live: `:CintConfigAdd`, `:CintConfigRemove`, `:CintServerStatus`,
 `:CintServerDisconnect`, `:CintServerStop`, `:CintServerRestart`.
@@ -78,15 +80,25 @@ caches resolved config per buffer.
   `screenpos`; not-visible targets do nothing.
 - Config: `hover = { enabled = true, on_cursor_hold = true }`.
 
-## Candidate UI
+## Candidate and review UI
 
 - Deterministic passive candidates: `?` sign, dotted undercurl.
-- AI passive candidates: `AI` sign, purple AI highlight, one ` AI` EOL badge
-  per line.
-- Arrival notification once per AI-count increase; status text appends
-  `(M AI)` when AI candidates exist.
-- Review mode: visible review highlight + virtual evidence line; accept/deny
-  act on the group under the caret.
+- Protocol-3 passive AI candidates: `AI` sign, purple AI highlight, one ` AI`
+  EOL badge per line, and an arrival notification per AI-count increase.
+- Protocol-4 discovery passive mode is quiet (no AI marks); status text reports
+  AI additions, restrictions, reuse, and coverage. Deterministic candidates are
+  unchanged.
+- Review mode: `+`/`−`/`− +` operation groups with confidence, source, rationale,
+  and a virtual evidence line. Accept/deny act on the whole group under the
+  caret; overlapping groups open a picker.
+- `:CintReviewList` fills a cint-owned quickfix list; `]c`/`[c` navigate and
+  accept/deny follow the quickfix cursor. Unrelated quickfix/location lists are
+  ignored.
+- `:CintRestrictions` lists and removes restriction records and triggers
+  re-analysis. `:CintAiLog` shows session counts, coverage, reuse, tool calls,
+  verdicts, budgets, and provider failure detail; it connects on demand.
+- Progress is `grading N/M · reused R · activity`; `:CintSuggestCancel` cancels;
+  completion notifies once.
 - Candidate marks clear on buffer close or candidate republish.
 
 ## Live protocol
@@ -107,8 +119,14 @@ Methods:
 - `cint/suggest {uri, version, requestId}` and `cint/suggest/cancel`.
 - `cint/suggest/progress {uri, version, graded, reused, total, activity}` during
   a discovery pass.
-- `cint/suggest/log {uri}` -> last session counts, coverage, and events.
-- `cint/candidates/decide {uri, version, candidateId, decision}`.
+- `cint/suggest/log {uri}` -> last session counts, coverage, and events. Requires
+  protocol 4.
+- `cint/candidates/decide {uri, version, candidateId|proposalId|groupId,
+  decision}`; proposal decisions apply the whole operation group atomically and
+  return `{accepted, ...}` or a `missing`/`stale`/`disabled` result.
+- `cint/restrictions/list {uri}` -> `{restrictions: [...]}` with
+  `active`/`dormant`/`unknown` status; `cint/restrictions/remove {id}` ->
+  `{accepted, removed}`. Both require protocol 4.
 - `cint/config/read|append|remove`.
 - `cint/error`.
 
@@ -130,6 +148,9 @@ to every client holding the URI. Skip is client/session-only.
 - `config_spec` — config/profile/shard behavior.
 - `candidates_spec` — passive/review candidates, revisions, decisions, AI UI,
   suggestion notifications.
+- `review_spec` — protocol-4 capability gating, quiet passive mode, `+`/`−`
+  groups, accept/deny/overlap picker, quickfix list/navigation, restrictions
+  inspector, AI log, progress/cancel, and deduped completion notices.
 
 Protocol 4 is additive: protocol-3 clients keep deterministic tags and the
 existing candidate shapes and ignore unknown notifications.

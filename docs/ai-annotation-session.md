@@ -1,13 +1,15 @@
 # AI Annotation Session, Restrictions, and Reuse
 
-Status: partially implemented, 2026-10-23. Ticket 058 implements expression-level
+Status: implemented, 2026-10-23. Ticket 058 implements expression-level
 discovery, the internal tool loop, add-only verdicts, budgets/coverage, protocol 4
 progress/log, and the recall-oriented prompt. Ticket 059 implements grouped
 remove+add restriction proposals, `.cint/ai-restrictions.json`, pre-composition
 application, and the restriction inspector API. Ticket 060 implements the
 deterministic document short circuit, per-unit verdict reuse with diff
 invalidation and hints, normalized decision anchors, and the disk verdict cache.
-The full review UX (061) remains proposed.
+Ticket 061 implements the Neovim review UX, restrictions inspector, AI log,
+progress, and cancellation. Ticket 062 covers deferred split-host ownership for
+legacy records.
 
 This document designs the next AI layer above the deterministic pipeline:
 expression-level discovery, reviewable restrictions, and reuse across document
@@ -141,7 +143,9 @@ limits, and a token budget. Suggested defaults, adjusted during implementation:
 - max tokens per request: 2048
 
 A session that exhausts a budget publishes the graded units. A provider error
-publishes what was graded and marks the session incomplete. Invalid verdicts are
+publishes what was graded and marks the session incomplete; the session event
+carries the built-in provider's safe failure detail (missing API-key environment
+variable, HTTP status/error snippet, transport error class). Invalid verdicts are
 dropped per unit rather than failing the pass.
 
 ## Verdicts and validation
@@ -418,8 +422,8 @@ Deterministic candidates keep their current passive rendering.
 - `]c` / `[c` and `<Plug>` mappings jump between proposals.
 - `:CintRestrictions` lists active restriction groups; selecting one removes the
   record and re-analyzes, restoring the original annotation.
-- `:CintAiLog` shows the session's tool calls, reuse decisions, and verdicts
-  (renderer command planned for 061).
+- `:CintAiLog` shows the session's coverage, reuse, tool calls, verdicts,
+  budgets, and provider failure detail; it connects on demand if needed.
 
 After an accepted group: `removed LOGGING, added SEARCH (AI)`.
 
@@ -436,8 +440,8 @@ The first slice requires new candidate shapes and progress reporting.
 - `cint/publishCandidates` groups carry explicit add/remove operations instead
   of only an intent set.
 - `cint/candidates/decide` accepts proposal-group ids for confirm/deny/skip.
-- `cint/suggest/log` returns the last session's structured tool/reuse events;
-  `:CintAiLog` is planned for 061.
+- `cint/suggest/log` returns the last session's structured tool/reuse events and
+  backs `:CintAiLog`.
 
 The v5 `CandidateEmit` cannot express removal. The operation model therefore
 stays at the `suggest`/protocol boundary: `ProposalOperation` /
@@ -489,7 +493,8 @@ text result sent to the provider, including tool results.
 - `allowGlobs` gates the pass; `redactPatterns` applies to excerpts, tool
   results (including type lookups), and hints.
 - A missing key, provider failure, timeout, or invalid output leaves
-  deterministic annotations and candidates untouched.
+  deterministic annotations and candidates untouched. The failure event records
+  only structured provider detail, never prompt text or raw exception prose.
 - A stale document version discards the session; a new version starts from the
   reuse worklist.
 - Budget exhaustion publishes graded units and reports coverage.
@@ -733,5 +738,6 @@ text result sent to the provider, including tool results.
 - **060** — document and unit verdict reuse, diff invalidation, hints, disk
   cache.
 - **061** — Neovim review UX for discovery, restrictions, reuse, and high-volume
-  review.
+  review (implemented).
+- **062** — deferred split-host record ownership for legacy records.
 - Follow-up — external MCP endpoint over the same tool schema.

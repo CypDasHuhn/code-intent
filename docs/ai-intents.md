@@ -263,7 +263,8 @@ Protocol 3 additions (kept in protocol 4):
   when the session path runs, or a disabled/stale/busy result. A provider timeout
   returns `cancelled: true` with `timeout: true` and publishes nothing.
   `cint/suggest/cancel` takes `{uri?, requestId?}`. `cint/suggest/log` returns
-  the last session for the `:CintAiLog` command (renderer UX planned for 061).
+  the last session for the `:CintAiLog` command, including safe provider failure
+  detail (missing key environment variable, HTTP status, transport error class).
 - `cint/candidates/decide` — `{uri, version, candidateId | proposalId | groupId,
   decision}` with confirm/reject/skip; the server validates version and anchor
   hash, persists, re-analyzes on confirm, and republishes. It returns

@@ -75,8 +75,8 @@ recorded.
 - One file per unit: `docs/tasks/NNN-slug.md` with frontmatter
   `name/status/depends-on/reviewers`.
 - Status is orchestrator-owned. `docs/tasks/README.md` is the queue table.
-- Current queue: 017 blocked; no unblocked work. 023/028 file frontmatter is
-  stale (`todo` while README says done).
+- Current queue: 062 is the only unblocked ticket (deferred split-host record
+  ownership from 060); 017 remains blocked.
 - Review reports live at `docs/reviews/<id>/<role>.md`.
 
 ## Git conventions
