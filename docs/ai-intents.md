@@ -4,7 +4,7 @@ AI here means **intent inference**, not code completion. The deterministic
 pipeline remains the source of truth; AI only fills structural gaps and produces
 reviewable candidates.
 
-For the expression-level annotation session (058), AI restrictions, and
+For the expression-level annotation session (058), AI restrictions (059), and
 verdict reuse, see [ai-annotation-session.md](ai-annotation-session.md). This
 document describes the currently implemented candidate channel.
 
@@ -46,19 +46,24 @@ type facts:
 `allowGlobs` gates the pass; every text result returned by a tool, including
 `lookup_type`, passes through `redactPatterns` before reaching the model.
 The agent cannot read other files, run commands, or write state. Every unit needs
-an explicit `none` or add verdict; add spans must lie inside the unit, use the
-known vocabulary, avoid duplicate existing intents, and respect the confidence
-ceiling. Remove verdicts and restriction groups are out of scope until 059;
-the 058 parser accepts only `none` or add operations. Invalid verdicts are
-dropped per unit.
+an explicit `none`, add, or remove verdict; add spans must lie inside the unit,
+use the known vocabulary, avoid duplicate existing intents, and respect the
+confidence ceiling. Remove operations must match an established `SOURCE_INTENT`
+at the exact byte span and cannot target user annotations, `ai-confirmed`
+replacements (including protected provenance in a `mixed` span), or
+`PURE`/`READONLY`. A removal may target an enclosing span from a child unit and
+carry a negative relative start offset. A remove+add verdict is published as one
+anchored proposal group; add-only verdicts keep the existing candidate shape.
+Operations that no longer resolve are dropped per unit.
 
 The session is asynchronous, one pass per document version, cancellable, and
 discarded if the version changes. Budgets cover the whole session timeout, a
 per-request timeout, turns, tool calls, units per request, tokens per request,
 and candidates. On exhaustion the server publishes graded units and reports
 coverage (`graded N/M, budget exhausted`) instead of failing the whole pass.
-AI output remains a `CandidateEmit` (`source = ai:<provider>`) and never enters
-the scheduler, annotation store, or composition.
+AI additions remain `CandidateEmit`; grouped removals are a suggest-layer
+proposal and never enter the scheduler, annotation store, or composition
+directly.
 
 Protocol 4 adds discovery/cache/restriction capability flags,
 `cint/suggest/progress`, coverage/counts on the `cint/suggest` response, and
@@ -192,8 +197,9 @@ CandidateEmit (aiEligible)
   uses a nonzero temperature (`0.3`) and a `1024`-token default budget.
 - `CandidateValidator` enforces intent vocabulary, confidence range, byte bounds
   and containment inside the input candidate, dedupes, and applies
-  `maxCandidates` when it is positive. A value of `0` or less means unlimited,
-  so every validated proposal survives. Only the top
+  `maxCandidates` when it is positive. A value of `0` or less means unlimited;
+  the cap covers add-only candidates first and then proposal groups with any
+  remaining slots. Only the top
   `maxEnrichmentCandidates` deterministic candidates (GAP first, then
   LOW_CONFIDENCE, then PACK_DOMAIN) are sent to the provider per pass when that
   setting is positive; `0` or less sends every AI-eligible deterministic
@@ -246,21 +252,37 @@ Protocol 3 additions (kept in protocol 4):
 - `cint/publishCandidates` — `uri`, `version`, `analysisRevision`,
   `suggestionRevision`, flat `candidates`, and `groups`. A group is one anchor
   (`anchorId`, `path`, `contentHash`, span/positions) with its alternative
-  candidates. The message is also emitted with empty `candidates`/`groups` after
-  a decision resolves everything.
+  candidates; protocol-4 groups also carry explicit `operations`. An AI
+  restriction group also carries `proposalId`/`groupId` and is protocol-4 only;
+  its replacements are not independently confirmable candidates. The message is
+  also emitted with empty `candidates`/`groups` after a decision resolves
+  everything.
 - `cint/suggest` — `{uri, version, requestId}`; asynchronous, one pass per
   document, returns `{accepted, cancelled, count}` plus discovery coverage/counts
   when the session path runs, or a disabled/stale/busy result. A provider timeout
   returns `cancelled: true` with `timeout: true` and publishes nothing.
   `cint/suggest/cancel` takes `{uri?, requestId?}`. `cint/suggest/log` returns
   the last session for the `:CintAiLog` command (renderer UX planned for 061).
-- `cint/candidates/decide` — `{uri, version, candidateId, decision}` with
-  confirm/reject/skip; the server validates version and anchor hash, persists,
-  re-analyzes on confirm, and republishes. Confirming one alternative resolves
-  the whole anchor group, so siblings are not published afterward. Confirm and
-  reject are project-global and republish the URI to every client that has it
-  open, so all owners of the same URI drop the resolved group or suppressed
-  candidate; skip remains per-client/session and is not persisted.
+- `cint/candidates/decide` — `{uri, version, candidateId | proposalId | groupId,
+  decision}` with confirm/reject/skip; the server validates version and anchor
+  hash, persists, re-analyzes on confirm, and republishes. It returns
+  `{accepted:true, stale:false, decision}` or `{accepted:false, stale:true}` /
+  `{accepted:false, missing:true}`; proposal decisions return
+  `{accepted:false, disabled:true}` when `restrictionsEnabled` is false.
+  Confirming one
+  alternative resolves the whole anchor group, so siblings are not published
+  afterward. A proposal group applies all `ADD`/`REMOVE` operations atomically
+  and writes `.cint/ai-restrictions.json`; confirm/reject republishes preserve
+  each client's unrelated pending add candidates and proposals, drop carried
+  groups whose removal targets no longer resolve, and never publish proposal
+  groups to protocol-3 clients. Confirm and reject are project-global
+  and republish the URI to every client that has it open, so all owners of the
+  same URI drop the resolved group or suppressed candidate; skip remains
+  per-client/session and is not persisted.
+- `cint/restrictions/list` / `cint/restrictions/remove` — `list` returns
+  `{restrictions: [...]}` with anchor, operations, provider/model/prompt, and
+  active/dormant status; `remove` takes `{id}` and returns
+  `{accepted, removed}`. Both require protocol 4 and `restrictionsEnabled`.
 
 Candidates carry `candidateId`, `path`, `contentHash`, `source`
 (`rule:<id>` or `ai:<provider>`), confidence, reason, `aiEligible`, span/bytes,
@@ -270,6 +292,11 @@ the analysis and config snapshot under the same lock, so it stays monotonic with
 config revision; candidate publishes older than the cached analysis or the last
 published candidates are dropped, and a suggest pass is discarded if candidate
 state changes before publish.
+
+Confirmed replacements publish as `source = ai-confirmed` with contributor
+`core:ai-confirmed`; the contribution provenance also carries structured
+`provider`, `model`, and `promptVersion` fields. The same values remain on the
+restriction record for `cint/restrictions/list`.
 
 ## Renderer UX
 
@@ -303,7 +330,7 @@ suggestions:
   trigger: manual        # manual; idle is a follow-up
   provider: deepseek     # "deepseek" by default when enabled and unset; "fake" stays available
   model: deepseek-chat
-  maxCandidates: 0                  # 0 or less is unlimited; positive caps validated proposals
+  maxCandidates: 0                  # 0 or less is unlimited; positive caps add candidates then proposals
   maxEnrichmentCandidates: 0        # legacy path; 0 or less sends every AI-eligible candidate
   promptVersion: deepseek-intent-v3
   timeoutMs: 10000       # per-request/provider interrupt/HTTP timeout, minimum 1

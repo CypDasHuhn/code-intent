@@ -1,6 +1,6 @@
 ---
 name: ai restriction proposals
-status: todo
+status: done
 depends-on: [058]
 reviewers: [correctness, api-fidelity]
 ---

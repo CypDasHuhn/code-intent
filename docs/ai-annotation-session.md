@@ -1,9 +1,11 @@
 # AI Annotation Session, Restrictions, and Reuse
 
-Status: partially implemented, 2026-10-22. Ticket 058 implements expression-level
+Status: partially implemented, 2026-10-23. Ticket 058 implements expression-level
 discovery, the internal tool loop, add-only verdicts, budgets/coverage, protocol 4
-progress/log, and the recall-oriented prompt. Restrictions (059), reuse (060), and
-the full review UX (061) remain proposed.
+progress/log, and the recall-oriented prompt. Ticket 059 implements grouped
+remove+add restriction proposals, `.cint/ai-restrictions.json`, pre-composition
+application, and the restriction inspector API. Reuse (060) and the full review
+UX (061) remain proposed.
 
 This document designs the next AI layer above the deterministic pipeline:
 expression-level discovery, reviewable restrictions, and reuse across document
@@ -202,7 +204,10 @@ slice.
 7. publish established annotations and candidates
 
 The confirmed replacement contribution uses the `ai-confirmed` source tier and
-keeps provider/model/prompt provenance.
+the stable `core:ai-confirmed` contributor id. Provider/model/prompt provenance
+is structured both on the contribution (`provider`, `model`, `promptVersion`
+defaulted fields) and in `.cint/ai-restrictions.json` / `cint/restrictions/list`.
+The tag provenance no longer uses concatenated metadata.
 
 ### Persistence
 
@@ -219,15 +224,15 @@ annotations; only restriction groups use this file.
       "id": "stable-id",
       "path": "src/main/kotlin/Facts.kt",
       "symbol": "magicCommentIn",
-      "contentHash": "sha256:...",
-      "unitFingerprint": "...",
+      "contentHash": "3f0c...",
+      "unitFingerprint": "b41d...",
       "anchor": {
         "startLine": 215,
         "startCol": 8,
         "endLine": 215,
         "endCol": 55
       },
-      "remove": [{ "intent": "LOGGING", "startOffset": 0, "endOffset": 47 }],
+      "remove": [{ "intent": "LOGGING", "startOffset": -12, "endOffset": 47 }],
       "add": [{ "intent": "SEARCH", "startOffset": 0, "endOffset": 47 }],
       "provider": "deepseek",
       "model": "deepseek-chat",
@@ -238,10 +243,16 @@ annotations; only restriction groups use this file.
 }
 ```
 
-Offsets are relative to the anchored unit so the record survives moves. The
-record resolves through the same path/symbol/content-hash machinery as user
-annotations. If the target no longer exists, the restriction is dormant, not
-deleted; an inspector lets the user remove it.
+Offsets are relative to the anchored unit so the record survives moves. Adds
+must lie inside the anchor (non-negative offsets). A removal may start before a
+child-unit anchor when it targets an enclosing established span, so its
+`startOffset` can be negative; the operation must still overlap the anchor. The
+record resolves through path, anchor content hash, stored symbol, and the unit
+fingerprint (node kind, normalized text, enclosing symbol, previous and following
+siblings, and ordinal). An adjacent insertion invalidates that identity, and
+ambiguous or missing anchor identity is dormant rather than bound to a different
+identical expression. If the target no longer exists, the restriction is
+dormant, not deleted; an inspector lets the user remove it.
 
 A restriction never suppresses a user annotation. If the user later annotates
 the same span with the removed intent, the user wins.
@@ -417,10 +428,20 @@ The first slice requires new candidate shapes and progress reporting.
 - `cint/suggest/log` returns the last session's structured tool/reuse events;
   `:CintAiLog` is planned for 061.
 
-The v5 `CandidateEmit` cannot express removal. The preferred API change is a v6
-proposal model with explicit operations (`ADD` / `REMOVE`), while established
-`Emit` and the frozen `Annotation` shape remain unchanged. `toContribution`
-still accepts only established emits.
+The v5 `CandidateEmit` cannot express removal. The operation model therefore
+stays at the `suggest`/protocol boundary: `ProposalOperation` /
+`CandidateProposal` carry explicit `ADD` / `REMOVE` operations, while established
+`Emit`, the frozen `Annotation` shape, and `toContribution` are unchanged. This
+is the chosen v5-compatible shape; a v6 API bump is not needed because
+restrictions are AI review data, not rulepack emits.
+
+One additive API model change accompanies the provenance requirement:
+`Contribution` gains defaulted `provider`, `model`, and `promptVersion`
+diagnostic fields (the `certifiesReturn` precedent). Normal pack contributions
+leave them null, so existing rulepack sources remain source-compatible and
+`CINT_API_VERSION` stays 5. The API contract test pins the defaults. Consumers
+that construct `Contribution` positionally should add the new arguments only when
+they need AI provenance; wire consumers can ignore the optional JSON keys.
 
 ## Configuration
 
@@ -502,6 +523,53 @@ text result sent to the provider, including tool results.
   sub-span adds, validation, duplicate/nested collapse, budget exhaustion,
   sanitization, DeepSeek tool-call parsing, server progress/log/coverage, and the
   regex-find fixture with no pack candidate producing `SEARCH`.
+
+## Implementation snapshot (059)
+
+- A verdict may carry `remove` operations beside `add`. Removes must match an
+  established `SOURCE_INTENT` at the exact byte span; user annotations,
+  `ai-confirmed` contributions (including a `mixed` span with protected
+  provenance), and `PURE`/`READONLY` are rejected. Unresolved operations are
+  dropped per unit. A removal may target an enclosing span from a child unit;
+  its relative offset can be negative and round-trips through the file.
+- One verdict with removals becomes one proposal group anchored on its expression
+  unit. The group carries explicit `ADD`/`REMOVE` operations and is published in
+  `cint/publishCandidates` groups with `proposalId`/`groupId`; its additions are
+  not independently confirmable candidates. `maxCandidates` caps add candidates
+  first, then proposal groups with the remaining slots.
+- `cint/candidates/decide` accepts `proposalId`/`groupId` (or a matching
+  `candidateId`) and applies confirm/deny/skip to the whole group. All candidate
+  and proposal decisions share a decision lock; proposal confirm revalidates
+  removals and replacement adds against the current analysis under that lock. A
+  decision republish is scoped per writer: it preserves that writer's unrelated
+  pending add candidates and proposals, revalidates carried proposals against the
+  new analysis, drops groups whose removal targets are gone or whose adds are
+  already established, and never publishes proposal groups to protocol-3
+  clients. Add-only verdicts keep the existing candidate path and write
+  `.cint/user-annotations.json` on confirm.
+- Confirm writes one record to `.cint/ai-restrictions.json` under the shared
+  `.cint/user-annotations.json.lock` protocol. Records store path, symbol,
+  anchor span, bare lowercase SHA-256 content hash, a real unit fingerprint,
+  relative `remove`/`add` offsets, and provider/model/prompt provenance. Writers
+  reject add-only records so no file is written that the reader would reject.
+  Deny persists suppression in `.cint/suggestions.json`; skip is session-only.
+- Analysis resolves restrictions by path, anchor content hash, stored symbol, and
+  unit fingerprint, so line moves keep the anchor while duplicate text and
+  deleted targets go dormant instead of rebinding. It applies removals after user
+  annotations and before composition, adds confirmed replacements as
+  `source = ai-confirmed` with contributor `core:ai-confirmed` and structured
+  provider/model/prompt contribution fields, and recomputes derivative/scaffold
+  output from the filtered source set.
+- `cint/restrictions/list` reports stored records with `active`/`dormant`/`unknown`
+  status (a record whose removal no longer applies and whose add is not present
+  is dormant); `cint/restrictions/remove` removes a record and re-analyzes open
+  documents while preserving pending review state. Both require protocol 4 and
+  `restrictionsEnabled`; the capability is advertised for protocol-4 clients
+  whenever `restrictionsEnabled` is set.
+- `cint/suggest.restrictions` reports the post-filter published proposal count.
+  Protocol-3 clients receive neither that field nor `operations` group fields.
+- The restriction file `version` is checked; unknown versions are not applied and
+  writes refuse to rewrite them, preserving existing records.
 
 ## Phasing
 

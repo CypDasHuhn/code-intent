@@ -263,16 +263,35 @@ regardless.
 With `discoveryEnabled` (default true) and a provider that supports the session
 surface, the server enumerates expression units from the core syntax model,
 including leaves, and runs an internal tool loop. The worklist, tool execution,
-budgets, validation, and publication stay server-side; the agent only chooses
-`none` or add verdicts. Tools are read-only and scoped to the current document
-plus LSP type facts: unit list/expression/parent, enclosing statement/function,
-bounded range read, type lookup, and annotations, plus `submit_verdicts`. The
-session is asynchronous, one pass per document version, cancellable, and
-discarded when the version changes. `sessionTimeoutMs`, `timeoutMs`,
-`maxTurns`, `maxToolCalls`, `maxUnitsPerRequest`, `maxTokensPerRequest`, and the
-candidate/confidence caps bound the pass; exhaustion publishes graded units and
-reports uncovered units. `discoveryEnabled: false` keeps the legacy
-pack-candidate enrichment path.
+budgets, validation, and publication stay server-side; the agent chooses `none`,
+add verdicts, or grouped remove+add verdicts. Tools are read-only and scoped to
+the current document plus LSP type facts: unit list/expression/parent, enclosing
+statement/function, bounded range read, type lookup, and annotations, plus
+`submit_verdicts`. The session is asynchronous, one pass per document version,
+cancellable, and discarded when the version changes. `sessionTimeoutMs`,
+`timeoutMs`, `maxTurns`, `maxToolCalls`, `maxUnitsPerRequest`,
+`maxTokensPerRequest`, and the candidate/confidence caps bound the pass;
+exhaustion publishes graded units and reports uncovered units.
+`discoveryEnabled: false` keeps the legacy pack-candidate enrichment path.
+
+Removals must match an established source intent at the exact span and may not
+target user annotations, protected provenance in merged spans, or
+`PURE`/`READONLY`. A verdict with removals becomes one anchored proposal group
+with explicit `ADD`/`REMOVE` operations; add-only verdicts keep the existing
+candidate shape. Confirming a group atomically writes
+`.cint/ai-restrictions.json` under the shared annotation lock. The record stores
+path, symbol, anchor span, bare SHA-256 content hash, a real unit fingerprint,
+and relative operation offsets (a removal may start before its anchor). Analysis
+resolves it by path, anchor content hash, symbol, and fingerprint; ambiguous or
+missing identity is dormant. It applies removals after user contributions and
+before composition, and adds replacements with `source = ai-confirmed` and the
+stable contributor `core:ai-confirmed`. Structured provider/model/prompt
+provenance is carried both on the contribution fields and on the restriction
+record / `cint/restrictions/list`, never in a concatenated rule id. Derivative
+and scaffold output is recomputed from the filtered source set. User annotations
+always win. The file is engine-owned and
+separate from `.cint/user-annotations.json`. `restrictionsEnabled` (default
+true) gates proposal generation and the inspector.
 
 The remote provider is DeepSeek (`deepseek-chat`, key from
 `DEEPSEEK_CHAT_KEY`). `:suggest` owns the provider, the session/tool loop, and
@@ -295,9 +314,17 @@ events are structured.
 
 Protocol 4 gates discovery and its `cint/suggest/progress` / `cint/suggest/log`
 messages. A protocol-3 client keeps the legacy enrichment path and sees no
-discovery progress or log. Confirmation writes an existing
-`.cint/user-annotations.json` record and the next analysis re-evaluates it as an
-established `user` source. Rejection persists suppression in
+discovery progress or log, no `operations` group field, and no `restrictions`
+response field. Confirmation writes an existing `.cint/user-annotations.json`
+record and the next analysis re-evaluates it as an established `user` source.
+Proposal groups use `cint/publishCandidates` groups with
+`proposalId`/`groupId` and explicit `operations`; a decision republish preserves
+each writer's unrelated pending add candidates and proposals, revalidates
+carried proposals, and never sends proposal groups to protocol-3 clients.
+`cint/candidates/decide` accepts those ids for grouped confirm/deny/skip, and
+`cint/restrictions/list` /
+`cint/restrictions/remove` inspect and remove active records when
+`restrictionsEnabled`. Rejection persists suppression in
 `.cint/suggestions.json`; skip is session-only. The frozen `Annotation` shape is
 unchanged.
 
@@ -355,7 +382,11 @@ Legacy intent config is retired. Rule *structure* never lives in config again.
 | `integration-tests` | composition, host, frontend-pipeline, and snapshot tests |
 
 - `api` is the frozen public surface. Plugins compile against it; it changes
-  only deliberately and with versioning. The DSL lives in `api`.
+  only deliberately and with versioning. The DSL lives in `api`. Additive
+  defaulted `Contribution.provider/model/promptVersion` fields are source
+  compatible under the existing v5 contract (the `certifiesReturn` precedent)
+  and do not change `Annotation` or `toContribution`; they are null for ordinary
+  pack contributions.
 - `core` has no tree-sitter, LSP, host, editor, or suggestion dependency. The
   `host` module assembles the production pack selection and applies project
   config; CLI, HTTP, and live server reuse it.

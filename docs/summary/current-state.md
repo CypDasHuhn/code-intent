@@ -1,6 +1,6 @@
 # Current State and Continuation Notes
 
-As of 2026-10-22, after tickets 041–058. Branch `main` is clean apart from
+As of 2026-10-23, after tickets 041–059. Branch `main` is clean apart from
 local `.cint/**` project state.
 
 ## Where the project is
@@ -35,6 +35,7 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 | 056 | Scaffold `UNTAGGED` visibility, whole-statement `RETURN_VALUE`, nested return-flow propagation, SEARCH/LOOKUP clarification, broader AI prompt/defaults. |
 | 057 | AI candidate/enrichment caps default to unlimited (`0`); positive caps remain configurable. |
 | 058 | AI expression discovery session: core expression units including leaves, internal tool loop, add-only verdicts with validation, budgets/coverage, protocol 4 progress/log, and a recall-oriented prompt. |
+| 059 | AI restriction proposals: grouped remove+add operation groups, `.cint/ai-restrictions.json` persistence under the shared annotation lock, pre-composition application with `ai-confirmed` replacements, dormant/user-wins handling, and restriction inspection/removal. |
 
 ## Current behavior worth knowing
 
@@ -47,10 +48,16 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   LOOKUP alternative; `getBytes` is not SEARCH; `getByKey` is LOOKUP.
 - AI discovery is enabled by default and grades every expression unit, including
   leaves, through an internal tool loop over the current document plus LSP type
-  facts. It is add-only in this slice; restrictions arrive in 059. Budget
-  exhaustion publishes graded units and reports coverage. Setting
-  `discoveryEnabled: false` restores pack-candidate enrichment, which remains
-  uncapped by default.
+  facts. Verdicts may add intents, or remove an established source intent and add
+  replacements as one reviewable group. Budget exhaustion publishes graded units
+  and reports coverage. Setting `discoveryEnabled: false` restores
+  pack-candidate enrichment, which remains uncapped by default.
+- Confirmed restriction groups live in `.cint/ai-restrictions.json`. Analysis
+  applies them after user annotations and before composition, writes replacements
+  as `source = ai-confirmed`, and recomputes derivatives/scaffolds. Records whose
+  anchor text is gone are dormant; user annotations and `PURE`/`READONLY` cannot
+  be removed. `cint/restrictions/list` and `cint/restrictions/remove` inspect and
+  remove active records.
 - Hover shows only the innermost span under the caret and never shows
   `UNTAGGED`.
 - AI candidates render differently from deterministic candidates (AI sign,
@@ -58,9 +65,9 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
 
 ## Open work
 
-- **059-061 (proposed): AI annotation session follow-ups.** Reviewable remove+add
-  restrictions (059), per-unit verdict reuse (060), and the renderer review UX
-  (061). Ticket 058 implements expression-level discovery. Design:
+- **060-061 (proposed): AI annotation session follow-ups.** Per-unit verdict reuse
+  (060) and the renderer review UX (061). Tickets 058 and 059 implement
+  expression-level discovery and grouped restriction proposals. Design:
   [../ai-annotation-session.md](../ai-annotation-session.md).
 - **017 (blocked): fixpoint metadata convergence.** Decide whether
   `source`/`confidence` metadata participates in convergence or whether
@@ -84,8 +91,8 @@ CodeIntent is a Kotlin analysis engine plus a Neovim client.
   - Accepted OVERCROWDED roots: `analysis-engine`, `core/core`, and the
     `rulepacks-tests` package root; single-file packages are out of scope.
 - **Local state:** `.cint/config.overlay.yml`, `.cint/suggestions*.json/yml`,
-  and `.cint/user-annotations.json*` are untracked runtime/test state. Do not
-  commit them blindly.
+  `.cint/ai-restrictions.json*`, and `.cint/user-annotations.json*` are untracked
+  runtime/test state. Do not commit them blindly.
 
 ## Resume commands
 

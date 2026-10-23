@@ -304,20 +304,45 @@ orchestrates one pass per document version. When `discoveryEnabled` is true and
 the selected provider supports the session surface, the server enumerates every
 expression unit from the language syntax model, including leaves, and runs an
 internal tool loop over the current document and LSP type facts. The agent must
-return an explicit `none` or add verdict for each unit; missing verdicts are
-reported as uncovered, not as success. Adds are validated inside their unit,
+return an explicit `none`, add, or remove verdict for each unit; missing verdicts
+are reported as uncovered, not as success. Adds are validated inside their unit,
 against the known vocabulary, existing spans, duplicates, and the confidence
-ceiling. Invalid proposals are dropped per unit without failing the pass.
-When discovery is disabled, the older pack-candidate enrichment path remains
-available. The only remote provider in this slice is DeepSeek
-(`deepseek-chat`, `DEEPSEEK_CHAT_KEY`, prompt `deepseek-intent-v3`), using the JDK
-`HttpClient` with no provider SDK and no retries. AI proposals carry
-`source = ai:deepseek`, `provider`/`model`/`promptVersion`/`rationale`, and a
-diagnostic confidence capped by `maxConfidence` (default `0.84`). The prompt is
-recall-oriented: it asks for plausible low-confidence alternatives and permits
-sub-span adds. Candidate-only is structural, not a confidence threshold: the
-output is a `CandidateEmit` and never enters the annotation store, scheduler, or
-composition.
+ceiling. Removes must match an established `SOURCE_INTENT` at the exact span;
+user annotations, `ai-confirmed` replacements (including protected provenance
+inside a `mixed` span), and `PURE`/`READONLY` are rejected, and operations that
+no longer resolve are dropped. A removal may target an enclosing established
+span from a child unit; its relative offset can be negative as long as it
+overlaps the anchor. A remove+add verdict becomes one anchored proposal group
+with explicit `ADD`/`REMOVE` operations; add-only verdicts keep the existing
+candidate shape. Invalid proposals are dropped per unit without failing the
+pass. When discovery is
+disabled, the older pack-candidate enrichment path remains available. The only
+remote provider in this slice is DeepSeek (`deepseek-chat`,
+`DEEPSEEK_CHAT_KEY`, prompt `deepseek-intent-v3`), using the JDK `HttpClient`
+with no provider SDK and no retries. AI proposals carry `source = ai:deepseek`,
+`provider`/`model`/`promptVersion`/`rationale`, and a diagnostic confidence
+capped by `maxConfidence` (default `0.84`). The prompt is recall-oriented: it
+asks for plausible low-confidence alternatives and permits sub-span adds.
+Candidate-only is structural, not a confidence threshold: the output is a
+`CandidateEmit` (or a suggest-layer proposal group) and never enters the
+annotation store, scheduler, or composition directly.
+
+Confirming a proposal group writes `.cint/ai-restrictions.json` under the shared
+`.cint/user-annotations.json.lock` protocol. Each record stores `path`, `symbol`,
+bare lowercase SHA-256 `contentHash`, a real `unitFingerprint`, anchor span,
+relative `remove`/`add` offsets, and provider/model/prompt provenance. Analysis
+resolves records by path plus anchor content hash, stored symbol, and unit
+fingerprint (including adjacent sibling context); duplicate, moved-by-insertion,
+or missing identities are dormant rather than rebound.
+Removals are applied after user contributions and before composition, and
+replacements are added as `source = ai-confirmed` with contributor
+`core:ai-confirmed` and structured provider/model/prompt contribution fields;
+derivative and scaffold annotations are recomputed from the filtered source set.
+The same provider/model/prompt values remain on the restriction record and in
+`cint/restrictions/list`. A user annotation at the same span wins. Deny persists
+suppression in `.cint/suggestions.json`; skip is session-only.
+`cint/restrictions/list` reports active/dormant records and
+`cint/restrictions/remove` removes one and re-analyzes open documents.
 
 ### Renderer review UI
 
@@ -443,7 +468,8 @@ top-level `suggestions:` mapping. Implemented keys are `enabled` (default
 `false`), `trigger` (default `manual`), `provider` (default `deepseek` when
 enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
 for the DeepSeek provider), `maxCandidates` (default `0`; `0` or less is
-unlimited, positive values cap validated proposals), `maxEnrichmentCandidates`
+unlimited, positive values cap validated add candidates first and then proposal
+groups with the remaining slots), `maxEnrichmentCandidates`
 (default `0`; `0` or less sends every AI-eligible candidate, positive values cap
 the pass), `promptVersion` (default `deepseek-intent-v3` for DeepSeek), `timeoutMs`
 (default `10000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
@@ -451,7 +477,7 @@ the pass), `promptVersion` (default `deepseek-intent-v3` for DeepSeek), `timeout
 `discoveryMaxUnitsPerRequest` (default `24`, minimum `1`), `sessionTimeoutMs`
 (default `120000`, minimum `1`), `maxTurns` (default `50`, minimum `1`),
 `maxToolCalls` (default `200`, minimum `0`), and `maxTokensPerRequest` (default
-`2048`, minimum `1`),
+`2048`, minimum `1`), `restrictionsEnabled` (default `true`),
 `apiKeyEnv` (default `DEEPSEEK_CHAT_KEY`), `baseUrl` (default
 `https://api.deepseek.com/chat/completions`), `maxTokens` (default `1024`),
 `maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
@@ -492,11 +518,23 @@ carries `candidateId`, `path`, `contentHash`, `intents`, `reason`, `decision`,
 `createdAt`, and optional `anchorId` plus a `startLine`/`startCol`/`endLine`/
 `endCol` span snapshot. Missing `anchorId` and span fields default sensibly, so
 older records still load. A confirm also writes the existing
-`<root>/.cint/user-annotations.json` record. That file is guarded by the
-`<root>/.cint/user-annotations.json.lock` lock directory, which is shared by the
-Kotlin writer and the nvim annotation writer. Writers acquire the directory
-exclusively for the read-modify-write and remove it afterward; readers only read
-`user-annotations.json`, which is replaced atomically.
+`<root>/.cint/user-annotations.json` record for add-only candidates. Proposal
+groups confirmed with removals write `<root>/.cint/ai-restrictions.json`
+instead; the file carries `version` and `restrictions`, each with `id`, `path`,
+`symbol`, bare lowercase SHA-256 `contentHash`, a real `unitFingerprint`, an
+anchor span, relative-offset `remove`/`add` operations (a removal offset may be
+negative when it targets an enclosing span), and provider/model/prompt
+provenance. Both files are guarded by the `<root>/.cint/user-annotations.json.lock`
+lock directory, which is shared by the Kotlin writers and the nvim annotation
+writer. Writers acquire the directory exclusively for the read-modify-write and
+remove it afterward; readers only read the data files, which are replaced
+atomically. Restriction records require at least one removal; the writer rejects
+add-only records so no file can be persisted that the reader would reject. The
+restriction reader accepts file `version` 1; an unknown version
+is not applied, and `add`/`remove` refuse to rewrite such a file so existing
+records are never destroyed. A restriction whose anchor identity cannot be resolved uniquely is
+dormant and remains inspectable; removing it restores the original annotation on
+the next analysis.
 
 ## LSP sharing
 
@@ -563,16 +601,22 @@ is `PACK` or `LANGUAGE`, and only language-scoped fields carry concrete
 `suggestions` is a secret-free capability descriptor: `{enabled, trigger,
 provider, model, knownIntents, discovery, restrictions, cache,
 maxUnitsPerRequest}`. `discovery` is true when `discoveryEnabled` is set and the selected provider
-supports the session surface; `restrictions` and `cache` are false in this slice. It comes from `.cint/suggestions.yml`; a missing
+supports the session surface; `restrictions` is true when `restrictionsEnabled`
+is set (default true) for a protocol-4 client, independent of provider support
+because the inspector remains usable; proposal generation additionally needs the
+discovery session surface and `discoveryEnabled`; `cache` is false in this slice. It comes
+from `.cint/suggestions.yml`; a missing
 file advertises `enabled: false`, `trigger: "manual"`, and null provider/model;
 an enabled file without a provider advertises `deepseek` and `deepseek-chat`.
 The server answers with its own protocol version (`4`) and records each
 client's requested value during `initialize`; it does not downgrade the
-response. Discovery, `cint/suggest/progress`, and `cint/suggest/log` require the
-requesting client to have sent protocol `>= 4`. Protocol-3 clients keep the
-legacy enrichment path, receive deterministic tags and the existing candidate
-shapes, and see no discovery progress or log. Reuse/restriction capability
-flags remain false in this slice.
+response. Discovery, `cint/suggest/progress`, `cint/suggest/log`, and the
+restriction inspector require the requesting client to have sent protocol
+`>= 4`; the inspector also requires `restrictionsEnabled`. Protocol-3 clients
+keep the legacy enrichment path, receive deterministic tags and the existing
+candidate shapes (no `operations` group field and no `restrictions` response
+field), and see no discovery progress, log, or restriction groups. The cache
+capability flag remains false in this slice.
 
 The client sends `textDocument/didOpen`, `didChange`, and `didClose` with full
 text and a monotonic version. The server re-runs that file and emits
@@ -611,16 +655,22 @@ channel (see below). Config mutations remain unchanged:
   `intents`, `source`, `confidence`, span and byte positions, `reason`,
   `aiEligible`, plus optional `rationale`, `promptVersion`, `provider`, and
   `model`. A group carries `anchorId`, `path`, `contentHash`, span/positions, and
-  its `candidates` alternatives for one anchored span. `suggestionRevision` is
+  its `candidates` alternatives for one anchored span. Protocol-4 groups also
+  carry explicit `operations` (`ADD`/`REMOVE` with intent, span, confidence, and
+  optional rationale/source); protocol-3 clients do not receive that field. An AI
+  restriction group has `proposalId`/`groupId` matching the contract and no
+  independently confirmable `candidates`. `suggestionRevision` is
   server-wide and monotonic. A candidate publish is dropped if its
   `analysisRevision` is older than the cached analysis or the last published
   candidates; the cached analysis revision advances with the config snapshot.
 - `cint/suggest` takes `{uri, version, requestId}` and asynchronously grades the
   expression worklist for that exact document version. It returns
   `{accepted, cancelled, count, total, graded, reused, additions, toolCalls,
-  turns, incomplete, budgetExhausted, skipped, uncovered}`; a disabled, stale-version, or
-  already-busy pass returns `{accepted: false, ...}` with `disabled`, `stale`, or
-  `busy`. A provider timeout returns `{accepted: false, cancelled: true,
+  turns, incomplete, budgetExhausted, skipped, uncovered}` plus
+  `restrictions` for protocol-4 clients; `restrictions` is the post-filter
+  published proposal count, not the raw session count. A disabled, stale-version,
+  or already-busy pass returns `{accepted: false, ...}` with `disabled`, `stale`,
+  or `busy`. A provider timeout returns `{accepted: false, cancelled: true,
   timeout: true, count: 0}` after interrupting the provider. Only one pass runs
   per document, and the result is dropped if the document, `analysisRevision`, or
   candidate state changes before publish.
@@ -632,21 +682,43 @@ channel (see below). Config mutations remain unchanged:
 - `cint/suggest/cancel` takes `{uri?, requestId?}`, marks the matching in-flight
   pass cancelled, and returns `true`. Cancelled request ids are pruned after 60
   seconds.
-- `cint/candidates/decide` takes `{uri, version, candidateId, decision}` with
-  `decision` one of `confirm`, `reject`, or `skip`. It validates the document
-  version and current anchor hash, persists the decision, and republishes. It
-  returns `{accepted: true, stale: false, decision}` or
+- `cint/candidates/decide` takes `{uri, version, candidateId | proposalId |
+  groupId, decision}` with `decision` one of `confirm`, `reject`, or `skip`. It
+  validates the document version and current anchor hash, persists the decision,
+  and republishes. It returns `{accepted: true, stale: false, decision}` or
   `{accepted: false, stale: true}` / `{accepted: false, missing: true}`.
-  Confirm adds a user annotation and records the candidate's `anchorId` and span,
-  which resolves the whole anchor group: sibling alternatives are no longer
-  published or confirmable. Reject persists suppression for that candidate.
-  Skip remains per-client/session and is not persisted. Confirm and reject are
+  When `restrictionsEnabled` is false, a proposal decision returns
+  `{accepted: false, disabled: true}` before any write; this applies to
+  confirm/reject/skip. All candidate and proposal decisions share a decision
+  lock. Proposal confirm revalidates removals and replacement adds against the
+  current analysis under that lock, returning `stale` when another decision
+  already consumed a removal target or established a replacement.
+  Confirm for an add-only candidate adds a user annotation and records the
+  candidate's `anchorId` and span, which resolves the whole anchor group.
+  Confirm for a proposal group applies all `ADD`/`REMOVE` operations atomically
+  by writing one `.cint/ai-restrictions.json` record; its replacement intents
+  appear as `source = ai-confirmed` with contributor `core:ai-confirmed` and
+  structured provider/model/prompt contribution fields on the next analysis.
+  Reject persists suppression for that candidate or proposal anchor. Skip
+  remains per-client/session and is not persisted. Confirm and reject are
   project-global: the server republishes the URI to every client that has it
-  open, so all owners of the same URI drop the resolved group or suppressed
-  candidate. A republish after a decision still emits
-  `cint/publishCandidates`, with empty `candidates`/`groups` when nothing
-  remains. If the user annotation is later removed, the next analysis
-  re-proposes the candidate unless it is rejected.
+  open, scoped per writer. Each writer keeps its own pending add candidates and
+  proposals; carried proposals are revalidated against the new analysis and
+  dropped when their removal target is gone, and protocol-3 writers never receive
+  proposal groups. `cint/restrictions/remove` also preserves pending review
+  state. A republish after a decision still emits `cint/publishCandidates`, with
+  empty `candidates`/`groups` only when nothing remains. If the user annotation
+  or restriction record is later removed, the next analysis restores or
+  re-proposes the original annotation.
+- `cint/restrictions/list` (alias `cint/restrictions`) takes optional `{uri}` and
+  returns `{restrictions: [...]}`. Each record has `id`, `path`, `symbol`,
+  `contentHash`, `unitFingerprint`, anchor `startLine`/`startCol`/`endLine`/
+  `endCol`, `remove`/`add` operation arrays, `provider`, `model`,
+  `promptVersion`, `createdAt`, and `status` (`active`, `dormant`, or `unknown`).
+  A stored operation is `{intent, startOffset, endOffset, confidence, rationale}`.
+  `cint/restrictions/remove` takes `{id}` and returns `{accepted, removed}`,
+  removing the record and re-analyzing open documents so the original annotation
+  returns. Both require protocol 4 and `restrictionsEnabled`.
 
 Failures use the existing JSON-RPC error shape `{code: -32000, message}`.
 `cint/config/read` errors when the overlay is unreadable; append/remove also
@@ -716,6 +788,10 @@ facts. `--no-lsp` disables the LSP oracle on the server.
   ]
 }
 ```
+
+Provenance contribution objects may additionally carry `provider`, `model`, and
+`promptVersion` when the contribution originates from an `ai-confirmed`
+restriction. These keys are optional; ordinary pack provenance omits them.
 
 Lines and columns are 0-based. `hash` covers canonical content (CRLF -> LF, one
 trailing newline removed) so consumers can reject stale artifacts. `candidates`
