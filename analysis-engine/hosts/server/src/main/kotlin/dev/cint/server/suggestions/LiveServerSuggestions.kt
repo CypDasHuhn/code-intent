@@ -12,6 +12,7 @@ import dev.cint.server.live.docsFor
 import dev.cint.server.live.publishCandidates
 import dev.cint.server.live.relativePath
 import dev.cint.suggest.model.CandidateDocument
+import dev.cint.suggest.model.CandidateProposal
 import dev.cint.suggest.model.SuggestionOptions
 import dev.cint.suggest.session.SessionLimits
 import dev.cint.suggest.session.SessionProgress
@@ -34,7 +35,7 @@ internal fun LiveServer.suggestionCapability(clientProtocol: Int): Map<String, A
         "model" to (suggestionSettings.model ?: provider?.model),
         "knownIntents" to knownIntents(),
         "discovery" to (suggestionSettings.discoveryEnabled && supportsDiscovery && clientProtocol >= 4),
-        "restrictions" to false,
+        "restrictions" to (suggestionSettings.restrictionsEnabled && clientProtocol >= 4),
         "cache" to false,
         "maxUnitsPerRequest" to suggestionSettings.discoveryMaxUnitsPerRequest,
     )
@@ -152,6 +153,7 @@ internal fun LiveServer.handleSuggest(
                                                         redactPatterns = suggestionSettings.redactPatterns,
                                                     ),
                                             ),
+                                        proposals = emptyList(),
                                         session = null,
                                     )
                                 }
@@ -206,13 +208,23 @@ internal fun LiveServer.handleSuggest(
                             writer,
                             current,
                             outcome.candidates,
+                            outcome.proposals,
                             cached.analysisRevision,
                             expectedStateRevision = pass.baseStateRevision,
                         )
                     if (count == null) {
                         respond(writer, id, mapOf("accepted" to false, "cancelled" to true, "count" to 0))
                     } else {
-                        respond(writer, id, suggestResponse(count, outcome.session))
+                        respond(
+                            writer,
+                            id,
+                            suggestResponse(
+                                count.candidates + count.proposals,
+                                outcome.session,
+                                count.proposals,
+                                includeRestrictions = clientProtocol >= 4,
+                            ),
+                        )
                     }
                 } catch (_: InterruptedException) {
                     Thread.currentThread().interrupt()
@@ -245,7 +257,7 @@ private fun LiveServer.discoveryPass(
             cached = cached,
             knownIntents = known,
             includeLeaves = suggestionSettings.discoveryIncludeLeaves,
-        ) ?: return SuggestOutcome(cached.output.candidates, null)
+        ) ?: return SuggestOutcome(cached.output.candidates, emptyList(), null)
     val typeLookup = sessionTypeLookup(current, document)
     val result =
         suggestionService.discover(
@@ -286,7 +298,8 @@ private fun LiveServer.discoveryPass(
                     latest.text != current.text
             },
         )
-    return SuggestOutcome(cached.output.candidates + result.candidates, result)
+    val proposals = if (suggestionSettings.restrictionsEnabled) result.proposals else emptyList()
+    return SuggestOutcome(cached.output.candidates + result.candidates, proposals, result)
 }
 
 private fun LiveServer.publishProgress(
@@ -315,12 +328,15 @@ private fun LiveServer.publishProgress(
 private fun suggestResponse(
     count: Int,
     session: SessionResult?,
+    proposalCount: Int,
+    includeRestrictions: Boolean,
 ): Map<String, Any?> =
     linkedMapOf<String, Any?>(
         "accepted" to true,
         "cancelled" to false,
         "count" to count,
     ).apply {
+        if (includeRestrictions) put("restrictions", proposalCount)
         if (session != null) {
             put("total", session.total)
             put("graded", session.graded)
@@ -405,6 +421,7 @@ internal fun LiveServer.handleSuggestLog(
 
 private data class SuggestOutcome(
     val candidates: List<CandidateEmit>,
+    val proposals: List<CandidateProposal>,
     val session: SessionResult?,
 )
 

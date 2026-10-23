@@ -109,10 +109,23 @@ internal fun LiveServer.configPayload(
     return result
 }
 
-internal fun LiveServer.republishOpenDocs() {
+internal fun LiveServer.republishOpenDocs(carry: Boolean = false) {
     for ((writer, clientDocs) in docs.entries.toList()) {
         for (doc in clientDocs.values.toList()) {
-            runCatching { publish(writer, doc) }
+            val key = DocumentKey(writer, doc.uri)
+            val proposals =
+                if (carry) {
+                    publishedProposals[key].orEmpty().filter { it.version == doc.version }.map { it.proposal }
+                } else {
+                    null
+                }
+            val candidates =
+                if (carry) {
+                    publishedCandidates[key].orEmpty().filter { it.version == doc.version }.map { it.candidate }
+                } else {
+                    null
+                }
+            runCatching { publish(writer, doc, proposals, candidates) }
                 .onFailure { error ->
                     System.err.println("cint config republish: ${error.message ?: error.javaClass.name}")
                 }
@@ -120,10 +133,28 @@ internal fun LiveServer.republishOpenDocs() {
     }
 }
 
-internal fun LiveServer.republishUri(uri: String) {
+internal fun LiveServer.republishUri(
+    uri: String,
+    decidingKey: DocumentKey? = null,
+    proposals: List<dev.cint.suggest.model.CandidateProposal>? = null,
+    candidates: List<dev.cint.api.CandidateEmit>? = null,
+) {
     for ((writer, clientDocs) in docs.entries.toList()) {
         val doc = clientDocs[uri] ?: continue
-        runCatching { publish(writer, doc) }
+        val key = DocumentKey(writer, doc.uri)
+        val carriedProposals =
+            if (key == decidingKey) {
+                proposals
+            } else {
+                publishedProposals[key].orEmpty().filter { it.version == doc.version }.map { it.proposal }
+            }
+        val carriedCandidates =
+            if (key == decidingKey) {
+                candidates
+            } else {
+                publishedCandidates[key].orEmpty().filter { it.version == doc.version }.map { it.candidate }
+            }
+        runCatching { publish(writer, doc, carriedProposals, carriedCandidates) }
             .onFailure { error ->
                 System.err.println("cint decision republish: ${error.message ?: error.javaClass.name}")
             }

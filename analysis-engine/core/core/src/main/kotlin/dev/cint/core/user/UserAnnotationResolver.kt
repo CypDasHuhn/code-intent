@@ -39,13 +39,58 @@ object UserAnnotationResolver {
         text: String,
         span: Span,
     ): String? {
+        val range = byteRange(text, span) ?: return null
+        return selectionText(text, range)
+    }
+
+    fun selectionText(
+        text: String,
+        range: Pair<Int, Int>,
+    ): String? {
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        val (start, end) = range
+        if (start > end) return null
+        return slice(bytes, start, end)
+    }
+
+    fun byteRange(
+        text: String,
+        span: Span,
+    ): Pair<Int, Int>? {
         val bytes = text.toByteArray(Charsets.UTF_8)
         val lineStarts = lineStarts(bytes)
         val start = offset(bytes, lineStarts, span.startLine, span.startCol) ?: return null
         val end = offset(bytes, lineStarts, span.endLine, span.endCol) ?: return null
         if (start > end) return null
-        return slice(bytes, start, end)
+        return start to end
     }
+
+    fun spanFor(
+        text: String,
+        startByte: Int,
+        endByte: Int,
+    ): Span? {
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        if (startByte < 0 || endByte < startByte || endByte > bytes.size) return null
+        val start = position(bytes, startByte)
+        val end = position(bytes, endByte)
+        return Span(start.first, start.second, end.first, end.second)
+    }
+
+    fun symbolAt(
+        file: SourceFile,
+        tree: SyntaxTree,
+        syntax: SyntaxModel,
+        startByte: Int,
+    ): String? =
+        candidates(tree, syntax)
+            .filter { candidate -> candidate.node.startByte <= startByte && candidate.node.endByte >= startByte }
+            .minWithOrNull(
+                compareBy<Candidate>(
+                    { it.node.endByte - it.node.startByte },
+                    { kotlin.math.abs(it.node.startByte - startByte) },
+                ),
+            )?.name
 
     private fun resolve(
         annotation: UserAnnotation,
@@ -171,7 +216,7 @@ object UserAnnotationResolver {
 
     private fun key(node: SyntaxNode): Long = (node.startByte.toLong() shl 32) or (node.endByte.toLong() and 0xffffffffL)
 
-    private fun pathMatches(
+    fun pathMatches(
         recordPath: String,
         sourcePath: String,
         root: Path?,
@@ -191,6 +236,23 @@ object UserAnnotationResolver {
         }.getOrDefault(false)
 
     private fun normalize(path: Path): String = path.toAbsolutePath().normalize().toString()
+
+    private fun position(
+        bytes: ByteArray,
+        offset: Int,
+    ): Pair<Int, Int> {
+        var line = 0
+        var col = 0
+        for (index in 0 until offset.coerceIn(0, bytes.size)) {
+            if (bytes[index].toInt() == '\n'.code) {
+                line += 1
+                col = 0
+            } else {
+                col += 1
+            }
+        }
+        return line to col
+    }
 
     private fun lineStarts(bytes: ByteArray): IntArray =
         buildList {

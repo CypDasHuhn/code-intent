@@ -2,10 +2,14 @@ package dev.cint.server.live
 
 import dev.cint.api.CandidateEmit
 import dev.cint.core.candidate.CandidateIdentity
+import dev.cint.core.restriction.AiRestrictionsFile
 import dev.cint.core.user.UserAnnotationsFile
 import dev.cint.server.LiveServer
 import dev.cint.suggest.model.CandidateDocument
 import dev.cint.suggest.model.CandidateGroup
+import dev.cint.suggest.model.CandidateProposal
+import dev.cint.suggest.model.ProposalOperation
+import dev.cint.suggest.model.ProposalOperationKind
 import java.io.BufferedWriter
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,10 +17,11 @@ internal fun LiveServer.publishCandidates(
     writer: BufferedWriter,
     doc: DocState,
     candidates: List<CandidateEmit>,
+    proposals: List<CandidateProposal> = emptyList(),
     analysisRevision: Long,
     expectedStateRevision: Long? = null,
     commitSkip: String? = null,
-): Int? {
+): CandidatePublishResult? {
     val key = DocumentKey(writer, doc.uri)
     val lock = candidateLocks.computeIfAbsent(key) { Any() }
     synchronized(lock) {
@@ -39,6 +44,11 @@ internal fun LiveServer.publishCandidates(
         val decisions = suggestionStore.load()
         val rejected = decisions.filter { it.decision == "reject" }.mapTo(linkedSetOf()) { it.candidateId }
         val confirmed = decisions.filter { it.decision == "confirm" }.mapTo(linkedSetOf()) { it.candidateId }
+        val rejectedProposalAnchors =
+            decisions
+                .filter { it.decision == "reject" && it.reason == PROPOSAL_REASON }
+                .mapNotNullTo(linkedSetOf()) { it.anchorId }
+        val restrictionIds = AiRestrictionsFile.loadTolerant(root).mapTo(linkedSetOf()) { it.id }
         val userAnnotations =
             if (confirmed.isEmpty()) {
                 emptyList()
@@ -64,9 +74,10 @@ internal fun LiveServer.publishCandidates(
                     }
                 }.mapNotNullTo(linkedSetOf()) { it.anchorId }
         val document = CandidateDocument(path, doc.version, doc.text, emptySet())
+        val includeOperations = (clientProtocols[writer] ?: 0) >= 4
         val groups = suggestionService.group(document, candidates)
         val publishedById = linkedMapOf<String, PublishedCandidate>()
-        val publishedGroups = mutableListOf<Pair<CandidateGroup, List<PublishedCandidate>>>()
+        val groupPayloads = mutableListOf<Map<String, Any?>>()
         for (group in groups) {
             val groupResolved =
                 group.anchorId in resolvedAnchors ||
@@ -97,10 +108,35 @@ internal fun LiveServer.publishCandidates(
                         ).also { publishedById[candidateId] = it }
                     }
                 }
-            if (kept.isNotEmpty()) publishedGroups += group to kept
+            if (kept.isNotEmpty()) groupPayloads += candidateGroupPayload(group, kept, includeOperations)
         }
         val published = publishedById.values.toList()
+        val publishedProposalList =
+            if (!includeOperations) {
+                emptyList()
+            } else {
+                proposals
+                    .filter {
+                        it.proposalId !in restrictionIds &&
+                            it.proposalId !in rejected &&
+                            it.proposalId !in currentSessionSkips &&
+                            it.anchorId !in rejectedProposalAnchors
+                    }.sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.proposalId }))
+                    .map { proposal ->
+                        PublishedProposal(
+                            proposalId = proposal.proposalId,
+                            anchorId = proposal.anchorId,
+                            path = path,
+                            contentHash = proposal.contentHash,
+                            version = doc.version,
+                            analysisRevision = analysisRevision,
+                            proposal = proposal,
+                        )
+                    }
+            }
+        groupPayloads += publishedProposalList.map { proposalGroupPayload(it, includeOperations) }
         publishedCandidates[key] = published
+        publishedProposals[key] = publishedProposalList
         val revision = suggestionRevision.incrementAndGet()
         candidateStateRevisions[key] = revision
         val params =
@@ -109,7 +145,7 @@ internal fun LiveServer.publishCandidates(
                 "version" to doc.version,
                 "analysisRevision" to analysisRevision,
                 "suggestionRevision" to revision,
-                "groups" to publishedGroups.map { (group, kept) -> candidateGroupPayload(group, kept) },
+                "groups" to groupPayloads,
                 "candidates" to published.map(::candidatePayload),
             )
         write(
@@ -120,7 +156,7 @@ internal fun LiveServer.publishCandidates(
                 "params" to params,
             ),
         )
-        return published.size
+        return CandidatePublishResult(published.size, publishedProposalList.size)
     }
 }
 
@@ -141,8 +177,9 @@ private fun LiveServer.candidateId(
 private fun LiveServer.candidateGroupPayload(
     group: CandidateGroup,
     kept: List<PublishedCandidate>,
+    includeOperations: Boolean,
 ): Map<String, Any?> =
-    linkedMapOf(
+    linkedMapOf<String, Any?>(
         "anchorId" to group.anchorId,
         "path" to group.path,
         "contentHash" to group.contentHash,
@@ -153,7 +190,72 @@ private fun LiveServer.candidateGroupPayload(
         "startByte" to group.startByte,
         "endByte" to group.endByte,
         "candidates" to kept.map(::candidatePayload),
-    )
+    ).apply {
+        if (includeOperations) {
+            put(
+                "operations",
+                kept.flatMap { published ->
+                    published.candidate.intents.sorted().map { intent ->
+                        operationPayload(
+                            ProposalOperation(
+                                kind = ProposalOperationKind.ADD,
+                                intent = intent,
+                                startByte = published.candidate.startByte,
+                                endByte = published.candidate.endByte,
+                                span = published.candidate.span,
+                                confidence = published.candidate.confidence,
+                                rationale = published.candidate.rationale,
+                                source = published.candidate.source,
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+private fun LiveServer.proposalGroupPayload(
+    published: PublishedProposal,
+    includeOperations: Boolean,
+): Map<String, Any?> {
+    val proposal = published.proposal
+    return linkedMapOf<String, Any?>(
+        "proposalId" to published.proposalId,
+        "groupId" to published.proposalId,
+        "anchorId" to published.anchorId,
+        "path" to published.path,
+        "contentHash" to published.contentHash,
+        "unitId" to proposal.unitId,
+        "startLine" to proposal.span.startLine,
+        "startCol" to proposal.span.startCol,
+        "endLine" to proposal.span.endLine,
+        "endCol" to proposal.span.endCol,
+        "startByte" to proposal.startByte,
+        "endByte" to proposal.endByte,
+        "candidates" to emptyList<Any?>(),
+    ).apply {
+        if (includeOperations) put("operations", proposal.operations.map(::operationPayload))
+        proposal.provider?.let { put("provider", it) }
+        proposal.model?.let { put("model", it) }
+        proposal.promptVersion?.let { put("promptVersion", it) }
+    }
+}
+
+private fun operationPayload(operation: ProposalOperation): Map<String, Any?> =
+    linkedMapOf<String, Any?>(
+        "kind" to operation.kind.name,
+        "intent" to operation.intent,
+        "startLine" to operation.span.startLine,
+        "startCol" to operation.span.startCol,
+        "endLine" to operation.span.endLine,
+        "endCol" to operation.span.endCol,
+        "startByte" to operation.startByte,
+        "endByte" to operation.endByte,
+        "confidence" to operation.confidence,
+    ).apply {
+        operation.rationale?.let { put("rationale", it) }
+        operation.source?.let { put("source", it) }
+    }
 
 private fun LiveServer.candidatePayload(candidate: PublishedCandidate): Map<String, Any?> {
     val emit = candidate.candidate
@@ -179,3 +281,5 @@ private fun LiveServer.candidatePayload(candidate: PublishedCandidate): Map<Stri
         emit.model?.let { put("model", it) }
     }
 }
+
+internal const val PROPOSAL_REASON: String = "PROPOSAL"

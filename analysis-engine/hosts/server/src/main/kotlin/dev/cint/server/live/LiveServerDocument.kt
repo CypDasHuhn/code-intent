@@ -17,6 +17,7 @@ import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
 import dev.cint.server.LIVE_LSP_TIMEOUT_MS
 import dev.cint.server.LiveServer
+import dev.cint.suggest.model.CandidateProposal
 import java.io.BufferedWriter
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
@@ -61,6 +62,7 @@ internal fun LiveServer.clearDocument(
     providerFutures.remove(key)?.cancel(true)
     analyses.remove(key)
     publishedCandidates.remove(key)
+    publishedProposals.remove(key)
     analysisRevisions.remove(key)
     candidateLocks.remove(key)
     candidateStateRevisions.remove(key)
@@ -79,6 +81,8 @@ internal fun LiveServer.docFrom(params: JsonNode?): DocState? {
 internal fun LiveServer.publish(
     writer: BufferedWriter,
     doc: DocState,
+    carriedProposals: List<CandidateProposal>? = null,
+    carriedCandidates: List<dev.cint.api.CandidateEmit>? = null,
 ) {
     val frontend =
         Frontends.forLanguage(doc.language)
@@ -131,8 +135,28 @@ internal fun LiveServer.publish(
             "params" to params,
         ),
     )
-    publishCandidates(writer, doc, output.candidates, analysisRevision)
+    publishCandidates(
+        writer,
+        doc,
+        revalidatedCandidates(doc, output.annotations, mergeCandidates(output, carriedCandidates.orEmpty())),
+        revalidatedProposals(doc, output.annotations, carriedProposals.orEmpty()),
+        analysisRevision = analysisRevision,
+    )
 }
+
+private fun mergeCandidates(
+    output: AnalysisOutput,
+    carried: List<dev.cint.api.CandidateEmit>,
+): List<dev.cint.api.CandidateEmit> =
+    (output.candidates + carried).distinctBy { candidate ->
+        listOf(
+            candidate.startByte,
+            candidate.endByte,
+            candidate.intents.sorted().joinToString(","),
+            candidate.reason.name,
+            candidate.source,
+        )
+    }
 
 internal fun LiveServer.nextAnalysisRevision(key: DocumentKey): Long =
     analysisRevisions.computeIfAbsent(key) { AtomicLong(0) }.incrementAndGet()
@@ -166,6 +190,7 @@ private fun LiveServer.analyze(
                 oracleOptions(),
                 packs::plan,
                 packs::userContributionsFor,
+                packs::restrictionsFor,
             ) { language -> settings.intentConfig(language) }
         } else {
             val tree = frontend.parse(source)
@@ -200,6 +225,7 @@ private fun LiveServer.analyzeHeuristic(
             oracleOptions(false),
             packs::plan,
             packs::userContributionsFor,
+            packs::restrictionsFor,
         ) { language -> settings.intentConfig(language) }
     }
     val tree = frontend.parse(source)

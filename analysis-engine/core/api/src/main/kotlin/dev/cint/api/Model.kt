@@ -54,6 +54,9 @@ data class Contribution(
     val startByte: Int,
     val endByte: Int,
     val certifiesReturn: Boolean = false,
+    val provider: String? = null,
+    val model: String? = null,
+    val promptVersion: String? = null,
 )
 
 data class Annotation(

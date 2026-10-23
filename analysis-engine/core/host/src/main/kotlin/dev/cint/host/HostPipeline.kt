@@ -12,6 +12,10 @@ import dev.cint.core.config.ProjectConfig
 import dev.cint.core.facts.frontend.SplitRegion
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.core.restriction.AiRestrictionRecord
+import dev.cint.core.restriction.AiRestrictionResolver
+import dev.cint.core.restriction.AiRestrictionsFile
+import dev.cint.core.restriction.ResolvedRestriction
 import dev.cint.core.runtime.rulepack.RulePackLoadFailure
 import dev.cint.core.runtime.rulepack.RulePackLoadResult
 import dev.cint.core.runtime.rulepack.RulePackLoader
@@ -99,7 +103,24 @@ class HostPipeline(
         oracle,
         config,
         userContributionsFor(source, source, tree, syntax),
+        restrictionsFor(source, source, tree, syntax),
     )
+
+    fun restrictionsFor(
+        host: SourceFile,
+        source: SourceFile,
+        tree: SyntaxTree,
+        syntax: SyntaxModel,
+        region: SplitRegion? = null,
+    ): List<ResolvedRestriction> {
+        val restrictionsRoot = root ?: return emptyList()
+        val records =
+            AiRestrictionsFile.loadTolerant(restrictionsRoot) { error ->
+                System.err.println("cint ai restrictions: ${error.message ?: error.javaClass.name}")
+            }
+        val scoped = region?.let { scopeRestrictionsToRegion(host, records, it) } ?: records
+        return AiRestrictionResolver.resolve(scoped, source, tree, syntax, restrictionsRoot)
+    }
 
     fun userContributionsFor(
         host: SourceFile,
@@ -120,6 +141,59 @@ class HostPipeline(
             }
         val scoped = region?.let { scopeToRegion(host, records, it) } ?: records
         return UserAnnotationResolver.resolve(scoped, source, tree, syntax, annotationsRoot)
+    }
+
+    private fun scopeRestrictionsToRegion(
+        host: SourceFile,
+        records: List<AiRestrictionRecord>,
+        region: SplitRegion,
+    ): List<AiRestrictionRecord> {
+        val lines = region.text.split("\n")
+        val lastLine = (lines.lastIndex - if (region.text.endsWith("\n")) 1 else 0).coerceAtLeast(0)
+        val lastHostLine = region.startLine + lastLine
+        return records.mapNotNull { record ->
+            if (record.span.endLine < region.startLine || record.span.startLine > lastHostLine) {
+                return@mapNotNull null
+            }
+            val original = UserAnnotationResolver.selectionText(host, record.span) ?: return@mapNotNull null
+            if (contentHash(original) != record.contentHash.removePrefix("sha256:")) return@mapNotNull null
+            val localStartLine = (record.span.startLine - region.startLine).coerceIn(0, lastLine)
+            val localEndLine = (record.span.endLine - region.startLine).coerceIn(0, lastLine)
+            val lineStart = lineLength(lines, localStartLine)
+            val lineEnd = lineLength(lines, localEndLine)
+            val localStartCol =
+                when {
+                    record.span.startLine < region.startLine -> {
+                        0
+                    }
+
+                    record.span.startLine == region.startLine -> {
+                        (record.span.startCol - region.startCol).coerceIn(0, lineStart)
+                    }
+
+                    else -> {
+                        record.span.startCol.coerceIn(0, lineStart)
+                    }
+                }
+            val localEndCol =
+                when {
+                    record.span.endLine > lastHostLine -> {
+                        lineEnd
+                    }
+
+                    record.span.endLine == region.startLine -> {
+                        (record.span.endCol - region.startCol).coerceIn(0, lineEnd)
+                    }
+
+                    else -> {
+                        record.span.endCol.coerceIn(0, lineEnd)
+                    }
+                }
+            if (localStartLine == localEndLine && localStartCol >= localEndCol) return@mapNotNull null
+            record.copy(
+                span = Span(localStartLine, localStartCol, localEndLine, localEndCol),
+            )
+        }
     }
 
     private fun scopeToRegion(

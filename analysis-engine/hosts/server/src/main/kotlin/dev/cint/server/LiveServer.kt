@@ -12,6 +12,7 @@ import dev.cint.server.live.CachedAnalysis
 import dev.cint.server.live.DocState
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.PublishedCandidate
+import dev.cint.server.live.PublishedProposal
 import dev.cint.server.live.SessionLog
 import dev.cint.server.live.SuggestPass
 import dev.cint.server.live.clearDocument
@@ -25,6 +26,8 @@ import dev.cint.server.live.publish
 import dev.cint.server.live.republishOpenDocs
 import dev.cint.server.suggestions.cancelInFlightSuggestion
 import dev.cint.server.suggestions.handleCandidateDecision
+import dev.cint.server.suggestions.handleRestrictionsList
+import dev.cint.server.suggestions.handleRestrictionsRemove
 import dev.cint.server.suggestions.handleSuggest
 import dev.cint.server.suggestions.handleSuggestCancel
 import dev.cint.server.suggestions.handleSuggestLog
@@ -74,9 +77,11 @@ class LiveServer(
         }
     internal val analyses = ConcurrentHashMap<DocumentKey, CachedAnalysis>()
     internal val publishedCandidates = ConcurrentHashMap<DocumentKey, List<PublishedCandidate>>()
+    internal val publishedProposals = ConcurrentHashMap<DocumentKey, List<PublishedProposal>>()
     internal val analysisRevisions = ConcurrentHashMap<DocumentKey, AtomicLong>()
     internal val candidateLocks = ConcurrentHashMap<DocumentKey, Any>()
     internal val anchorLocks = ConcurrentHashMap<String, Any>()
+    internal val proposalDecisionLock = Any()
     internal val candidateStateRevisions = ConcurrentHashMap<DocumentKey, Long>()
     internal val inFlightSuggestions = ConcurrentHashMap<DocumentKey, SuggestPass>()
     internal val sessionLogs = ConcurrentHashMap<DocumentKey, SessionLog>()
@@ -266,6 +271,18 @@ class LiveServer(
 
             "cint/candidates/decide" -> {
                 handleCandidateDecision(writer, params, id)
+            }
+
+            "cint/restrictions/list" -> {
+                handleRestrictionsList(writer, params, id)
+            }
+
+            "cint/restrictions" -> {
+                handleRestrictionsList(writer, params, id)
+            }
+
+            "cint/restrictions/remove" -> {
+                handleRestrictionsRemove(writer, params, id)
             }
 
             "shutdown" -> {

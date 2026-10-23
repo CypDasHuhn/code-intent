@@ -31,6 +31,7 @@ data class SuggestionSettings(
     val discoveryEnabled: Boolean = true,
     val discoveryIncludeLeaves: Boolean = true,
     val discoveryMaxUnitsPerRequest: Int = 24,
+    val restrictionsEnabled: Boolean = true,
     val sessionTimeoutMs: Long = 120_000L,
     val maxTurns: Int = 50,
     val maxToolCalls: Int = 200,
@@ -82,6 +83,7 @@ object SuggestionSettingsLoader {
             discoveryIncludeLeaves = suggestions["discoveryIncludeLeaves"] as? Boolean ?: true,
             discoveryMaxUnitsPerRequest =
                 (suggestions["discoveryMaxUnitsPerRequest"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 24,
+            restrictionsEnabled = suggestions["restrictionsEnabled"] as? Boolean ?: true,
             sessionTimeoutMs =
                 (suggestions["sessionTimeoutMs"] as? Number)?.toLong()?.coerceAtLeast(1L) ?: 120_000L,
             maxTurns = (suggestions["maxTurns"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 50,

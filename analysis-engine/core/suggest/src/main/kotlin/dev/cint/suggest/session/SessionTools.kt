@@ -176,14 +176,23 @@ internal class SessionTools(
             val verdict = item.path("verdict").asText("").trim()
             val rawAdds = item.path("add").takeIf(JsonNode::isArray)
             val adds = rawAdds?.mapNotNull(::parseAdd).orEmpty()
+            val rawRemoves = item.path("remove").takeIf(JsonNode::isArray)
+            val removes = rawRemoves?.mapNotNull(::parseRemove).orEmpty()
             val none = verdict.equals("none", ignoreCase = true)
             if (none) {
-                if (adds.isNotEmpty() || rawAdds?.size()?.let { it > 0 } == true) return@mapNotNull null
+                if (
+                    adds.isNotEmpty() ||
+                    removes.isNotEmpty() ||
+                    rawAdds?.size()?.let { it > 0 } == true ||
+                    rawRemoves?.size()?.let { it > 0 } == true
+                ) {
+                    return@mapNotNull null
+                }
                 return@mapNotNull SessionVerdict(unitId, none = true)
             }
             if (verdict.isNotEmpty()) return@mapNotNull null
-            if (adds.isEmpty()) return@mapNotNull null
-            SessionVerdict(unitId, adds)
+            if (adds.isEmpty() && removes.isEmpty()) return@mapNotNull null
+            SessionVerdict(unitId, adds, removes)
         }
     }
 
@@ -195,6 +204,15 @@ internal class SessionTools(
         val confidence = node.double("confidence") ?: return null
         val rationale = node.path("rationale").asText("").takeIf { it.isNotBlank() }
         return SessionAdd(intent, start, end, confidence, rationale)
+    }
+
+    private fun parseRemove(node: JsonNode): SessionRemove? {
+        if (!node.isObject) return null
+        val intent = node.path("intent").asText("").takeIf { it.isNotBlank() } ?: return null
+        val start = node.int("startByte") ?: return null
+        val end = node.int("endByte") ?: return null
+        val rationale = node.path("rationale").asText("").takeIf { it.isNotBlank() }
+        return SessionRemove(intent, start, end, rationale)
     }
 
     private fun unit(arguments: JsonNode): SessionUnit? =

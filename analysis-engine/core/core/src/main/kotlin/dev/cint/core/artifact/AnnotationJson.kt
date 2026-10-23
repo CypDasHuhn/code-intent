@@ -36,7 +36,11 @@ object AnnotationJson {
             "endCol" to contribution.span.endCol,
             "startByte" to contribution.startByte,
             "endByte" to contribution.endByte,
-        )
+        ).apply {
+            contribution.provider?.let { put("provider", it) }
+            contribution.model?.let { put("model", it) }
+            contribution.promptVersion?.let { put("promptVersion", it) }
+        }
 
     fun roleName(role: Role): String =
         when (role) {

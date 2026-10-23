@@ -38,6 +38,26 @@ class ContractModelTest {
     }
 
     @Test
+    fun contributionProvenanceFieldsAreAdditiveDefaults() {
+        val span = Span(0, 0, 0, 3)
+        val plain =
+            Contribution("demo:logging", Role.SOURCE_INTENT, setOf("LOGGING"), span, "treesitter", 1.0, 0, 3)
+        assertNull(plain.provider)
+        assertNull(plain.model)
+        assertNull(plain.promptVersion)
+        val confirmed =
+            plain.copy(
+                provider = "deepseek",
+                model = "deepseek-chat",
+                promptVersion = "deepseek-intent-v3",
+            )
+        assertEquals("deepseek", confirmed.provider)
+        assertEquals("deepseek-chat", confirmed.model)
+        assertEquals("deepseek-intent-v3", confirmed.promptVersion)
+        assertEquals(CINT_API_VERSION, 5)
+    }
+
+    @Test
     fun nodeAnchorIsReservedOnAnnotationsAndAbsentFromEmits() {
         val annotationFields = Annotation::class.java.declaredFields.map { it.name }
         val emitFields = Emit::class.java.declaredFields.map { it.name }

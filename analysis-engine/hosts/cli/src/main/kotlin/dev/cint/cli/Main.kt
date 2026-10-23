@@ -74,6 +74,7 @@ fun main(argv: Array<String>) {
                                 lspOptions,
                                 packs::plan,
                                 packs::userContributionsFor,
+                                packs::restrictionsFor,
                             ) { language -> settings.intentConfig(language) }
                         usedLanguages += languages
                         result

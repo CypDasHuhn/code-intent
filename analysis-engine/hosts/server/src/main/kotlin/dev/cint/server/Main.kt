@@ -112,6 +112,7 @@ internal fun analyze(
                 lspOptions,
                 packs::plan,
                 packs::userContributionsFor,
+                packs::restrictionsFor,
             ) { language -> settings.intentConfig(language) }
         } else {
             val tree = frontend.parse(source)

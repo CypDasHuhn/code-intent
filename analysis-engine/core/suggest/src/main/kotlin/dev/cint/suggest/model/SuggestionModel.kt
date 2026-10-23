@@ -32,3 +32,37 @@ data class CandidateGroup(
     val endByte: Int,
     val candidates: List<CandidateEmit>,
 )
+
+enum class ProposalOperationKind {
+    ADD,
+    REMOVE,
+}
+
+data class ProposalOperation(
+    val kind: ProposalOperationKind,
+    val intent: String,
+    val startByte: Int,
+    val endByte: Int,
+    val span: Span,
+    val confidence: Double,
+    val rationale: String? = null,
+    val source: String? = null,
+)
+
+data class CandidateProposal(
+    val proposalId: String,
+    val anchorId: String,
+    val path: String,
+    val contentHash: String,
+    val unitId: String,
+    val span: Span,
+    val startByte: Int,
+    val endByte: Int,
+    val operations: List<ProposalOperation>,
+    val provider: String? = null,
+    val model: String? = null,
+    val promptVersion: String? = null,
+) {
+    val removes: List<ProposalOperation> get() = operations.filter { it.kind == ProposalOperationKind.REMOVE }
+    val adds: List<ProposalOperation> get() = operations.filter { it.kind == ProposalOperationKind.ADD }
+}

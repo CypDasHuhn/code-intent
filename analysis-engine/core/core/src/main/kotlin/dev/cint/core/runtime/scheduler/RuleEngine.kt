@@ -20,6 +20,8 @@ import dev.cint.core.facts.oracle.OracleSession
 import dev.cint.core.facts.oracle.OracleStats
 import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.facts.store.AnnotationStore
+import dev.cint.core.restriction.AiRestrictionApplication
+import dev.cint.core.restriction.ResolvedRestriction
 import dev.cint.core.runtime.composition.Composition
 import dev.cint.core.runtime.engine.AnalysisContext
 import dev.cint.core.syntax.SyntaxModel
@@ -66,7 +68,8 @@ class RuleEngine(
         config: IntentConfig,
         packs: List<RulePack>,
         userContributions: List<Contribution> = emptyList(),
-    ): AnalysisOutput = analyze(plan(packs), file, tree, syntax, oracle, config, userContributions)
+        restrictions: List<ResolvedRestriction> = emptyList(),
+    ): AnalysisOutput = analyze(plan(packs), file, tree, syntax, oracle, config, userContributions, restrictions)
 
     fun analyze(
         plan: ExecutionPlan,
@@ -76,6 +79,7 @@ class RuleEngine(
         oracle: TypeOracle,
         config: IntentConfig,
         userContributions: List<Contribution> = emptyList(),
+        restrictions: List<ResolvedRestriction> = emptyList(),
     ): AnalysisOutput {
         val flow = ControlFlowBuilder(tree, syntax).build()
         val source = (oracle as? OracleSession)?.source() ?: oracle
@@ -109,11 +113,12 @@ class RuleEngine(
             }
         }
 
+        val adjusted = AiRestrictionApplication.apply(settled, restrictions)
         val store = AnnotationStore()
-        for ((id, contributions) in settled) {
+        for ((id, contributions) in adjusted) {
             store.replaceRule(id, contributions)
         }
-        val sources = settled.values.flatten()
+        val sources = adjusted.values.flatten()
         val composed =
             Composition().compose(
                 plan.terminal.sourceIntents,

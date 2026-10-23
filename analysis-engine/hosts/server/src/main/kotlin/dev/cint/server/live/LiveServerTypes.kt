@@ -3,6 +3,7 @@ package dev.cint.server.live
 import dev.cint.api.CandidateEmit
 import dev.cint.api.ConfigFieldDescriptor
 import dev.cint.core.runtime.scheduler.AnalysisOutput
+import dev.cint.suggest.model.CandidateProposal
 import dev.cint.suggest.session.SessionResult
 import java.io.BufferedWriter
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,6 +29,21 @@ internal data class PublishedCandidate(
     val version: Int,
     val analysisRevision: Long,
     val candidate: CandidateEmit,
+)
+
+internal data class PublishedProposal(
+    val proposalId: String,
+    val anchorId: String,
+    val path: String,
+    val contentHash: String,
+    val version: Int,
+    val analysisRevision: Long,
+    val proposal: CandidateProposal,
+)
+
+internal data class CandidatePublishResult(
+    val candidates: Int,
+    val proposals: Int,
 )
 
 internal data class DocumentKey(

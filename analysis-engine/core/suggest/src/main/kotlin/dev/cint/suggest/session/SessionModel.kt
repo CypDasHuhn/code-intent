@@ -2,6 +2,7 @@ package dev.cint.suggest.session
 
 import dev.cint.api.CandidateEmit
 import dev.cint.api.Span
+import dev.cint.suggest.model.CandidateProposal
 
 data class SessionLimits(
     val sessionTimeoutMs: Long = 120_000L,
@@ -58,9 +59,17 @@ data class SessionAdd(
     val rationale: String?,
 )
 
+data class SessionRemove(
+    val intent: String,
+    val startByte: Int,
+    val endByte: Int,
+    val rationale: String?,
+)
+
 data class SessionVerdict(
     val unitId: String,
     val adds: List<SessionAdd> = emptyList(),
+    val removes: List<SessionRemove> = emptyList(),
     val none: Boolean = false,
 )
 
@@ -80,6 +89,7 @@ data class SessionEvent(
 
 data class SessionResult(
     val candidates: List<CandidateEmit>,
+    val proposals: List<CandidateProposal> = emptyList(),
     val total: Int,
     val graded: Int,
     val reused: Int = 0,

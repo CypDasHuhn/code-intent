@@ -24,6 +24,9 @@ private val contributionOrder =
         { it.confidence },
         { it.certifiesReturn },
         { it.intents.sorted().joinToString("\u0000") },
+        { it.provider },
+        { it.model },
+        { it.promptVersion },
     )
 
 private fun normalize(contributions: List<Contribution>): List<Contribution> =

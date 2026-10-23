@@ -13,6 +13,7 @@ import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.facts.oracle.NullOracle
 import dev.cint.core.facts.oracle.OracleStats
 import dev.cint.core.facts.oracle.TypeOracle
+import dev.cint.core.restriction.ResolvedRestriction
 import dev.cint.core.runtime.scheduler.AnalysisOutput
 import dev.cint.core.runtime.scheduler.ExecutionPlan
 import dev.cint.core.runtime.scheduler.RuleEngine
@@ -29,6 +30,7 @@ private typealias RegionAnalysis =
         TypeOracle,
         IntentConfig,
         List<Contribution>,
+        List<ResolvedRestriction>,
     ) -> AnalysisOutput
 
 private typealias SplitRecursion = (SourceFile, SplitHandler) -> AnalysisOutput
@@ -42,6 +44,8 @@ object SplitAnalyzer {
         planFor: (String) -> ExecutionPlan,
         userContributionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution> =
             { _, _, _, _, _ -> emptyList() },
+        restrictionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<ResolvedRestriction> =
+            { _, _, _, _, _ -> emptyList() },
         configFor: (String) -> IntentConfig,
     ): AnalysisOutput =
         analyzeRegions(
@@ -50,12 +54,13 @@ object SplitAnalyzer {
             root,
             options,
             userContributionsFor,
+            restrictionsFor,
             configFor,
-            leaf = { file, frontend, tree, syntax, oracle, config, users ->
-                RuleEngine().analyze(planFor(frontend.language), file, tree, syntax, oracle, config, users)
+            leaf = { file, frontend, tree, syntax, oracle, config, users, restrictions ->
+                RuleEngine().analyze(planFor(frontend.language), file, tree, syntax, oracle, config, users, restrictions)
             },
             recurse = { file, frontend ->
-                analyze(file, frontend, root, options, planFor, userContributionsFor, configFor)
+                analyze(file, frontend, root, options, planFor, userContributionsFor, restrictionsFor, configFor)
             },
         )
 
@@ -65,6 +70,7 @@ object SplitAnalyzer {
         root: Path,
         options: OracleOptions,
         userContributionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<Contribution>,
+        restrictionsFor: (SourceFile, SourceFile, SyntaxTree, SyntaxModel, SplitRegion) -> List<ResolvedRestriction>,
         configFor: (String) -> IntentConfig,
         leaf: RegionAnalysis,
         recurse: SplitRecursion,
@@ -97,6 +103,7 @@ object SplitAnalyzer {
                             oracle,
                             config,
                             userContributionsFor(host, file, tree, syntax, region),
+                            restrictionsFor(host, file, tree, syntax, region),
                         )
                     } finally {
                         (oracle as? AutoCloseable)?.close()

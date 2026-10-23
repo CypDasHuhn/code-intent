@@ -295,6 +295,455 @@ class AnnotationSessionTest {
     }
 
     @Test
+    fun removeAndAddFormOneGroupedProposal() {
+        val existing =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = findStart,
+                endByte = findEnd,
+                span = SessionText.spanFor(text, findStart, findEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val unit = unit("u0", 0, text.length).copy(existingAnnotations = listOf(existing))
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                            "rationale" to "not a log call",
+                                                        ),
+                                                    ),
+                                                "add" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "SEARCH",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                            "confidence" to 0.66,
+                                                            "rationale" to "regex find searches",
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result = AnnotationSession(provider).run(document(listOf(unit)), SessionLimits())
+
+        assertEquals(1, result.graded)
+        assertTrue(result.candidates.isEmpty())
+        val proposal = result.proposals.single()
+        assertEquals(listOf("REMOVE", "ADD"), proposal.operations.map { it.kind.name })
+        assertEquals(setOf("LOGGING"), proposal.removes.map { it.intent }.toSet())
+        assertEquals(setOf("SEARCH"), proposal.adds.map { it.intent }.toSet())
+        assertEquals(0.66, proposal.adds.single().confidence)
+        assertEquals("treesitter", proposal.removes.single().source)
+    }
+
+    @Test
+    fun narrowingProposalRemovesOuterSpanAndAddsInnerSpan() {
+        val existing =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = callStart,
+                endByte = callEnd,
+                span = SessionText.spanFor(text, callStart, callEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val unit = unit("u0", 0, text.length).copy(existingAnnotations = listOf(existing))
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to callStart,
+                                                            "endByte" to callEnd,
+                                                        ),
+                                                    ),
+                                                "add" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "SEARCH",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                            "confidence" to 0.6,
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result = AnnotationSession(provider).run(document(listOf(unit)), SessionLimits())
+
+        val proposal = result.proposals.single()
+        assertEquals(listOf(callStart, callEnd), proposal.removes.single().let { listOf(it.startByte, it.endByte) })
+        assertEquals(listOf(findStart, findEnd), proposal.adds.single().let { listOf(it.startByte, it.endByte) })
+    }
+
+    @Test
+    fun userAnnotationsAndDirectivesCannotBeRemoved() {
+        val userLogging =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = findStart,
+                endByte = findEnd,
+                span = SessionText.spanFor(text, findStart, findEnd)!!,
+                source = "user",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val pure =
+            SessionAnnotation(
+                intents = setOf("PURE"),
+                startByte = callStart,
+                endByte = callEnd,
+                span = SessionText.spanFor(text, callStart, callEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val readOnly =
+            SessionAnnotation(
+                intents = setOf("READONLY"),
+                startByte = findStart,
+                endByte = findEnd,
+                span = SessionText.spanFor(text, findStart, findEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val unit =
+            unit("u0", 0, text.length).copy(existingAnnotations = listOf(userLogging, pure, readOnly))
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                        ),
+                                                        mapOf(
+                                                            "intent" to "PURE",
+                                                            "startByte" to callStart,
+                                                            "endByte" to callEnd,
+                                                        ),
+                                                        mapOf(
+                                                            "intent" to "READONLY",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                        ),
+                                                    ),
+                                                "add" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "SEARCH",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                            "confidence" to 0.5,
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result =
+            AnnotationSession(provider).run(
+                document(listOf(unit)).copy(knownIntents = setOf("SEARCH", "LOGGING", "PURE", "READONLY")),
+                SessionLimits(),
+            )
+
+        assertTrue(result.proposals.isEmpty())
+        assertEquals(1, result.candidates.size)
+        assertEquals(setOf("SEARCH"), result.candidates.single().intents)
+    }
+
+    @Test
+    fun mixedSourceWithUserProvenanceCannotBeRemoved() {
+        val existing =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = findStart,
+                endByte = findEnd,
+                span = SessionText.spanFor(text, findStart, findEnd)!!,
+                source = "mixed",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+                provenance = listOf("logging:logging:treesitter", "core:user-annotations:user"),
+            )
+        val unit = unit("u0", 0, text.length).copy(existingAnnotations = listOf(existing))
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result = AnnotationSession(provider).run(document(listOf(unit)), SessionLimits())
+
+        assertTrue(result.proposals.isEmpty())
+    }
+
+    @Test
+    fun maxCandidatesCapsAddCandidatesAndProposalGroupsTogether() {
+        val firstExisting =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = callStart,
+                endByte = callEnd,
+                span = SessionText.spanFor(text, callStart, callEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val secondExisting =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = findStart,
+                endByte = findEnd,
+                span = SessionText.spanFor(text, findStart, findEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val units =
+            listOf(
+                unit("u0", 0, text.length).copy(existingAnnotations = listOf(firstExisting)),
+                unit("u1", 0, text.length).copy(existingAnnotations = listOf(secondExisting)),
+            )
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to callStart,
+                                                            "endByte" to callEnd,
+                                                        ),
+                                                    ),
+                                                "add" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "SEARCH",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                            "confidence" to 0.6,
+                                                        ),
+                                                    ),
+                                            ),
+                                            mapOf(
+                                                "unitId" to "u1",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result = AnnotationSession(provider).run(document(units), SessionLimits(maxCandidates = 1))
+
+        assertEquals(1, result.proposals.size)
+        assertTrue(result.candidates.isEmpty())
+    }
+
+    @Test
+    fun maxCandidatesPrefersAddCandidatesBeforeProposalGroups() {
+        val existing =
+            SessionAnnotation(
+                intents = setOf("LOGGING"),
+                startByte = callStart,
+                endByte = callEnd,
+                span = SessionText.spanFor(text, callStart, callEnd)!!,
+                source = "treesitter",
+                confidence = 1.0,
+                role = "SOURCE_INTENT",
+            )
+        val units =
+            listOf(
+                unit("u0", 0, text.length),
+                unit("u1", 0, text.length).copy(existingAnnotations = listOf(existing)),
+            )
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "add" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "SEARCH",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                            "confidence" to 0.6,
+                                                        ),
+                                                    ),
+                                            ),
+                                            mapOf(
+                                                "unitId" to "u1",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to callStart,
+                                                            "endByte" to callEnd,
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result = AnnotationSession(provider).run(document(units), SessionLimits(maxCandidates = 1))
+
+        assertEquals(1, result.candidates.size)
+        assertTrue(result.proposals.isEmpty())
+    }
+
+    @Test
+    fun removalWithoutAMatchingEstablishedAnnotationIsDropped() {
+        val unit = unit("u0", 0, text.length)
+        val provider =
+            scripted { _, _ ->
+                AgentTurn.Calls(
+                    listOf(
+                        ToolCall(
+                            "c1",
+                            "submit_verdicts",
+                            mapper.writeValueAsString(
+                                mapOf(
+                                    "verdicts" to
+                                        listOf(
+                                            mapOf(
+                                                "unitId" to "u0",
+                                                "remove" to
+                                                    listOf(
+                                                        mapOf(
+                                                            "intent" to "LOGGING",
+                                                            "startByte" to findStart,
+                                                            "endByte" to findEnd,
+                                                        ),
+                                                    ),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            }
+        val result = AnnotationSession(provider).run(document(listOf(unit)), SessionLimits())
+
+        assertTrue(result.proposals.isEmpty())
+        assertTrue(result.candidates.isEmpty())
+        assertEquals(1, result.graded)
+    }
+
+    @Test
     fun confidenceIsCappedBySessionMaximum() {
         val units = listOf(unit("u0", 0, text.length))
         val provider =

@@ -96,11 +96,27 @@ class LiveSuggestionDiscoveryTest {
                     .path("discovery")
                     .asBoolean(),
             )
+            assertFalse(
+                harness
+                    .initializeResult()
+                    .path("suggestions")
+                    .path("restrictions")
+                    .asBoolean(),
+            )
 
             val uri = root.resolve("Sample.kt").toString()
             harness.open(uri, gapSource, version = 1)
             harness.suggest(uri, version = 1, id = 2, requestId = "legacy")
-            assertTrue(harness.waitForResponse(2).path("accepted").asBoolean())
+            val response = harness.waitForResponse(2)
+            assertTrue(response.path("accepted").asBoolean())
+            assertTrue(response.path("restrictions").isMissingNode)
+            assertTrue(
+                harness
+                    .latest("cint/publishCandidates")
+                    .path("params")
+                    .path("groups")
+                    .all { it.path("operations").isMissingNode },
+            )
 
             assertEquals(0, provider.sessionCalls.get())
             assertEquals(

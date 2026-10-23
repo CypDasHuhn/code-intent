@@ -122,6 +122,27 @@ class AnnotationStoreTest {
         assertFalse(AnnotationStore::class.java.methods.any { it.name == "remove" })
     }
 
+    @Test
+    fun orderingIncludesAiProvenanceFields() {
+        val plain =
+            Contribution(
+                rule = "core:ai-confirmed",
+                role = Role.SOURCE_INTENT,
+                intents = setOf("SEARCH"),
+                span = span,
+                source = "ai-confirmed",
+                confidence = 1.0,
+                startByte = 10,
+                endByte = 16,
+            )
+        val beta = plain.copy(provider = "beta", model = "b", promptVersion = "v1")
+        val alpha = plain.copy(provider = "alpha", model = "a", promptVersion = "v1")
+        val store = AnnotationStore()
+        store.replaceRule("core:ai-confirmed", listOf(beta, plain, alpha))
+
+        assertEquals(listOf(plain, alpha, beta), store.annotations().single().provenance)
+    }
+
     private fun contribution(
         rule: String,
         intent: String,
