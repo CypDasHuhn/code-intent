@@ -19,7 +19,8 @@
 | `lua/cint/render/stripes.lua` | optional mixed-intent ABAB coloring |
 | `lua/cint/render/candidates.lua` | passive/review candidate marks and AI styling |
 | `lua/cint/hover.lua` | cursor intent hover |
-| `lua/cint/ops/` | setup, live, render, annotations, profiles, config, suggestions |
+| `lua/cint/ui/display.lua` | temporary intent → meaning display |
+| `lua/cint/ops/` | setup, live, render, annotations, profiles, display, config, suggestions |
 | `lua/cint/transport/live.lua` | JSON-RPC/NDJSON Unix-socket transport |
 
 ## Commands
@@ -31,7 +32,8 @@ Rendering: `:CintIntentLabels`, `:CintStripes`, `:CintHover`.
 
 Profiles/shards: `:CintProfile`, `:CintProfile <name>`, `:CintProfile!`,
 `:CintProfileEdit`, `:CintProfileReload`, `:CintShard`, `:CintShard!`,
-`:CintShardUndo`, `:CintShardReset`, `:CintShardHistory`.
+`:CintShardUndo`, `:CintShardReset`, `:CintShardHistory`, `:CintUI`,
+`:CintSet`, `:CintSet!`, `:CintReset`, `:CintReset!`.
 
 Annotations: `:CintAnnotate <INTENT>[,<INTENT>] [note]` (range-aware),
 `:CintUnannotate`, `:CintAnnotations`, `:CintAnnotationsReload`.
@@ -44,7 +46,7 @@ Config/live: `:CintConfigAdd`, `:CintConfigRemove`, `:CintServerStatus`,
 `:CintServerDisconnect`, `:CintServerStop`, `:CintServerRestart`.
 
 `<Plug>` mappings include `(CintProfilePick)`, `(CintProfileEdit)`,
-`(CintShardPick)`, and `(CintHover)`.
+`(CintShardPick)`, `(CintUI)`, and `(CintHover)`.
 
 ## Meanings and handlers
 
@@ -63,8 +65,9 @@ color/highlight; `UNTAGGED` is ignored for visual meaning/tag when a real intent
 is present, while `UNTAGGED`-only spans keep configured behavior.
 
 Profiles are Lua files at `<root>/.cint/profiles.lua` (or global config).
-Profiles extend/merge; shards are config patches applied on top. The client
-caches resolved config per buffer.
+Profiles extend/merge; shards are config patches applied on top, followed by
+in-memory display overrides (`:CintSet`, `:CintUI`). Overrides never write files
+or trigger analysis. The client caches resolved config per buffer.
 
 ## Intent hover
 
