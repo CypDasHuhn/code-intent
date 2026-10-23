@@ -1,9 +1,16 @@
 package dev.cint.server.live
 
 import dev.cint.api.CandidateEmit
+import dev.cint.core.cache.AnchorFingerprint
 import dev.cint.core.candidate.CandidateIdentity
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.restriction.AiRestrictionResolver
 import dev.cint.core.restriction.AiRestrictionsFile
+import dev.cint.core.support.hashing.SourceNormalizer
+import dev.cint.core.syntax.UnitIdentity
+import dev.cint.core.user.UserAnnotationResolver
 import dev.cint.core.user.UserAnnotationsFile
+import dev.cint.frontend.Frontends
 import dev.cint.server.LiveServer
 import dev.cint.suggest.model.CandidateDocument
 import dev.cint.suggest.model.CandidateGroup
@@ -21,6 +28,7 @@ internal fun LiveServer.publishCandidates(
     analysisRevision: Long,
     expectedStateRevision: Long? = null,
     commitSkip: String? = null,
+    shortCircuited: Boolean = false,
 ): CandidatePublishResult? {
     val key = DocumentKey(writer, doc.uri)
     val lock = candidateLocks.computeIfAbsent(key) { Any() }
@@ -43,12 +51,31 @@ internal fun LiveServer.publishCandidates(
         val currentSessionSkips = sessionSkipped[key].orEmpty()
         val decisions = suggestionStore.load()
         val rejected = decisions.filter { it.decision == "reject" }.mapTo(linkedSetOf()) { it.candidateId }
+        val rejectedFingerprints =
+            decisions
+                .filter { it.decision == "reject" }
+                .groupBy(
+                    keySelector = { UnitIdentity.versionOf(it.anchorFingerprintVersion) },
+                    valueTransform = { it.anchorFingerprint },
+                ).mapValues { (_, fingerprints) -> fingerprints.filterNotNull().toSet() }
         val confirmed = decisions.filter { it.decision == "confirm" }.mapTo(linkedSetOf()) { it.candidateId }
+        val confirmedFingerprints =
+            decisions
+                .filter { it.decision == "confirm" }
+                .groupBy(
+                    keySelector = { UnitIdentity.versionOf(it.anchorFingerprintVersion) },
+                    valueTransform = { it.anchorFingerprint },
+                ).mapValues { (_, fingerprints) -> fingerprints.filterNotNull().toSet() }
         val rejectedProposalAnchors =
             decisions
                 .filter { it.decision == "reject" && it.reason == PROPOSAL_REASON }
                 .mapNotNullTo(linkedSetOf()) { it.anchorId }
         val restrictionIds = AiRestrictionsFile.loadTolerant(root).mapTo(linkedSetOf()) { it.id }
+        val restrictions = AiRestrictionsFile.loadTolerant(root)
+        val currentAnnotations = analyses[key]?.output?.annotations.orEmpty()
+        val currentUserAnnotations =
+            currentAnnotations
+                .filter { annotation -> annotation.provenance.any { it.rule == dev.cint.core.user.USER_CONTRIBUTOR_ID } }
         val userAnnotations =
             if (confirmed.isEmpty()) {
                 emptyList()
@@ -74,6 +101,36 @@ internal fun LiveServer.publishCandidates(
                     }
                 }.mapNotNullTo(linkedSetOf()) { it.anchorId }
         val document = CandidateDocument(path, doc.version, doc.text, emptySet())
+        val fingerprintVersions = (rejectedFingerprints.keys + confirmedFingerprints.keys).sorted()
+        val needsFingerprints = !shortCircuited && fingerprintVersions.isNotEmpty()
+        val contextByVersion = linkedMapOf<Int, (Int, Int) -> String>()
+
+        fun contextFor(version: Int): (Int, Int) -> String = contextByVersion.getOrPut(version) { anchorContexts(doc, version) }
+
+        fun candidateFingerprints(candidate: CandidateEmit): Map<Int, String> =
+            if (!needsFingerprints) {
+                emptyMap()
+            } else {
+                fingerprintVersions.associateWith { version ->
+                    val context = contextFor(version)
+                    candidateFingerprint(path, doc.text, candidate, context(candidate.startByte, candidate.endByte))
+                }
+            }
+
+        fun proposalFingerprints(proposal: CandidateProposal): Map<Int, String> =
+            if (!needsFingerprints) {
+                emptyMap()
+            } else {
+                fingerprintVersions.associateWith { version ->
+                    val context = contextFor(version)
+                    proposalFingerprint(path, doc.text, proposal, context(proposal.startByte, proposal.endByte))
+                }
+            }
+
+        fun matches(
+            fingerprints: Map<Int, String>,
+            stored: Map<Int, Set<String>>,
+        ): Boolean = fingerprints.any { (version, fingerprint) -> fingerprint in stored[version].orEmpty() }
         val includeOperations = (clientProtocols[writer] ?: 0) >= 4
         val groups = suggestionService.group(document, candidates)
         val publishedById = linkedMapOf<String, PublishedCandidate>()
@@ -83,18 +140,37 @@ internal fun LiveServer.publishCandidates(
                 group.anchorId in resolvedAnchors ||
                     group.candidates.any { candidate ->
                         val candidateId = candidateId(path, group.contentHash, candidate)
-                        candidateId in confirmed &&
-                            userAnnotations.any { annotation ->
-                                annotation.path == path &&
-                                    annotation.span == candidate.span &&
-                                    annotation.intents.any { it in candidate.intents }
-                            }
+                        val fingerprints = candidateFingerprints(candidate)
+                        val matchedVersion =
+                            fingerprints.entries
+                                .firstOrNull { (version, fingerprint) ->
+                                    fingerprint in confirmedFingerprints[version].orEmpty()
+                                }?.key
+                        (
+                            candidateId in confirmed &&
+                                userAnnotations.any { annotation ->
+                                    annotation.path == path &&
+                                        annotation.span == candidate.span &&
+                                        annotation.intents.any { it in candidate.intents }
+                                }
+                        ) ||
+                            (
+                                matchedVersion != null &&
+                                    currentUserAnnotations.any { annotation ->
+                                        annotationCoversCurrent(doc, candidate, annotation, contextFor(matchedVersion))
+                                    }
+                            )
                     }
             if (groupResolved) continue
             val kept =
                 group.candidates.mapNotNull { candidate ->
                     val candidateId = candidateId(path, group.contentHash, candidate)
-                    if (candidateId in rejected || candidateId in currentSessionSkips) {
+                    val fingerprints = candidateFingerprints(candidate)
+                    if (
+                        candidateId in rejected ||
+                        matches(fingerprints, rejectedFingerprints) ||
+                        candidateId in currentSessionSkips
+                    ) {
                         null
                     } else {
                         PublishedCandidate(
@@ -119,6 +195,14 @@ internal fun LiveServer.publishCandidates(
                     .filter {
                         it.proposalId !in restrictionIds &&
                             it.proposalId !in rejected &&
+                            (
+                                shortCircuited ||
+                                    !restrictionMatchesProposal(doc, it, restrictions, currentAnnotations)
+                            ) &&
+                            (
+                                !needsFingerprints ||
+                                    !matches(proposalFingerprints(it), rejectedFingerprints)
+                            ) &&
                             it.proposalId !in currentSessionSkips &&
                             it.anchorId !in rejectedProposalAnchors
                     }.sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.proposalId }))
@@ -283,3 +367,136 @@ private fun LiveServer.candidatePayload(candidate: PublishedCandidate): Map<Stri
 }
 
 internal const val PROPOSAL_REASON: String = "PROPOSAL"
+
+private fun candidateFingerprint(
+    path: String,
+    text: String,
+    candidate: CandidateEmit,
+    context: String,
+): String =
+    UserAnnotationResolver
+        .selectionText(text, candidate.span)
+        ?.let { anchor -> AnchorFingerprint.of(path, anchor, candidate.intents, candidate.reason.name, context) }
+        .orEmpty()
+
+private fun proposalFingerprint(
+    path: String,
+    text: String,
+    proposal: CandidateProposal,
+    context: String,
+): String =
+    UserAnnotationResolver
+        .selectionText(text, proposal.span)
+        ?.let { anchor ->
+            AnchorFingerprint.of(
+                path,
+                anchor,
+                proposal.operations.mapTo(linkedSetOf()) { it.intent },
+                PROPOSAL_REASON,
+                listOf(
+                    context,
+                    proposalOperationShape(text, proposal).joinToString(","),
+                ).joinToString("|"),
+            )
+        }.orEmpty()
+
+private fun LiveServer.restrictionMatchesProposal(
+    doc: DocState,
+    proposal: CandidateProposal,
+    restrictions: List<dev.cint.core.restriction.AiRestrictionRecord>,
+    annotations: List<dev.cint.api.Annotation>,
+): Boolean {
+    val path = relativePath(doc.uri)
+    val frontend = Frontends.forLanguage(doc.language) ?: return false
+    val context =
+        dev.cint.frontend.SplitAnchorResolver.anchor(
+            SourceFile(doc.uri, doc.text),
+            frontend,
+            proposal.startByte,
+            proposal.endByte,
+        )
+    val proposalShape =
+        proposalOperationShape(context.text, proposal, context.regionStartByte)
+    val relevant =
+        restrictions.filter { record ->
+            record.unitFingerprint != null &&
+                UserAnnotationResolver.pathMatches(record.path, path, root) &&
+                when {
+                    record.regionKey != null -> {
+                        !context.regionAmbiguous &&
+                            record.regionKey == context.regionKey &&
+                            record.regionLanguage == context.language
+                    }
+
+                    record.regionOrdinal != null -> {
+                        record.regionOrdinal == context.regionOrdinal &&
+                            record.regionLanguage == context.language
+                    }
+
+                    else -> {
+                        val range = UserAnnotationResolver.byteRange(doc.text, record.span)
+                        val regionEnd = context.regionStartByte + context.text.toByteArray(Charsets.UTF_8).size
+                        if (context.regionKey == null && context.regionOrdinal == null) {
+                            true
+                        } else {
+                            range != null &&
+                                range.first >= context.regionStartByte &&
+                                range.second <= regionEnd &&
+                                !context.regionAmbiguous
+                        }
+                    }
+                } &&
+                restrictionOperationShape(
+                    context.text,
+                    proposal,
+                    record,
+                    context.regionStartByte,
+                ) == proposalShape
+        }
+    if (relevant.isEmpty()) return false
+    val regionSource = SourceFile(doc.uri, context.text)
+    val regionFrontend = Frontends.forLanguage(context.language) ?: frontend
+    val tree = regionFrontend.parse(regionSource)
+    val syntax = regionFrontend.syntax(tree)
+    val region =
+        dev.cint.core.facts.frontend.SplitRegion(
+            language = context.language,
+            text = context.text,
+            startByte = context.regionStartByte,
+            startLine = context.regionStartLine,
+            startCol = context.regionStartCol,
+        )
+    return relevant.any { record ->
+        val fingerprint = record.unitFingerprint ?: return@any false
+        val resolved =
+            AiRestrictionResolver
+                .resolve(listOf(record), regionSource, tree, syntax, root)
+                .map { it.shift(region) }
+        if (resolved.isEmpty() || resolved.none { restrictionApplies(annotations, it) }) {
+            return@any false
+        }
+        UnitIdentity.unitFingerprint(
+            regionSource,
+            tree,
+            syntax,
+            context.anchorStart,
+            context.anchorEnd,
+            record.fingerprintVersion,
+        ) == fingerprint
+    }
+}
+
+private fun annotationCoversCurrent(
+    doc: DocState,
+    candidate: CandidateEmit,
+    annotation: dev.cint.api.Annotation,
+    contextAt: (Int, Int) -> String,
+): Boolean {
+    if (annotation.intents.none { it in candidate.intents }) return false
+    val candidateText = UserAnnotationResolver.selectionText(doc.text, candidate.span) ?: return false
+    val annotationText = UserAnnotationResolver.selectionText(doc.text, annotation.span) ?: return false
+    if (SourceNormalizer.normalize(candidateText) != SourceNormalizer.normalize(annotationText)) return false
+    val candidateContext = contextAt(candidate.startByte, candidate.endByte)
+    val annotationContext = contextAt(annotation.startByte, annotation.endByte)
+    return candidateContext == annotationContext
+}

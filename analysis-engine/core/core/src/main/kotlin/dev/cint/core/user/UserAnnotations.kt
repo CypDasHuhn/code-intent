@@ -29,6 +29,18 @@ data class UserAnnotation(
     val contentHash: String? = null,
     val note: String? = null,
     val createdAt: String? = null,
+    val anchorFingerprint: String? = null,
+    val unitFingerprint: String? = null,
+    val unitFingerprintVersion: Int? = null,
+    val regionOrdinal: Int? = null,
+    val regionLanguage: String? = null,
+    val regionKey: String? = null,
+    val startToken: Int? = null,
+    val endToken: Int? = null,
+    val startTokenOffset: Int? = null,
+    val endTokenOffset: Int? = null,
+    val startNormalized: Int? = null,
+    val endNormalized: Int? = null,
 )
 
 object UserAnnotationsJson {
@@ -63,6 +75,18 @@ object UserAnnotationsJson {
                 append("]")
                 annotation.note?.let { append(",\"note\":\"${escape(it)}\"") }
                 annotation.createdAt?.let { append(",\"createdAt\":\"${escape(it)}\"") }
+                annotation.anchorFingerprint?.let { append(",\"anchorFingerprint\":\"${escape(it)}\"") }
+                annotation.unitFingerprint?.let { append(",\"unitFingerprint\":\"${escape(it)}\"") }
+                annotation.unitFingerprintVersion?.let { append(",\"unitFingerprintVersion\":$it") }
+                annotation.regionOrdinal?.let { append(",\"regionOrdinal\":$it") }
+                annotation.regionLanguage?.let { append(",\"regionLanguage\":\"${escape(it)}\"") }
+                annotation.regionKey?.let { append(",\"regionKey\":\"${escape(it)}\"") }
+                annotation.startToken?.let { append(",\"startToken\":$it") }
+                annotation.endToken?.let { append(",\"endToken\":$it") }
+                annotation.startTokenOffset?.let { append(",\"startTokenOffset\":$it") }
+                annotation.endTokenOffset?.let { append(",\"endTokenOffset\":$it") }
+                annotation.startNormalized?.let { append(",\"startNormalized\":$it") }
+                annotation.endNormalized?.let { append(",\"endNormalized\":$it") }
                 if (index < annotations.size - 1) append("},\n") else append("}")
             }
             if (annotations.isNotEmpty()) append("\n  ")
@@ -109,6 +133,27 @@ object UserAnnotationsJson {
                     ?.takeIf { it.isNotBlank() },
             note = stringValue(entry["note"])?.takeIf { it.isNotBlank() },
             createdAt = stringValue(entry["createdAt"])?.takeIf { it.isNotBlank() },
+            anchorFingerprint =
+                stringValue(entry["anchorFingerprint"] ?: anchor?.get("anchorFingerprint"))
+                    ?.takeIf { it.isNotBlank() },
+            unitFingerprint =
+                stringValue(entry["unitFingerprint"] ?: anchor?.get("unitFingerprint"))
+                    ?.takeIf { it.isNotBlank() },
+            unitFingerprintVersion =
+                numberValue(entry["unitFingerprintVersion"] ?: anchor?.get("unitFingerprintVersion")),
+            regionOrdinal = numberValue(entry["regionOrdinal"] ?: anchor?.get("regionOrdinal")),
+            regionLanguage =
+                stringValue(entry["regionLanguage"] ?: anchor?.get("regionLanguage"))
+                    ?.takeIf { it.isNotBlank() },
+            regionKey =
+                stringValue(entry["regionKey"] ?: anchor?.get("regionKey"))
+                    ?.takeIf { it.isNotBlank() },
+            startToken = numberValue(entry["startToken"] ?: anchor?.get("startToken")),
+            endToken = numberValue(entry["endToken"] ?: anchor?.get("endToken")),
+            startTokenOffset = numberValue(entry["startTokenOffset"] ?: anchor?.get("startTokenOffset")),
+            endTokenOffset = numberValue(entry["endTokenOffset"] ?: anchor?.get("endTokenOffset")),
+            startNormalized = numberValue(entry["startNormalized"] ?: anchor?.get("startNormalized")),
+            endNormalized = numberValue(entry["endNormalized"] ?: anchor?.get("endNormalized")),
         )
     }
 

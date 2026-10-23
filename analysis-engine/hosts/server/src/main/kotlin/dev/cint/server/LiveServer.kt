@@ -8,6 +8,7 @@ import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.frontend.Frontends
 import dev.cint.host.HostPipeline
 import dev.cint.host.HostSettings
+import dev.cint.server.cache.AiVerdictCacheEnvironment
 import dev.cint.server.live.CachedAnalysis
 import dev.cint.server.live.DocState
 import dev.cint.server.live.DocumentKey
@@ -33,6 +34,7 @@ import dev.cint.server.suggestions.handleSuggestCancel
 import dev.cint.server.suggestions.handleSuggestLog
 import dev.cint.server.suggestions.suggestionCapability
 import dev.cint.suggest.SuggestionService
+import dev.cint.suggest.cache.VerdictCache
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.net.StandardProtocolFamily
@@ -91,6 +93,21 @@ class LiveServer(
     internal val sessionSkipped = ConcurrentHashMap<DocumentKey, MutableSet<String>>()
     internal val suggestionStore = SuggestionStore(root)
     internal val suggestionRevision = AtomicLong(0)
+    internal val verdictCache =
+        VerdictCache(
+            maxEntries = suggestionSettings.cacheMaxEntries,
+            ttlMillis = suggestionSettings.cacheTtlHours * 60L * 60L * 1_000L,
+        )
+
+    @Volatile
+    internal var verdictCacheEnvironment: AiVerdictCacheEnvironment? = null
+
+    internal val analysisRuns = ConcurrentHashMap<DocumentKey, AtomicLong>()
+    internal val parseRuns = AtomicLong(0)
+    internal val suggestionBaselines = ConcurrentHashMap<DocumentKey, String>()
+
+    @Volatile
+    internal var analysisEnvironmentBarrierForTest: (() -> Unit)? = null
 
     @Volatile
     internal var configRevision: Long = 0

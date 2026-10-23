@@ -15,6 +15,7 @@ import dev.cint.core.runtime.scheduler.AnalysisOutput
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
+import dev.cint.frontend.SplitAnchorResolver
 import dev.cint.server.LIVE_LSP_TIMEOUT_MS
 import dev.cint.server.LiveServer
 import dev.cint.suggest.model.CandidateProposal
@@ -61,6 +62,8 @@ internal fun LiveServer.clearDocument(
     if (pass != null) inFlightSuggestions.remove(key, pass)
     providerFutures.remove(key)?.cancel(true)
     analyses.remove(key)
+    analysisRuns.remove(key)
+    suggestionBaselines.remove(key)
     publishedCandidates.remove(key)
     publishedProposals.remove(key)
     analysisRevisions.remove(key)
@@ -93,27 +96,46 @@ internal fun LiveServer.publish(
     val config = configFor(frontend.language)
     val source = SourceFile(doc.uri, doc.text)
     val key = DocumentKey(writer, doc.uri)
+    val textHash = contentHash(doc.text)
+    var shortCircuited = false
     // Pin the analysis, its config snapshot and its per-document revision to
     // one lock so revision order always matches analysis order.
     val (output, configRevision, analysisRevision) =
         synchronized(this) {
-            val result =
-                runCatching {
-                    analyze(frontend, source, config)
-                }.getOrElse { error ->
-                    System.err.println("cint: analysis failed, using heuristics")
-                    error.printStackTrace()
-                    analyzeHeuristic(frontend, source, config)
-                }
+            val deterministicEnv = deterministicEnvironment(frontend.language).hash
             val snapshot = this.configRevision
+            analysisEnvironmentBarrierForTest?.invoke()
+            val existing = analyses[key]
+            val result =
+                if (
+                    existing != null &&
+                    existing.textHash == textHash &&
+                    existing.deterministicEnv == deterministicEnv &&
+                    existing.language == frontend.language
+                ) {
+                    shortCircuited = true
+                    existing.output
+                } else {
+                    analysisRuns.computeIfAbsent(key) { AtomicLong(0) }.incrementAndGet()
+                    runCatching {
+                        analyze(frontend, source, config)
+                    }.getOrElse { error ->
+                        System.err.println("cint: analysis failed, using heuristics")
+                        error.printStackTrace()
+                        analyzeHeuristic(frontend, source, config)
+                    }
+                }
             analysisRevisionBarrierForTest?.invoke()
             val revision = nextAnalysisRevision(key)
             analyses[key] =
                 CachedAnalysis(
                     output = result,
                     version = doc.version,
-                    textHash = contentHash(doc.text),
+                    textHash = textHash,
+                    text = doc.text,
+                    language = frontend.language,
                     configRevision = snapshot,
+                    deterministicEnv = deterministicEnv,
                     analysisRevision = revision,
                 )
             Triple(result, snapshot, revision)
@@ -122,7 +144,7 @@ internal fun LiveServer.publish(
         mapOf(
             "uri" to doc.uri,
             "version" to doc.version,
-            "hash" to contentHash(doc.text),
+            "hash" to textHash,
             "revision" to configRevision,
             "analysisRevision" to analysisRevision,
             "annotations" to output.annotations.map { RawValue(AnnotationJson.render(it)) },
@@ -141,6 +163,7 @@ internal fun LiveServer.publish(
         revalidatedCandidates(doc, output.annotations, mergeCandidates(output, carriedCandidates.orEmpty())),
         revalidatedProposals(doc, output.annotations, carriedProposals.orEmpty()),
         analysisRevision = analysisRevision,
+        shortCircuited = shortCircuited,
     )
 }
 
@@ -183,6 +206,7 @@ private fun LiveServer.analyze(
 ): AnalysisOutput {
     val output =
         if (frontend is SplitHandler) {
+            parseRuns.incrementAndGet()
             SplitAnalyzer.analyze(
                 source,
                 frontend,
@@ -191,8 +215,24 @@ private fun LiveServer.analyze(
                 packs::plan,
                 packs::userContributionsFor,
                 packs::restrictionsFor,
+                hostFrontend = frontend,
+                hostUserContributionsFor = { host, tree, syntax ->
+                    packs.hostUserContributionsFor(host, tree, syntax) { annotation ->
+                        annotation.regionKey == null &&
+                            annotation.regionOrdinal == null &&
+                            SplitAnchorResolver.isHostLevelSpan(source, frontend, annotation.span)
+                    }
+                },
+                hostRestrictionsFor = { host, tree, syntax ->
+                    packs.hostRestrictionsFor(host, tree, syntax) { record ->
+                        record.regionKey == null &&
+                            record.regionOrdinal == null &&
+                            SplitAnchorResolver.isHostLevelSpan(source, frontend, record.span)
+                    }
+                },
             ) { language -> settings.intentConfig(language) }
         } else {
+            parseRuns.incrementAndGet()
             val tree = frontend.parse(source)
             val syntax = frontend.syntax(tree)
             packs.analyze(source, tree, syntax, oracleFor(frontend), config)
@@ -218,6 +258,7 @@ private fun LiveServer.analyzeHeuristic(
     config: IntentConfig,
 ): AnalysisOutput {
     if (frontend is SplitHandler) {
+        parseRuns.incrementAndGet()
         return SplitAnalyzer.analyze(
             source,
             frontend,
@@ -226,8 +267,24 @@ private fun LiveServer.analyzeHeuristic(
             packs::plan,
             packs::userContributionsFor,
             packs::restrictionsFor,
+            hostFrontend = frontend,
+            hostUserContributionsFor = { host, tree, syntax ->
+                packs.hostUserContributionsFor(host, tree, syntax) { annotation ->
+                    annotation.regionKey == null &&
+                        annotation.regionOrdinal == null &&
+                        SplitAnchorResolver.isHostLevelSpan(source, frontend, annotation.span)
+                }
+            },
+            hostRestrictionsFor = { host, tree, syntax ->
+                packs.hostRestrictionsFor(host, tree, syntax) { record ->
+                    record.regionKey == null &&
+                        record.regionOrdinal == null &&
+                        SplitAnchorResolver.isHostLevelSpan(source, frontend, record.span)
+                }
+            },
         ) { language -> settings.intentConfig(language) }
     }
+    parseRuns.incrementAndGet()
     val tree = frontend.parse(source)
     val syntax = frontend.syntax(tree)
     return packs.analyze(source, tree, syntax, NullOracle, config)

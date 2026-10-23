@@ -32,6 +32,11 @@ data class SuggestionSettings(
     val discoveryIncludeLeaves: Boolean = true,
     val discoveryMaxUnitsPerRequest: Int = 24,
     val restrictionsEnabled: Boolean = true,
+    val cacheEnabled: Boolean = true,
+    val cachePersist: Boolean = true,
+    val cacheMaxEntries: Int = 5_000,
+    val cacheTtlHours: Long = 720L,
+    val similarHintThreshold: Double = 0.8,
     val sessionTimeoutMs: Long = 120_000L,
     val maxTurns: Int = 50,
     val maxToolCalls: Int = 200,
@@ -84,6 +89,12 @@ object SuggestionSettingsLoader {
             discoveryMaxUnitsPerRequest =
                 (suggestions["discoveryMaxUnitsPerRequest"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 24,
             restrictionsEnabled = suggestions["restrictionsEnabled"] as? Boolean ?: true,
+            cacheEnabled = suggestions["cacheEnabled"] as? Boolean ?: true,
+            cachePersist = suggestions["cachePersist"] as? Boolean ?: true,
+            cacheMaxEntries = (suggestions["cacheMaxEntries"] as? Number)?.toInt()?.coerceAtLeast(0) ?: 5_000,
+            cacheTtlHours = (suggestions["cacheTtlHours"] as? Number)?.toLong()?.coerceAtLeast(0L) ?: 720L,
+            similarHintThreshold =
+                (suggestions["similarHintThreshold"] as? Number)?.toDouble()?.coerceIn(0.0, 1.0) ?: 0.8,
             sessionTimeoutMs =
                 (suggestions["sessionTimeoutMs"] as? Number)?.toLong()?.coerceAtLeast(1L) ?: 120_000L,
             maxTurns = (suggestions["maxTurns"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 50,

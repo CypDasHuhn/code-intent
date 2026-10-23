@@ -5,13 +5,22 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import dev.cint.api.CandidateEmit
 import dev.cint.api.CandidateReason
 import dev.cint.api.Span
+import dev.cint.core.cache.AnchorFingerprint
 import dev.cint.core.candidate.CandidateIdentity
 import dev.cint.core.restriction.AI_CONFIRMED_CONTRIBUTOR_ID
 import dev.cint.core.restriction.AI_CONFIRMED_SOURCE
+import dev.cint.core.support.hashing.SourceNormalizer
+import dev.cint.core.support.hashing.contentHash
 import dev.cint.core.user.USER_CONTRIBUTOR_ID
 import dev.cint.core.user.USER_PURE_INTENT
 import dev.cint.core.user.USER_READONLY_INTENT
 import dev.cint.core.user.USER_SOURCE
+import dev.cint.suggest.cache.CacheInvalidation
+import dev.cint.suggest.cache.CachedVerdict
+import dev.cint.suggest.cache.CachedVerdictOperation
+import dev.cint.suggest.cache.UnitCacheKey
+import dev.cint.suggest.cache.UnitCacheKeys
+import dev.cint.suggest.cache.VerdictCache
 import dev.cint.suggest.model.CandidateProposal
 import dev.cint.suggest.model.ProposalOperation
 import dev.cint.suggest.model.ProposalOperationKind
@@ -23,6 +32,10 @@ class AnnotationSession(
     private val typeLookup: (Int, Int) -> Map<String, Any?>? = { _, _ -> null },
     private val isCancelled: () -> Boolean = { false },
     private val promptVersion: String? = null,
+    private val verdictCache: VerdictCache? = null,
+    private val aiEnv: String? = null,
+    private val cacheInvalidation: CacheInvalidation = CacheInvalidation.NONE,
+    private val similarHintThreshold: Double = 0.8,
 ) {
     private val mapper = jacksonObjectMapper()
     private val acceptedAdds = mutableListOf<AcceptedAdd>()
@@ -44,14 +57,56 @@ class AnnotationSession(
         val unitsById = units.associateBy { it.unitId }
         var toolCalls = 0
         var turns = 0
+        var reused = 0
         var incomplete = false
         var budgetExhausted = false
         val definitions = toolDefinitions()
         val promptVersion = this.promptVersion ?: provider.defaultPromptVersion
         val maxToolResultBytes = (limits.maxTokensPerRequest * 4).coerceAtLeast(1_024)
-        onProgress(SessionProgress(0, units.size, activity = "grading ${document.path}"))
+        val cacheStarted = System.nanoTime()
+        val keysByUnit = linkedMapOf<String, UnitCacheKey>()
+        val hintsByUnit = linkedMapOf<String, MutableList<String>>()
+        val reusedUnits = linkedSetOf<String>()
+        val cache = verdictCache
+        val env = aiEnv
+        for (unit in units) {
+            unit.priorHints.forEach { hintsByUnit.getOrPut(unit.unitId) { mutableListOf() } += it }
+        }
+        if (cache != null && env != null) {
+            for (unit in units) {
+                val key = UnitCacheKeys.of(unit, env)
+                keysByUnit[unit.unitId] = key
+                val cached = cache.lookup(key, unit, cacheInvalidation)
+                if (cached != null) {
+                    if (applyCached(cached, unit, document, limits, promptVersion)) {
+                        reused += 1
+                        reusedUnits += unit.unitId
+                    } else {
+                        cache.remove(key.hash)
+                    }
+                }
+                val prior = cache.similar(unit, env, similarHintThreshold)
+                if (prior != null && unit.unitId !in reusedUnits) {
+                    val hint = priorHint(prior)
+                    if (hint != null) {
+                        hintsByUnit.getOrPut(unit.unitId) { mutableListOf() } += hint
+                        events += SessionEvent("hint", "prior verdict for ${unit.unitId}", unit.unitId)
+                    }
+                }
+            }
+        }
+        val pendingUnits = units.filter { it.unitId !in gradedUnits }
+        val overhead = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - cacheStarted)
+        onProgress(
+            SessionProgress(
+                graded = gradedUnits.size - reused,
+                total = units.size,
+                reused = reused,
+                activity = if (reused > 0) "reused $reused, grading ${pendingUnits.size}" else "grading ${document.path}",
+            ),
+        )
 
-        val batches = units.chunked(limits.maxUnitsPerRequest.coerceAtLeast(1))
+        val batches = pendingUnits.chunked(limits.maxUnitsPerRequest.coerceAtLeast(1))
         for (batch in batches) {
             if (batch.all { it.unitId in gradedUnits }) continue
             if (isCancelled()) {
@@ -72,14 +127,16 @@ class AnnotationSession(
                     maxResultBytes = maxToolResultBytes,
                     sanitize = sanitize,
                     typeLookup = typeLookup,
-                    submit = { verdicts -> accept(verdicts, unitsById, document, limits, promptVersion) },
+                    submit = { verdicts ->
+                        accept(verdicts, unitsById, document, limits, promptVersion, keysByUnit)
+                    },
                 )
             val messages =
                 mutableListOf(
                     AgentMessage(role = "system", content = SYSTEM_PROMPT),
                     AgentMessage(
                         role = "user",
-                        content = batchPrompt(document, batch, maxToolResultBytes),
+                        content = batchPrompt(document, batch, maxToolResultBytes, hintsByUnit),
                     ),
                 )
             while (true) {
@@ -162,8 +219,9 @@ class AnnotationSession(
             }
             onProgress(
                 SessionProgress(
-                    graded = gradedUnits.size,
+                    graded = gradedUnits.size - reused,
                     total = units.size,
+                    reused = reused,
                     activity = "graded ${gradedUnits.size}/${units.size}",
                 ),
             )
@@ -187,8 +245,9 @@ class AnnotationSession(
         }
         onProgress(
             SessionProgress(
-                graded = gradedUnits.size,
+                graded = gradedUnits.size - reused,
                 total = units.size,
+                reused = reused,
                 activity = "graded ${gradedUnits.size}/${units.size}",
             ),
         )
@@ -196,12 +255,14 @@ class AnnotationSession(
             candidates = candidates,
             proposals = proposals,
             total = units.size,
-            graded = gradedUnits.size,
+            graded = gradedUnits.size - reused,
+            reused = reused,
             additions = candidates.size,
             toolCalls = toolCalls,
             turns = turns,
             incomplete = incomplete,
             budgetExhausted = budgetExhausted,
+            overhead = overhead,
             uncovered = uncovered,
             events = events.toList(),
         )
@@ -213,6 +274,7 @@ class AnnotationSession(
         document: SessionDocument,
         limits: SessionLimits,
         promptVersion: String,
+        keysByUnit: Map<String, UnitCacheKey>,
     ): VerdictAcceptance {
         val acceptedIds = linkedSetOf<String>()
         var accepted = 0
@@ -221,7 +283,10 @@ class AnnotationSession(
             val unit = unitsById[verdict.unitId] ?: continue
             gradedUnits += unit.unitId
             acceptedIds += unit.unitId
-            if (verdict.none) continue
+            if (verdict.none) {
+                cacheVerdict(keysByUnit, unit, document, emptyList(), emptyList(), none = true)
+                continue
+            }
             val removes = mutableListOf<AcceptedRemove>()
             for (remove in verdict.removes) {
                 val target = validateRemove(remove, unit, document)
@@ -250,9 +315,157 @@ class AnnotationSession(
                 acceptedAdds += adds
                 accepted += adds.size
             }
+            cacheVerdict(keysByUnit, unit, document, adds, removes, none = adds.isEmpty() && removes.isEmpty())
         }
         events += SessionEvent("verdict", "accepted $accepted, rejected $rejected")
         return VerdictAcceptance(acceptedIds, accepted, rejected)
+    }
+
+    private fun cacheVerdict(
+        keysByUnit: Map<String, UnitCacheKey>,
+        unit: SessionUnit,
+        document: SessionDocument,
+        adds: List<AcceptedAdd>,
+        removes: List<AcceptedRemove>,
+        none: Boolean,
+    ) {
+        val cache = verdictCache ?: return
+        val key = keysByUnit[unit.unitId] ?: return
+        val storedAdds =
+            adds.map { add ->
+                val tokens = tokenRange(unit, add.startByte, add.endByte)
+                CachedVerdictOperation(
+                    intent = add.intent,
+                    startOffset = add.startByte - unit.startByte,
+                    endOffset = add.endByte - unit.startByte,
+                    confidence = add.confidence,
+                    rationale = add.rationale,
+                    startToken = tokens?.first,
+                    endToken = tokens?.second,
+                )
+            }
+        val storedRemoves =
+            removes.map { remove ->
+                val tokens = tokenRange(unit, remove.startByte, remove.endByte)
+                CachedVerdictOperation(
+                    intent = remove.intent,
+                    startOffset = remove.startByte - unit.startByte,
+                    endOffset = remove.endByte - unit.startByte,
+                    confidence =
+                        document.annotations
+                            .firstOrNull {
+                                remove.intent in it.intents &&
+                                    it.startByte == remove.startByte &&
+                                    it.endByte == remove.endByte
+                            }?.confidence
+                            ?: 0.5,
+                    rationale = remove.rationale,
+                    startToken = tokens?.first,
+                    endToken = tokens?.second,
+                )
+            }
+        cache.store(
+            key = key,
+            unit = unit,
+            adds = storedAdds,
+            removes = storedRemoves,
+            none = none,
+            anchorFingerprint = AnchorFingerprint.of(document.path, unit.text),
+        )
+    }
+
+    private fun applyCached(
+        cached: CachedVerdict,
+        unit: SessionUnit,
+        document: SessionDocument,
+        limits: SessionLimits,
+        promptVersion: String,
+    ): Boolean {
+        val rawTextChanged = cached.rawTextDigest.isNotEmpty() && cached.rawTextDigest != contentHash(unit.text)
+        val adds =
+            cached.adds.mapNotNull { operation ->
+                val range = absoluteRange(unit, operation, rawTextChanged) ?: return false
+                validateAdd(
+                    SessionAdd(
+                        intent = operation.intent,
+                        startByte = range.first,
+                        endByte = range.second,
+                        confidence = operation.confidence,
+                        rationale = operation.rationale,
+                    ),
+                    unit,
+                    document,
+                    limits,
+                )
+            }
+        if (adds.size != cached.adds.size) return false
+        val removes =
+            cached.removes.mapNotNull { operation ->
+                val range = absoluteRange(unit, operation, rawTextChanged) ?: return false
+                validateRemove(
+                    SessionRemove(
+                        intent = operation.intent,
+                        startByte = range.first,
+                        endByte = range.second,
+                        rationale = operation.rationale,
+                    ),
+                    unit,
+                    document,
+                )
+            }
+        if (removes.size != cached.removes.size) return false
+        if (cached.none && adds.isEmpty() && removes.isEmpty()) {
+            gradedUnits += unit.unitId
+            events += SessionEvent("reuse", "reused ${unit.unitId}", unit.unitId)
+            return true
+        }
+        if (adds.isEmpty() && removes.isEmpty()) return false
+        if (removes.isNotEmpty()) {
+            acceptedProposals += proposal(unit, removes, adds, document, limits, promptVersion)
+        } else {
+            acceptedAdds += adds
+        }
+        gradedUnits += unit.unitId
+        events += SessionEvent("reuse", "reused ${unit.unitId}", unit.unitId)
+        return true
+    }
+
+    private fun tokenRange(
+        unit: SessionUnit,
+        startByte: Int,
+        endByte: Int,
+    ): Pair<Int, Int>? {
+        if (startByte < unit.startByte || endByte > unit.endByte) return null
+        val tokens = SourceNormalizer.tokenSpans(unit.text, stripComments = true)
+        return UnitCacheKeys.relativeTokenRange(tokens, startByte - unit.startByte, endByte - unit.startByte, requireExact = true)
+    }
+
+    private fun absoluteRange(
+        unit: SessionUnit,
+        operation: CachedVerdictOperation,
+        rawTextChanged: Boolean,
+    ): Pair<Int, Int>? {
+        val startToken = operation.startToken
+        val endToken = operation.endToken
+        if (startToken != null && endToken != null) {
+            val tokens = SourceNormalizer.tokenSpans(unit.text, stripComments = true)
+            if (startToken < 0 || endToken > tokens.size || endToken <= startToken) return null
+            return (unit.startByte + tokens[startToken].startByte) to (unit.startByte + tokens[endToken - 1].endByte)
+        }
+        if (rawTextChanged) return null
+        return (unit.startByte + operation.startOffset) to (unit.startByte + operation.endOffset)
+    }
+
+    private fun priorHint(cached: CachedVerdict): String? {
+        val operations =
+            cached.removes.map { operation ->
+                "REMOVE ${operation.intent} ${operation.startOffset}..${operation.endOffset}"
+            } +
+                cached.adds.map { operation ->
+                    "ADD ${operation.intent} ${operation.startOffset}..${operation.endOffset} (${operation.confidence})"
+                }
+        if (operations.isEmpty()) return null
+        return "prior: ${operations.joinToString(", ")} - confirm, adjust, or discard"
     }
 
     private fun validateAdd(
@@ -476,17 +689,18 @@ class AnnotationSession(
         document: SessionDocument,
         batch: List<SessionUnit>,
         maxBytes: Int,
+        hintsByUnit: Map<String, List<String>> = emptyMap(),
     ): String {
         var textBudget = (maxBytes / batch.size.coerceAtLeast(1)).coerceIn(MIN_UNIT_TEXT_BYTES, MAX_UNIT_TEXT_BYTES)
         var annotationLimit = MAX_ANNOTATIONS_PER_UNIT
-        var prompt = renderBatchPrompt(document, batch, textBudget, annotationLimit)
+        var prompt = renderBatchPrompt(document, batch, textBudget, annotationLimit, hintsByUnit)
         while (
             prompt.toByteArray(Charsets.UTF_8).size > maxBytes &&
             (textBudget > MIN_UNIT_TEXT_BYTES || annotationLimit > 0)
         ) {
             textBudget = (textBudget / 2).coerceAtLeast(MIN_UNIT_TEXT_BYTES)
             annotationLimit /= 2
-            prompt = renderBatchPrompt(document, batch, textBudget, annotationLimit)
+            prompt = renderBatchPrompt(document, batch, textBudget, annotationLimit, hintsByUnit)
         }
         return prompt
     }
@@ -496,7 +710,13 @@ class AnnotationSession(
         batch: List<SessionUnit>,
         textBytes: Int,
         annotationLimit: Int,
+        hintsByUnit: Map<String, List<String>> = emptyMap(),
     ): String {
+        val languages =
+            document.units
+                .map { it.language }
+                .distinct()
+                .sorted()
         val payload =
             linkedMapOf<String, Any?>(
                 "task" to "Grade every listed expression unit. Return an explicit verdict for each unit.",
@@ -513,6 +733,7 @@ class AnnotationSession(
                             "span" to spanMap(unit.span),
                             "parentUnitId" to unit.parentUnitId,
                             "text" to boundedPromptText(sanitize(unit.text), textBytes),
+                            "prior" to hintsByUnit[unit.unitId].orEmpty(),
                             "existingAnnotations" to
                                 shownAnnotations.map { annotation ->
                                     linkedMapOf<String, Any?>(
@@ -524,6 +745,7 @@ class AnnotationSession(
                                     )
                                 },
                         ).apply {
+                            if (unit.language != document.language) put("language", unit.language)
                             if (unit.existingAnnotations.size > shownAnnotations.size) {
                                 put("existingAnnotationsTotal", unit.existingAnnotations.size)
                                 put("existingAnnotationsTruncated", true)
@@ -541,7 +763,11 @@ class AnnotationSession(
                         "Never repeat an existing intent at the same span.",
                         "Submit all verdicts with submit_verdicts; silence is not a verdict.",
                     ),
-            )
+            ).apply {
+                if (languages.size > 1 || languages.singleOrNull() != document.language) {
+                    put("languages", languages)
+                }
+            }
         return mapper.writeValueAsString(payload)
     }
 

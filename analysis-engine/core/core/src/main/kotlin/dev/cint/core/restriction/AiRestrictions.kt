@@ -2,7 +2,9 @@ package dev.cint.core.restriction
 
 import dev.cint.api.Span
 import dev.cint.core.artifact.Json
+import dev.cint.core.support.hashing.SourceNormalizer
 import dev.cint.core.support.hashing.contentHash
+import dev.cint.core.syntax.UnitIdentity
 import dev.cint.core.syntax.expressionUnits
 import dev.cint.core.user.UserAnnotationResolver
 import dev.cint.core.user.layout.AnnotationLayout
@@ -22,6 +24,8 @@ data class RestrictionOperation(
     val endOffset: Int,
     val confidence: Double = 0.5,
     val rationale: String? = null,
+    val startToken: Int? = null,
+    val endToken: Int? = null,
 )
 
 data class AiRestrictionRecord(
@@ -33,6 +37,10 @@ data class AiRestrictionRecord(
     val add: List<RestrictionOperation>,
     val symbol: String? = null,
     val unitFingerprint: String? = null,
+    val fingerprintVersion: Int = UnitIdentity.CURRENT_FINGERPRINT_VERSION,
+    val regionOrdinal: Int? = null,
+    val regionLanguage: String? = null,
+    val regionKey: String? = null,
     val provider: String? = null,
     val model: String? = null,
     val promptVersion: String? = null,
@@ -101,6 +109,10 @@ object AiRestrictionsJson {
                             "symbol" to record.symbol,
                             "contentHash" to record.contentHash,
                             "unitFingerprint" to record.unitFingerprint,
+                            "fingerprintVersion" to record.fingerprintVersion,
+                            "regionOrdinal" to record.regionOrdinal,
+                            "regionLanguage" to record.regionLanguage,
+                            "regionKey" to record.regionKey,
                             "anchor" to spanMap(record.span),
                             "remove" to record.remove.map(::operationMap),
                             "add" to record.add.map(::operationMap),
@@ -138,6 +150,20 @@ object AiRestrictionsJson {
             unitFingerprint =
                 stringValue(entry["unitFingerprint"] ?: anchor?.get("unitFingerprint"))
                     ?.takeIf { it.isNotBlank() },
+            fingerprintVersion =
+                intValue(entry["fingerprintVersion"] ?: anchor?.get("fingerprintVersion"))
+                    ?: if ((entry["unitFingerprint"] ?: anchor?.get("unitFingerprint")) == null) {
+                        UnitIdentity.CURRENT_FINGERPRINT_VERSION
+                    } else {
+                        1
+                    },
+            regionOrdinal = intValue(entry["regionOrdinal"] ?: anchor?.get("regionOrdinal")),
+            regionLanguage =
+                stringValue(entry["regionLanguage"] ?: anchor?.get("regionLanguage"))
+                    ?.takeIf { it.isNotBlank() },
+            regionKey =
+                stringValue(entry["regionKey"] ?: anchor?.get("regionKey"))
+                    ?.takeIf { it.isNotBlank() },
             provider = stringValue(entry["provider"])?.takeIf { it.isNotBlank() },
             model = stringValue(entry["model"])?.takeIf { it.isNotBlank() },
             promptVersion = stringValue(entry["promptVersion"])?.takeIf { it.isNotBlank() },
@@ -159,6 +185,8 @@ object AiRestrictionsJson {
                 endOffset = end,
                 confidence = numberValue(operation["confidence"]) ?: 0.5,
                 rationale = stringValue(operation["rationale"])?.takeIf { it.isNotBlank() },
+                startToken = intValue(operation["startToken"]),
+                endToken = intValue(operation["endToken"]),
             )
         }
     }
@@ -190,6 +218,8 @@ object AiRestrictionsJson {
             "endOffset" to operation.endOffset,
             "confidence" to operation.confidence,
             "rationale" to operation.rationale,
+            "startToken" to operation.startToken,
+            "endToken" to operation.endToken,
         )
 
     private fun intValue(value: Any?): Int? =
@@ -314,10 +344,16 @@ object AiRestrictionResolver {
         syntax: dev.cint.core.syntax.SyntaxModel,
     ): ResolvedRestriction? {
         val anchor = anchor(record, file, tree, syntax) ?: return null
+        val anchorText = UserAnnotationResolver.selectionText(file.text, anchor) ?: return null
+        val exactAnchor = contentHash(anchorText) == normalizedHash(record.contentHash)
         val operations =
-            record.remove.mapNotNull { operation -> resolve(operation, file, anchor.first, anchor.second, adding = false) }
+            record.remove.mapNotNull { operation ->
+                resolve(operation, file, anchor.first, anchor.second, adding = false, exactAnchor)
+            }
         val additions =
-            record.add.mapNotNull { operation -> resolve(operation, file, anchor.first, anchor.second, adding = true) }
+            record.add.mapNotNull { operation ->
+                resolve(operation, file, anchor.first, anchor.second, adding = true, exactAnchor)
+            }
         if (operations.isEmpty()) return null
         val anchorSpan = UserAnnotationResolver.spanFor(file.text, anchor.first, anchor.second) ?: return null
         return ResolvedRestriction(
@@ -340,69 +376,33 @@ object AiRestrictionResolver {
         syntax: dev.cint.core.syntax.SyntaxModel,
         startByte: Int,
         endByte: Int,
-    ): String? {
-        val units = syntax.expressionUnits(tree)
-        val target = units.firstOrNull { it.startByte == startByte && it.endByte == endByte } ?: return null
-        return fingerprint(file, tree, syntax, units, target)
-    }
-
-    private fun fingerprint(
-        file: dev.cint.core.facts.model.SourceFile,
-        tree: dev.cint.core.syntax.SyntaxTree,
-        syntax: dev.cint.core.syntax.SyntaxModel,
-        units: List<dev.cint.core.syntax.ExpressionUnit>,
-        target: dev.cint.core.syntax.ExpressionUnit,
-    ): String {
-        val normalized = normalize(target.text)
-        val symbol = UserAnnotationResolver.symbolAt(file, tree, syntax, target.startByte).orEmpty()
-        val previous = previousSiblingText(target.node)
-        val sibling = nextSiblingText(target.node)
-        val ordinal =
-            units
-                .filter {
-                    it.node.kind == target.node.kind &&
-                        normalize(it.text) == normalized &&
-                        UserAnnotationResolver.symbolAt(file, tree, syntax, it.startByte).orEmpty() == symbol &&
-                        previousSiblingText(it.node) == previous &&
-                        nextSiblingText(it.node) == sibling
-                }.count { it.startByte <= target.startByte }
-        return contentHash(
-            listOf(
-                target.node.kind,
-                normalized,
-                symbol,
-                previous,
-                sibling,
-                ordinal.toString(),
-            ).joinToString("\n"),
+        fingerprintVersion: Int = UnitIdentity.CURRENT_FINGERPRINT_VERSION,
+    ): String? =
+        UnitIdentity.unitFingerprint(
+            file,
+            tree,
+            syntax,
+            startByte,
+            endByte,
+            fingerprintVersion,
         )
-    }
 
-    private fun previousSiblingText(node: dev.cint.api.SyntaxNode): String {
-        val parent = node.parent ?: return ""
-        val index = parent.children.indexOfFirst { it.startByte == node.startByte && it.endByte == node.endByte }
-        val sibling =
-            if (index <= 0) {
-                null
-            } else {
-                parent.children.take(index).lastOrNull { it.isNamed }
-            }
-        return normalize(sibling?.text ?: "")
+    fun tokenOffsetsFor(
+        text: String,
+        anchorStart: Int,
+        start: Int,
+        end: Int,
+    ): Pair<Int, Int>? {
+        val tokens = SourceNormalizer.tokenSpans(text, stripComments = true)
+        if (tokens.isEmpty() || end <= start) return null
+        val anchorIndex =
+            tokens.indexOfFirst { it.endByte > anchorStart }.let { if (it < 0) tokens.size else it }
+        val startIndex = tokens.indexOfFirst { it.endByte > start }
+        val endIndex = tokens.indexOfLast { it.startByte < end } + 1
+        if (startIndex < 0 || endIndex <= startIndex) return null
+        if (tokens[startIndex].startByte != start || tokens[endIndex - 1].endByte != end) return null
+        return (startIndex - anchorIndex) to (endIndex - anchorIndex)
     }
-
-    private fun nextSiblingText(node: dev.cint.api.SyntaxNode): String {
-        val parent = node.parent ?: return ""
-        val index = parent.children.indexOfFirst { it.startByte == node.startByte && it.endByte == node.endByte }
-        val sibling =
-            if (index < 0) {
-                null
-            } else {
-                parent.children.drop(index + 1).firstOrNull { it.isNamed }
-            }
-        return normalize(sibling?.text ?: "")
-    }
-
-    private fun normalize(text: String): String = text.trim().replace(Regex("\\s+"), " ")
 
     private fun anchor(
         record: AiRestrictionRecord,
@@ -426,14 +426,47 @@ object AiRestrictionResolver {
         if (fingerprint != null) {
             val matches =
                 units.filter { unit ->
-                    contentHash(unit.text) == hash &&
-                        fingerprintFor(file, tree, syntax, units, unit) == fingerprint
+                    fingerprintFor(file, tree, syntax, units, unit, record.fingerprintVersion) == fingerprint
                 }
-            val matching = matches.singleOrNull() ?: return null
-            val range = matching.startByte to matching.endByte
-            if (storedMatches && stored != range) return null
-            return range
+            val matching = matches.singleOrNull()
+            if (matching != null) {
+                val storedRange = UserAnnotationResolver.byteRange(file.text, record.span)
+                if (storedRange != null) {
+                    val storedUnit =
+                        units.firstOrNull {
+                            it.startByte == storedRange.first && it.endByte == storedRange.second
+                        }
+                    if (
+                        storedUnit != null &&
+                        fingerprintFor(file, tree, syntax, units, storedUnit, record.fingerprintVersion) == fingerprint
+                    ) {
+                        return matching.startByte to matching.endByte
+                    }
+                    val storedTextMatches =
+                        UserAnnotationResolver.selectionText(file.text, storedRange)?.let {
+                            contentHash(it) == hash
+                        } == true
+                    if (storedTextMatches && storedRange != (matching.startByte to matching.endByte)) return null
+                }
+                return matching.startByte to matching.endByte
+            }
+            if (record.fingerprintVersion <= 1) {
+                return legacyAnchor(record, file, tree, syntax, candidates, stored, storedMatches)
+            }
+            return null
         }
+        return legacyAnchor(record, file, tree, syntax, candidates, stored, storedMatches)
+    }
+
+    private fun legacyAnchor(
+        record: AiRestrictionRecord,
+        file: dev.cint.core.facts.model.SourceFile,
+        tree: dev.cint.core.syntax.SyntaxTree,
+        syntax: dev.cint.core.syntax.SyntaxModel,
+        candidates: List<Pair<Int, Int>>,
+        stored: Pair<Int, Int>?,
+        storedMatches: Boolean,
+    ): Pair<Int, Int>? {
         val symbolFiltered =
             if (record.symbol == null) {
                 candidates
@@ -455,7 +488,8 @@ object AiRestrictionResolver {
         syntax: dev.cint.core.syntax.SyntaxModel,
         units: List<dev.cint.core.syntax.ExpressionUnit>,
         unit: dev.cint.core.syntax.ExpressionUnit,
-    ): String = fingerprint(file, tree, syntax, units, unit)
+        fingerprintVersion: Int,
+    ): String = UnitIdentity.fingerprint(file, tree, syntax, units, unit, fingerprintVersion)
 
     private fun namedRanges(
         file: dev.cint.core.facts.model.SourceFile,
@@ -474,9 +508,11 @@ object AiRestrictionResolver {
         anchorStart: Int,
         anchorEnd: Int,
         adding: Boolean,
+        exactAnchor: Boolean,
     ): ResolvedRestrictionOperation? {
-        val start = anchorStart + operation.startOffset
-        val end = anchorStart + operation.endOffset
+        val mapped = mappedRange(operation, file.text, anchorStart, exactAnchor) ?: return null
+        val start = mapped.first
+        val end = mapped.second
         if (start < 0 || end <= start) return null
         if (adding && (start < anchorStart || end > anchorEnd)) return null
         if (!adding && (start >= anchorEnd || end <= anchorStart)) return null
@@ -489,6 +525,28 @@ object AiRestrictionResolver {
             confidence = operation.confidence,
             rationale = operation.rationale,
         )
+    }
+
+    private fun mappedRange(
+        operation: RestrictionOperation,
+        text: String,
+        anchorStart: Int,
+        exactAnchor: Boolean,
+    ): Pair<Int, Int>? {
+        val startToken = operation.startToken
+        val endToken = operation.endToken
+        if (startToken != null && endToken != null) {
+            val tokens = SourceNormalizer.tokenSpans(text, stripComments = true)
+            if (tokens.isEmpty()) return null
+            val anchorIndex =
+                tokens.indexOfFirst { it.endByte > anchorStart }.let { if (it < 0) tokens.size else it }
+            val startIndex = anchorIndex + startToken
+            val endIndex = anchorIndex + endToken
+            if (startIndex < 0 || endIndex > tokens.size || endIndex <= startIndex) return null
+            return tokens[startIndex].startByte to tokens[endIndex - 1].endByte
+        }
+        if (!exactAnchor) return null
+        return (anchorStart + operation.startOffset) to (anchorStart + operation.endOffset)
     }
 
     private fun normalizedHash(value: String): String = value.removePrefix("sha256:")

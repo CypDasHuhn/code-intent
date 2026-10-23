@@ -7,7 +7,15 @@ import dev.cint.host.HostSettings
 import dev.cint.server.LiveServer
 import dev.cint.server.SuggestionSettings
 import dev.cint.server.SuggestionSettingsLoader
+import dev.cint.server.live.DocState
+import dev.cint.server.live.DocumentKey
+import dev.cint.server.live.docsFor
+import dev.cint.server.live.nextAnalysisRevision
+import dev.cint.server.live.publishCandidates
 import dev.cint.server.live.rewriteDocumentTextForTest
+import dev.cint.server.suggestions.resolveForStatus
+import dev.cint.server.suggestions.sessionDocument
+import dev.cint.server.suggestions.sessionTypeLookup
 import dev.cint.suggest.SuggestionService
 import java.io.BufferedWriter
 import java.io.StringWriter
@@ -20,6 +28,7 @@ internal class Harness(
     pipeline: HostPipeline,
     suggestionSettings: SuggestionSettings?,
     service: SuggestionService,
+    useLsp: Boolean = false,
 ) {
     private val mapper = jacksonObjectMapper()
     private val output = StringWriter()
@@ -29,7 +38,7 @@ internal class Harness(
         LiveServer(
             root = root,
             socketPath = Path.of("/tmp/opencode/cint-036-test.sock"),
-            useLsp = false,
+            useLsp = useLsp,
             defaultLanguage = "kotlin",
             packs = pipeline,
             settings = settings,
@@ -85,10 +94,19 @@ internal class Harness(
         text: String,
         version: Int,
     ) {
+        open(uri, text, version, "kotlin")
+    }
+
+    fun open(
+        uri: String,
+        text: String,
+        version: Int,
+        language: String,
+    ) {
         send(
             """{"jsonrpc":"2.0","id":11,"method":"textDocument/didOpen","params":{"uri":${quote(
                 uri,
-            )},"text":${quote(text)},"version":$version,"languageId":"kotlin"}}""",
+            )},"text":${quote(text)},"version":$version,"languageId":${quote(language)}}}""",
         )
     }
 
@@ -97,10 +115,72 @@ internal class Harness(
         text: String,
         version: Int,
     ) {
+        change(uri, text, version, "kotlin")
+    }
+
+    fun change(
+        uri: String,
+        text: String,
+        version: Int,
+        language: String,
+    ) {
         send(
             """{"jsonrpc":"2.0","method":"textDocument/didChange","params":{"uri":${quote(
                 uri,
-            )},"text":${quote(text)},"version":$version,"languageId":"kotlin"}}""",
+            )},"text":${quote(text)},"version":$version,"languageId":${quote(language)}}}""",
+        )
+    }
+
+    fun sessionDocumentForTest(
+        uri: String,
+        knownIntents: Set<String>,
+        includeLeaves: Boolean = true,
+    ): dev.cint.suggest.session.SessionDocument? {
+        val doc = server.docsFor(writer)[uri] ?: return null
+        val key =
+            dev.cint.server.live
+                .DocumentKey(writer, uri)
+        val cached = server.analyses[key] ?: return null
+        return server.sessionDocument(doc, cached, knownIntents, includeLeaves)
+    }
+
+    fun typeLookupForTest(
+        uri: String,
+        document: dev.cint.suggest.session.SessionDocument,
+    ): ((Int, Int) -> Map<String, Any?>?)? {
+        val doc = server.docsFor(writer)[uri] ?: return null
+        return server.sessionTypeLookup(doc, document)
+    }
+
+    fun resolveRestrictionForStatus(
+        uri: String,
+        record: dev.cint.core.restriction.AiRestrictionRecord,
+    ): List<dev.cint.core.restriction.ResolvedRestriction> {
+        val doc = server.docsFor(writer)[uri] ?: return emptyList()
+        val frontend =
+            dev.cint.frontend.Frontends
+                .forLanguage(doc.language) ?: return emptyList()
+        val source =
+            dev.cint.core.facts.model
+                .SourceFile(doc.uri, doc.text)
+        return server.resolveForStatus(record, doc, source, frontend)
+    }
+
+    fun publishCandidatesForTest(
+        uri: String,
+        proposals: List<dev.cint.suggest.model.CandidateProposal>,
+    ) {
+        val doc = server.docsFor(writer)[uri] ?: error("document is not open: $uri")
+        val key =
+            dev.cint.server.live
+                .DocumentKey(writer, uri)
+        val revision = server.analyses[key]?.analysisRevision ?: server.nextAnalysisRevision(key)
+        server.publishCandidates(
+            writer = writer,
+            doc = doc,
+            candidates = emptyList(),
+            proposals = proposals,
+            analysisRevision = revision,
         )
     }
 
@@ -177,6 +257,14 @@ internal class Harness(
     fun latest(method: String): JsonNode = messages().last { it["method"]?.asText() == method }
 
     fun methodCount(method: String): Int = messages().count { it["method"]?.asText() == method }
+
+    fun analysisRuns(uri: String): Long =
+        server.analysisRuns
+            .filterKeys { it.uri == uri }
+            .values
+            .sumOf { it.get() }
+
+    fun parseRuns(): Long = server.parseRuns.get()
 
     fun lastResponse(id: Int): JsonNode =
         messages()

@@ -2,15 +2,23 @@ package dev.cint.server.suggestions
 
 import com.fasterxml.jackson.databind.JsonNode
 import dev.cint.api.CandidateEmit
+import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.support.hashing.SourceNormalizer
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.server.LiveServer
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.SessionLog
 import dev.cint.server.live.SuggestPass
+import dev.cint.server.live.aiEnvironment
+import dev.cint.server.live.cacheFileEnvironment
 import dev.cint.server.live.docsFor
+import dev.cint.server.live.ensureVerdictCache
+import dev.cint.server.live.persistVerdictCache
 import dev.cint.server.live.publishCandidates
 import dev.cint.server.live.relativePath
+import dev.cint.suggest.cache.CacheInvalidation
+import dev.cint.suggest.cache.TextChange
 import dev.cint.suggest.model.CandidateDocument
 import dev.cint.suggest.model.CandidateProposal
 import dev.cint.suggest.model.SuggestionOptions
@@ -36,7 +44,7 @@ internal fun LiveServer.suggestionCapability(clientProtocol: Int): Map<String, A
         "knownIntents" to knownIntents(),
         "discovery" to (suggestionSettings.discoveryEnabled && supportsDiscovery && clientProtocol >= 4),
         "restrictions" to (suggestionSettings.restrictionsEnabled && clientProtocol >= 4),
-        "cache" to false,
+        "cache" to (suggestionSettings.cacheEnabled && clientProtocol >= 4),
         "maxUnitsPerRequest" to suggestionSettings.discoveryMaxUnitsPerRequest,
     )
 }
@@ -259,6 +267,26 @@ private fun LiveServer.discoveryPass(
             includeLeaves = suggestionSettings.discoveryIncludeLeaves,
         ) ?: return SuggestOutcome(cached.output.candidates, emptyList(), null)
     val typeLookup = sessionTypeLookup(current, document)
+    val cacheEnabled = suggestionSettings.cacheEnabled
+    val aiEnv = aiEnvironment(current.language, known)
+    if (cacheEnabled) {
+        ensureVerdictCache(cacheFileEnvironment(current.language, known))
+    }
+    val key = DocumentKey(writer, current.uri)
+    val baseline = suggestionBaselines[key]
+    val change =
+        if (baseline != null && baseline != current.text) {
+            TextChange.between(baseline, current.text)
+        } else {
+            dev.cint.suggest.cache.ChangeSet.NONE
+        }
+    val changedDeclarations =
+        if (baseline != null && baseline != current.text) {
+            changedDeclarationNames(baseline, current.text, current.language)
+        } else {
+            emptySet()
+        }
+    val invalidation = CacheInvalidation(change.ranges, change.names + changedDeclarations)
     val result =
         suggestionService.discover(
             document = document,
@@ -297,9 +325,85 @@ private fun LiveServer.discoveryPass(
                     latest.version != current.version ||
                     latest.text != current.text
             },
+            verdictCache = if (cacheEnabled) verdictCache else null,
+            aiEnv = aiEnv.hash,
+            cacheInvalidation = invalidation,
+            similarHintThreshold = suggestionSettings.similarHintThreshold,
         )
+    if (cacheEnabled) {
+        persistVerdictCache()
+    }
+    if (!result.incomplete && !result.budgetExhausted) {
+        suggestionBaselines[key] = current.text
+    }
     val proposals = if (suggestionSettings.restrictionsEnabled) result.proposals else emptyList()
     return SuggestOutcome(cached.output.candidates + result.candidates, proposals, result)
+}
+
+private fun LiveServer.changedDeclarationNames(
+    oldText: String,
+    newText: String,
+    language: String,
+): Set<String> {
+    val frontend = Frontends.forLanguage(language) ?: return emptySet()
+    return runCatching {
+        val oldDeclarations = declarations(frontend, oldText)
+        val newDeclarations = declarations(frontend, newText)
+        (oldDeclarations.keys + newDeclarations.keys)
+            .filter { oldDeclarations[it] != newDeclarations[it] }
+            .toSet()
+    }.getOrDefault(emptySet())
+}
+
+private fun LiveServer.declarations(
+    frontend: dev.cint.core.facts.frontend.LanguageFrontend,
+    text: String,
+): Map<String, String> {
+    val result = linkedMapOf<String, String>()
+    collectDeclarations(frontend, SourceFile("<declarations>", text), result)
+    return result
+}
+
+private fun LiveServer.collectDeclarations(
+    frontend: dev.cint.core.facts.frontend.LanguageFrontend,
+    source: SourceFile,
+    result: MutableMap<String, String>,
+) {
+    collectDirectDeclarations(frontend, source, result)
+    if (frontend is dev.cint.core.facts.frontend.SplitHandler) {
+        for (region in frontend.regions(source)) {
+            val regionFrontend = Frontends.forLanguage(region.language) ?: continue
+            collectDeclarations(regionFrontend, SourceFile(source.path, region.text), result)
+        }
+    }
+}
+
+private fun LiveServer.collectDirectDeclarations(
+    frontend: dev.cint.core.facts.frontend.LanguageFrontend,
+    source: SourceFile,
+    result: MutableMap<String, String>,
+) {
+    parseRuns.incrementAndGet()
+    val tree = frontend.parse(source)
+    val syntax = frontend.syntax(tree)
+
+    fun add(
+        name: String?,
+        declaration: dev.cint.api.SyntaxNode,
+    ) {
+        if (name.isNullOrBlank()) return
+        val normalized = SourceNormalizer.normalize(declaration.text)
+        val existing = result[name]
+        result[name] =
+            if (existing == null) {
+                normalized
+            } else {
+                listOf(existing, normalized).sorted().joinToString("|")
+            }
+    }
+    syntax.functions(tree).forEach { add(it.name, it.node) }
+    syntax.properties(tree).forEach { add(it.name, it.node) }
+    syntax.declarations(tree).forEach { add(it.name, it.node) }
 }
 
 private fun LiveServer.publishProgress(
@@ -347,6 +451,7 @@ private fun suggestResponse(
             put("incomplete", session.incomplete)
             put("budgetExhausted", session.budgetExhausted)
             put("skipped", session.skipped)
+            put("overhead", session.overhead)
             put("uncovered", session.uncovered)
         }
     }
@@ -413,6 +518,7 @@ internal fun LiveServer.handleSuggestLog(
             "turns" to (result?.turns ?: 0),
             "incomplete" to (result?.incomplete ?: false),
             "budgetExhausted" to (result?.budgetExhausted ?: false),
+            "overhead" to (result?.overhead ?: 0),
             "uncovered" to result?.uncovered.orEmpty(),
             "events" to result?.events.orEmpty(),
         ),

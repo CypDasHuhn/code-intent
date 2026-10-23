@@ -3,6 +3,8 @@ package dev.cint.suggest
 import dev.cint.api.CandidateEmit
 import dev.cint.api.CandidateReason
 import dev.cint.core.candidate.CandidateIdentity
+import dev.cint.suggest.cache.CacheInvalidation
+import dev.cint.suggest.cache.VerdictCache
 import dev.cint.suggest.model.CandidateContext
 import dev.cint.suggest.model.CandidateDocument
 import dev.cint.suggest.model.CandidateGroup
@@ -112,6 +114,10 @@ class SuggestionService(
         typeLookup: (Int, Int) -> Map<String, Any?>? = { _, _ -> null },
         onProgress: (SessionProgress) -> Unit = {},
         isCancelled: () -> Boolean = { false },
+        verdictCache: VerdictCache? = null,
+        aiEnv: String? = null,
+        cacheInvalidation: CacheInvalidation = CacheInvalidation.NONE,
+        similarHintThreshold: Double = 0.8,
     ): SessionResult {
         val provider = registry.findSession(options.providerId)
         if (provider == null || !SuggestionPrivacy.allows(document.path, options.allowGlobs)) {
@@ -130,6 +136,10 @@ class SuggestionService(
             typeLookup = typeLookup,
             isCancelled = isCancelled,
             promptVersion = options.promptVersion,
+            verdictCache = verdictCache,
+            aiEnv = aiEnv,
+            cacheInvalidation = cacheInvalidation,
+            similarHintThreshold = similarHintThreshold,
         ).run(document, limits, onProgress)
     }
 

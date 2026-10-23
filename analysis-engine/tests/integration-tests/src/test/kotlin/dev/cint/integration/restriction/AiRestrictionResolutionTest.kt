@@ -35,6 +35,78 @@ class AiRestrictionResolutionTest {
         """.trimIndent()
 
     @Test
+    fun legacy059FingerprintStillResolvesWithoutAVersionField() {
+        val source = SourceFile("Sample.kt", text)
+        val tree = KotlinParser().parse(source)
+        val call = KotlinSyntaxModel.expressionUnits(tree).first { it.text == "log.warn(message)" }
+        val legacyFingerprint =
+            dev.cint.core.syntax.UnitIdentity.unitFingerprint(
+                source,
+                tree,
+                KotlinSyntaxModel,
+                call.startByte,
+                call.endByte,
+                1,
+            ) ?: error("no legacy fingerprint")
+        val json =
+            """
+            {"version":1,"restrictions":[{"id":"legacy","path":"Sample.kt","contentHash":"${
+                contentHash(call.text)
+            }","unitFingerprint":"$legacyFingerprint","anchor":{"startLine":${call.span.startLine},"startCol":${call.span.startCol},"endLine":${call.span.endLine},"endCol":${call.span.endCol}},"remove":[{"intent":"LOGGING","startOffset":0,"endOffset":${
+                call.text.length
+            }}],"add":[]}]}
+            """.trimIndent()
+        val record = AiRestrictionsJson.parse(json).single()
+        assertEquals(1, record.fingerprintVersion)
+
+        val resolved =
+            AiRestrictionResolver
+                .resolve(listOf(record), source, tree, KotlinSyntaxModel, null)
+                .single()
+        assertEquals(call.startByte, resolved.anchorStartByte)
+        assertEquals(call.endByte, resolved.remove.single().endByte)
+    }
+
+    @Test
+    fun formattedFingerprintKeepsARestrictionApplied() {
+        val source = SourceFile("Sample.kt", text)
+        val tree = KotlinParser().parse(source)
+        val call = KotlinSyntaxModel.expressionUnits(tree).first { it.text == "log.warn(message)" }
+        val record = recordFor(source, tree, call, call.startByte, call.endByte, add = null)
+        val formattedText = text.replace("log.warn(message)", "log.warn( message )")
+        val formattedSource = SourceFile("Sample.kt", formattedText)
+        val formattedTree = KotlinParser().parse(formattedSource)
+
+        val resolved =
+            AiRestrictionResolver
+                .resolve(listOf(record), formattedSource, formattedTree, KotlinSyntaxModel, null)
+                .single()
+        val expectedStart = formattedText.indexOf("log.warn( message )")
+        assertEquals(expectedStart, resolved.anchorStartByte)
+        assertEquals(expectedStart, resolved.remove.single().startByte)
+        assertEquals(expectedStart + "log.warn( message )".length, resolved.remove.single().endByte)
+
+        val annotations =
+            RuleEngine()
+                .analyze(
+                    formattedSource,
+                    formattedTree,
+                    KotlinSyntaxModel,
+                    NullOracle,
+                    testConfig("kotlin"),
+                    testPacks(),
+                    restrictions = listOf(resolved),
+                ).annotations
+        assertFalse(
+            annotations.any {
+                it.role == Role.SOURCE_INTENT &&
+                    "LOGGING" in it.intents &&
+                    it.startByte == expectedStart
+            },
+        )
+    }
+
+    @Test
     fun restrictionReanchorsByContentHashAfterLineMoves() {
         val source = SourceFile("Sample.kt", text)
         val tree = KotlinParser().parse(source)
@@ -411,8 +483,14 @@ class AiRestrictionResolutionTest {
         removeStart: Int,
         removeEnd: Int,
         add: Pair<Int, Int>?,
-    ): AiRestrictionRecord =
-        AiRestrictionRecord(
+    ): AiRestrictionRecord {
+        val tokenRange =
+            AiRestrictionResolver.tokenOffsetsFor(source.text, unit.startByte, removeStart, removeEnd)
+        val addTokenRange =
+            add?.let { (start, end) ->
+                AiRestrictionResolver.tokenOffsetsFor(source.text, unit.startByte, start, end)
+            }
+        return AiRestrictionRecord(
             id = "record-${unit.unitId}",
             path = source.path,
             span = unit.span,
@@ -423,6 +501,8 @@ class AiRestrictionResolutionTest {
                         intent = "LOGGING",
                         startOffset = removeStart - unit.startByte,
                         endOffset = removeEnd - unit.startByte,
+                        startToken = tokenRange?.first,
+                        endToken = tokenRange?.second,
                     ),
                 ),
             add =
@@ -434,6 +514,8 @@ class AiRestrictionResolutionTest {
                                 startOffset = start - unit.startByte,
                                 endOffset = end - unit.startByte,
                                 confidence = 0.6,
+                                startToken = addTokenRange?.first,
+                                endToken = addTokenRange?.second,
                             ),
                         )
                     }.orEmpty(),
@@ -456,6 +538,7 @@ class AiRestrictionResolutionTest {
             model = "deepseek-chat",
             promptVersion = "deepseek-intent-v3",
         )
+    }
 
     private fun operation(
         intent: String,

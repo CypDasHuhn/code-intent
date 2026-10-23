@@ -86,6 +86,7 @@ internal fun harness(
             discoveryEnabled = false,
         ),
     service: SuggestionService? = null,
+    useLsp: Boolean = false,
 ): Harness {
     val settings = HostConfig.load(null)
     val pipeline = HostRuntime.pipeline(settings, BundledRulePackConfigResolver, root)
@@ -96,5 +97,6 @@ internal fun harness(
         pipeline,
         resolvedSettings,
         service ?: suggestionServiceFrom(resolvedSettings),
+        useLsp = useLsp,
     )
 }

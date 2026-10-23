@@ -2,6 +2,7 @@ package dev.cint.suggest.session
 
 import dev.cint.api.CandidateEmit
 import dev.cint.api.Span
+import dev.cint.core.support.hashing.normalizedSourceText
 import dev.cint.suggest.model.CandidateProposal
 
 data class SessionLimits(
@@ -39,6 +40,13 @@ data class SessionUnit(
     val enclosingStatement: Span,
     val enclosingFunction: Span? = null,
     val existingAnnotations: List<SessionAnnotation> = emptyList(),
+    val nodeKind: String = "",
+    val imports: List<String> = emptyList(),
+    val enclosingSymbol: String? = null,
+    val enclosingSignature: String? = null,
+    val referencedNames: List<String> = emptyList(),
+    val priorHints: List<String> = emptyList(),
+    val normalizedText: String = normalizedSourceText(text),
 )
 
 data class SessionDocument(
@@ -99,6 +107,7 @@ data class SessionResult(
     val incomplete: Boolean = false,
     val budgetExhausted: Boolean = false,
     val skipped: Boolean = false,
+    val overhead: Long = 0,
     val uncovered: List<String> = emptyList(),
     val events: List<SessionEvent> = emptyList(),
 )

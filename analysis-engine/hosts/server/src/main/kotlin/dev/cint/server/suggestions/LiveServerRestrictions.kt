@@ -1,18 +1,24 @@
 package dev.cint.server.suggestions
 
 import com.fasterxml.jackson.databind.JsonNode
+import dev.cint.core.facts.frontend.LanguageFrontend
+import dev.cint.core.facts.frontend.SplitHandler
 import dev.cint.core.facts.model.SourceFile
 import dev.cint.core.restriction.AiRestrictionRecord
 import dev.cint.core.restriction.AiRestrictionResolver
 import dev.cint.core.restriction.AiRestrictionsFile
+import dev.cint.core.restriction.ResolvedRestriction
 import dev.cint.core.restriction.RestrictionOperation
+import dev.cint.core.user.UserAnnotationResolver
 import dev.cint.frontend.Frontends
+import dev.cint.frontend.SplitAnchorResolver
 import dev.cint.server.LiveServer
 import dev.cint.server.live.DocState
 import dev.cint.server.live.DocumentKey
 import dev.cint.server.live.relativePath
 import dev.cint.server.live.republishOpenDocs
 import dev.cint.server.live.restrictionApplies
+import dev.cint.server.live.shift
 import java.io.BufferedWriter
 
 internal fun LiveServer.handleRestrictionsList(
@@ -85,22 +91,114 @@ private fun LiveServer.status(
     return runCatching {
         val frontend = Frontends.forLanguage(doc.language) ?: return "unknown"
         val source = SourceFile(doc.uri, doc.text)
-        val tree = frontend.parse(source)
-        val resolved =
-            AiRestrictionResolver.resolve(
+        val resolved = resolveForStatus(record, doc, source, frontend)
+        val cached = analyses[DocumentKey(writer, doc.uri)]
+        val applies =
+            cached != null &&
+                resolved.any { restrictionApplies(cached.output.annotations, it) }
+        if (applies) "active" else "dormant"
+    }.getOrDefault("unknown")
+}
+
+internal fun LiveServer.resolveForStatus(
+    record: AiRestrictionRecord,
+    doc: DocState,
+    source: SourceFile,
+    frontend: LanguageFrontend,
+): List<ResolvedRestriction> {
+    if (frontend is SplitHandler && record.unitFingerprint != null) {
+        val regions =
+            SplitAnchorResolver.leafRegions(
+                source,
+                frontend as dev.cint.core.facts.frontend.SplitHandler,
+            )
+        val selected =
+            when {
+                record.regionKey != null -> {
+                    val matches =
+                        regions.filter {
+                            it.identityKey == record.regionKey && it.language == record.regionLanguage
+                        }
+                    if (matches.size != 1) return emptyList()
+                    matches
+                }
+
+                record.regionOrdinal != null -> {
+                    val ordinal = record.regionOrdinal ?: return emptyList()
+                    val match =
+                        regions
+                            .getOrNull(ordinal)
+                            ?.takeIf { it.language == record.regionLanguage }
+                    if (match == null) return emptyList()
+                    listOf(match)
+                }
+
+                else -> {
+                    val range = UserAnnotationResolver.byteRange(doc.text, record.span)
+                    val matches =
+                        if (range == null) {
+                            emptyList()
+                        } else {
+                            regions.filter { region ->
+                                val end = region.startByte + region.text.toByteArray(Charsets.UTF_8).size
+                                range.first >= region.startByte && range.second <= end
+                            }
+                        }
+                    when {
+                        matches.isEmpty() -> {
+                            null
+                        }
+
+                        matches.size > 1 -> {
+                            return emptyList()
+                        }
+
+                        (regions.count { it.identityKey == matches.single().identityKey }) > 1 -> {
+                            return emptyList()
+                        }
+
+                        else -> {
+                            matches
+                        }
+                    }
+                }
+            }
+        if (selected == null) {
+            val tree = frontend.parse(source)
+            return AiRestrictionResolver.resolve(
                 listOf(record),
                 source,
                 tree,
                 frontend.syntax(tree),
                 root,
             )
-        val cached = analyses[DocumentKey(writer, doc.uri)]
-        val applies =
-            resolved.size == 1 &&
-                cached != null &&
-                restrictionApplies(cached.output.annotations, resolved.single())
-        if (applies) "active" else "dormant"
-    }.getOrDefault("unknown")
+        }
+        val resolved =
+            selected
+                .mapNotNull { region ->
+                    val regionSource = SourceFile(doc.uri, region.text)
+                    val regionFrontend = Frontends.forLanguage(region.language) ?: return@mapNotNull null
+                    val tree = regionFrontend.parse(regionSource)
+                    AiRestrictionResolver
+                        .resolve(
+                            listOf(record),
+                            regionSource,
+                            tree,
+                            regionFrontend.syntax(tree),
+                            root,
+                        ).map { it.shift(region) }
+                        .takeIf { it.isNotEmpty() }
+                }.flatten()
+        return resolved
+    }
+    val tree = frontend.parse(source)
+    return AiRestrictionResolver.resolve(
+        listOf(record),
+        source,
+        tree,
+        frontend.syntax(tree),
+        root,
+    )
 }
 
 private fun recordPayload(

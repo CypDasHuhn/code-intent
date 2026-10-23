@@ -5,10 +5,14 @@ import dev.cint.api.Role
 import dev.cint.api.Span
 import dev.cint.api.SyntaxNode
 import dev.cint.api.UNTAGGED_INTENT
+import dev.cint.core.cache.AnchorFingerprint
 import dev.cint.core.facts.model.SourceFile
+import dev.cint.core.support.hashing.SourceNormalizer
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
+import dev.cint.core.syntax.UnitIdentity
+import dev.cint.core.syntax.expressionUnits
 import java.nio.file.Path
 
 object UserAnnotationResolver {
@@ -82,15 +86,7 @@ object UserAnnotationResolver {
         tree: SyntaxTree,
         syntax: SyntaxModel,
         startByte: Int,
-    ): String? =
-        candidates(tree, syntax)
-            .filter { candidate -> candidate.node.startByte <= startByte && candidate.node.endByte >= startByte }
-            .minWithOrNull(
-                compareBy<Candidate>(
-                    { it.node.endByte - it.node.startByte },
-                    { kotlin.math.abs(it.node.startByte - startByte) },
-                ),
-            )?.name
+    ): String? = UnitIdentity.symbolAt(file, tree, syntax, startByte)
 
     private fun resolve(
         annotation: UserAnnotation,
@@ -100,6 +96,19 @@ object UserAnnotationResolver {
     ): Contribution? {
         val intents = annotation.intents.filter { it != UNTAGGED_INTENT }.toSet()
         if (intents.isEmpty()) return null
+        if (annotation.unitFingerprint != null) {
+            val anchored = resolveAnchored(annotation, file, tree, syntax, intents)
+            if (anchored != null) return anchored
+            if (
+                annotation.startToken == null &&
+                annotation.endToken == null &&
+                annotation.startNormalized == null &&
+                annotation.endNormalized == null
+            ) {
+                return resolveRangeOnly(annotation, file, intents)
+            }
+            return null
+        }
 
         val bytes = file.text.toByteArray(Charsets.UTF_8)
         val lineStarts = lineStarts(bytes)
@@ -158,6 +167,110 @@ object UserAnnotationResolver {
             startByte = startByte,
             endByte = endByte,
         )
+    }
+
+    private fun resolveRangeOnly(
+        annotation: UserAnnotation,
+        file: SourceFile,
+        intents: Set<String>,
+    ): Contribution? {
+        val hash = annotation.contentHash ?: return null
+        val range = byteRange(file.text, annotation.span) ?: return null
+        val text = selectionText(file.text, range) ?: return null
+        if (contentHash(text) != hash) return null
+        val span = spanFor(file.text, range.first, range.second) ?: return null
+        return Contribution(
+            rule = USER_CONTRIBUTOR_ID,
+            role = Role.SOURCE_INTENT,
+            intents = intents,
+            span = span,
+            source = USER_SOURCE,
+            confidence = 1.0,
+            startByte = range.first,
+            endByte = range.second,
+        )
+    }
+
+    private fun resolveAnchored(
+        annotation: UserAnnotation,
+        file: SourceFile,
+        tree: SyntaxTree,
+        syntax: SyntaxModel,
+        intents: Set<String>,
+    ): Contribution? {
+        val unitFingerprint = annotation.unitFingerprint ?: return null
+        val fingerprintVersion = UnitIdentity.versionOf(annotation.unitFingerprintVersion)
+        val units = syntax.expressionUnits(tree)
+        val matches =
+            units.filter { unit ->
+                UnitIdentity.fingerprint(
+                    file,
+                    tree,
+                    syntax,
+                    units,
+                    unit,
+                    fingerprintVersion,
+                ) == unitFingerprint
+            }
+        val unit = matches.singleOrNull() ?: return null
+        val range = anchoredRange(annotation, unit) ?: return null
+        val startByte = unit.startByte + range.first
+        val endByte = unit.startByte + range.second
+        val span = spanFor(file.text, startByte, endByte) ?: return null
+        val anchorFingerprint = annotation.anchorFingerprint
+        if (anchorFingerprint != null) {
+            val anchorText = selectionText(file.text, span) ?: return null
+            val current =
+                AnchorFingerprint.of(
+                    annotation.path,
+                    anchorText,
+                    intents,
+                    context = unitFingerprint,
+                )
+            if (current != anchorFingerprint) return null
+        }
+        return Contribution(
+            rule = USER_CONTRIBUTOR_ID,
+            role = Role.SOURCE_INTENT,
+            intents = intents,
+            span = span,
+            source = USER_SOURCE,
+            confidence = 1.0,
+            startByte = startByte,
+            endByte = endByte,
+        )
+    }
+
+    private fun anchoredRange(
+        annotation: UserAnnotation,
+        unit: dev.cint.core.syntax.ExpressionUnit,
+    ): Pair<Int, Int>? {
+        val startToken = annotation.startToken
+        val endToken = annotation.endToken
+        val startOffset = annotation.startTokenOffset
+        val endOffset = annotation.endTokenOffset
+        if (startToken != null && endToken != null && startOffset != null && endOffset != null) {
+            val tokens = SourceNormalizer.tokenSpans(unit.text, stripComments = true)
+            if (startToken >= 0 && endToken < tokens.size && endToken >= startToken) {
+                val start = tokens[startToken].startByte + startOffset
+                val end = tokens[endToken].startByte + endOffset
+                if (end > start) return start to end
+            }
+        }
+        if (startToken != null && endToken != null) {
+            val tokens = SourceNormalizer.tokenSpans(unit.text, stripComments = true)
+            if (startToken >= 0 && endToken <= tokens.size && endToken > startToken) {
+                return tokens[startToken].startByte to tokens[endToken - 1].endByte
+            }
+        }
+        val startNormalized = annotation.startNormalized
+        val endNormalized = annotation.endNormalized
+        if (startNormalized != null && endNormalized != null) {
+            val start = SourceNormalizer.rawByteAtNormalizedOffset(unit.text, startNormalized)
+            val end = SourceNormalizer.rawByteAtNormalizedOffset(unit.text, endNormalized)
+            if (end > start) return start to end
+        }
+        return null
     }
 
     private fun verified(

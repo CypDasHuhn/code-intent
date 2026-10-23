@@ -21,6 +21,7 @@ import dev.cint.core.runtime.rulepack.RulePackLoadResult
 import dev.cint.core.runtime.rulepack.RulePackLoader
 import dev.cint.core.runtime.scheduler.ExecutionPlan
 import dev.cint.core.runtime.scheduler.RuleEngine
+import dev.cint.core.support.hashing.CodeFingerprint
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.core.syntax.SyntaxModel
 import dev.cint.core.syntax.SyntaxTree
@@ -42,6 +43,7 @@ class HostPipeline(
     private val engine = RuleEngine()
     private val snapshots = ConcurrentHashMap<String, RulePackLoadResult>()
     private val plans = ConcurrentHashMap<String, ExecutionPlan>()
+    private val fingerprints = ConcurrentHashMap<String, String>()
 
     @Volatile
     private var loaded = loadPacks()
@@ -66,6 +68,7 @@ class HostPipeline(
             discovered = RulePackLoadResult(loaded.packs, loaded.failures)
             snapshots.clear()
             plans.clear()
+            fingerprints.clear()
         }
     }
 
@@ -130,17 +133,51 @@ class HostPipeline(
         region: SplitRegion? = null,
     ): List<Contribution> {
         val annotationsRoot = root ?: return emptyList()
-        val path = UserAnnotationsFile.path(annotationsRoot)
-        if (!Files.isRegularFile(path)) return emptyList()
-        val records =
-            runCatching {
-                UserAnnotationsJson.parse(Files.readString(path))
-            }.getOrElse { error ->
-                System.err.println("cint user annotations: $path: ${error.message}")
-                emptyList()
-            }
+        val records = loadUserAnnotations(annotationsRoot) ?: return emptyList()
         val scoped = region?.let { scopeToRegion(host, records, it) } ?: records
         return UserAnnotationResolver.resolve(scoped, source, tree, syntax, annotationsRoot)
+    }
+
+    fun hostUserContributionsFor(
+        host: SourceFile,
+        tree: SyntaxTree,
+        syntax: SyntaxModel,
+        include: (UserAnnotation) -> Boolean,
+    ): List<Contribution> {
+        val annotationsRoot = root ?: return emptyList()
+        val records = loadUserAnnotations(annotationsRoot) ?: return emptyList()
+        return UserAnnotationResolver.resolve(records.filter(include), host, tree, syntax, annotationsRoot)
+    }
+
+    fun hostRestrictionsFor(
+        host: SourceFile,
+        tree: SyntaxTree,
+        syntax: SyntaxModel,
+        include: (AiRestrictionRecord) -> Boolean,
+    ): List<ResolvedRestriction> {
+        val restrictionsRoot = root ?: return emptyList()
+        val records =
+            AiRestrictionsFile.loadTolerant(restrictionsRoot) { error ->
+                System.err.println("cint ai restrictions: ${error.message ?: error.javaClass.name}")
+            }
+        return AiRestrictionResolver.resolve(
+            records.filter(include),
+            host,
+            tree,
+            syntax,
+            restrictionsRoot,
+        )
+    }
+
+    private fun loadUserAnnotations(annotationsRoot: Path): List<UserAnnotation>? {
+        val path = UserAnnotationsFile.path(annotationsRoot)
+        if (!Files.isRegularFile(path)) return null
+        return runCatching {
+            UserAnnotationsJson.parse(Files.readString(path))
+        }.getOrElse { error ->
+            System.err.println("cint user annotations: $path: ${error.message}")
+            emptyList()
+        }
     }
 
     private fun scopeRestrictionsToRegion(
@@ -152,8 +189,27 @@ class HostPipeline(
         val lastLine = (lines.lastIndex - if (region.text.endsWith("\n")) 1 else 0).coerceAtLeast(0)
         val lastHostLine = region.startLine + lastLine
         return records.mapNotNull { record ->
+            if (record.unitFingerprint != null && record.regionKey != null) {
+                return@mapNotNull record.takeIf {
+                    !region.identityAmbiguous &&
+                        record.regionKey == region.identityKey &&
+                        record.regionLanguage == region.language
+                }
+            }
+            if (record.unitFingerprint != null && record.regionOrdinal != null) {
+                return@mapNotNull record.takeIf {
+                    record.regionOrdinal == region.ordinal &&
+                        record.regionLanguage == region.language
+                }
+            }
             if (record.span.endLine < region.startLine || record.span.startLine > lastHostLine) {
                 return@mapNotNull null
+            }
+            if (record.span.startLine < region.startLine || record.span.endLine > lastHostLine) {
+                return@mapNotNull null
+            }
+            if (record.unitFingerprint != null) {
+                return@mapNotNull record
             }
             val original = UserAnnotationResolver.selectionText(host, record.span) ?: return@mapNotNull null
             if (contentHash(original) != record.contentHash.removePrefix("sha256:")) return@mapNotNull null
@@ -190,8 +246,16 @@ class HostPipeline(
                     }
                 }
             if (localStartLine == localEndLine && localStartCol >= localEndCol) return@mapNotNull null
+            val localSpan = Span(localStartLine, localStartCol, localEndLine, localEndCol)
+            val localText = UserAnnotationResolver.selectionText(region.text, localSpan) ?: return@mapNotNull null
+            val clippedHash = contentHash(localText)
+            if (clippedHash != record.contentHash.removePrefix("sha256:")) return@mapNotNull null
             record.copy(
-                span = Span(localStartLine, localStartCol, localEndLine, localEndCol),
+                span = localSpan,
+                contentHash = clippedHash,
+                unitFingerprint = null,
+                remove = record.remove.map { it.copy(startToken = null, endToken = null) },
+                add = record.add.map { it.copy(startToken = null, endToken = null) },
             )
         }
     }
@@ -205,8 +269,27 @@ class HostPipeline(
         val lastLine = (lines.lastIndex - if (region.text.endsWith("\n")) 1 else 0).coerceAtLeast(0)
         val lastHostLine = region.startLine + lastLine
         return records.mapNotNull { record ->
+            if (record.unitFingerprint != null && record.regionKey != null) {
+                return@mapNotNull record.takeIf {
+                    !region.identityAmbiguous &&
+                        record.regionKey == region.identityKey &&
+                        record.regionLanguage == region.language
+                }
+            }
+            if (record.unitFingerprint != null && record.regionOrdinal != null) {
+                return@mapNotNull record.takeIf {
+                    record.regionOrdinal == region.ordinal &&
+                        record.regionLanguage == region.language
+                }
+            }
             if (record.span.endLine < region.startLine || record.span.startLine > lastHostLine) {
                 return@mapNotNull null
+            }
+            if (record.span.startLine < region.startLine || record.span.endLine > lastHostLine) {
+                if (record.unitFingerprint != null) return@mapNotNull null
+            }
+            if (record.unitFingerprint != null) {
+                return@mapNotNull record
             }
             if (record.contentHash != null) {
                 val original = UserAnnotationResolver.selectionText(host, record.span) ?: return@mapNotNull null
@@ -253,7 +336,18 @@ class HostPipeline(
                 } else {
                     null
                 }
-            record.copy(span = span, contentHash = clippedHash)
+            record.copy(
+                span = span,
+                contentHash = clippedHash,
+                symbol = null,
+                unitFingerprint = null,
+                unitFingerprintVersion = null,
+                anchorFingerprint = null,
+                startToken = null,
+                endToken = null,
+                startNormalized = null,
+                endNormalized = null,
+            )
         }
     }
 
@@ -270,6 +364,58 @@ class HostPipeline(
         intents += userIntents()
         intents += UNTAGGED_INTENT
         return intents.toList()
+    }
+
+    fun fingerprint(language: String): String =
+        synchronized(reloadLock) {
+            fingerprints.computeIfAbsent(normalize(language)) {
+                fingerprintOf(language)
+            }
+        }
+
+    private fun fingerprintOf(language: String): String {
+        val plan = plan(language)
+        val rules =
+            plan.strata.flatten().map { rule ->
+                listOf(
+                    rule.id,
+                    rule.owns,
+                    rule.reads.sorted().joinToString(","),
+                    rule.optionalReads.sorted().joinToString(","),
+                    CodeFingerprint.classDigest(rule.javaClass),
+                ).joinToString(":")
+            }
+        val packs =
+            effectivePacks.map {
+                "${it.id}:${it.javaClass.name}:${CodeFingerprint.classDigest(it.javaClass)}:" +
+                    it
+                        .rules()
+                        .map { rule -> CodeFingerprint.classDigest(rule.javaClass) }
+                        .sorted()
+                        .joinToString(",") + ":" + it.languages.sorted()
+            }
+        val overlay = PackConfigOverlay.read(root).packs
+        val sharedRuleCode =
+            effectivePacks
+                .firstOrNull()
+                ?.let { pack ->
+                    CodeFingerprint.ofPackages(
+                        label = "rulepacks-shared",
+                        prefixes = listOf("dev/cint/rulepacks/"),
+                        anchors = listOf(pack.javaClass),
+                        allowEmpty = true,
+                    )
+                }.orEmpty()
+        return contentHash(
+            listOf(
+                plan.terminal.sourceIntents.joinToString(","),
+                rules.joinToString("\n"),
+                packs.joinToString("\n"),
+                sharedRuleCode,
+                project.toString(),
+                overlay.toString(),
+            ).joinToString("\n"),
+        )
     }
 
     private fun userIntents(): Set<String> {

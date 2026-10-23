@@ -16,6 +16,7 @@ import dev.cint.core.facts.oracle.TypeOracle
 import dev.cint.core.support.hashing.contentHash
 import dev.cint.frontend.Frontends
 import dev.cint.frontend.SplitAnalyzer
+import dev.cint.frontend.SplitAnchorResolver
 import dev.cint.host.HostConfig
 import dev.cint.host.HostRuntime
 import dev.cint.host.HostSettings
@@ -113,6 +114,21 @@ internal fun analyze(
                 packs::plan,
                 packs::userContributionsFor,
                 packs::restrictionsFor,
+                hostFrontend = frontend,
+                hostUserContributionsFor = { host, tree, syntax ->
+                    packs.hostUserContributionsFor(host, tree, syntax) { annotation ->
+                        annotation.regionKey == null &&
+                            annotation.regionOrdinal == null &&
+                            SplitAnchorResolver.isHostLevelSpan(source, frontend, annotation.span)
+                    }
+                },
+                hostRestrictionsFor = { host, tree, syntax ->
+                    packs.hostRestrictionsFor(host, tree, syntax) { record ->
+                        record.regionKey == null &&
+                            record.regionOrdinal == null &&
+                            SplitAnchorResolver.isHostLevelSpan(source, frontend, record.span)
+                    }
+                },
             ) { language -> settings.intentConfig(language) }
         } else {
             val tree = frontend.parse(source)

@@ -55,7 +55,10 @@ internal data class CachedAnalysis(
     val output: AnalysisOutput,
     val version: Int,
     val textHash: String,
+    val text: String,
+    val language: String,
     val configRevision: Long,
+    val deterministicEnv: String,
     val analysisRevision: Long,
 )
 

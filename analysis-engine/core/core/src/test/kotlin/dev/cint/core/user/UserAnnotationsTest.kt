@@ -86,6 +86,25 @@ class UserAnnotationsTest {
     }
 
     @Test
+    fun anchoredRecordWithoutTokenDataFallsBackToItsRangeNotTheDeclaration() {
+        val annotation =
+            UserAnnotation(
+                path = "Sample.kt",
+                span = Span(0, 4, 0, 8),
+                intents = setOf("PURE"),
+                symbol = "make",
+                contentHash = contentHash("make"),
+                unitFingerprint = "stale-fingerprint",
+                unitFingerprintVersion = 2,
+            )
+
+        val contribution = resolve(listOf(annotation)).single()
+
+        assertEquals(4, contribution.startByte)
+        assertEquals(8, contribution.endByte)
+    }
+
+    @Test
     fun clientRangeAnchorUsesTheVerifiedRangeInsteadOfTheContainingNode() {
         val annotation =
             UserAnnotation(
