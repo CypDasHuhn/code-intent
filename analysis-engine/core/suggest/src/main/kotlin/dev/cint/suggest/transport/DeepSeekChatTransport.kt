@@ -15,7 +15,11 @@ internal class DeepSeekChatTransport(
     private val client: HttpClient,
     private val mapper: ObjectMapper,
 ) {
+    var lastFailure: String? = null
+        private set
+
     fun post(payload: Map<String, Any?>): String? {
+        lastFailure = null
         val request =
             runCatching {
                 HttpRequest
@@ -27,17 +31,32 @@ internal class DeepSeekChatTransport(
                     .header("Authorization", "Bearer $apiKey")
                     .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(payload), StandardCharsets.UTF_8))
                     .build()
-            }.getOrNull() ?: return null
+            }.getOrNull() ?: run {
+                lastFailure = "invalid provider URL"
+                return null
+            }
         val response =
             try {
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
+                lastFailure = "request interrupted"
                 return null
-            } catch (_: Exception) {
+            } catch (error: Exception) {
+                lastFailure = "request error: ${error.javaClass.simpleName}"
                 return null
             }
-        if (response.statusCode() !in 200..299) return null
+        val status = response.statusCode()
+        if (status !in 200..299) {
+            val detail =
+                response
+                    .body()
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+                    .take(200)
+            lastFailure = if (detail.isEmpty()) "HTTP $status" else "HTTP $status: $detail"
+            return null
+        }
         return response.body()
     }
 }

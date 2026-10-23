@@ -182,7 +182,16 @@ class AnnotationSession(
                 when (turn) {
                     is AgentTurn.Failure -> {
                         incomplete = true
-                        events += SessionEvent("error", "provider failure")
+                        val detail =
+                            turn.detail
+                                ?.replace(Regex("\\s+"), " ")
+                                ?.trim()
+                                ?.take(200)
+                        events +=
+                            SessionEvent(
+                                "error",
+                                if (detail.isNullOrEmpty()) "provider failure" else "provider failure: $detail",
+                            )
                         break
                     }
 

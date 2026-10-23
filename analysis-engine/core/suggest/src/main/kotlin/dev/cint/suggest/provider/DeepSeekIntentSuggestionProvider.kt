@@ -46,7 +46,10 @@ class DeepSeekIntentSuggestionProvider(
     override fun complete(request: AgentRequest): AgentTurn {
         val key =
             apiKey(config.apiKeyEnv)?.takeIf { it.isNotBlank() }
-                ?: return AgentTurn.Failure("provider is not configured")
+                ?: return AgentTurn.Failure(
+                    "provider is not configured",
+                    detail = "missing environment variable ${config.apiKeyEnv}",
+                )
         val payload =
             linkedMapOf<String, Any?>(
                 "model" to model,
@@ -67,7 +70,12 @@ class DeepSeekIntentSuggestionProvider(
                     },
             )
         val transport = DeepSeekChatTransport(config.baseUrl, request.timeoutMs, key, client, mapper)
-        val body = transport.post(payload) ?: return AgentTurn.Failure("provider request failed")
+        val body =
+            transport.post(payload)
+                ?: return AgentTurn.Failure(
+                    "provider request failed",
+                    detail = transport.lastFailure,
+                )
         val message =
             runCatching {
                 mapper
@@ -75,7 +83,11 @@ class DeepSeekIntentSuggestionProvider(
                     .path("choices")
                     .path(0)
                     .path("message")
-            }.getOrNull()?.takeIf { !it.isMissingNode } ?: return AgentTurn.Failure("provider response is malformed")
+            }.getOrNull()?.takeIf { !it.isMissingNode }
+                ?: return AgentTurn.Failure(
+                    "provider response is malformed",
+                    detail = "response has no choices[0].message",
+                )
         val calls =
             message
                 .path("tool_calls")

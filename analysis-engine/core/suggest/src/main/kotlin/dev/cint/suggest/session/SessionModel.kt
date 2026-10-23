@@ -136,6 +136,7 @@ sealed interface AgentTurn {
 
     data class Failure(
         val reason: String,
+        val detail: String? = null,
     ) : AgentTurn
 }
 

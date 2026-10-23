@@ -803,6 +803,20 @@ class AnnotationSessionTest {
     }
 
     @Test
+    fun providerFailureDetailIsLoggedWithoutTheProviderReason() {
+        val secret = "hunter2-secret"
+        val result =
+            AnnotationSession(
+                scripted { _, _ ->
+                    AgentTurn.Failure("failure contains $secret", detail = "HTTP 401")
+                },
+            ).run(document(listOf(unit("u0", 0, text.length))), SessionLimits())
+
+        assertTrue(result.events.any { it.message.contains("provider failure: HTTP 401") })
+        assertTrue(result.events.none { it.message.contains(secret) })
+    }
+
+    @Test
     fun toolResultsAreBoundedByTheActiveBatchAndSessionBudget() {
         val units = (0 until 20).map { index -> unit("u$index", index, index + 1) }
         var toolResult = ""
