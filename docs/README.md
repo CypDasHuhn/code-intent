@@ -25,6 +25,12 @@ Index of the written contract for CodeIntent.
 - [service-intents.md](service-intents.md) — service delegation and init pack,
   configuration, candidates, registration, and overlap policy.
 
+## Rewrite
+
+- [rewrite/module-graph.md](rewrite/module-graph.md) — V2 working notes:
+  project layout, dependency graph, interaction contracts, and the walking
+  skeleton milestone.
+
 ## Work tracking
 
 - [tasks/README.md](tasks/README.md) — ticket queue, statuses, dependencies, and
