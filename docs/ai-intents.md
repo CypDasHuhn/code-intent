@@ -1,5 +1,11 @@
 # AI Intent Candidates — Architecture
 
+> **V1 / historical.** This documents the implemented V1 AI channel. The V2
+> model in [rewrite/knowledge-model.md](rewrite/knowledge-model.md) replaces
+> pack-owned AI config, per-expression classification as the primary workflow,
+> and in-house AI as the architectural center. Use this document for current V1
+> behavior and migration reference.
+
 AI here means **intent inference**, not code completion. The deterministic
 pipeline remains the source of truth; AI only fills structural gaps and produces
 reviewable candidates.

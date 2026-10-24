@@ -4,10 +4,11 @@ One file per unit of work. Status is owned by the orchestrator. See
 [../workflow.md](../workflow.md) for format and pipeline, and
 [../architecture.md](../architecture.md) for the target design.
 
-New work is planned in [`rulepack-support-plan.md`](../rulepack-support-plan.md).
-The queue follows architecture.md §11 (sequencing): contract → scheduler →
-detection as rulepacks → composition → config → delete the legacy path, with
-host and client cutover at the end.
+V1 work was planned in [`rulepack-support-plan.md`](../rulepack-support-plan.md).
+The V2 rewrite is queued below as 063–087; its design lives in
+[`rewrite/module-graph.md`](../rewrite/module-graph.md) and
+[`rewrite/knowledge-model.md`](../rewrite/knowledge-model.md). V2 is built
+alongside V1 in `analysis-engine-v2`; V1 stays frozen until cutover.
 
 | id | name | status | depends-on | scope |
 |---|---|---|---|---|
@@ -74,6 +75,41 @@ host and client cutover at the end.
 | 060 | [ai verdict reuse cache](060-ai-verdict-reuse-cache.md) | done | 058, 059 | Document short circuit, unit fingerprint cache, diff invalidation, similarity hints, and disk persistence. |
 | 061 | [ai review ux for discovery and restrictions](061-ai-review-ux.md) | done | 058, 059, 060 | Quiet passive mode, review groups/list, restrictions inspector, progress, cancellation, and AI session log. |
 | 062 | [split host record ownership for legacy records](062-split-host-record-ownership.md) | todo | 060 | Shared host/region ownership classifier for legacy records; status, scoping, host analysis, and suppression agree. |
+
+## V2 rewrite queue
+
+Tickets 063–087 build the parallel `analysis-engine-v2` tree. V1 remains frozen
+and is the behavioral reference. Wave numbers are parallelization hints; the
+frontmatter `depends-on` is authoritative. Same-wave tickets can run
+concurrently once their dependencies are done.
+
+| id | wave | name | status | depends-on | scope |
+|---|---|---|---|---|---|
+| 063 | 0 | [V2 build skeleton and graph guard](063-v2-build-skeleton.md) | todo | — | Parallel KMP/Native build, canonical modules, graph guard, just/CI entry points. |
+| 064 | 1 | [Kotlin/Native platform spike](064-native-platform-spike.md) | todo | 063 | Tree-sitter cinterop, JSON, Unix socket, child process, HTTP/TLS evidence. |
+| 065 | 1 | [V2 contracts foundation](065-v2-contracts-foundation.md) | todo | 063 | Data model, ports, knowledge DTOs, deadlines, pure identity/hashing. |
+| 066 | 0 | [Freeze V1 corpus and protocol behavior](066-v1-corpus-and-protocol-freeze.md) | todo | — | Capture V1 outputs, IPC transcripts, and known differences. |
+| 067 | 2 | [Shared V2 fakes and test harness](067-v2-shared-fakes.md) | todo | 065 | Deterministic fakes for every port and fixture loaders. |
+| 068 | 2 | [V2 knowledge store and materialization](068-v2-knowledge-store.md) | todo | 065 | Function annotations, overrides, defaults, provenance, mutation. |
+| 069 | 2 | [V2 packs, manifests, and seed defaults](069-v2-packs-and-defaults.md) | todo | 065 | Manifest packs and defaults; no user-facing pack config shape. |
+| 070 | 2 | [V2 deterministic core engine](070-v2-core-engine.md) | todo | 065 | Scheduler, strata, fixpoint, composition, candidates. |
+| 071 | 2 | [V2 index and source facts](071-v2-index.md) | todo | 065 | Hashes, cache, incremental invalidation, IndexedSource. |
+| 072 | 2 | [V2 tree-sitter syntax adapter](072-v2-syntax-treesitter.md) | todo | 064, 065 | SyntaxEngine implementation and fixture parity. |
+| 073 | 2 | [V2 LSP semantic provider](073-v2-lsp-provider.md) | todo | 064, 065 | Managed, attached, and editor-proxy provider. |
+| 074 | 3 | [V2 languages facade](074-v2-languages-facade.md) | todo | 065, 072, 073 | Bind descriptors to syntax/provider and return LanguageSupport. |
+| 075 | 3 | [V2 intent pipeline](075-v2-intent-pipeline.md) | todo | 065, 067, 069, 070 | Pack selection, plan, core invocation, result shaping. |
+| 076 | 4 | [V2 function contracts and call-site propagation](076-v2-function-propagation.md) | todo | 068, 070, 075 | Resolve function annotations, overrides, and chain propagation. |
+| 077 | 4 | [V2 fallback AI](077-v2-fallback-ai.md) | todo | 067, 068, 075 | Dirty/uninitialized fallback using the knowledge mutation API. |
+| 078 | 5 | [V2 runtime and knowledge lifecycle](078-v2-runtime.md) | todo | 068, 071, 074, 075, 076, 077 | Runtime orchestration, init/materialization, analyze/publish. |
+| 079 | 2 | [V2 renderer IPC protocol](079-v2-ipc-protocol.md) | todo | 065, 066 | NDJSON protocol, handshake, transcript compatibility. |
+| 080 | 6 | [V2 CLI app](080-v2-cli.md) | todo | 078 | Batch CLI over runtime. |
+| 081 | 6 | [V2 live server app](081-v2-server.md) | todo | 078, 079 | Editor daemon and live document state. |
+| 082 | 6 | [V2 MCP tool server](082-v2-mcp-tool-server.md) | todo | 068, 078 | MCP tools/resources for analysis and knowledge. |
+| 083 | 7 | [V2 MCP repo init workflow](083-v2-mcp-init-workflow.md) | todo | 082 | Resumable agent-driven init and pattern hypotheses. |
+| 084 | 8 | [V2 parity and integration suite](084-v2-parity-integration.md) | todo | 066, 080, 081, 083 | Corpus, protocol, CLI, server, and MCP parity. |
+| 085 | 9 | [V1 to V2 cutover](085-v2-cutover.md) | todo | 084 | Promote V2, drop suffixes, delete V1. |
+| 086 | 10 | [Version the external renderer protocol](086-external-protocol-versioning.md) | todo | 085 | Explicit protocol version and compatibility contract. |
+| 087 | 11 | [Extract the Neovim renderer](087-extract-nvim-renderer.md) | todo | 086 | Move the renderer to its own repository. |
 
 ## Resolved decisions
 

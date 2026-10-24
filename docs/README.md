@@ -4,14 +4,18 @@ Index of the written contract for CodeIntent.
 
 ## Current
 
+These documents describe the implemented V1 behavior. Where they conflict with
+the rewrite model, the rewrite documents are authoritative.
+
 - [architecture.md](architecture.md) — implemented module boundaries, rulepack
   loading, scheduler, composition, and hosts.
 - [intent-model.md](intent-model.md) — intents, sources, derivative use,
   scaffolds, CFG, profiles, and implementation snapshot.
-- [ai-intents.md](ai-intents.md) — secondary emits, AI candidate inference,
-  review/persistence, and protocol.
-- [ai-annotation-session.md](ai-annotation-session.md) — expression-level
-  annotation sessions, AI restrictions, verdict reuse, and review UX (058–061).
+- [ai-intents.md](ai-intents.md) — V1 historical: secondary emits, AI candidate
+  inference, review/persistence, and protocol.
+- [ai-annotation-session.md](ai-annotation-session.md) — V1 historical:
+  expression-level annotation sessions, AI restrictions, verdict reuse, and
+  review UX (058–061).
 - [workflow.md](workflow.md) — roles, ticket/review pipeline, verification
   commands, manual gate, and commit rules.
 - [manual-test.md](manual-test.md) — non-automated acceptance checks and their
@@ -30,6 +34,9 @@ Index of the written contract for CodeIntent.
 - [rewrite/module-graph.md](rewrite/module-graph.md) — V2 working notes:
   project layout, dependency graph, interaction contracts, and the walking
   skeleton milestone.
+- [rewrite/knowledge-model.md](rewrite/knowledge-model.md) — V2 persisted
+  function annotations, span overrides, materialized pack defaults, deterministic
+  propagation, and the MCP-first AI workflow.
 
 ## Work tracking
 

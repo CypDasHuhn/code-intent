@@ -4,6 +4,10 @@ This directory is a compact, continuation-oriented map of CodeIntent. It is
 derived from the canonical docs and the current code; when they disagree, the
 canonical docs and the code win.
 
+This summary describes the implemented V1. The in-progress V2 direction lives in
+[../rewrite/knowledge-model.md](../rewrite/knowledge-model.md) and
+[../rewrite/module-graph.md](../rewrite/module-graph.md).
+
 As of 2026-10-23, `main` contains the rule/engine restructure, the user
 annotation and AI candidate channels, expression-level AI discovery, grouped
 restriction proposals, the verdict reuse cache, the full Neovim review UX, and

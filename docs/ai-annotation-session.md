@@ -1,5 +1,11 @@
 # AI Annotation Session, Restrictions, and Reuse
 
+> **V1 / historical.** This documents the implemented V1 discovery session,
+> restrictions, and verdict reuse. The V2 model in
+> [rewrite/knowledge-model.md](rewrite/knowledge-model.md) makes persisted
+> function annotations and span overrides the center, with MCP agents as the
+> primary AI workflow and this session path as fallback.
+
 Status: implemented, 2026-10-23. Ticket 058 implements expression-level
 discovery, the internal tool loop, add-only verdicts, budgets/coverage, protocol 4
 progress/log, and the recall-oriented prompt. Ticket 059 implements grouped
