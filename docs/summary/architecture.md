@@ -85,8 +85,10 @@ The canonical grouped tree and the 063 supersession note live in
 - `cint` is the batch CLI and emits JSON or NDJSON.
 - `cint-server` is the NDJSON JSON-RPC Unix-socket daemon. Current protocol is 5;
   protocol-4 clients receive legacy-shaped payloads where supported.
-- `cint-mcp` exposes `analysis.run`, `repo.status`, `repo.index`, knowledge
-  snapshot/default/materialization tools, and function/span/pattern tools.
+- `cint-mcp` exposes repository discovery (`repo.files`, `analysis.symbols`,
+  `knowledge.resolveSelector`), `analysis.run`, `repo.status`, `repo.index`,
+  knowledge snapshot/default/materialization tools, and function/span/pattern
+  tools.
 - The renderer consumes published data and never runs detection.
 
 See `orchestration/ipc/PROTOCOL.md` for the wire contract and

@@ -10,10 +10,14 @@ import dev.cint.contracts.knowledge.FunctionAnnotation
 import dev.cint.contracts.knowledge.KnowledgeChange
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.contracts.knowledge.PatternHypothesis
+import dev.cint.contracts.knowledge.Selector
 import dev.cint.contracts.mcp.McpToolResult
 import dev.cint.contracts.ports.AnalysisRequest
 import dev.cint.contracts.ports.InitCheckpointStore
+import dev.cint.contracts.ports.RepositoryFilesRequest
+import dev.cint.contracts.ports.RepositorySymbolsRequest
 import dev.cint.contracts.ports.Runtime
+import dev.cint.contracts.ports.SelectorResolutionRequest
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContentHash
 import dev.cint.contracts.util.ContractError
@@ -87,6 +91,12 @@ internal class McpRuntimeTools(
                 "repo.status" -> repoStatus(args, cancellation)
 
                 "repo.index" -> repoIndex(args, cancellation)
+
+                "repo.files" -> repoFiles(args, cancellation)
+
+                "analysis.symbols" -> analysisSymbols(args, cancellation)
+
+                "knowledge.resolveSelector" -> resolveSelector(args, cancellation)
 
                 else -> throw McpProtocolException(
                     -32602,
@@ -933,6 +943,88 @@ internal class McpRuntimeTools(
                 put("status", encodeMcp(status))
             },
         )
+    }
+
+    private fun repoFiles(
+        args: JsonObject,
+        cancellation: CancellationToken,
+    ): McpToolResult {
+        val request =
+            RepositoryFilesRequest(
+                languages = args.stringList("languages").orEmpty(),
+                extensions = args.stringList("extensions").orEmpty(),
+                limit =
+                    args
+                        .long("limit")
+                        ?.coerceIn(1, RepositoryFilesRequest.MAX_FILE_LIMIT.toLong())
+                        ?.toInt()
+                        ?: RepositoryFilesRequest.DEFAULT_FILE_LIMIT,
+            )
+        val result = runtime.repositoryFiles(request, cancellation)
+        if (result.isFailure) return toolFailure(result.errorOrNull!!)
+        val files = result.getOrThrow()
+        return toolSuccess(
+            buildJsonObject {
+                put("root", files.root)
+                put("files", encodeMcp(files.files))
+                put("paths", encodeMcp(files.files.map { it.path }))
+                put("count", files.count)
+                put("truncated", files.truncated)
+                put("ignoredDirectories", encodeMcp(files.ignoredDirectories))
+            },
+        )
+    }
+
+    private fun analysisSymbols(
+        args: JsonObject,
+        cancellation: CancellationToken,
+    ): McpToolResult {
+        val targetPaths = args.stringList("targetPaths").orEmpty()
+        if (targetPaths.isEmpty()) {
+            return toolFailure(
+                ContractError.InvalidInput("analysis.symbols requires at least one target path", "targetPaths"),
+            )
+        }
+        val request =
+            RepositorySymbolsRequest(
+                targetPaths = targetPaths,
+                language = args.string("language"),
+                options = parseOptions(args["options"]),
+            )
+        val result = runtime.repositorySymbols(request, cancellation)
+        if (result.isFailure) return toolFailure(result.errorOrNull!!)
+        return toolSuccess(encodeMcp(result.getOrThrow()))
+    }
+
+    private fun resolveSelector(
+        args: JsonObject,
+        cancellation: CancellationToken,
+    ): McpToolResult {
+        val selector = selectorInput(args)
+        val request =
+            SelectorResolutionRequest(
+                selector = selector,
+                targetPaths = args.stringList("targetPaths").orEmpty(),
+                root = args.string("root"),
+                language = args.string("language"),
+                options = parseOptions(args["options"]),
+            )
+        val result = runtime.resolveSelector(request, cancellation)
+        if (result.isFailure) return toolFailure(result.errorOrNull!!)
+        return toolSuccess(encodeMcp(result.getOrThrow()))
+    }
+
+    private fun selectorInput(args: JsonObject): Selector {
+        val element = args["selector"] ?: args
+        val objectValue = element as? JsonObject
+        val span =
+            objectValue != null &&
+                (
+                    objectValue.containsKey("span") ||
+                        objectValue.containsKey("contentHash") ||
+                        objectValue.containsKey("startLine")
+                )
+        return if (span) KnowledgeInputs.spanSelector(element) else KnowledgeInputs.functionSelector(element)
     }
 
     private fun workflowId(args: JsonObject): String = args.string("workflowId")?.takeIf { it.isNotBlank() } ?: defaultWorkflowId

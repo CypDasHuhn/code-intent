@@ -278,6 +278,62 @@ internal object McpCatalog {
                     schema = objectSchema(),
                 ),
             )
+            add(
+                tool(
+                    name = "repo.files",
+                    description =
+                        "List analyzable repository files with deterministic ordering. " +
+                            "Skips generated directories such as .git, .cint, build, out, target, " +
+                            "node_modules, and dist. Does not require git.",
+                    schema =
+                        objectSchema(
+                            properties =
+                                mapOf(
+                                    "languages" to stringArrayProperty("Optional language identifiers to include."),
+                                    "extensions" to stringArrayProperty("Optional file extensions to include."),
+                                    "limit" to integerProperty("Maximum files to return. Defaults to 5000."),
+                                ),
+                        ),
+                ),
+            )
+            add(
+                tool(
+                    name = "analysis.symbols",
+                    description =
+                        "Return a compact declaration, call, and import inventory for target paths " +
+                            "without returning the full analysis result.",
+                    schema =
+                        objectSchema(
+                            required = listOf("targetPaths"),
+                            properties =
+                                mapOf(
+                                    "targetPaths" to stringArrayProperty("Paths to inspect."),
+                                    "language" to stringProperty("Optional language identifier."),
+                                    "options" to stringMapProperty("Analysis options passed to runtime."),
+                                ),
+                        ),
+                ),
+            )
+            add(
+                tool(
+                    name = "knowledge.resolveSelector",
+                    description =
+                        "Dry-run a function or span selector against target paths or the repository root " +
+                            "and report matches and unsupported reasons. Never mutates knowledge.",
+                    schema =
+                        objectSchema(
+                            required = listOf("selector"),
+                            properties =
+                                mapOf(
+                                    "selector" to selectorProperty(),
+                                    "targetPaths" to stringArrayProperty("Paths to inspect. Defaults to the repository root."),
+                                    "root" to stringProperty("Optional repository root override."),
+                                    "language" to stringProperty("Optional language identifier."),
+                                    "options" to stringMapProperty("Analysis options passed to runtime."),
+                                ),
+                        ),
+                ),
+            )
         }
 
     fun resources(): List<McpResourceDefinition> =
@@ -375,6 +431,34 @@ internal object McpCatalog {
             put("type", "object")
             put("description", description)
             put("additionalProperties", buildJsonObject { put("type", "string") })
+        }
+
+    private fun integerProperty(description: String): JsonObject =
+        buildJsonObject {
+            put("type", "integer")
+            put("description", description)
+        }
+
+    private fun selectorProperty(): JsonObject =
+        buildJsonObject {
+            put("type", "object")
+            put("description", "Function selector or span selector.")
+            put(
+                "properties",
+                JsonObject(
+                    mapOf(
+                        "qualifiedName" to stringProperty("Qualified function name."),
+                        "importPath" to stringProperty("Import path."),
+                        "receiverType" to stringProperty("Receiver type."),
+                        "declaringType" to stringProperty("Declaring type."),
+                        "signature" to stringProperty("Function signature."),
+                        "structuralPattern" to stringProperty("Structural pattern."),
+                        "path" to stringProperty("File path for span selectors."),
+                        "span" to buildJsonObject { put("type", "object") },
+                        "contentHash" to stringProperty("Content hash for span selectors."),
+                    ),
+                ),
+            )
         }
 
     private fun persistenceProperties(): Map<String, JsonElement> =

@@ -404,6 +404,7 @@ the IPC boundary; `mcp` exposes the agent boundary over MCP.
 10. **MCP**
     - Knowledge: `knowledge.snapshot`, `function_annotations.*`,
       `span_overrides.*`, `patterns.*`
+    - Discovery: `repo.files`, `analysis.symbols`, `knowledge.resolveSelector`
     - Analysis: `analysis.run`, `repo.status`, `repo.index`
     - Changes: `changes.propose`, `changes.apply`
     - Init: `knowledge.materializeDefaults`, `knowledge.suggestDefaults`

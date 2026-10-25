@@ -3,19 +3,30 @@ package dev.cint.runtime
 import dev.cint.contracts.data.AnalysisResult
 import dev.cint.contracts.data.AnalysisResultMerger
 import dev.cint.contracts.data.LabelledAnalysisResult
+import dev.cint.contracts.facts.IndexedSource
 import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.knowledge.KnowledgeChange
 import dev.cint.contracts.knowledge.PackDefault
+import dev.cint.contracts.knowledge.SpanSelector
 import dev.cint.contracts.ports.AnalysisRequest
 import dev.cint.contracts.ports.Index
 import dev.cint.contracts.ports.IntentPipeline
 import dev.cint.contracts.ports.KnowledgeRepositoryLocation
 import dev.cint.contracts.ports.KnowledgeStore
 import dev.cint.contracts.ports.LanguageSupport
+import dev.cint.contracts.ports.RepositoryFilesRequest
+import dev.cint.contracts.ports.RepositoryFilesResult
+import dev.cint.contracts.ports.RepositorySymbolInventory
+import dev.cint.contracts.ports.RepositorySymbolsRequest
+import dev.cint.contracts.ports.RepositorySymbolsResult
+import dev.cint.contracts.ports.ResolvedSelectorTarget
 import dev.cint.contracts.ports.RulePackSource
 import dev.cint.contracts.ports.Runtime
 import dev.cint.contracts.ports.RuntimePack
 import dev.cint.contracts.ports.RuntimeStatus
+import dev.cint.contracts.ports.SelectorResolution
+import dev.cint.contracts.ports.SelectorResolutionRequest
+import dev.cint.contracts.ports.SelectorUnsupportedReason
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
@@ -111,6 +122,181 @@ class DefaultRuntime private constructor(
         checkOpen()?.let { return ResultFactory.failure(it) }
         cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
         return index.contentHash(path, cancellation)
+    }
+
+    override fun repositoryFiles(
+        request: RepositoryFilesRequest,
+        cancellation: CancellationToken,
+    ): ContractResult<RepositoryFilesResult> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        val root = configuredRoot()
+        if (root.isFailure) return ResultFactory.failure(root.errorOrNull!!)
+        val path =
+            root.getOrThrow()
+                ?: return ResultFactory.failure(
+                    ContractError.PreconditionFailed(
+                        "Repository root is not configured; start cint-mcp with --root PATH",
+                    ),
+                )
+        return RepositoryDiscovery.files(path, language.catalog, request, cancellation)
+    }
+
+    override fun repositorySymbols(
+        request: RepositorySymbolsRequest,
+        cancellation: CancellationToken,
+    ): ContractResult<RepositorySymbolsResult> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        val paths =
+            request.targetPaths
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+        if (paths.isEmpty()) {
+            return ResultFactory.failure(
+                ContractError.InvalidInput(
+                    "repositorySymbols requires at least one target path",
+                    "targetPaths",
+                ),
+            )
+        }
+        val sources = mutableListOf<RepositorySymbolInventory>()
+        for (path in paths) {
+            val indexed =
+                ensureForDiscovery(path, request.language, request.options, cancellation)
+            if (indexed.isFailure) return ResultFactory.failure(indexed.errorOrNull!!)
+            val source = indexed.getOrThrow()
+            sources +=
+                RepositoryDiscovery.symbols(
+                    path = path,
+                    language = source.facts.syntaxTree?.language,
+                    facts = source.facts,
+                )
+        }
+        return ResultFactory.success(RepositorySymbolsResult(sources = sources, count = sources.size))
+    }
+
+    override fun resolveSelector(
+        request: SelectorResolutionRequest,
+        cancellation: CancellationToken,
+    ): ContractResult<SelectorResolution> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        val requestedRoot = request.root
+        val rootResult: ContractResult<Path?> =
+            if (requestedRoot != null && requestedRoot.isNotBlank()) {
+                normalizeRoot(requestedRoot, "root").map(Path::of)
+            } else {
+                configuredRoot()
+            }
+        if (rootResult.isFailure) return ResultFactory.failure(rootResult.errorOrNull!!)
+        val root = rootResult.getOrThrow()
+        val requestedPaths =
+            request.targetPaths
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+        val selector = request.selector
+        val targetPaths =
+            when {
+                requestedPaths.isNotEmpty() -> {
+                    requestedPaths
+                }
+
+                selector is SpanSelector -> {
+                    listOf(selector.path)
+                }
+
+                root != null -> {
+                    val files =
+                        RepositoryDiscovery.files(
+                            root,
+                            language.catalog,
+                            RepositoryFilesRequest(
+                                languages =
+                                    request.language
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let(::listOf)
+                                        .orEmpty(),
+                            ),
+                            cancellation,
+                        )
+                    if (files.isFailure) return ResultFactory.failure(files.errorOrNull!!)
+                    files.getOrThrow().files.map { it.absolutePath }
+                }
+
+                else -> {
+                    return ResultFactory.failure(
+                        ContractError.InvalidInput(
+                            "resolveSelector requires targetPaths or a configured repository root",
+                            "targetPaths",
+                        ),
+                    )
+                }
+            }
+        val matched = mutableListOf<ResolvedSelectorTarget>()
+        val unsupported = mutableListOf<SelectorUnsupportedReason>()
+        val scanned = mutableListOf<String>()
+        for (path in targetPaths) {
+            val indexed =
+                ensureForDiscovery(path, request.language, request.options, cancellation)
+            if (indexed.isFailure) return ResultFactory.failure(indexed.errorOrNull!!)
+            val resolution = pipeline.resolveSelector(selector, indexed.getOrThrow(), cancellation)
+            if (resolution.isFailure) return ResultFactory.failure(resolution.errorOrNull!!)
+            val resolved = resolution.getOrThrow()
+            matched += resolved.matched
+            unsupported += resolved.unsupported
+            scanned += resolved.scannedPaths.ifEmpty { listOf(path) }
+        }
+        return ResultFactory.success(
+            SelectorResolution(
+                selector = selector.identityKey,
+                matched =
+                    matched
+                        .distinct()
+                        .sortedWith(
+                            compareBy(
+                                { it.path.orEmpty() },
+                                { it.startByte },
+                                { it.endByte },
+                                { it.nodeId },
+                                { it.kind },
+                            ),
+                        ),
+                unsupported =
+                    unsupported
+                        .distinctBy { Triple(it.reason, it.path, it.nodeId) }
+                        .sortedWith(
+                            compareBy(
+                                { it.path.orEmpty() },
+                                { it.reason },
+                                { it.nodeId.orEmpty() },
+                            ),
+                        ),
+                scannedPaths = scanned.distinct().sorted(),
+            ),
+        )
+    }
+
+    private fun configuredRoot(): ContractResult<Path?> {
+        val raw = config.rootPath?.takeIf { it.isNotBlank() } ?: return ResultFactory.success(null)
+        return normalizeRoot(raw, "rootPath").map(Path::of)
+    }
+
+    private fun ensureForDiscovery(
+        path: String,
+        language: String?,
+        options: Map<String, String>,
+        cancellation: CancellationToken,
+    ): ContractResult<IndexedSource> {
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        val input = SourceInput.FilePath(path, language)
+        val languageOptions = languageOptions(AnalysisRequest(targetPaths = listOf(path), language = language, options = options))
+        if (languageOptions.isFailure) return ResultFactory.failure(languageOptions.errorOrNull!!)
+        val support = resolveSupport(input, languageOptions.getOrThrow(), cancellation)
+        if (support.isFailure) return ResultFactory.failure(support.errorOrNull!!)
+        return index.ensure(input, support.getOrThrow(), cancellation)
     }
 
     private fun analyzeInputs(

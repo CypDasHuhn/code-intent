@@ -109,10 +109,27 @@ implementation notes.
 
 ### MCP
 
-`cint-mcp` exposes `analysis.run`, `repo.status`, `repo.index`,
-`knowledge.snapshot`, `knowledge.suggestDefaults`,
-`knowledge.materializeDefaults`, and the function/span/pattern knowledge tools.
-It is the primary agent workflow; fallback AI is separate and optional.
+`cint-mcp` exposes discovery, analysis, and knowledge tools:
+
+- `repo.files` lists analyzable files under the configured root with language
+  and extension filters, deterministic ordering, and documented skips for
+  generated directories (`.git`, `.cint`, `build`, `out`, `target`,
+  `node_modules`, and similar). It does not require git.
+- `analysis.symbols` returns a compact declaration, call, and import inventory
+  with receiver/declaring types, spans, and language for target paths.
+- `knowledge.resolveSelector` dry-runs a function or span selector against
+  target paths or the repository root and reports matches plus unsupported
+  reasons without mutating knowledge.
+- `analysis.run`, `repo.status`, and `repo.index` run or report analysis.
+- `knowledge.snapshot`, `knowledge.suggestDefaults`,
+  `knowledge.materializeDefaults`, and the function/span/pattern knowledge
+  tools read or write knowledge.
+
+The intended agent workflow is: discover with `repo.files`, inspect with
+`analysis.symbols` or `analysis.run`, dry-run selectors with
+`knowledge.resolveSelector`, then write knowledge through the validated
+function/span/pattern or `changes.propose`/`changes.apply` tools. MCP is the
+primary agent workflow; fallback AI is separate and optional.
 
 ## Config
 

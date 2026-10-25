@@ -48,10 +48,16 @@ derivation path and is not the primary AI workflow.
 
 The primary AI workflow is an external MCP agent. `cint-mcp` exposes:
 
-- `analysis.run`, `repo.status`, `repo.index`
-- `knowledge.snapshot`, `knowledge.suggestDefaults`,
+- discovery: `repo.files`, `analysis.symbols`, `knowledge.resolveSelector`
+- analysis: `analysis.run`, `repo.status`, `repo.index`
+- knowledge: `knowledge.snapshot`, `knowledge.suggestDefaults`,
   `knowledge.materializeDefaults`
 - function annotation, span override, and pattern tools
+
+An agent should list analyzable files, inspect compact symbols, dry-run a
+selector, and only then write knowledge. `knowledge.resolveSelector` reports
+matches and unsupported `receiverType`/`declaringType` reasons without changing
+knowledge.
 
 MCP handlers call `runtime`; tool DTOs live in `contracts`. MCP is not the
 renderer IPC protocol.

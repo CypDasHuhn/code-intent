@@ -93,7 +93,9 @@ analysis module apps need to import.
 - `cint-server` is the live per-project daemon. It owns the renderer IPC
   boundary, speaks NDJSON JSON-RPC, and negotiates the current protocol plus the
   legacy protocol-4 shape.
-- `cint-mcp` exposes analysis and knowledge tools to external agents. MCP is the
+- `cint-mcp` exposes discovery, analysis, and knowledge tools to external
+  agents. The discovery path is `repo.files` -> `analysis.symbols` ->
+  `knowledge.resolveSelector` before validated knowledge writes. MCP is the
   primary AI workflow; in-house fallback AI is optional.
 
 ## Renderer boundary
