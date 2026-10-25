@@ -1,6 +1,6 @@
 ---
 name: V2 intent pipeline
-status: todo
+status: done
 depends-on: [065, 067, 069, 070]
 reviewers: [correctness, architecture]
 ---

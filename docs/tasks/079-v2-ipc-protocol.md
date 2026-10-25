@@ -1,6 +1,6 @@
 ---
 name: V2 renderer IPC protocol
-status: todo
+status: done
 depends-on: [065, 066]
 reviewers: [correctness, api-fidelity]
 ---

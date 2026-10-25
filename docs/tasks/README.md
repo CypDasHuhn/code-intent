@@ -96,12 +96,12 @@ concurrently once their dependencies are done.
 | 071 | 2 | [V2 index and source facts](071-v2-index.md) | done | 065 | Hashes, cache, incremental invalidation, IndexedSource. |
 | 072 | 2 | [V2 tree-sitter syntax adapter](072-v2-syntax-treesitter.md) | done | 064, 065 | SyntaxEngine implementation and fixture parity. |
 | 073 | 2 | [V2 LSP semantic provider](073-v2-lsp-provider.md) | done | 064, 065 | Managed, attached, and editor-proxy provider. |
-| 074 | 3 | [V2 languages facade](074-v2-languages-facade.md) | todo | 065, 072, 073 | Bind descriptors to syntax/provider and return LanguageSupport. |
-| 075 | 3 | [V2 intent pipeline](075-v2-intent-pipeline.md) | todo | 065, 067, 069, 070 | Pack selection, plan, core invocation, result shaping. |
+| 074 | 3 | [V2 languages facade](074-v2-languages-facade.md) | done | 065, 072, 073 | Bind descriptors to syntax/provider and return LanguageSupport. |
+| 075 | 3 | [V2 intent pipeline](075-v2-intent-pipeline.md) | done | 065, 067, 069, 070 | Pack selection, plan, core invocation, result shaping. |
 | 076 | 4 | [V2 function contracts and call-site propagation](076-v2-function-propagation.md) | todo | 068, 070, 075 | Resolve function annotations, overrides, and chain propagation. |
 | 077 | 4 | [V2 fallback AI](077-v2-fallback-ai.md) | todo | 067, 068, 075 | Dirty/uninitialized fallback using the knowledge mutation API. |
 | 078 | 5 | [V2 runtime and knowledge lifecycle](078-v2-runtime.md) | todo | 068, 071, 074, 075, 076, 077 | Runtime orchestration, init/materialization, analyze/publish. |
-| 079 | 2 | [V2 renderer IPC protocol](079-v2-ipc-protocol.md) | todo | 065, 066 | NDJSON protocol, handshake, transcript compatibility. |
+| 079 | 2 | [V2 renderer IPC protocol](079-v2-ipc-protocol.md) | done | 065, 066 | NDJSON protocol, handshake, transcript compatibility. |
 | 080 | 6 | [V2 CLI app](080-v2-cli.md) | todo | 078 | Batch CLI over runtime. |
 | 081 | 6 | [V2 live server app](081-v2-server.md) | todo | 078, 079 | Editor daemon and live document state. |
 | 082 | 6 | [V2 MCP tool server](082-v2-mcp-tool-server.md) | todo | 068, 078 | MCP tools/resources for analysis and knowledge. |
