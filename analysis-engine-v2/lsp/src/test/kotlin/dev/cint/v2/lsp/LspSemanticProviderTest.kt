@@ -14,6 +14,8 @@ import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.Deadline
 import dev.cint.contracts.util.ResultFactory
+import dev.cint.v2.testing.lsp.ScriptedLspServer
+import dev.cint.v2.testing.lsp.ScriptedLspServerMain
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.InetAddress

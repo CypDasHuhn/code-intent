@@ -47,9 +47,19 @@ class BundledRuleEvaluatorsTest {
                                 CallFact(
                                     nodeId = "call",
                                     siteId = "call",
-                                    callee = "repository.findUser",
+                                    callee = "findUser",
                                     receiverId = null,
                                     path = "repository.findUser",
+                                ),
+                            ),
+                        declarations =
+                            listOf(
+                                dev.cint.contracts.facts.DeclarationFact(
+                                    nodeId = "property",
+                                    kind = dev.cint.contracts.facts.DeclarationKind.PROPERTY,
+                                    name = "count",
+                                    nameNodeId = null,
+                                    annotations = listOf("Bookkeeping"),
                                 ),
                             ),
                         properties =
@@ -87,10 +97,16 @@ class BundledRuleEvaluatorsTest {
                 .getOrThrow()
 
         val intents = result.annotations.flatMap { it.intents }.toSet()
-        assertTrue(Intents.LOOKUP in intents, "expected LOOKUP in $intents")
         assertTrue(Intents.BOOKKEEPING in intents, "expected BOOKKEEPING in $intents")
-        assertTrue(result.annotations.all { it.source == BundledRuleEvaluators.PROVISIONAL_SOURCE })
-        assertTrue(result.candidates.isEmpty())
+        assertTrue(
+            result.candidates.any { Intents.LOOKUP in it.intents },
+            "expected a LOOKUP candidate in ${result.candidates}",
+        )
+        assertTrue(
+            result.candidates.any { Intents.SEARCH in it.intents },
+            "expected a SEARCH candidate in ${result.candidates}",
+        )
+        assertTrue(result.annotations.isNotEmpty())
     }
 
     private fun tree(): SyntaxTree {
@@ -133,7 +149,7 @@ class BundledRuleEvaluatorsTest {
                         startCol = 4,
                         endLine = 2,
                         endCol = 34,
-                        text = "val count = 0",
+                        text = "var count = 0",
                         parentId = "root",
                     ),
             )

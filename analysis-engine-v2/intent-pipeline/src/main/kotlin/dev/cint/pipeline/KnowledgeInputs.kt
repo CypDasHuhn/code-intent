@@ -32,7 +32,9 @@ fun interface KnowledgeInputResolver {
     ): ContractResult<KnowledgeInputResolution>
 }
 
-class PrecedenceKnowledgeInputResolver : KnowledgeInputResolver {
+class PrecedenceKnowledgeInputResolver(
+    private val includeUnmaterializedDefaults: Boolean = true,
+) : KnowledgeInputResolver {
     override fun resolve(
         source: IndexedSource,
         snapshot: KnowledgeSnapshot,
@@ -113,7 +115,7 @@ class PrecedenceKnowledgeInputResolver : KnowledgeInputResolver {
                     applies
                 }.sortedWith(annotationOrder)
         val defaults =
-            if (snapshot.materialized) {
+            if (snapshot.materialized || !includeUnmaterializedDefaults) {
                 emptyList()
             } else {
                 packDefaults

@@ -6,6 +6,7 @@ plugins {
 
 application {
     mainClass.set("dev.cint.v2.mcp.Main")
+    applicationName = "cint-mcp"
 }
 
 dependencies {

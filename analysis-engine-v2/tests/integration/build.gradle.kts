@@ -30,4 +30,7 @@ tasks.test {
         "v2.frozenCorpusRoot",
         rootProject.projectDir.parentFile.resolve("frozen-v1-corpus").absolutePath,
     )
+    systemProperty("v2.v2Root", rootProject.projectDir.absolutePath)
+    systemProperty("v2.ipcKnownDifferences", rootProject.projectDir.resolve("ipc/known-differences-v2.json").absolutePath)
+    systemProperty("v2.parityReportDir", layout.buildDirectory.dir("parity").get().asFile.absolutePath)
 }

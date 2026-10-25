@@ -1,7 +1,7 @@
 ---
 name: V1 to V2 cutover
 status: todo
-depends-on: [084]
+depends-on: [084, 088, 089, 090, 091, 092, 093, 094]
 reviewers: [correctness, architecture]
 ---
 
@@ -28,4 +28,4 @@ Promote V2 to the primary build and remove V1.
 
 ## Notes
 
-- Do not cut over before 084 is green.
+- Do not cut over before 084 is green and 088-094 are closed.

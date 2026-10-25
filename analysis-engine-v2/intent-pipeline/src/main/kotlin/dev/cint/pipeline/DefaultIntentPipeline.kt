@@ -26,6 +26,8 @@ class DefaultIntentPipeline(
     packSource: RulePackSource,
     private val ruleEvaluators: RuleEvaluatorRegistry = BundledRuleEvaluators.registry(),
     private val knowledgeInputs: KnowledgeInputResolver = PrecedenceKnowledgeInputResolver(),
+    private val applyUnmaterializedDefaults: Boolean = true,
+    private val enableCallChains: Boolean = true,
     private val fallbackAi: FallbackAiHook? = null,
     private val fallbackAiPolicy: FallbackAiPolicy = FallbackAiPolicy.DISABLED,
     private val knowledgeStore: KnowledgeStore? = null,
@@ -86,8 +88,9 @@ class DefaultIntentPipeline(
         }
         val effectiveKnowledge = fallbackResult.getOrThrow()
 
+        val defaults = if (applyUnmaterializedDefaults) selected.defaults else emptyList()
         val knowledgeResolution =
-            knowledgeInputs.resolve(source, effectiveKnowledge, selected.defaults, cancellation)
+            knowledgeInputs.resolve(source, effectiveKnowledge, defaults, cancellation)
         if (knowledgeResolution.isFailure) {
             return ResultFactory.failure(knowledgeResolution.errorOrNull!!)
         }
@@ -102,7 +105,7 @@ class DefaultIntentPipeline(
                     resolved.contributions.sortedWith(
                         compareBy({ it.startByte }, { it.endByte }, { it.rule }),
                     ),
-                    CompositionPlan.config(bound.composition),
+                    CompositionPlan.config(bound.composition).copy(callChainsEnabled = enableCallChains),
                 )
             } catch (error: RuntimeException) {
                 return ResultFactory.failure(internal(error))

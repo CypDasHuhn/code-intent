@@ -1,26 +1,26 @@
 package dev.cint.pipeline
 
+import dev.cint.contracts.data.CandidateReason
 import dev.cint.contracts.data.Confidence
 import dev.cint.contracts.data.Intents
 import dev.cint.contracts.facts.CallFact
+import dev.cint.contracts.facts.CommentFact
+import dev.cint.contracts.facts.DeclarationFact
 import dev.cint.contracts.facts.DeclarationKind
 import dev.cint.contracts.facts.GuardKind
+import dev.cint.contracts.facts.SyntaxNode
+import dev.cint.contracts.facts.WriteFact
+import dev.cint.contracts.facts.WriteKind
+import dev.cint.contracts.ports.CandidateEmission
 import dev.cint.contracts.ports.EstablishedEmission
+import dev.cint.contracts.ports.RuleEmission
 import dev.cint.contracts.ports.RuleEvaluator
 import dev.cint.contracts.ports.RuleEvaluatorRegistry
 import dev.cint.contracts.ports.RuleEvaluationView
 import dev.cint.contracts.ports.RuleSpec
 
-/**
- * Provisional rule evaluators for the default bundled packs.
- *
- * These are deliberately simple, fact-based heuristics. They keep the walking
- * skeleton executable until the full V1 detection semantics land. Full corpus
- * parity is owned by ticket 084 (`084.fact-semantics`, `084.pack-defaults`,
- * `084.composition-parity`, `084.non-kotlin-syntax-parity`).
- */
 object BundledRuleEvaluators {
-    const val PROVISIONAL_SOURCE: String = "provisional"
+    const val PROVISIONAL_SOURCE: String = "treesitter"
 
     fun registry(): RuleEvaluatorRegistry = RuleEvaluatorCatalog(evaluators())
 
@@ -42,241 +42,937 @@ object BundledRuleEvaluators {
     }.sortedBy { it.spec.id }
 }
 
-private abstract class ProvisionalEvaluator(
-    override val spec: RuleSpec,
-) : RuleEvaluator {
-    protected fun RuleEvaluationView.emit(
+private abstract class V1Evaluator(override val spec: RuleSpec) : RuleEvaluator {
+    protected fun RuleEvaluationView.emitNode(
+        node: SyntaxNode?,
+        confidence: Double,
+        source: String = "treesitter",
+    ): EstablishedEmission? =
+        node?.let { emitRange(it, it, confidence, source) }
+
+    protected fun RuleEvaluationView.emitRange(
+        start: SyntaxNode,
+        end: SyntaxNode,
+        confidence: Double,
+        source: String = "treesitter",
+        certifiesReturn: Boolean = false,
+    ): EstablishedEmission =
+        EstablishedEmission(
+            intents = setOf(spec.owns),
+            span = dev.cint.contracts.data.Span(start.startLine, start.startCol, end.endLine, end.endCol),
+            startByte = start.startByte,
+            endByte = end.endByte,
+            source = source,
+            confidence = Confidence.fromDouble(confidence),
+            certifiesReturn = certifiesReturn,
+        )
+
+    protected fun RuleEvaluationView.emitId(
         nodeId: String?,
         confidence: Double,
-    ): EstablishedEmission? {
-        val node = node(nodeId) ?: return null
-        return EstablishedEmission(
-            intents = setOf(spec.owns),
-            span = node.span,
-            startByte = node.startByte,
-            endByte = node.endByte,
-            source = BundledRuleEvaluators.PROVISIONAL_SOURCE,
-            confidence = Confidence.fromDouble(confidence),
-        )
+        source: String = "treesitter",
+    ): EstablishedEmission? = node(nodeId)?.let { emitNode(it, confidence, source) }
+
+    protected fun RuleEvaluationView.candidateNode(
+        node: SyntaxNode?,
+        confidence: Double = CANDIDATE_CONFIDENCE,
+        reason: CandidateReason = CandidateReason.PACK_DOMAIN,
+    ): CandidateEmission? =
+        node?.let {
+            CandidateEmission(
+                intents = setOf(spec.owns),
+                span = it.span,
+                startByte = it.startByte,
+                endByte = it.endByte,
+                source = "rule:${spec.id}",
+                confidence = Confidence.fromDouble(confidence),
+                reason = reason,
+                aiEligible = true,
+            )
+        }
+
+    protected fun RuleEvaluationView.candidateId(
+        nodeId: String?,
+        confidence: Double = CANDIDATE_CONFIDENCE,
+        reason: CandidateReason = CandidateReason.PACK_DOMAIN,
+    ): CandidateEmission? = node(nodeId)?.let { candidateNode(it, confidence, reason) }
+}
+
+private class LoggingEvaluator : V1Evaluator(RuleSpec("logging:logging", Intents.LOGGING)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val loggerSymbols = loggerSymbols(view)
+        val hasLoggingImport =
+            view.imports.any { import ->
+                LOGGING_IMPORTS.any { import.path == it || import.path.startsWith("$it.") }
+            }
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val tokens = call.calleeSegments()
+            val receiver = call.receiverText(view)
+            val receiverName = receiver.substringAfterLast('.')
+            when {
+                PRINT_QUALIFIERS.any { receiver == it || receiver.endsWith(".$it") } ->
+                    view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
+                tokens.any { it in PRINT_CALLS } && receiver.isEmpty() ->
+                    view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
+                tokens.any { it in LOGGING_METHODS } && receiver.isNotEmpty() -> {
+                    val evidence =
+                        when {
+                            receiverName in loggerSymbols -> 0.8 to "heuristic"
+                            LOGGING_RECEIVER_NAMES.any { it.equals(receiverName, ignoreCase = true) } -> 0.6 to "heuristic"
+                            PRINT_QUALIFIERS.any { receiver == it || receiver.endsWith(".$it") } -> 0.8 to "heuristic"
+                            hasLoggingImport -> 0.5 to "heuristic"
+                            else -> null
+                        } ?: continue
+                    view.emitNode(view.node(call.nodeId), evidence.first, evidence.second)?.let(result::add)
+                }
+            }
+        }
+        for (guard in view.guards) {
+            val condition = view.node(guard.conditionId) ?: continue
+            if (LOGGING_GUARD_NAMES.any { condition.text.contains(it, ignoreCase = true) }) {
+                view.emitNode(condition, 0.7, "treesitter")?.let(result::add)
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
     }
 
-    protected fun RuleEvaluationView.emits(
-        nodeIds: Iterable<String?>,
-        confidence: Double,
-    ): List<EstablishedEmission> =
-        nodeIds.filterNotNull().distinct().mapNotNull { emit(it, confidence) }
-}
-
-private class LoggingEvaluator :
-    ProvisionalEvaluator(RuleSpec("logging:logging", Intents.LOGGING)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls.filter { it.matchesAny(LOGGING_TOKENS) }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
-}
-
-private class ErrorHandlingEvaluator :
-    ProvisionalEvaluator(RuleSpec("error-handling:error-handling", Intents.ERROR_HANDLING)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> {
-        val nodes = mutableListOf<String?>()
-        nodes += view.tries.map { it.nodeId }
-        nodes += view.calls.filter { it.matchesAny(ERROR_TOKENS) }.map { it.nodeId }
-        return view.emits(nodes, CONFIDENCE_MEDIUM)
+    private fun loggerSymbols(view: RuleEvaluationView): Set<String> {
+        val callsBySpan = view.calls.associateBy { (view.node(it.nodeId)?.startByte ?: -1) to (view.node(it.nodeId)?.endByte ?: -2) }
+        return view.properties
+            .mapNotNull { property ->
+                val name = property.name ?: return@mapNotNull null
+                val initializer = view.node(property.initializerId) ?: return@mapNotNull null
+                val path = callsBySpan[initializer.startByte to initializer.endByte]?.path.orEmpty()
+                name.takeIf { pathContainsFactory(path) }
+            }.toSet()
     }
 }
 
-private class BookkeepingEvaluator :
-    ProvisionalEvaluator(RuleSpec("bookkeeping:bookkeeping", Intents.BOOKKEEPING)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> {
-        val propertyNames = view.properties.mapNotNull { it.name }.toSet()
-        val nodes = mutableListOf<String?>()
-        nodes += view.properties.map { it.nodeId }
-        nodes += view.declarations.filter { it.kind == DeclarationKind.PROPERTY }.map { it.nodeId }
-        nodes += view.writes.filter { it.targetName in propertyNames }.map { it.nodeId }
-        return view.emits(nodes, CONFIDENCE_ESTABLISHED)
+private class ErrorHandlingEvaluator : V1Evaluator(RuleSpec("error-handling:error-handling", Intents.ERROR_HANDLING)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            if (callee == "Error" || callee == "Exception") continue
+            if (call.calleeSegments().any { it in ERROR_CALLS }) {
+                view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
+            }
+        }
+        val root = view.rootNode()
+        if (root != null) {
+            for (node in view.descendants(root)) {
+                val text = node.text.trim()
+                if (node.kind.contains("throw") || text.startsWith("throw ") || text.startsWith("raise ")) {
+                    if (node.kind in setOf("throw_expression", "throw_statement", "raise_statement") ||
+                        text.startsWith("throw ") || text.startsWith("raise ")
+                    ) {
+                        view.emitNode(node, 1.0, "treesitter")?.let(result::add)
+                    }
+                }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+}
+
+private class BookkeepingEvaluator : V1Evaluator(RuleSpec("bookkeeping:bookkeeping", Intents.BOOKKEEPING)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (declaration in view.declarations) {
+            if (declaration.kind == DeclarationKind.FUNCTION) continue
+            val node = view.node(declaration.nodeId) ?: continue
+            val source =
+                when {
+                    declaration.annotations.any { annotationName(it) == "Bookkeeping" } ||
+                        view.node(declaration.nodeId)?.text?.contains("@Bookkeeping") == true -> "annotation"
+                    declaration.precedingCommentIds.any { id -> view.node(id)?.text?.contains("cint:bookkeeping") == true } -> "comment"
+                    view.comments.any { comment -> isBookkeepingComment(view, comment, declaration, node) } -> "comment"
+                    else -> continue
+                }
+            val start =
+                if (source == "comment") {
+                    precedingComment(view, declaration, node) ?: node
+                } else {
+                    node
+                }
+            result += view.emitRange(start, node.trimmedEnd(), 1.0, source)
+            val writeIds =
+                if (declaration.name != null) {
+                    (declaration.writeIds + view.writes.filter { it.targetName == declaration.name }.map { it.nodeId }).distinct()
+                } else {
+                    declaration.writeIds
+                }
+            for (writeId in writeIds) {
+                view.node(writeId)?.let { write -> view.emitNode(write, 1.0, source)?.let(result::add) }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+
+    private fun precedingComment(
+        view: RuleEvaluationView,
+        declaration: DeclarationFact,
+        node: SyntaxNode,
+    ): SyntaxNode? =
+        declaration.precedingCommentIds.mapNotNull { view.node(it) }.maxByOrNull { it.startByte }
+            ?: view.comments
+                .mapNotNull { view.node(it.nodeId) }
+                .filter { it.endByte <= node.startByte && node.startLine - it.endLine <= 1 }
+                .filter { it.text.contains("cint:bookkeeping") }
+                .maxByOrNull { it.startByte }
+
+    private fun isBookkeepingComment(
+        view: RuleEvaluationView,
+        comment: CommentFact,
+        declaration: DeclarationFact,
+        node: SyntaxNode,
+    ): Boolean {
+        val commentNode = view.node(comment.nodeId) ?: return false
+        return commentNode.endByte <= node.startByte &&
+            node.startLine - commentNode.endLine <= 1 &&
+            commentNode.text.contains("cint:bookkeeping")
     }
 }
 
 private class ValidationEvaluator :
-    ProvisionalEvaluator(
+    V1Evaluator(
         RuleSpec(
             "validation:validation",
             Intents.VALIDATION,
             reads = listOf(Intents.BOOKKEEPING, Intents.DATA_MODIFY, Intents.LOCAL_VALUE_MODIFY),
         ),
     ) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> {
-        val nodes = mutableListOf<String?>()
-        nodes += view.guards.filter { it.kind == GuardKind.CONDITIONAL }.map { it.nodeId }
-        nodes += view.calls.filter { it.matchesAny(VALIDATION_TOKENS) }.map { it.nodeId }
-        return view.emits(nodes, CONFIDENCE_MEDIUM)
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (guard in view.guards) {
+            if (guard.kind != GuardKind.CONDITIONAL) continue
+            val condition = view.node(guard.conditionId) ?: continue
+            val body = view.node(guard.thenBodyId) ?: continue
+            val explicit = hasValidationComment(view, guard.nodeId, condition)
+            val bookkeeping = view.annotations(Intents.BOOKKEEPING).any { it.startByte >= body.startByte && it.endByte <= body.endByte }
+            val predicate = callsWithin(view, condition).any { call -> isPredicate(call.callee.orEmpty()) }
+            val rejection = hasRejectingExit(view, body) || view.node(guard.elseBodyId)?.let { hasRejectingExit(view, it) } == true
+            val pure = rejection && callsWithin(view, condition).isEmpty() && !hasWriteWithin(view, condition)
+            val readOnly = rejection && !hasWriteWithin(view, condition)
+            val constant = isConstantCondition(condition)
+            val established =
+                (explicit || bookkeeping || (predicate && rejection) || pure || readOnly) &&
+                    !(constant && !explicit && !bookkeeping)
+            val emittedCondition = trimCondition(condition)
+            if (established) {
+                val confidence =
+                    when {
+                        explicit -> 1.0
+                        bookkeeping -> 0.9
+                        predicate -> 0.7
+                        pure -> 0.6
+                        else -> 0.5
+                    }
+                val source = if (explicit) "comment" else "treesitter"
+                view.emitNode(emittedCondition, confidence, source)?.copy(certifiesReturn = true)?.let(result::add)
+            } else if (hasValidationComment(view, guard.nodeId, condition, maxDistance = 3)) {
+                view.candidateNode(emittedCondition, 0.4, CandidateReason.GAP)?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+
+    private fun hasValidationComment(
+        view: RuleEvaluationView,
+        guardId: String,
+        condition: SyntaxNode,
+        maxDistance: Int = 1,
+    ): Boolean {
+        val guard = view.node(guardId) ?: return false
+        val comment =
+            view.comments
+                .mapNotNull { view.node(it.nodeId) }
+                .filter { it.endByte <= guard.startByte }
+                .filter { guard.startLine - it.endLine <= maxDistance }
+                .maxByOrNull { it.startByte } ?: return false
+        return Regex("""cint\s*:\s*validation""", RegexOption.IGNORE_CASE).containsMatchIn(comment.text)
+    }
+
+    private fun trimCondition(condition: SyntaxNode): SyntaxNode {
+        var value = condition.text.trim()
+        var start = condition.startByte
+        var startCol = condition.startCol
+        var end = condition.endByte
+        var endCol = condition.endCol
+        while (value.startsWith("(") && value.endsWith(")")) {
+            value = value.substring(1, value.length - 1).trim()
+            start++
+            startCol++
+            end--
+            endCol--
+        }
+        return condition.copy(startByte = start, startCol = startCol, endByte = end, endCol = endCol)
+    }
+
+    private fun isPredicate(callee: String): Boolean =
+        PREDICATE_CALLS.any { it.equals(callee, ignoreCase = true) } ||
+            PREDICATE_PREFIXES.any { callee.startsWith(it) }
+
+    private fun callsWithin(view: RuleEvaluationView, node: SyntaxNode): List<CallFact> =
+        view.calls.filter { call -> view.node(call.nodeId)?.let { within(it, node) } == true }
+
+    private fun hasWriteWithin(view: RuleEvaluationView, node: SyntaxNode): Boolean =
+        view.writes.any { write -> view.node(write.nodeId)?.let { within(it, node) } == true }
+
+    private fun hasRejectingExit(view: RuleEvaluationView, body: SyntaxNode): Boolean =
+        view.descendants(body).any { node ->
+            val text = node.text.trim().removeSuffix(";").trim()
+            when {
+                text.startsWith("continue") || text.startsWith("break") -> true
+                text.startsWith("return") -> {
+                    val expression = node.childIds.firstOrNull { child ->
+                        view.node(child)?.text?.trim() != "return"
+                    }?.let { view.node(it) }
+                    if (expression == null) true else expression.text.trim() in REJECTION_VALUES
+                }
+                else -> false
+            }
+        }
+
+    private fun isConstantCondition(condition: SyntaxNode): Boolean {
+        val text = condition.text.trim()
+        if (text in setOf("true", "false")) return true
+        return CONSTANT_COMPARISON.matches(text)
     }
 }
 
-private class SearchEvaluator :
-    ProvisionalEvaluator(RuleSpec("data-access:search", Intents.SEARCH)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls.filter { it.matchesAny(SEARCH_TOKENS) }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
+private class SearchEvaluator : V1Evaluator(RuleSpec("data-access:search", Intents.SEARCH)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            if (isLookupOnly(callee)) continue
+            val receiver = call.receiverText(view)
+            val configured = SEARCH_CALLS.any { it.equals(callee, ignoreCase = true) } || SEARCH_PREFIXES.any { callee.startsWith(it) }
+            val established = configured && receiver.isNotEmpty() && SEARCH_QUALIFIERS.any { qualifierMatches(receiver, it) }
+            when {
+                established -> view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
+                isAmbiguous(callee) -> view.candidateNode(view.node(call.nodeId))?.let { result += it }
+                configured -> view.candidateNode(view.node(call.nodeId))?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
 }
 
-private class LookupEvaluator :
-    ProvisionalEvaluator(RuleSpec("data-access:lookup", Intents.LOOKUP)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls
-                .filter { it.matchesAny(LOOKUP_TOKENS) && !it.matchesAny(SEARCH_TOKENS) }
-                .map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
+private class LookupEvaluator : V1Evaluator(RuleSpec("data-access:lookup", Intents.LOOKUP)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val receiver = call.receiverText(view)
+            val configured = LOOKUP_CALLS.any { it.equals(callee, ignoreCase = true) } || isAmbiguous(callee)
+            val knownReceiver = receiver.isNotEmpty() && LOOKUP_QUALIFIERS.any { qualifierMatches(receiver, it) }
+            when {
+                configured && knownReceiver ->
+                    view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
+                isAmbiguous(callee) || configured -> view.candidateNode(view.node(call.nodeId))?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
 }
 
-private class NormalizationEvaluator :
-    ProvisionalEvaluator(RuleSpec("normalization:normalization", Intents.NORMALIZATION)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls.filter { it.matchesAny(NORMALIZATION_TOKENS) }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
+private class NormalizationEvaluator : V1Evaluator(RuleSpec("normalization:normalization", Intents.NORMALIZATION)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val receiver = call.receiverText(view)
+            val qualified = receiver.isNotEmpty() && NORMALIZATION_QUALIFIERS.any { receiver == it || receiver.endsWith(".$it") }
+            when {
+                NORMALIZATION_CALLS.any { it == callee } ->
+                    if (qualified || receiver.isEmpty() || callee in NORMALIZATION_INSTANCE_CALLS) {
+                        view.emitNode(view.node(call.nodeId), 0.9, "treesitter")?.let(result::add)
+                    } else {
+                        view.candidateNode(view.node(call.nodeId))?.let { result += it }
+                    }
+                NORMALIZATION_CANDIDATE_CALLS.any { it == callee } ||
+                    NORMALIZATION_CANDIDATE_PREFIXES.any { callee.startsWith(it) } ->
+                    view.candidateNode(view.node(call.nodeId))?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
 }
 
 private class DataTransformationEvaluator :
-    ProvisionalEvaluator(
+    V1Evaluator(
         RuleSpec(
             "data-transformation:data-transformation",
             Intents.DATA_TRANSFORMATION,
             reads = listOf(Intents.SEARCH),
         ),
     ) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls.filter { it.matchesAny(TRANSFORMATION_TOKENS) }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val receiver = call.receiverText(view)
+            val receiverNode = view.node(call.receiverId)
+            val receiverHasSearch =
+                receiverNode != null &&
+                    view.annotations(Intents.SEARCH).any { it.startByte >= receiverNode.startByte && it.endByte <= receiverNode.endByte }
+            val established =
+                TRANSFORMATION_CALLS.any { it == callee } &&
+                    (
+                        receiver.isNotEmpty() &&
+                            (TRANSFORMATION_QUALIFIERS.any { qualifierMatches(receiver, it) } ||
+                                receiverHasSearch ||
+                                view.intentsAt(receiverNode ?: continue).any {
+                                    it == Intents.SEARCH || it == Intents.DATA_TRANSFORMATION
+                                })
+                    )
+            when {
+                established -> view.emitNode(view.node(call.nodeId), 0.9, "treesitter")?.let(result::add)
+                TRANSFORMATION_CANDIDATE_CALLS.any { it == callee } ||
+                    TRANSFORMATION_CANDIDATE_PREFIXES.any { callee.startsWith(it) } ->
+                    view.candidateNode(view.node(call.nodeId), reason = CandidateReason.LOW_CONFIDENCE)?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
 }
 
-private class DataModifyEvaluator :
-    ProvisionalEvaluator(RuleSpec("mutation:data-modify", Intents.DATA_MODIFY)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> {
-        val localNames =
-            view.declarations.filter { it.kind == DeclarationKind.VARIABLE }.mapNotNull { it.name }.toSet()
-        val nodes = mutableListOf<String?>()
-        nodes += view.writes.filter { it.targetName != null && it.targetName !in localNames }.map { it.nodeId }
-        nodes += view.calls.filter { it.matchesAny(MUTATION_TOKENS) }.map { it.nodeId }
-        return view.emits(nodes, CONFIDENCE_MEDIUM)
+private class DataModifyEvaluator : V1Evaluator(RuleSpec("mutation:data-modify", Intents.DATA_MODIFY)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val path = call.path.orEmpty()
+            val receiver = call.receiverText(view)
+            val receiverName = receiver.substringAfterLast('.').trim('_')
+            val persistent = persistentReceiver(receiver, receiverName)
+            val exactPath = PERSISTENCE_PATHS.any { path == it || path.endsWith(".$it") }
+            val configured = PERSISTENCE_CALLS.any { it == callee } || PERSISTENCE_PREFIXES.any { callee.startsWith(it) }
+            when {
+                exactPath || (configured && persistent) ->
+                    view.emitNode(view.node(call.nodeId), 0.9, "treesitter")?.let(result::add)
+                configured && receiver.isNotEmpty() && !MUTABLE_RECEIVER_NAMES.any { it.equals(receiverName, true) } ->
+                    view.candidateNode(view.node(call.nodeId))?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
     }
 }
 
 private class LocalValueModifyEvaluator :
-    ProvisionalEvaluator(
+    V1Evaluator(
         RuleSpec(
             "mutation:local-value-modify",
             Intents.LOCAL_VALUE_MODIFY,
             reads = listOf(Intents.BOOKKEEPING, Intents.LOCAL_COPY),
         ),
     ) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> {
-        val localNames =
-            view.declarations.filter { it.kind == DeclarationKind.VARIABLE }.mapNotNull { it.name }.toSet()
-        val nodes =
-            view.writes
-                .filter { it.targetName == null || it.targetName in localNames }
-                .map { it.nodeId }
-        return view.emits(nodes, CONFIDENCE_MEDIUM)
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        val localNames = view.declarations.filter { it.kind == DeclarationKind.VARIABLE }.mapNotNull { it.name }.toSet()
+        val bookkeepingSpans = view.annotations(Intents.BOOKKEEPING).map { it.startByte to it.endByte }.toSet()
+        for (write in view.writes) {
+            val node = view.node(write.nodeId) ?: continue
+            if (write.kind == WriteKind.INCREMENT && node.text.contains("++") && isLoopCounter(view, node)) continue
+            if (bookkeepingSpans.any { node.startByte >= it.first && node.endByte <= it.second }) continue
+            if (write.targetName != null && write.targetName in localNames) {
+                view.emitNode(node, 0.8, "treesitter")?.let(result::add)
+            } else if (write.kind == WriteKind.ASSIGNMENT && write.targetName != null) {
+                view.candidateNode(node)?.let { result += it }
+            }
+        }
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val receiver = call.receiverText(view)
+            val receiverName = receiver.substringAfterLast('.').trim()
+            val mutableReceiver = MUTABLE_RECEIVER_NAMES.any { it.equals(receiverName, true) }
+            when {
+                MUTABLE_OPERATIONS.any { it == callee } && mutableReceiver ->
+                    view.emitNode(view.node(call.nodeId), 0.8, "treesitter")?.let(result::add)
+                isLocalCandidate(callee) -> view.candidateNode(view.node(call.nodeId))?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+
+    private fun isLoopCounter(view: RuleEvaluationView, node: SyntaxNode): Boolean {
+        val parent = node.parentId?.let { view.node(it) } ?: return false
+        return parent.kind in setOf("for_statement", "for_in_statement", "while_statement", "do_statement")
     }
 }
 
 private class ServiceDelegationEvaluator :
-    ProvisionalEvaluator(
+    V1Evaluator(
         RuleSpec(
             "service:delegation",
             Intents.SERVICE_DELEGATION,
             optionalReads = listOf(Intents.DATA_MODIFY),
         ),
     ) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls.filter { it.matchesAny(DELEGATION_TOKENS) }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
-}
-
-private class ServiceInitEvaluator :
-    ProvisionalEvaluator(RuleSpec("service:init", Intents.SERVICE_INIT)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.calls.filter { it.matchesAny(SERVICE_INIT_TOKENS) }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
-}
-
-private class ReturnValueEvaluator :
-    ProvisionalEvaluator(RuleSpec("return-value:return-value", Intents.RETURN_VALUE)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> =
-        view.emits(
-            view.returns.filter { it.expressionId != null }.map { it.nodeId },
-            CONFIDENCE_MEDIUM,
-        )
-}
-
-private class LocalCopyEvaluator :
-    ProvisionalEvaluator(RuleSpec("local-copy:local-copy", Intents.LOCAL_COPY)) {
-    override fun evaluate(view: RuleEvaluationView): List<EstablishedEmission> {
-        val nodes = mutableListOf<String?>()
-        nodes += view.writes.filter { it.valueId != null }.map { it.nodeId }
-        nodes += view.calls.filter { it.matchesAny(LOCAL_COPY_TOKENS) }.map { it.nodeId }
-        return view.emits(nodes, CONFIDENCE_LOW)
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            val path = call.path.orEmpty()
+            val receiver = call.receiverText(view)
+            val receiverName = receiver.substringAfterLast('.').trim('_')
+            if (initEvidence(view, call) != null) continue
+            val repositoryLike = receiver.endsWith("repository", true) || receiver.endsWith("repo", true) || receiver.endsWith("dao", true) || receiver.endsWith("client", true) || receiver.endsWith("api", true)
+            if (repositoryLike &&
+                (SEARCH_CALLS.any { it.equals(callee, true) } ||
+                    LOOKUP_CALLS.any { it.equals(callee, true) } ||
+                    PERSISTENCE_CALLS.any { it == callee })
+            ) {
+                continue
+            }
+            if (PERSISTENCE_CALLS.any { it == callee } &&
+                !SERVICE_NAMES.any { it.equals(receiverName, true) } &&
+                !SERVICE_SUFFIXES.any { receiverName.endsWith(it, true) }
+            ) {
+                continue
+            }
+            val evidence =
+                when {
+                    DELEGATION_CALLS.any { it == callee } || path.endsWith(".${DELEGATION_CALLS.firstOrNull { path.endsWith(it) }.orEmpty()}") ->
+                        0.9 to "treesitter"
+                    DELEGATION_QUALIFIERS.any { path == it || path.startsWith("$it.") } -> 0.85 to "treesitter"
+                    SERVICE_NAMES.any { it.equals(receiverName, true) } -> 0.75 to "heuristic"
+                    SERVICE_SUFFIXES.any { receiverName.endsWith(it, true) } -> 0.75 to "heuristic"
+                    else -> null
+                }
+            if (evidence != null) {
+                view.emitNode(view.node(call.nodeId), evidence.first, evidence.second)?.let(result::add)
+            } else if (callee in parameterNames(view, call) &&
+                view.intentsAt(view.node(call.nodeId) ?: continue).none { it == Intents.DATA_MODIFY }
+            ) {
+                view.candidateNode(view.node(call.nodeId), reason = CandidateReason.LOW_CONFIDENCE)?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
     }
 }
 
-private fun CallFact.matchesAny(tokens: Set<String>): Boolean {
-    val segments =
-        listOfNotNull(callee, path)
-            .flatMap { it.lowercase().split(TOKEN_SEPARATOR) }
-            .filter { it.isNotBlank() }
-    return tokens.any { token ->
-        segments.any { segment -> segment == token || (token.length >= 4 && segment.startsWith(token)) }
+private class ServiceInitEvaluator : V1Evaluator(RuleSpec("service:init", Intents.SERVICE_INIT)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        val creations = creationNodes(view)
+        for (call in view.calls) {
+            val evidence = initEvidence(view, call) ?: continue
+            view.emitNode(view.node(call.nodeId), evidence.first, evidence.second)?.let(result::add)
+        }
+        for ((node, type) in creations) {
+            if (type == null || !INIT_TYPES.any { type.endsWith(it) || type.endsWith(it + "Client") } && !type.endsWith("Factory") && !type.endsWith("Client")) continue
+            view.emitNode(node, 0.85, "treesitter")?.let(result::add)
+        }
+        val root = view.rootNode()
+        if (root != null) {
+            for (node in view.descendants(root)) {
+                val text = node.text
+                if (!node.kind.contains("class") || !text.contains("(")) continue
+                val open = text.indexOf("constructor(").let { if (it >= 0) it + "constructor".length else text.indexOf('(') }
+                if (open < 0) continue
+                var depth = 0
+                var close = -1
+                for (index in open until text.length) {
+                    if (text[index] == '(') depth++ else if (text[index] == ')') {
+                        depth--
+                        if (depth == 0) { close = index; break }
+                    }
+                }
+                if (close <= open) continue
+                val params = text.substring(open, close + 1)
+                val typed = SERVICE_SUFFIXES.any { params.contains(": $it") || params.contains(": " + it + "<") || params.contains("$it ") }
+                if (!typed) continue
+                val startCol = node.startCol + open
+                val endCol = node.startCol + close + 1
+                val start = node.copy(startByte = node.startByte + open, startCol = startCol)
+                val end = node.copy(endByte = node.startByte + close + 1, endCol = endCol)
+                result += view.emitRange(start, end, 0.8, "heuristic")
+            }
+        }
+        for (declaration in view.declarations) {
+            if (declaration.kind != DeclarationKind.FUNCTION) continue
+            val name = declaration.name ?: continue
+            if (name !in INIT_METHODS) continue
+            val node = view.node(declaration.nameNodeId ?: declaration.nodeId) ?: continue
+            val function = view.functions.firstOrNull { it.nodeId == declaration.nodeId } ?: continue
+            val hasEvidence =
+                view.calls.any { call ->
+                    val callNode = view.node(call.nodeId) ?: return@any false
+                    within(callNode, view.node(function.nodeId) ?: continue) && initEvidence(view, call) != null
+                } || creations.any { (creation, _) -> within(creation, view.node(function.nodeId) ?: continue) }
+            if (hasEvidence) view.emitNode(node, 0.8, "heuristic")?.let(result::add)
+        }
+        for (declaration in view.declarations) {
+            if (declaration.annotations.any { annotationName(it) in DI_ANNOTATIONS }) {
+                val node = view.node(declaration.annotationNodeIds.firstOrNull() ?: declaration.nodeId) ?: continue
+                view.emitNode(node, 0.95, "annotation")?.let(result::add)
+            }
+        }
+        for (function in view.functions) {
+            val name = function.name ?: continue
+            if (name in INIT_METHODS) continue
+            val node = view.node(function.nameNodeId ?: function.nodeId) ?: continue
+            if (mostlyInit(view, function.nodeId, creations)) {
+                view.candidateNode(node, reason = CandidateReason.LOW_CONFIDENCE)?.let { result += it }
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+
+    private fun mostlyInit(
+        view: RuleEvaluationView,
+        functionId: String,
+        creations: List<Pair<SyntaxNode, String?>>,
+    ): Boolean {
+        val function = view.node(functionId) ?: return false
+        return creations.any { (creation, type) ->
+            within(creation, function) && type != null && INIT_TYPES.any { type.endsWith(it) }
+        } || view.calls.any { call ->
+            val node = view.node(call.nodeId) ?: return@any false
+            within(node, function) && initEvidence(view, call) != null
+        }
     }
 }
 
-private const val CONFIDENCE_LOW = 0.55
-private const val CONFIDENCE_MEDIUM = 0.65
-private const val CONFIDENCE_ESTABLISHED = 0.85
+private class ReturnValueEvaluator : V1Evaluator(RuleSpec("return-value:return-value", Intents.RETURN_VALUE)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        for (ret in view.returns) {
+            val statement = view.node(ret.nodeId) ?: continue
+            val statementText = statement.text.trim()
+            if (BARE_LABELED_RETURN.matches(statementText) ||
+                statementText.startsWith("throw") ||
+                statementText.startsWith("continue") ||
+                statementText.startsWith("break")
+            ) {
+                continue
+            }
+            val expression = view.node(ret.expressionId) ?: continue
+            if (isLiteral(expression.text)) continue
+            result += view.emitRange(statement, expressionEnd(statement, expression), 0.9, "treesitter")
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+}
 
-private val TOKEN_SEPARATOR = Regex("[^a-z0-9]+")
+private class LocalCopyEvaluator : V1Evaluator(RuleSpec("local-copy:local-copy", Intents.LOCAL_COPY)) {
+    override fun evaluate(view: RuleEvaluationView): List<RuleEmission> {
+        val result = mutableListOf<RuleEmission>()
+        val declared = view.properties.mapNotNull { it.name }.toSet()
+        val localNames = view.declarations.filter { it.kind == DeclarationKind.VARIABLE }.mapNotNull { it.name }.toSet()
+        for (write in view.writes) {
+            if (write.kind != WriteKind.ASSIGNMENT) continue
+            val node = view.node(write.nodeId) ?: continue
+            val target = write.targetName ?: continue
+            val value = view.node(write.valueId)?.text?.trim() ?: continue
+            if (!SIMPLE_IDENTIFIER.matches(value)) continue
+            if (isFieldLike(target) && !isFieldLike(value) && value !in declared) {
+                view.emitNode(node, 0.8, "heuristic")?.let(result::add)
+            } else if (target in localNames || isFieldLike(target)) {
+                view.candidateNode(node, reason = CandidateReason.LOW_CONFIDENCE)?.let { result += it }
+            }
+        }
+        for (property in view.properties) {
+            val name = property.name ?: continue
+            val initializer = view.node(property.initializerId) ?: continue
+            val value = initializer.text.trim()
+            if (!SIMPLE_IDENTIFIER.matches(value) || name == value) continue
+            if (isFieldLike(name) && !isFieldLike(value) && value !in declared) {
+                view.emitNode(view.node(property.nodeId), 0.8, "heuristic")?.let(result::add)
+            }
+        }
+        for (call in view.calls) {
+            val callee = call.callee.orEmpty()
+            if (callee in LOCAL_COPY_CALLS) {
+                view.emitNode(view.node(call.nodeId), 0.55, "heuristic")?.let(result::add)
+            }
+        }
+        return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
+    }
+}
 
-private val LOGGING_TOKENS =
-    setOf("log", "logger", "println", "print", "debug", "info", "warn", "warning", "error", "trace", "audit", "telemetry", "metric")
+private fun RuleEvaluationView.rootNode(): SyntaxNode? {
+    val seed =
+        calls.firstOrNull()?.nodeId?.let(::node)
+            ?: functions.firstOrNull()?.nodeId?.let(::node)
+            ?: declarations.firstOrNull()?.nodeId?.let(::node)
+            ?: properties.firstOrNull()?.nodeId?.let(::node)
+            ?: comments.firstOrNull()?.nodeId?.let(::node)
+            ?: return null
+    var current = seed
+    while (current.parentId != null) {
+        current = node(current.parentId!!) ?: return current
+    }
+    return current
+}
 
-private val ERROR_TOKENS =
-    setOf("throw", "raise", "panic", "fail", "error", "recover", "catch", "except", "handler")
+private fun CallFact.receiverText(view: RuleEvaluationView): String {
+    view.node(receiverId)?.let { return it.text.trim() }
+    val path = path.orEmpty()
+    return if (path.contains('.')) path.substringBeforeLast('.').trim() else ""
+}
 
-private val VALIDATION_TOKENS =
-    setOf("require", "check", "validate", "validation", "assert", "verify", "ensure", "guard", "nonnull", "notnull", "isvalid", "isempty", "isblank")
+private fun CallFact.calleeSegments(): List<String> = tokenize(callee.orEmpty())
 
-private val SEARCH_TOKENS =
-    setOf("search", "query", "filter", "scan", "select", "match", "list")
+private fun tokenize(value: String): List<String> {
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+    fun flush() {
+        if (current.isNotEmpty()) {
+            tokens += current.toString().lowercase()
+            current.clear()
+        }
+    }
+    for (index in value.indices) {
+        val character = value[index]
+        if (!character.isLetterOrDigit()) {
+            flush()
+            continue
+        }
+        if (current.isNotEmpty()) {
+            val previous = value[index - 1]
+            val next = value.getOrNull(index + 1)
+            if ((previous.isLowerCase() || previous.isDigit()) && character.isUpperCase()) flush()
+            if (previous.isUpperCase() && character.isUpperCase() && next != null && next.isLowerCase()) flush()
+        }
+        current.append(character)
+    }
+    flush()
+    return tokens
+}
 
-private val LOOKUP_TOKENS =
-    setOf("get", "load", "fetch", "read", "lookup", "find", "exists", "contains", "byid", "resolve", "retrieve")
+private fun annotationName(text: String): String =
+    text.trim()
+        .trim('[', ']')
+        .removePrefix("@")
+        .substringBefore('(')
+        .trim()
+        .substringAfterLast('.')
+        .substringAfterLast(':')
 
-private val NORMALIZATION_TOKENS =
-    setOf("normalize", "trim", "lowercase", "uppercase", "tolower", "toupper", "strip", "canonical", "sanitize", "replace", "escape", "encode", "decode")
+private fun expressionEnd(statement: SyntaxNode, expression: SyntaxNode): SyntaxNode {
+    val statementText = statement.text
+    val expressionText = expression.text
+    val index = statementText.indexOf(expressionText)
+    if (index < 0) return expression
+    val consumed = statementText.substring(0, index + expressionText.length)
+    val lines = consumed.split('\n')
+    return expression.copy(
+        startByte = statement.startByte + index,
+        startLine = statement.startLine + lines.size - 1,
+        startCol = if (lines.size == 1) statement.startCol + index else lines.last().length,
+        endByte = statement.startByte + consumed.length,
+        endLine = statement.startLine + lines.size - 1,
+        endCol = if (lines.size == 1) statement.startCol + consumed.length else lines.last().length,
+    )
+}
 
-private val TRANSFORMATION_TOKENS =
-    setOf("map", "flatmap", "transform", "convert", "parse", "format", "sort", "distinct", "groupby", "join", "split", "reduce", "fold", "serialize", "deserialize")
+private fun parameterNames(view: RuleEvaluationView, call: CallFact): Set<String> {
+    val callNode = view.node(call.nodeId) ?: return emptySet()
+    val function = view.enclosingFunction(callNode) ?: return emptySet()
+    val text = view.node(function.nodeId)?.text ?: return emptySet()
+    val open = text.indexOf('(')
+    if (open < 0) return emptySet()
+    var depth = 0
+    var close = -1
+    for (index in open until text.length) {
+        if (text[index] == '(') depth++ else if (text[index] == ')') {
+            depth--
+            if (depth == 0) { close = index; break }
+        }
+    }
+    if (close <= open) return emptySet()
+    return text.substring(open + 1, close)
+        .split(',')
+        .mapNotNull { parameter ->
+            parameter.substringBefore(':').substringBefore('=').trim().split(Regex("\\s+")).lastOrNull()
+        }.filter { it.isNotBlank() }.toSet()
+}
 
-private val MUTATION_TOKENS =
-    setOf("save", "insert", "update", "delete", "remove", "write", "put", "post", "patch", "persist", "store", "commit", "flush", "upsert")
+private fun SyntaxNode.trimmedEnd(): SyntaxNode {
+    val value = text.trimEnd()
+    if (!value.endsWith(";")) return this
+    val trimmed = value.dropLast(1)
+    val lines = trimmed.split('\n')
+    return copy(
+        endByte = endByte - 1,
+        endLine = startLine + lines.size - 1,
+        endCol = lines.last().length,
+    )
+}
 
-private val DELEGATION_TOKENS =
-    setOf("delegate", "forward", "invoke", "execute", "call", "send", "publish", "emit", "dispatch", "handle", "service", "repository", "repo", "client", "api", "gateway", "adapter", "remote", "proxy", "controller")
+private fun within(node: SyntaxNode, container: SyntaxNode): Boolean =
+    node.startByte >= container.startByte && node.endByte <= container.endByte
 
-private val SERVICE_INIT_TOKENS =
-    setOf("new", "create", "factory", "build", "init", "initialize", "connect", "open", "start", "configure", "instantiate", "construct", "launch", "setup", "spawn")
+private fun qualifierMatches(receiver: String, qualifier: String): Boolean {
+    val segments = receiver.split('.').map { it.substringBefore('(').substringBefore('[').trim() }
+    return segments.any { it.equals(qualifier, ignoreCase = true) } ||
+        receiver.equals(qualifier, ignoreCase = true) ||
+        receiver.endsWith(".$qualifier", ignoreCase = true)
+}
 
-private val LOCAL_COPY_TOKENS =
-    setOf("copy", "clone", "tolist", "toset", "tomutable", "toarray", "toqueue", "tostack")
+private fun pathContainsFactory(path: String): Boolean =
+    LOGGING_FACTORIES.any { path == it || path.endsWith(".$it") }
+
+private fun isLookupOnly(callee: String): Boolean =
+    LOOKUP_CALLS.any { it.equals(callee, true) } && !SEARCH_CALLS.any { it.equals(callee, true) }
+
+private fun isAmbiguous(callee: String): Boolean =
+    AMBIGUOUS_CALLS.any { it.equals(callee, true) } || AMBIGUOUS_PREFIXES.any { callee.startsWith(it, true) }
+
+private fun isLiteral(text: String): Boolean {
+    val value = text.trim()
+    if (value in REJECTION_VALUES) return true
+    if (value.startsWith("\"") || value.startsWith("'") || value.startsWith("`")) return true
+    return value.toLongOrNull() != null || value.toDoubleOrNull() != null
+}
+
+private fun isFieldLike(name: String): Boolean {
+    val simple = name.substringAfterLast('.')
+    return name.startsWith("this.") || simple.startsWith("_") || FIELD_PREFIXES.any { simple.startsWith(it) }
+}
+
+private fun persistentReceiver(receiver: String, receiverName: String): Boolean =
+    receiver.isNotEmpty() &&
+        (
+            PERSISTENCE_QUALIFIERS.any { qualifierMatches(receiver, it) } ||
+                PERSISTENCE_SUFFIXES.any { receiverName.endsWith(it, true) }
+        )
+
+private fun isLocalCandidate(callee: String): Boolean {
+    val lower = callee.lowercase()
+    if (lower in LOCAL_CANDIDATE_EXACT) return true
+    return LOCAL_CANDIDATE_PREFIXES.any { prefix ->
+        val normalized = prefix.lowercase()
+        callee.length > normalized.length && lower.startsWith(normalized) && callee[normalized.length].isUpperCase()
+    }
+}
+
+private fun initEvidence(view: RuleEvaluationView, call: CallFact): Pair<Double, String>? {
+    val callee = call.callee.orEmpty()
+    val path = call.path.orEmpty()
+    val receiver = call.receiverText(view)
+    val receiverName = receiver.substringAfterLast('.').trim('_')
+    if (callee in INIT_CALLS || INIT_CALLS.any { path.endsWith(".$it") }) return 0.9 to "treesitter"
+    if (INIT_QUALIFIERS.any { path == it || path.startsWith("$it.") }) return 0.85 to "treesitter"
+    if (receiver.isEmpty() && INIT_TYPES.any { callee.endsWith(it) }) return 0.85 to "treesitter"
+    if (callee in CONNECTION_CALLS) {
+        return if (CONNECTION_QUALIFIERS.any { receiverName.equals(it, true) || receiver.startsWith("$it.") }) {
+            0.85 to "treesitter"
+        } else {
+            null
+        }
+    }
+    if (callee in DI_CALLS) {
+        return if (DI_QUALIFIERS.any { receiverName.equals(it, true) || receiver.startsWith("$it.") }) {
+            0.85 to "treesitter"
+        } else {
+            null
+        }
+    }
+    return null
+}
+
+private fun creationNodes(view: RuleEvaluationView): List<Pair<SyntaxNode, String?>> {
+    val root = view.rootNode() ?: return emptyList()
+    val result = mutableListOf<Pair<SyntaxNode, String?>>()
+    for (node in view.descendants(root)) {
+        val text = node.text.trim()
+        if (!text.startsWith("new ")) continue
+        val type = text.removePrefix("new ").substringBefore('(').substringBefore('<').trim()
+        if (type.isNotEmpty()) result += node to type
+    }
+    return result
+}
+
+private const val CANDIDATE_CONFIDENCE = 0.4
+
+private val PRINT_CALLS = setOf("println", "print", "writeline", "write", "writeerror")
+private val PRINT_QUALIFIERS = setOf("System.out", "System.err", "console", "Console", "Console.Error", "Debug", "Trace")
+private val LOGGING_METHODS = setOf("info", "debug", "warn", "error", "trace", "log", "verbose", "fatal", "loginformation", "logwarning", "logerror", "logdebug", "logtrace")
+private val LOGGING_RECEIVER_NAMES = setOf("log", "logger", "LOG", "LOGGER", "Logger", "_log", "_logger")
+private val LOGGING_GUARD_NAMES = setOf("loggingEnabled", "logEnabled", "debugEnabled", "logging", "IsEnabled")
+private val LOGGING_FACTORIES = setOf("LoggerFactory.getLogger", "KotlinLogging.logger", "LogManager.getLogger", "Logger.getLogger", "CreateLogger", "GetLogger", "createLogger", "pino")
+private val LOGGING_IMPORTS = setOf("org.slf4j", "mu.KotlinLogging", "java.util.logging", "Microsoft.Extensions.Logging", "Serilog", "NLog", "log4net")
+
+private val ERROR_CALLS = setOf("require", "requirenotnull", "check", "checknotnull", "error", "todo", "assert", "invariant")
+
+private val PREDICATE_CALLS =
+    setOf(
+        "none",
+        "any",
+        "all",
+        "isempty",
+        "isnotempty",
+        "isblank",
+        "isnotblank",
+        "isnullorblank",
+        "isnullorempty",
+        "contains",
+        "containskey",
+        "containsvalue",
+        "startswith",
+        "endswith",
+        "matches",
+    )
+private val PREDICATE_PREFIXES = listOf("is", "has", "Is", "Has")
+private val REJECTION_VALUES =
+    setOf("null", "undefined", "false", "0", "-1", "\"\"", "''", "[]", "{}", "emptyList()", "emptyMap()", "emptySet()", "listOf()", "mapOf()", "setOf()", "arrayOf()", "String.Empty")
+private val CONSTANT_COMPARISON = Regex("""^(?:true|false|-?\d+)\s*(?:==|!=)\s*(?:true|false|-?\d+)$""")
+
+private val SEARCH_CALLS =
+    setOf("findAll", "findOne", "findFirst", "findAny", "search", "query", "filter", "where", "select", "from", "join", "orderBy", "groupBy", "createQuery", "createNativeQuery", "executeQuery", "findMany", "findUnique", "findUniqueOrThrow", "findFirstOrThrow", "getResultList", "getSingleResult", "firstOrDefault", "singleOrDefault", "toListAsync", "findAsync", "scan")
+private val SEARCH_PREFIXES = setOf("findBy", "getBy", "loadBy", "search", "query", "findAllBy")
+private val SEARCH_QUALIFIERS = setOf("repository", "repo", "dao", "query", "builder", "client", "api", "db", "database", "store", "mapper", "session", "entityManager", "jdbc", "collection", "service", "prisma", "context")
+private val LOOKUP_CALLS = setOf("getValue", "getOrDefault", "getOrElse", "lookup", "forKey", "getByKey")
+private val LOOKUP_QUALIFIERS = setOf("map", "dictionary", "dict", "cache", "config", "configuration", "enum", "enumMap", "table", "registry", "index")
+private val AMBIGUOUS_CALLS = setOf("get", "find", "fetch", "load", "read", "resolve")
+private val AMBIGUOUS_PREFIXES = setOf("get", "find", "fetch", "load", "read", "resolve")
+
+private val NORMALIZATION_CALLS =
+    setOf("trim", "trimStart", "trimEnd", "lowercase", "uppercase", "toLowerCase", "toUpperCase", "toInt", "toLong", "toShort", "toByte", "toDouble", "toFloat", "toBigDecimal", "toBigInteger", "toPath", "toUri", "parseInt", "parseLong", "parseDouble", "parseFloat", "parseBoolean", "fromString", "normalize", "canonicalize", "decodeFromString", "String", "Number")
+private val NORMALIZATION_INSTANCE_CALLS = setOf("trim", "trimStart", "trimEnd", "lowercase", "uppercase", "toLocaleLowerCase", "toLocaleUpperCase", "toLowerCase", "toUpperCase", "toInt", "toLong", "toShort", "toByte", "toDouble", "toFloat", "toBigDecimal", "toBigInteger", "toPath", "toUri", "normalize")
+private val NORMALIZATION_CANDIDATE_CALLS = setOf("format", "stringify")
+private val NORMALIZATION_CANDIDATE_PREFIXES = listOf("format", "pretty", "display")
+private val NORMALIZATION_QUALIFIERS = setOf("String", "Json", "Integer", "Long", "Short", "Byte", "Double", "Float", "Boolean", "BigDecimal", "BigInteger", "LocalDate", "LocalDateTime", "LocalTime", "Instant", "OffsetDateTime", "ZonedDateTime", "Duration", "Period", "UUID", "Path", "Paths", "Files", "DateTimeFormatter", "Charsets")
+
+private val TRANSFORMATION_CALLS =
+    setOf("map", "mapNotNull", "mapValues", "mapKeys", "flatMap", "filter", "filterNot", "filterIsInstance", "filterNotNull", "fold", "foldIndexed", "reduce", "reduceIndexed", "collect", "collectLatest", "distinct", "distinctBy", "sorted", "sortedBy", "sortedWith", "sortedDescending", "sortedByDescending", "groupBy", "groupingBy", "associate", "associateBy", "associateWith", "partition", "take", "takeWhile", "takeLast", "drop", "dropWhile", "dropLast", "chunked", "windowed", "zip", "zipWithNext", "flatten", "all", "any", "none", "Select", "SelectMany", "Where", "Aggregate", "GroupBy", "Distinct", "OrderBy", "ToList", "ToArray")
+private val TRANSFORMATION_CANDIDATE_CALLS = setOf("transform", "process", "reshape", "convert", "apply", "adjust", "Transform", "Process", "Reshape", "Convert", "Apply", "Adjust")
+private val TRANSFORMATION_CANDIDATE_PREFIXES = listOf("transform", "process", "reshape", "convert")
+private val TRANSFORMATION_QUALIFIERS = setOf("list", "lists", "items", "values", "uses", "collection", "collections", "stream", "streams", "sequence", "sequences", "array", "arrays", "set", "sets", "map", "maps", "entries", "elements", "nodes", "results", "rows", "records", "children")
+
+private val PERSISTENCE_CALLS =
+    setOf("save", "saveAll", "saveAndFlush", "persist", "merge", "flush", "commit", "update", "updateAll", "updateOne", "updateMany", "updateById", "upsert", "put", "putObject", "putItem", "upload", "uploadObject", "copyObject", "writeObject", "insert", "insertOne", "insertMany", "insertAll", "delete", "deleteAll", "deleteById", "deleteOne", "deleteMany", "deleteAllById", "remove", "removeById", "publish", "publishEvent", "publishAll", "emit", "send", "sendAsync", "sendMessage", "sendMessageAsync", "convertAndSend", "sendAndReceive", "write", "writeText", "writeBytes", "writeString", "writeFile", "writeFileSync", "appendFile", "appendFileSync", "appendText", "appendBytes", "createNewFile", "deleteIfExists", "deleteRecursively", "unlink", "unlinkSync", "SaveChanges", "SaveChangesAsync", "WriteAllText", "WriteAllTextAsync", "WriteAllBytes", "WriteAllBytesAsync", "WriteAllLines", "WriteAllLinesAsync", "AppendAllText", "AppendAllTextAsync", "AppendAllLines", "AppendAllLinesAsync", "Delete", "Move", "Copy", "CreateDirectory")
+private val PERSISTENCE_PATHS = setOf("Files.write", "Files.writeString", "Files.delete", "Files.deleteIfExists", "Files.copy", "Files.move", "File.WriteAllText", "File.WriteAllBytes", "File.WriteAllLines", "File.AppendAllText", "File.Delete", "File.Move", "File.Copy", "File.Create")
+private val PERSISTENCE_PREFIXES = setOf("save", "persist", "store", "publish", "emit", "send", "write", "delete", "remove", "update", "insert", "upsert", "flush", "commit", "dispatch", "enqueue", "produce", "append", "put", "upload", "copyObject", "writeObject", "sync")
+private val PERSISTENCE_QUALIFIERS = setOf("repository", "repo", "dao", "entityManager", "entityManagerFactory", "sessionFactory", "database", "dataSource", "jdbcTemplate", "mongoTemplate", "mongo", "firestore", "dynamoDb", "bucket", "s3", "publisher", "producer", "eventBus", "kafka", "rabbit", "sqs", "sns", "file", "path", "paths", "files", "fs", "directory", "dbContext", "connection", "transaction")
+private val PERSISTENCE_SUFFIXES = setOf("Template", "Client", "Producer", "Repository", "Repo", "Dao", "File", "Path", "Files", "Bucket")
+private val MUTABLE_OPERATIONS = setOf("add", "addAll", "addFirst", "addLast", "put", "putAll", "putIfAbsent", "remove", "removeAll", "removeIf", "removeAt", "clear", "insert", "insertAt", "set", "append", "push", "pop", "shift", "unshift", "splice", "sort", "reverse", "shuffle", "retainAll", "compute", "computeIfAbsent", "computeIfPresent", "merge", "replace", "replaceAll", "fill", "swap", "update", "delete", "Add", "AddRange", "Remove", "RemoveAt", "RemoveRange", "RemoveAll", "Clear", "Insert", "InsertRange", "Push", "Pop", "Enqueue", "Dequeue", "TryAdd", "TryRemove", "Sort", "Reverse")
+private val MUTABLE_RECEIVER_NAMES = setOf("list", "lists", "items", "values", "map", "maps", "dict", "dictionary", "set", "sets", "stack", "deque", "collection", "collections", "array", "arrays", "buffer", "cache", "results", "rows", "nodes", "children", "elements", "records", "entries", "data", "state")
+private val LOCAL_CANDIDATE_EXACT = setOf("set", "clear", "add", "remove", "put", "merge", "reset", "replace", "update", "delete", "modify", "mutate")
+private val LOCAL_CANDIDATE_PREFIXES = setOf("mutate", "modify", "update", "reset", "clear", "merge", "replace", "increment", "decrement")
+
+private val DELEGATION_CALLS = setOf("delegate", "forward", "dispatch", "callThrough", "Delegate", "Forward", "Dispatch", "CallThrough")
+private val DELEGATION_QUALIFIERS = setOf("services", "Services")
+private val SERVICE_NAMES = setOf("service", "svc", "repository", "repo", "facade", "adapter", "gateway", "client", "delegate", "proxy", "controller", "services", "apiClient", "httpClient", "remote", "_service", "_repository", "_facade", "_adapter", "_gateway", "_client")
+private val SERVICE_SUFFIXES = setOf("Service", "Repository", "Repo", "Facade", "Adapter", "Gateway", "Client", "Provider", "Controller")
+private val INIT_CALLS = setOf("createClient", "newClient", "buildClient", "createService", "newService", "createConnection", "CreateClient", "BuildClient", "CreateService", "CreateConnection", "Initialize", "Configure", "AddHttpClient", "AddDbContext", "AddSingleton", "AddScoped", "AddTransient", "BuildServiceProvider")
+private val INIT_QUALIFIERS = setOf("ClientBuilder", "ServiceFactory", "DriverManager", "DataSource", "HttpClient", "OkHttpClient", "WebClient", "RestClient", "RestTemplate", "Retrofit", "Feign", "ServiceLoader", "ServiceProvider", "ConnectionFactory", "Pool")
+private val INIT_TYPES = setOf("HttpClient", "OkHttpClient", "WebClient", "RestClient", "RestTemplate", "Retrofit", "FeignClient", "KafkaProducer", "KafkaConsumer", "RedisClient", "Jedis", "MongoClient", "DataSource", "Connection", "Socket", "Server", "Factory")
+private val INIT_METHODS = setOf("init", "initialize", "initialise", "setup", "setUp", "bootstrap", "wire", "configure", "createClient", "createConnection", "openConnection", "buildClient", "connect", "Initialize", "Initialise", "Setup", "Bootstrap", "Configure", "Wire", "Register", "CreateClient", "CreateConnection", "Connect")
+private val CONNECTION_CALLS = setOf("connect", "openConnection", "getConnection", "createConnection", "newConnection", "acquireConnection", "openSession", "Connect", "OpenConnection", "GetConnection", "CreateConnection", "OpenSession")
+private val CONNECTION_QUALIFIERS = setOf("DriverManager", "DataSource", "ConnectionFactory", "Connection", "connection", "conn", "_connection", "Pool", "HttpClient", "Client", "client")
+private val DI_CALLS = setOf("getBean", "getService", "getInstance", "inject", "resolve", "GetService", "GetRequiredService", "Resolve", "Inject", "GetInstance")
+private val DI_QUALIFIERS = setOf("context", "ctx", "container", "provider", "serviceProvider", "services", "injector", "locator", "beanFactory", "applicationContext", "resolver", "registry", "_services")
+private val DI_ANNOTATIONS = setOf("Inject", "Autowired", "Provides", "Bean", "Injectable", "FromServices", "Injected")
+
+private val FIELD_PREFIXES = listOf("m_", "s_", "f_")
+private val SIMPLE_IDENTIFIER = Regex("""^[A-Za-z_$][A-Za-z0-9_$]*$""")
+private val BARE_LABELED_RETURN = Regex("""^return@[A-Za-z_][A-Za-z0-9_]*$""")
+private val LOCAL_COPY_CALLS = setOf("copy", "clone", "toList", "toSet", "toMutableList", "toMutableMap", "toMutableSet", "toArray", "toQueue", "toStack")

@@ -349,7 +349,13 @@ internal object SyntaxFactExtractor {
 
         val functionNodes = nodes.filter { it.kind in profile.functionKinds }
         val propertyNodes = nodes.filter { it.kind in profile.propertyKinds }
-        val variableNodes = nodes.filter { it.kind in profile.variableKinds }
+        val variableNodes = nodes
+            .filter { it.kind in profile.variableKinds }
+            .filter { variable ->
+                propertyNodes.none { property ->
+                    variable.startByte >= property.startByte && variable.endByte <= property.endByte
+                }
+            }
         val classNodes = nodes.filter { it.kind in profile.classKinds }
         val lambdaNodes = nodes.filter { it.kind in profile.lambdaKinds }
         val scopeNodes = buildList {
@@ -400,9 +406,17 @@ internal object SyntaxFactExtractor {
             emptyList()
         }
 
+        fun declarationNameNode(node: SyntaxNode): SyntaxNode? =
+            if (node.kind in profile.propertyKinds) {
+                descendantsOf(node).firstOrNull { it.kind in profile.variableKinds }?.let { firstIdentifier(it) }
+                    ?: firstIdentifier(node)
+            } else {
+                firstIdentifier(node)
+            }
+
         val properties = if (FactCategory.PROPERTIES in requested) {
             (propertyNodes + variableNodes).map { node ->
-                val nameNode = firstIdentifier(node)
+                val nameNode = declarationNameNode(node)
                 val initializer = childrenOf(node).lastOrNull {
                     it.id != nameNode?.id && it.kind !in profile.bodyKinds && it.text != "="
                 }
@@ -430,10 +444,24 @@ internal object SyntaxFactExtractor {
         val writes = if (FactCategory.WRITES in requested) {
             nodes.mapNotNull { node ->
                 when {
-                    node.kind in profile.assignmentKinds ->
-                        WriteFact(node.id, WriteKind.ASSIGNMENT, childrenOf(node).firstOrNull()?.id)
-                    node.kind in profile.incrementKinds && (node.text.contains("++") || node.text.contains("--")) ->
-                        WriteFact(node.id, WriteKind.INCREMENT, childrenOf(node).firstOrNull()?.id)
+                    node.kind in profile.assignmentKinds -> {
+                        val target = childrenOf(node).firstOrNull()
+                        WriteFact(
+                            node.id,
+                            WriteKind.ASSIGNMENT,
+                            target?.id,
+                            targetName = target?.text?.substringBefore('=')?.substringBefore('+')?.substringBefore('-')?.trim()?.substringAfterLast('.')?.trim(),
+                        )
+                    }
+                    node.kind in profile.incrementKinds && (node.text.contains("++") || node.text.contains("--")) -> {
+                        val target = childrenOf(node).firstOrNull { child -> child.text.trim() !in setOf("++", "--") }
+                        WriteFact(
+                            node.id,
+                            WriteKind.INCREMENT,
+                            target?.id,
+                            targetName = target?.text?.trim()?.substringAfterLast('.')?.trim(),
+                        )
+                    }
                     else -> null
                 }
             }
@@ -443,7 +471,7 @@ internal object SyntaxFactExtractor {
 
         val declarations = if (FactCategory.DECLARATIONS in requested) {
             (functionNodes + propertyNodes + variableNodes).distinctBy { it.id }.map { node ->
-                val nameNode = firstIdentifier(node)?.takeIf { it.startByte < (bodyOf(node)?.startByte ?: Int.MAX_VALUE) }
+                val nameNode = declarationNameNode(node)?.takeIf { it.startByte < (bodyOf(node)?.startByte ?: Int.MAX_VALUE) }
                 val (annotationTexts, annotationIds) = annotationsFor(node)
                 DeclarationFact(
                     nodeId = node.id,
@@ -534,7 +562,7 @@ internal object SyntaxFactExtractor {
             returnNodes.map { node ->
                 ReturnFact(
                     nodeId = node.id,
-                    expressionId = childrenOf(node).firstOrNull()?.id,
+                    expressionId = childrenOf(node).firstOrNull { it.text.trim() != "return" && it.text.trim() != ";" }?.id,
                     guardIds = ancestorsOf(node).filter { it.kind in profile.ifKinds || it.kind in profile.loopKinds }.map { it.id }.toList(),
                     loopId = ancestorsOf(node).firstOrNull { it.kind in profile.loopKinds }?.id,
                     handlerId = ancestorsOf(node).firstOrNull { it.kind in profile.catchKinds }?.id,
@@ -554,6 +582,10 @@ internal object SyntaxFactExtractor {
                     bodyId = bodyOf(node)?.id,
                     catchIds = catches,
                     finallyBlockId = finallyBlock?.id,
+                    headerStartId = childrenOf(node).firstOrNull { it.text.trim() == "try" }?.id,
+                    headerEndId =
+                        childrenOf(node).firstOrNull { it.text.trim() == "{" }?.id
+                            ?: bodyOf(node)?.let { body -> childrenOf(body).firstOrNull { it.text.trim() == "{" }?.id },
                 )
             }
         } else {

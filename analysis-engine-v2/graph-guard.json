@@ -68,6 +68,7 @@
     ["mcp", "knowledge-persistence"],
     ["mcp", "languages"],
     ["mcp", "intent-pipeline"],
-    ["mcp", "test-fixtures"]
+    ["mcp", "test-fixtures"],
+    ["lsp", "test-fixtures"]
   ]
 }

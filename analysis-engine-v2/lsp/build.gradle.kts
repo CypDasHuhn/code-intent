@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation(project(":contracts"))
     testImplementation(kotlin("test-junit"))
+    testImplementation(project(":test-fixtures"))
 }
 
 tasks.withType<Test>().configureEach {

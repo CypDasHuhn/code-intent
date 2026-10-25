@@ -186,7 +186,7 @@ class DefaultRuntime private constructor(
             createKnowledgeStore(config, components, language, newPackSource.getOrThrow(), cancellation)
         if (newKnowledge.isFailure) return ResultFactory.failure(newKnowledge.errorOrNull!!)
         val newPipelineResult =
-            components.createPipeline(newPackSource.getOrThrow(), newKnowledge.getOrThrow())
+            components.createPipeline(newPackSource.getOrThrow(), newKnowledge.getOrThrow(), config.applyUnmaterializedDefaults, config.enableCallChains)
         if (newPipelineResult.isFailure) return ResultFactory.failure(newPipelineResult.errorOrNull!!)
 
         val invalidated = index.invalidate(indexedPaths.toList(), cancellation)
@@ -345,7 +345,7 @@ class DefaultRuntime private constructor(
             val index =
                 components.index
                     ?: InMemoryIndex(config.indexPlan, config.semanticTimeoutMs)
-            val pipeline = components.createPipeline(packSource.getOrThrow(), knowledge.getOrThrow())
+            val pipeline = components.createPipeline(packSource.getOrThrow(), knowledge.getOrThrow(), config.applyUnmaterializedDefaults, config.enableCallChains)
             if (pipeline.isFailure) return ResultFactory.failure(pipeline.errorOrNull!!)
             return ResultFactory.success(
                 DefaultRuntime(

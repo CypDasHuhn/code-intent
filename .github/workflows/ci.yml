@@ -50,10 +50,9 @@ jobs:
       - name: Test renderer
         run: just test-nvim
 
-  v2-skeleton:
-    name: V2 Skeleton (non-blocking)
+  v2:
+    name: V2
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -74,6 +73,18 @@ jobs:
 
       - name: V2 Test
         run: just v2-test
+
+      - name: V2 Parity
+        run: just v2-parity
+
+      - name: V2 Parity Report Committed
+        run: git diff --exit-code -- analysis-engine-v2/parity
+
+      - name: V2 Install
+        run: just v2-install
+
+      - name: V2 Smoke
+        run: just v2-smoke
 
       - name: V2 Syntax Provenance
         run: just v2-syntax-provenance

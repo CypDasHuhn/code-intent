@@ -50,6 +50,8 @@ data class RuntimeComponents(
     internal fun createPipeline(
         packSource: RulePackSource,
         knowledgeStore: KnowledgeStore,
+        applyUnmaterializedDefaults: Boolean = true,
+        enableCallChains: Boolean = true,
     ): ContractResult<IntentPipeline> {
         pipelineFactory?.let { factory ->
             return ResultFactory.success(factory(packSource, knowledgeStore))
@@ -63,6 +65,8 @@ data class RuntimeComponents(
                 fallbackAi = fallbackAi,
                 fallbackAiPolicy = fallbackAiPolicy,
                 knowledgeStore = knowledgeStore,
+                applyUnmaterializedDefaults = applyUnmaterializedDefaults,
+                enableCallChains = enableCallChains,
             ),
         )
     }

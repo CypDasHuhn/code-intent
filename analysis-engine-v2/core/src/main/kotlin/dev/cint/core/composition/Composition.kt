@@ -29,7 +29,7 @@ private val MUTATION_INTENTS =
     setOf(Intents.DATA_MODIFY, Intents.LOCAL_VALUE_MODIFY, Intents.BOOKKEEPING)
 private val EFFECT_INTENTS =
     MUTATION_INTENTS + setOf(Intents.LOGGING, Intents.ERROR_HANDLING)
-private const val COMPOSITION_SOURCE = "composition"
+private const val COMPOSITION_SOURCE = "treesitter"
 
 private const val DERIVATIVE_CONFIDENCE = 0.7
 private const val DERIVATIVE_UNKNOWN_READ_ONLY_CONFIDENCE = 0.55
@@ -64,7 +64,7 @@ class Composition {
         }
         val context = CompositionContext(facts, store, config)
 
-        val callChains = callChainContributions(context)
+        val callChains = if (config.callChainsEnabled) callChainContributions(context) else emptyList()
         val returns = returnContributions(context)
         store.replaceRule(RETURN_KEY, returns)
         val limit = compositionLimit(facts)
@@ -346,15 +346,27 @@ internal fun returnContributions(ctx: CompositionContext): List<Contribution> {
     val result = mutableListOf<Contribution>()
     for (site in ctx.facts.returns) {
         val node = ctx.index.node(site.nodeId) ?: continue
+        val siteText = node.text.trim()
+        if (siteText.startsWith("continue") || siteText.startsWith("break")) continue
         val expression = ctx.index.node(site.expressionId)
         val guard =
             site.guardIds
                 .asReversed()
-                .mapNotNull { ctx.index.node(it) }
-                .firstOrNull { guardIntents(ctx, it).isNotEmpty() }
+                .mapNotNull { id ->
+                    val guardNode = ctx.index.node(id) ?: return@mapNotNull null
+                    val condition =
+                        ctx.facts.ifs
+                            .firstOrNull { it.nodeId == id || it.conditionId == id }
+                            ?.conditionId
+                            ?.let(ctx.index::node)
+                    val intents = condition?.let { guardIntents(ctx, it) }.orEmpty()
+                    val resolved = if (intents.isNotEmpty()) intents else guardIntents(ctx, guardNode)
+                    resolved.takeIf { it.isNotEmpty() }?.let { guardNode to it }
+                }
+                .firstOrNull()
         val intents =
-            if (guard != null && (isOnTrue(ctx, guard.id, node) || isRejection(ctx, expression))) {
-                guardIntents(ctx, guard)
+            if (guard != null && (isOnTrue(ctx, guard.first.id, node) || isRejection(ctx, expression))) {
+                guard.second
             } else {
                 setOf(Intents.UNTAGGED)
             }
@@ -364,7 +376,7 @@ internal fun returnContributions(ctx: CompositionContext): List<Contribution> {
                 Role.SCAFFOLD,
                 intents,
                 RETURN_RULE,
-                COMPOSITION_SOURCE,
+                "cfg",
                 if (intents == setOf(Intents.UNTAGGED)) 1.0 else 0.8,
             )
     }
@@ -380,6 +392,9 @@ private fun ifScaffolds(ctx: CompositionContext): List<Contribution> {
         val thenIntents = mutableSetOf<Intent>()
         thenIntents += conditionIntents(ctx, condition)
         thenIntents += bodyIntents(ctx, thenBody)
+        thenIntents += containedIntents(ctx, thenBody)
+        thenIntents += containedIntents(ctx, node)
+        if (hasRealIntent(thenIntents)) thenIntents.remove(Intents.UNTAGGED)
 
         val elseBody = ctx.index.node(guard.elseBodyId)
         if (elseBody == null) {
@@ -388,7 +403,8 @@ private fun ifScaffolds(ctx: CompositionContext): List<Contribution> {
             continue
         }
 
-        val elseIntents = bodyIntents(ctx, elseBody)
+        val elseIntents = (bodyIntents(ctx, elseBody) + containedIntents(ctx, elseBody)).toMutableSet()
+        if (hasRealIntent(elseIntents)) elseIntents.remove(Intents.UNTAGGED)
         if (thenIntents == elseIntents) {
             if (!hasRealIntent(thenIntents)) continue
             result += raw(node, Role.SCAFFOLD, thenIntents, SCAFFOLD_RULE, COMPOSITION_SOURCE, 0.9)
@@ -456,13 +472,16 @@ private fun tryScaffolds(ctx: CompositionContext): List<Contribution> {
                 }
             result += raw(node, Role.SCAFFOLD, intents, SCAFFOLD_RULE, COMPOSITION_SOURCE, 0.9)
         } else if (catchesCovered && catchesHaveRealIntent) {
-            val start = ctx.index.node(tryFact.headerStartId)
-            val end = ctx.index.node(tryFact.headerEndId)
-            if (start != null && end != null) {
-                val intents = catchIntents.flatten().toSet()
-                result +=
-                    tagRange(start, end, intents, SCAFFOLD_RULE, COMPOSITION_SOURCE, 0.8)
-            }
+            val start = ctx.index.node(tryFact.headerStartId) ?: node
+            val end =
+                ctx.index.node(tryFact.headerEndId)
+                    ?: start.copy(
+                        endByte = start.startByte + 5,
+                        endLine = start.startLine,
+                        endCol = start.startCol + 5,
+                    )
+            val intents = catchIntents.flatten().toSet()
+            result += tagRange(start, end, intents, SCAFFOLD_RULE, COMPOSITION_SOURCE, 0.8)
         }
     }
     return result
@@ -486,7 +505,7 @@ private fun conditionIntents(
     ctx: CompositionContext,
     condition: SyntaxNode,
 ): Set<Intent> {
-    val covered = ctx.coverage(condition).intents
+    val covered = ctx.coverage(condition).intents.ifEmpty { containedIntents(ctx, condition) }
     if (hasRealIntent(covered)) return covered
     val value = ctx.index.value(condition)
     if (value?.constant == true || value?.sideEffectFree == true) return emptySet()
@@ -497,7 +516,15 @@ private fun bodyIntents(
     ctx: CompositionContext,
     body: SyntaxNode,
 ): Set<Intent> {
-    val statements = ctx.index.statements(body)
+    val statements = ctx.index.statements(body).ifEmpty {
+        body.childIds.mapNotNull(ctx.index::node)
+            .filter { child ->
+                child.text.isNotBlank() &&
+                    child.text.trim() != "{" &&
+                    child.text.trim() != "}" &&
+                    !child.kind.contains("comment")
+            }
+    }
     if (statements.isNotEmpty()) {
         return statements.flatMap { statementIntents(ctx, it) }.toSet()
     }
@@ -536,13 +563,25 @@ private fun statementIntents(
         )
     }
 
-    val direct = ctx.coverage(statement).intents
+    val direct = ctx.coverage(statement).intents.ifEmpty { containedIntents(ctx, statement) }
     if (hasRealIntent(direct)) return direct
     val expression = ctx.index.statement(statement)?.expressionId?.let { ctx.index.node(it) }
         ?: return direct
-    val inner = ctx.coverage(expression).intents
+    val inner = ctx.coverage(expression).intents.ifEmpty { containedIntents(ctx, expression) }
     return if (hasRealIntent(inner)) inner else direct
 }
+
+private fun containedIntents(
+    ctx: CompositionContext,
+    node: SyntaxNode,
+): Set<Intent> =
+    ctx.store
+        .annotations()
+        .filter { annotation ->
+            annotation.role == Role.SOURCE_INTENT &&
+                annotation.startByte >= node.startByte &&
+                annotation.endByte <= node.endByte
+        }.flatMapTo(linkedSetOf()) { it.intents }
 
 private fun exitIntents(
     ctx: CompositionContext,

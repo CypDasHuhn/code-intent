@@ -1,4 +1,4 @@
-package dev.cint.v2.lsp
+package dev.cint.v2.testing.lsp
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -110,8 +110,8 @@ class ScriptedLspServer(
         }
         try {
             while (true) {
-                val body = LspFraming.read(input) ?: break
-                val message = Json.parse(String(body, StandardCharsets.UTF_8)).asObjectOrNull() ?: continue
+                val body = ScriptedLspFraming.read(input) ?: break
+                val message = ScriptedJson.parse(String(body, StandardCharsets.UTF_8)).asObjectOrNull() ?: continue
                 requests.add(message)
                 val method = message.string("method") ?: continue
                 receivedMethods.add(method)
@@ -244,7 +244,7 @@ class ScriptedLspServer(
         if (config.malformedOnHover) {
             val malformed = "{not-json".toByteArray(StandardCharsets.UTF_8)
             synchronized(output) {
-                LspFraming.write(output, malformed)
+                ScriptedLspFraming.write(output, malformed)
             }
             return
         }
@@ -388,9 +388,9 @@ class ScriptedLspServer(
     }
 
     private fun rawMessage(message: Map<String, Any?>) {
-        val body = Json.write(message).toByteArray(StandardCharsets.UTF_8)
+        val body = ScriptedJson.write(message).toByteArray(StandardCharsets.UTF_8)
         synchronized(output) {
-            LspFraming.write(output, body)
+            ScriptedLspFraming.write(output, body)
         }
     }
 

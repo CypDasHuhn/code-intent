@@ -19,6 +19,8 @@ data class RuntimeConfig(
     val languageOptions: LanguageOptions = LanguageOptions(),
     val publishOnAnalyze: Boolean = false,
     val materializeDefaultsOnOpen: Boolean = true,
+    val applyUnmaterializedDefaults: Boolean = true,
+    val enableCallChains: Boolean = true,
 ) {
     companion object {
         val DEFAULT_PROVIDER_COMMANDS: Map<String, String> =

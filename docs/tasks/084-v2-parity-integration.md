@@ -1,7 +1,7 @@
 ---
 name: V2 parity and integration suite
-status: todo
-depends-on: [066, 080, 081, 083]
+status: blocked
+depends-on: [066, 080, 081, 082, 083, 088, 089, 090, 091, 092, 093, 094]
 reviewers: [correctness, detection-fidelity]
 ---
 
@@ -36,3 +36,9 @@ Prove V2 against the frozen V1 corpus and the V2 protocol, CLI, server, and MCP 
 - Extract the scripted LSP server into a shared test fixture and use it from
   pipeline/runtime integration tests (073 kept it lsp-test-only).
 - Make the V1 syntax provenance check blocking (072 wired it non-blocking).
+- Blocked by 088-094: this ticket must stay blocked until those parity
+  follow-ups close. Do not treat the registered defect baseline as acceptance.
+- Residual harness work is owned by 094: replace whole-payload allowlists for
+  initialize/error frames with per-message rules, and extend renderer
+  projection coverage beyond tags.annotations/languages to candidates, config,
+  lifecycle, suggest, restrictions, and status.

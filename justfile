@@ -81,19 +81,29 @@ engine-v2 := "analysis-engine-v2"
 
 # Build V2 skeleton without running tests.
 v2-build:
-    cd {{engine-v2}} && ./gradlew --no-daemon assemble
+    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 assemble
 
 # Run V2 tests including graph guard.
 v2-test:
-    cd {{engine-v2}} && ./gradlew --no-daemon check
+    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 check
 
 # Regenerate the V1 Kotlin syntax snapshot from the pinned V1 commit and compare it to the checked-in files.
 v2-syntax-provenance:
     ./analysis-engine-v2/scripts/verify-v1-syntax-snapshot.sh
 
+# Run the frozen CLI and IPC parity suites and merge the machine-readable report.
+v2-parity:
+    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 :integration-tests:test :server:test
+    python3 {{engine-v2}}/scripts/merge-parity-report.py {{engine-v2}}/parity/v2-parity-report.json
+    git diff --exit-code -- {{engine-v2}}/parity/v2-parity-report.json {{engine-v2}}/parity/defect-baseline.json {{engine-v2}}/parity/ipc-defect-baseline.json
+
+# Smoke-test the built CLI, live server, and MCP distributions.
+v2-smoke: v2-install
+    ./{{engine-v2}}/scripts/v2-smoke.sh
+
 # Run V2 graph guard against the declared graph and its self-test cases.
 v2-graph-guard:
-    cd {{engine-v2}} && ./gradlew --no-daemon graphGuard graphGuardSelfTest
+    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 graphGuard graphGuardSelfTest
 
 # Build V2 CLI distribution.
 v2-cli:

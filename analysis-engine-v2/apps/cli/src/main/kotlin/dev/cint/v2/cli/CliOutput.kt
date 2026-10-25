@@ -4,6 +4,7 @@ import dev.cint.contracts.data.AnalysisResult
 import dev.cint.contracts.data.Annotation
 import dev.cint.contracts.data.Candidate
 import dev.cint.contracts.data.Contribution
+import dev.cint.contracts.data.Role
 import dev.cint.contracts.data.Span
 import dev.cint.contracts.data.Completeness
 import dev.cint.contracts.data.AnalysisError
@@ -121,6 +122,24 @@ data class CliSpan(
     val endCol: Int,
 )
 
+
+private fun Annotation.v1Source(): String {
+    val mapped = provenance.map { it.v1Source() }.distinct()
+    return mapped.singleOrNull() ?: "mixed"
+}
+
+private fun Contribution.v1Source(): String =
+    when {
+        rule == "core:return-category" -> "cfg"
+        source == "composition" -> "treesitter"
+        source == "provisional" -> "heuristic"
+        source == "knowledge" -> "annotation"
+        source == "rule" || source == "candidate" -> "heuristic"
+        else -> source
+    }
+
+private fun Role.roleName(): String = name.lowercase().replace('_', '-')
+
 object CliOutputMapper {
     fun file(
         path: String,
@@ -144,9 +163,9 @@ object CliOutputMapper {
 
     fun annotation(annotation: Annotation): CliAnnotation =
         CliAnnotation(
-            role = annotation.role.name,
+            role = annotation.role.roleName(),
             intents = annotation.intents.sorted(),
-            source = annotation.source,
+            source = annotation.v1Source(),
             confidence = annotation.confidence.value,
             startLine = annotation.span.startLine,
             startCol = annotation.span.startCol,
@@ -161,9 +180,9 @@ object CliOutputMapper {
     fun provenance(contribution: Contribution): CliProvenance =
         CliProvenance(
             rule = contribution.rule,
-            role = contribution.role.name,
+            role = contribution.role.roleName(),
             intents = contribution.intents.sorted(),
-            source = contribution.source,
+            source = contribution.v1Source(),
             confidence = contribution.confidence.value,
             startLine = contribution.span.startLine,
             startCol = contribution.span.startCol,

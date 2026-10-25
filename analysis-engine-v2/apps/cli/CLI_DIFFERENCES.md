@@ -54,12 +54,12 @@ registry in `intent-pipeline` covering every default-enabled bundled rule. It is
 intentionally not V1-equivalent. The following named deferrals belong to ticket
 084:
 
-- `084.fact-semantics` — full intent-fact parity and confidence values.
-- `084.pack-defaults` — complete seed-default coverage and precedence.
-- `084.composition-parity` — scaffold, derivative-use, and return-category parity.
-- `084.non-kotlin-syntax-parity` — JavaScript, TypeScript, Vue, C#, and C facts.
-- `084.candidate-parity` — candidate emission, identity, and grouping parity.
-- `084.cli-corpus-parity` — exact value-level parity for every frozen CLI file.
+- `088-v2-detection-fact-parity` — full intent-fact parity and confidence values.
+- `089-v2-bookkeeping-validation-parity` — declaration bookkeeping and validation gating.
+- `090-v2-composition-parity` — scaffold, derivative-use, and return-category parity.
+- `091-v2-candidate-parity` — candidate emission, identity, and grouping parity.
+- `092-v2-service-init-parity` — constructor injection and service-init lifecycle parity.
+- `093-v2-non-kotlin-parity` — JavaScript, TypeScript, Vue, C#, and C facts and spans.
 
 ## Exit codes
 

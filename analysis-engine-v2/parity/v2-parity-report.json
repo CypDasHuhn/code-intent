@@ -1,0 +1,2934 @@
+{
+  "cli": {
+    "files": [
+      {
+        "actualAnnotations": 12,
+        "actualCandidates": 0,
+        "expectedAnnotations": 11,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 11,
+        "matchedCandidates": 0,
+        "path": "Bookkeeping.kt"
+      },
+      {
+        "actualAnnotations": 14,
+        "actualCandidates": 2,
+        "expectedAnnotations": 20,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 9,
+        "matchedCandidates": 2,
+        "path": "Catches.kt"
+      },
+      {
+        "actualAnnotations": 19,
+        "actualCandidates": 3,
+        "expectedAnnotations": 17,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 13,
+        "matchedCandidates": 2,
+        "path": "Composition.kt"
+      },
+      {
+        "actualAnnotations": 14,
+        "actualCandidates": 0,
+        "expectedAnnotations": 13,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 13,
+        "matchedCandidates": 0,
+        "path": "ErrorHandling.kt"
+      },
+      {
+        "actualAnnotations": 3,
+        "actualCandidates": 0,
+        "expectedAnnotations": 3,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 3,
+        "matchedCandidates": 0,
+        "path": "Heuristics.kt"
+      },
+      {
+        "actualAnnotations": 11,
+        "actualCandidates": 2,
+        "expectedAnnotations": 12,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 11,
+        "matchedCandidates": 2,
+        "path": "LoggerInteractions.kt"
+      },
+      {
+        "actualAnnotations": 7,
+        "actualCandidates": 6,
+        "expectedAnnotations": 8,
+        "expectedCandidates": 4,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 7,
+        "matchedCandidates": 4,
+        "path": "Mutation.kt"
+      },
+      {
+        "actualAnnotations": 0,
+        "actualCandidates": 21,
+        "expectedAnnotations": 8,
+        "expectedCandidates": 19,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 0,
+        "matchedCandidates": 19,
+        "path": "NeighboursCli.kt"
+      },
+      {
+        "actualAnnotations": 10,
+        "actualCandidates": 2,
+        "expectedAnnotations": 16,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 8,
+        "matchedCandidates": 2,
+        "path": "PurityAssist.kt"
+      },
+      {
+        "actualAnnotations": 18,
+        "actualCandidates": 2,
+        "expectedAnnotations": 18,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 18,
+        "matchedCandidates": 2,
+        "path": "Scaffolds.kt"
+      },
+      {
+        "actualAnnotations": 8,
+        "actualCandidates": 5,
+        "expectedAnnotations": 11,
+        "expectedCandidates": 5,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 8,
+        "matchedCandidates": 5,
+        "path": "ServiceIntents.kt"
+      },
+      {
+        "actualAnnotations": 16,
+        "actualCandidates": 1,
+        "expectedAnnotations": 17,
+        "expectedCandidates": 1,
+        "hashMatches": true,
+        "language": "typescript",
+        "matchedAnnotations": 13,
+        "matchedCandidates": 1,
+        "path": "Sample.ts"
+      },
+      {
+        "actualAnnotations": 8,
+        "actualCandidates": 3,
+        "expectedAnnotations": 7,
+        "expectedCandidates": 3,
+        "hashMatches": true,
+        "language": "typescript",
+        "matchedAnnotations": 6,
+        "matchedCandidates": 2,
+        "path": "ServiceIntents.ts"
+      },
+      {
+        "actualAnnotations": 23,
+        "actualCandidates": 1,
+        "expectedAnnotations": 22,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "javascript",
+        "matchedAnnotations": 17,
+        "matchedCandidates": 1,
+        "path": "Sample.js"
+      },
+      {
+        "actualAnnotations": 15,
+        "actualCandidates": 1,
+        "expectedAnnotations": 19,
+        "expectedCandidates": 1,
+        "hashMatches": true,
+        "language": "csharp",
+        "matchedAnnotations": 11,
+        "matchedCandidates": 0,
+        "path": "Sample.cs"
+      },
+      {
+        "actualAnnotations": 10,
+        "actualCandidates": 0,
+        "expectedAnnotations": 9,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "vue",
+        "matchedAnnotations": 7,
+        "matchedCandidates": 0,
+        "path": "Sample.vue"
+      }
+    ],
+    "scenarios": []
+  },
+  "closable": false,
+  "corpus": {
+    "manifestHashMismatches": [],
+    "protocolVersion": "4",
+    "v1Commit": "3ccea9e9cdb5a4e652182136866b24929bbed0b3"
+  },
+  "defects": [
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":372,\"endCol\":28,\"endLine\":20,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":372,\\\"endCol\\\":28,\\\"endLine\\\":20,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":348,\\\"startCol\\\":4,\\\"startLine\\\":20}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":348,\"startCol\":4,\"startLine\":20}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":457,\"endCol\":34,\"endLine\":25,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":457,\\\"endCol\\\":34,\\\"endLine\\\":25,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":427,\\\"startCol\\\":4,\\\"startLine\\\":25}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":427,\"startCol\":4,\"startLine\":25}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":47,\"endCol\":21,\"endLine\":2,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":47,\\\"endCol\\\":21,\\\"endLine\\\":2,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":32,\\\"startCol\\\":6,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":32,\"startCol\":6,\"startLine\":2}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":480,\"endCol\":31,\"endLine\":23,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":480,\\\"endCol\\\":31,\\\"endLine\\\":23,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":457,\\\"startCol\\\":8,\\\"startLine\\\":23}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":457,\"startCol\":8,\"startLine\":23}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":149,\"endCol\":40,\"endLine\":7,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":149,\\\"endCol\\\":40,\\\"endLine\\\":7,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":109,\\\"startCol\\\":0,\\\"startLine\\\":7}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":109,\"startCol\":0,\"startLine\":7}",
+        "language": "vue",
+        "path": "Sample.vue"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":180,\"endCol\":30,\"endLine\":8,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":180,\\\"endCol\\\":30,\\\"endLine\\\":8,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":150,\\\"startCol\\\":0,\\\"startLine\\\":8}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":150,\"startCol\":0,\"startLine\":8}",
+        "language": "vue",
+        "path": "Sample.vue"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":182,\"endCol\":30,\"endLine\":10,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":182,\\\"endCol\\\":30,\\\"endLine\\\":10,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":156,\\\"startCol\\\":4,\\\"startLine\\\":10}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":156,\"startCol\":4,\"startLine\":10}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":284,\"endCol\":38,\"endLine\":5,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":284,\\\"endCol\\\":38,\\\"endLine\\\":5,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":254,\\\"startCol\\\":8,\\\"startLine\\\":5}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":254,\"startCol\":8,\"startLine\":5}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":460,\"endCol\":28,\"endLine\":29,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":460,\\\"endCol\\\":28,\\\"endLine\\\":29,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":432,\\\"startCol\\\":0,\\\"startLine\\\":29}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":432,\"startCol\":0,\"startLine\":29}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":462,\"endCol\":29,\"endLine\":25,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":462,\\\"endCol\\\":29,\\\"endLine\\\":25,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":435,\\\"startCol\\\":2,\\\"startLine\\\":25}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":435,\"startCol\":2,\"startLine\":25}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":48,\"endCol\":22,\"endLine\":2,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":48,\\\"endCol\\\":22,\\\"endLine\\\":2,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":26,\\\"startCol\\\":0,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":26,\"startCol\":0,\"startLine\":2}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":48,\"endCol\":22,\"endLine\":2,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":48,\\\"endCol\\\":22,\\\"endLine\\\":2,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":26,\\\"startCol\\\":0,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":26,\"startCol\":0,\"startLine\":2}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":374,\"endCol\":52,\"endLine\":7,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":374,\\\"endCol\\\":52,\\\"endLine\\\":7,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":362,\\\"startCol\\\":40,\\\"startLine\\\":7}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":362,\"startCol\":40,\"startLine\":7}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":152,\"endCol\":3,\"endLine\":5,\"intents\":[\"SERVICE_DELEGATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":152,\\\"endCol\\\":3,\\\"endLine\\\":5,\\\"intents\\\":[\\\"SERVICE_DELEGATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":86,\\\"startCol\\\":2,\\\"startLine\\\":3}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":86,\"startCol\":2,\"startLine\":3}",
+        "language": "typescript",
+        "path": "ServiceIntents.ts"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":232,\"endCol\":5,\"endLine\":11,\"intents\":[\"LOGGING\",\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":232,\\\"endCol\\\":5,\\\"endLine\\\":11,\\\"intents\\\":[\\\"LOGGING\\\",\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":162,\\\"startCol\\\":6,\\\"startLine\\\":9}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":162,\"startCol\":6,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":236,\"endCol\":3,\"endLine\":11,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":236,\\\"endCol\\\":3,\\\"endLine\\\":11,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":180,\\\"startCol\\\":2,\\\"startLine\\\":9}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":180,\"startCol\":2,\"startLine\":9}",
+        "language": "typescript",
+        "path": "ServiceIntents.ts"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":321,\"endCol\":36,\"endLine\":6,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":321,\\\"endCol\\\":36,\\\"endLine\\\":6,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":293,\\\"startCol\\\":8,\\\"startLine\\\":6}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":293,\"startCol\":8,\"startLine\":6}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":374,\"endCol\":52,\"endLine\":7,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":374,\\\"endCol\\\":52,\\\"endLine\\\":7,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":330,\\\"startCol\\\":8,\\\"startLine\\\":7}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":330,\"startCol\":8,\"startLine\":7}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":546,\"endCol\":9,\"endLine\":30,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":546,\\\"endCol\\\":9,\\\"endLine\\\":30,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":460,\\\"startCol\\\":8,\\\"startLine\\\":27}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":460,\"startCol\":8,\"startLine\":27}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":552,\"endCol\":5,\"endLine\":31,\"intents\":[\"LOGGING\",\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":552,\\\"endCol\\\":5,\\\"endLine\\\":31,\\\"intents\\\":[\\\"LOGGING\\\",\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":428,\\\"startCol\\\":6,\\\"startLine\\\":26}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":428,\"startCol\":6,\"startLine\":26}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":631,\"endCol\":9,\"endLine\":28,\"intents\":[\"ERROR_HANDLING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":631,\\\"endCol\\\":9,\\\"endLine\\\":28,\\\"intents\\\":[\\\"ERROR_HANDLING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":490,\\\"startCol\\\":8,\\\"startLine\\\":24}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":490,\"startCol\":8,\"startLine\":24}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":692,\"endCol\":5,\"endLine\":39,\"intents\":[\"LOGGING\",\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":692,\\\"endCol\\\":5,\\\"endLine\\\":39,\\\"intents\\\":[\\\"LOGGING\\\",\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":622,\\\"startCol\\\":6,\\\"startLine\\\":37}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":622,\"startCol\":6,\"startLine\":37}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":739,\"endCol\":79,\"endLine\":19,\"intents\":[\"NORMALIZATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":739,\\\"endCol\\\":79,\\\"endLine\\\":19,\\\"intents\\\":[\\\"NORMALIZATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":703,\\\"startCol\\\":43,\\\"startLine\\\":19}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":703,\"startCol\":43,\"startLine\":19}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":749,\"endCol\":89,\"endLine\":19,\"intents\":[\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":749,\\\"endCol\\\":89,\\\"endLine\\\":19,\\\"intents\\\":[\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":740,\\\"startCol\\\":80,\\\"startLine\\\":19}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":740,\"startCol\":80,\"startLine\":19}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":214,\"endCol\":15,\"endLine\":14,\"intents\":[\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":214,\\\"endCol\\\":15,\\\"endLine\\\":14,\\\"intents\\\":[\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":205,\\\"startCol\\\":6,\\\"startLine\\\":14}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":205,\"startCol\":6,\"startLine\":14}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":261,\"endCol\":11,\"endLine\":13,\"intents\":[\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":261,\\\"endCol\\\":11,\\\"endLine\\\":13,\\\"intents\\\":[\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":254,\\\"startCol\\\":4,\\\"startLine\\\":13}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":254,\"startCol\":4,\"startLine\":13}",
+        "language": "vue",
+        "path": "Sample.vue"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":317,\"endCol\":13,\"endLine\":16,\"intents\":[\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":317,\\\"endCol\\\":13,\\\"endLine\\\":16,\\\"intents\\\":[\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":310,\\\"startCol\\\":6,\\\"startLine\\\":16}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":310,\"startCol\":6,\"startLine\":16}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":360,\"endCol\":15,\"endLine\":19,\"intents\":[\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":360,\\\"endCol\\\":15,\\\"endLine\\\":19,\\\"intents\\\":[\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":353,\\\"startCol\\\":8,\\\"startLine\\\":19}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":353,\"startCol\":8,\"startLine\":19}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":381,\"endCol\":56,\"endLine\":26,\"intents\":[\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":381,\\\"endCol\\\":56,\\\"endLine\\\":26,\\\"intents\\\":[\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":368,\\\"startCol\\\":43,\\\"startLine\\\":26}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":368,\"startCol\":43,\"startLine\":26}",
+        "language": "kotlin",
+        "path": "ErrorHandling.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":219,\"endCol\":55,\"endLine\":6,\"intents\":[\"DATA_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":219,\\\"endCol\\\":55,\\\"endLine\\\":6,\\\"intents\\\":[\\\"DATA_MODIFY\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":172,\\\"startCol\\\":8,\\\"startLine\\\":6}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":172,\"startCol\":8,\"startLine\":6}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":275,\"endCol\":55,\"endLine\":7,\"intents\":[\"DATA_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":275,\\\"endCol\\\":55,\\\"endLine\\\":7,\\\"intents\\\":[\\\"DATA_MODIFY\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":228,\\\"startCol\\\":8,\\\"startLine\\\":7}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":228,\"startCol\":8,\"startLine\":7}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":284,\"endCol\":38,\"endLine\":5,\"intents\":[\"LOGGING\",\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":284,\\\"endCol\\\":38,\\\"endLine\\\":5,\\\"intents\\\":[\\\"LOGGING\\\",\\\"VALIDATION\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":254,\\\"startCol\\\":8,\\\"startLine\\\":5}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":254,\"startCol\":8,\"startLine\":5}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intents\":[\"DATA_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":319,\\\"endCol\\\":43,\\\"endLine\\\":8,\\\"intents\\\":[\\\"DATA_MODIFY\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":284,\\\"startCol\\\":8,\\\"startLine\\\":8}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":284,\"startCol\":8,\"startLine\":8}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intents\":[\"DATA_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":363,\\\"endCol\\\":43,\\\"endLine\\\":9,\\\"intents\\\":[\\\"DATA_MODIFY\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":328,\\\"startCol\\\":8,\\\"startLine\\\":9}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":328,\"startCol\":8,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.55,\"endByte\":47,\"endCol\":21,\"endLine\":2,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":47,\\\"endCol\\\":21,\\\"endLine\\\":2,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":32,\\\"startCol\\\":6,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":32,\"startCol\":6,\"startLine\":2}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":146,\"endCol\":31,\"endLine\":7,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":146,\\\"endCol\\\":31,\\\"endLine\\\":7,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":109,\\\"startCol\\\":0,\\\"startLine\\\":6}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":109,\"startCol\":0,\"startLine\":6}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":208,\"endCol\":37,\"endLine\":10,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":208,\\\"endCol\\\":37,\\\"endLine\\\":10,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":148,\\\"startCol\\\":0,\\\"startLine\\\":9}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":148,\"startCol\":0,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":372,\"endCol\":28,\"endLine\":20,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":372,\\\"endCol\\\":28,\\\"endLine\\\":20,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":348,\\\"startCol\\\":4,\\\"startLine\\\":20}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":348,\"startCol\":4,\"startLine\":20}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":457,\"endCol\":34,\"endLine\":25,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":457,\\\"endCol\\\":34,\\\"endLine\\\":25,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":427,\\\"startCol\\\":4,\\\"startLine\\\":25}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":427,\"startCol\":4,\"startLine\":25}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":140,\"endCol\":9,\"endLine\":7,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":140,\\\"endCol\\\":9,\\\"endLine\\\":7,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":135,\\\"startCol\\\":4,\\\"startLine\\\":7}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":135,\"startCol\":4,\"startLine\":7}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":214,\"endCol\":15,\"endLine\":14,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":214,\\\"endCol\\\":15,\\\"endLine\\\":14,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":205,\\\"startCol\\\":6,\\\"startLine\\\":14}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":205,\"startCol\":6,\"startLine\":14}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":261,\"endCol\":11,\"endLine\":13,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":261,\\\"endCol\\\":11,\\\"endLine\\\":13,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":254,\\\"startCol\\\":4,\\\"startLine\\\":13}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":254,\"startCol\":4,\"startLine\":13}",
+        "language": "vue",
+        "path": "Sample.vue"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":270,\"endCol\":9,\"endLine\":15,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":270,\\\"endCol\\\":9,\\\"endLine\\\":15,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":265,\\\"startCol\\\":4,\\\"startLine\\\":15}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":265,\"startCol\":4,\"startLine\":15}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":317,\"endCol\":13,\"endLine\":16,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":317,\\\"endCol\\\":13,\\\"endLine\\\":16,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:return-category\\\",\\\"source\\\":\\\"cfg\\\",\\\"startByte\\\":310,\\\"startCol\\\":6,\\\"startLine\\\":16}\"],\"role\":\"scaffold\",\"source\":\"cfg\",\"startByte\":310,\"startCol\":6,\"startLine\":16}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":738,\"endCol\":9,\"endLine\":43,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":738,\\\"endCol\\\":9,\\\"endLine\\\":43,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":733,\\\"startCol\\\":4,\\\"startLine\\\":43}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":733,\"startCol\":4,\"startLine\":43}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":232,\"endCol\":5,\"endLine\":11,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":232,\\\"endCol\\\":5,\\\"endLine\\\":11,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":160,\\\"startCol\\\":4,\\\"startLine\\\":9}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":160,\"startCol\":4,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":283,\"endCol\":5,\"endLine\":14,\"intents\":[\"LOCAL_COPY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":283,\\\"endCol\\\":5,\\\"endLine\\\":14,\\\"intents\\\":[\\\"LOCAL_COPY\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":206,\\\"startCol\\\":4,\\\"startLine\\\":11}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":206,\"startCol\":4,\"startLine\":11}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":293,\"endCol\":5,\"endLine\":12,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":293,\\\"endCol\\\":5,\\\"endLine\\\":12,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":210,\\\"startCol\\\":4,\\\"startLine\\\":9}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":210,\"startCol\":4,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "ServiceIntents.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":318,\"endCol\":1,\"endLine\":17,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":318,\\\"endCol\\\":1,\\\"endLine\\\":17,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":245,\\\"startCol\\\":0,\\\"startLine\\\":14}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":245,\"startCol\":0,\"startLine\":14}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":321,\"endCol\":36,\"endLine\":6,\"intents\":[\"UNTAGGED\",\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":321,\\\"endCol\\\":36,\\\"endLine\\\":6,\\\"intents\\\":[\\\"UNTAGGED\\\",\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":293,\\\"startCol\\\":8,\\\"startLine\\\":6}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":293,\"startCol\":8,\"startLine\":6}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":331,\"endCol\":1,\"endLine\":17,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\",\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":331,\\\"endCol\\\":1,\\\"endLine\\\":17,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\",\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":182,\\\"startCol\\\":0,\\\"startLine\\\":10}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":182,\"startCol\":0,\"startLine\":10}",
+        "language": "vue",
+        "path": "Sample.vue"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":366,\"endCol\":5,\"endLine\":20,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":366,\\\"endCol\\\":5,\\\"endLine\\\":20,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":290,\\\"startCol\\\":4,\\\"startLine\\\":17}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":290,\"startCol\":4,\"startLine\":17}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":374,\"endCol\":52,\"endLine\":7,\"intents\":[\"UNTAGGED\",\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":374,\\\"endCol\\\":52,\\\"endLine\\\":7,\\\"intents\\\":[\\\"UNTAGGED\\\",\\\"VALIDATION\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":330,\\\"startCol\\\":8,\\\"startLine\\\":7}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":330,\"startCol\":8,\"startLine\":7}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":396,\"endCol\":1,\"endLine\":22,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":396,\\\"endCol\\\":1,\\\"endLine\\\":22,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":320,\\\"startCol\\\":0,\\\"startLine\\\":19}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":320,\"startCol\":0,\"startLine\":19}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":401,\"endCol\":1,\"endLine\":25,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":401,\\\"endCol\\\":1,\\\"endLine\\\":25,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":322,\\\"startCol\\\":0,\\\"startLine\\\":22}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":322,\"startCol\":0,\"startLine\":22}",
+        "language": "kotlin",
+        "path": "LoggerInteractions.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":428,\"endCol\":3,\"endLine\":26,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":428,\\\"endCol\\\":3,\\\"endLine\\\":26,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":390,\\\"startCol\\\":2,\\\"startLine\\\":24}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":390,\"startCol\":2,\"startLine\":24}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":481,\"endCol\":1,\"endLine\":27,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":481,\\\"endCol\\\":1,\\\"endLine\\\":27,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":398,\\\"startCol\\\":0,\\\"startLine\\\":24}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":398,\"startCol\":0,\"startLine\":24}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":546,\"endCol\":9,\"endLine\":30,\"intents\":[\"LOGGING\",\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":546,\\\"endCol\\\":9,\\\"endLine\\\":30,\\\"intents\\\":[\\\"LOGGING\\\",\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":460,\\\"startCol\\\":8,\\\"startLine\\\":27}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":460,\"startCol\":8,\"startLine\":27}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":552,\"endCol\":5,\"endLine\":31,\"intents\":[\"LOGGING\",\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":552,\\\"endCol\\\":5,\\\"endLine\\\":31,\\\"intents\\\":[\\\"LOGGING\\\",\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":426,\\\"startCol\\\":4,\\\"startLine\\\":26}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":426,\"startCol\":4,\"startLine\":26}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":563,\"endCol\":1,\"endLine\":32,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":563,\\\"endCol\\\":1,\\\"endLine\\\":32,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":483,\\\"startCol\\\":0,\\\"startLine\\\":29}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":483,\"startCol\":0,\"startLine\":29}",
+        "language": "kotlin",
+        "path": "PurityAssist.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":589,\"endCol\":1,\"endLine\":36,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":589,\\\"endCol\\\":1,\\\"endLine\\\":36,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":556,\\\"startCol\\\":0,\\\"startLine\\\":34}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":556,\"startCol\":0,\"startLine\":34}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":631,\"endCol\":9,\"endLine\":28,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":631,\\\"endCol\\\":9,\\\"endLine\\\":28,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":490,\\\"startCol\\\":8,\\\"startLine\\\":24}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":490,\"startCol\":8,\"startLine\":24}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":692,\"endCol\":5,\"endLine\":39,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":692,\\\"endCol\\\":5,\\\"endLine\\\":39,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":582,\\\"startCol\\\":4,\\\"startLine\\\":35}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":582,\"startCol\":4,\"startLine\":35}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":692,\"endCol\":5,\"endLine\":39,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":692,\\\"endCol\\\":5,\\\"endLine\\\":39,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":620,\\\"startCol\\\":4,\\\"startLine\\\":37}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":620,\"startCol\":4,\"startLine\":37}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":694,\"endCol\":1,\"endLine\":40,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":694,\\\"endCol\\\":1,\\\"endLine\\\":40,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":556,\\\"startCol\\\":0,\\\"startLine\\\":34}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":556,\"startCol\":0,\"startLine\":34}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":850,\"endCol\":5,\"endLine\":48,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":850,\\\"endCol\\\":5,\\\"endLine\\\":48,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":758,\\\"startCol\\\":4,\\\"startLine\\\":45}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":758,\"startCol\":4,\"startLine\":45}",
+        "language": "kotlin",
+        "path": "Catches.kt"
+      },
+      "id": "cli.annotation.composition-missing",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":361,\"endCol\":19,\"endLine\":18,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":361,\\\"endCol\\\":19,\\\"endLine\\\":18,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"return-value:return-value\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":350,\\\"startCol\\\":8,\\\"startLine\\\":18}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":350,\"startCol\":8,\"startLine\":18}",
+        "language": "kotlin",
+        "path": "Bookkeeping.kt"
+      },
+      "id": "cli.annotation.extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":199,\"endCol\":23,\"endLine\":9,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":199,\\\"endCol\\\":23,\\\"endLine\\\":9,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"bookkeeping:bookkeeping\\\",\\\"source\\\":\\\"comment\\\",\\\"startByte\\\":152,\\\"startCol\\\":4,\\\"startLine\\\":8}\"],\"role\":\"source-intent\",\"source\":\"comment\",\"startByte\":152,\"startCol\":4,\"startLine\":8}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":238,\"endCol\":34,\"endLine\":12,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":238,\\\"endCol\\\":34,\\\"endLine\\\":12,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":210,\\\"startCol\\\":6,\\\"startLine\\\":12}\",\"{\\\"confidence\\\":1.0,\\\"endByte\\\":238,\\\"endCol\\\":34,\\\"endLine\\\":12,\\\"intents\\\":[\\\"ERROR_HANDLING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"error-handling:error-handling\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":210,\\\"startCol\\\":6,\\\"startLine\\\":12}\"],\"role\":\"source-intent\",\"source\":\"mixed\",\"startByte\":210,\"startCol\":6,\"startLine\":12}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":564,\"endCol\":49,\"endLine\":26,\"intents\":[\"ERROR_HANDLING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":564,\\\"endCol\\\":49,\\\"endLine\\\":26,\\\"intents\\\":[\\\"ERROR_HANDLING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"error-handling:error-handling\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":527,\\\"startCol\\\":12,\\\"startLine\\\":26}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":527,\"startCol\":12,\"startLine\":26}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.6,\"endByte\":284,\"endCol\":38,\"endLine\":5,\"intents\":[\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.6,\\\"endByte\\\":284,\\\"endCol\\\":38,\\\"endLine\\\":5,\\\"intents\\\":[\\\"VALIDATION\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"validation:validation\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":268,\\\"startCol\\\":22,\\\"startLine\\\":5}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":268,\"startCol\":22,\"startLine\":5}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.6,\"endByte\":367,\"endCol\":46,\"endLine\":18,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.6,\\\"endByte\\\":367,\\\"endCol\\\":46,\\\"endLine\\\":18,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":329,\\\"startCol\\\":8,\\\"startLine\\\":18}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":329,\"startCol\":8,\"startLine\":18}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.6,\"endByte\":564,\"endCol\":49,\"endLine\":26,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.6,\\\"endByte\\\":564,\\\"endCol\\\":49,\\\"endLine\\\":26,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":527,\\\"startCol\\\":12,\\\"startLine\\\":26}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":527,\"startCol\":12,\"startLine\":26}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":238,\"endCol\":34,\"endLine\":12,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":238,\\\"endCol\\\":34,\\\"endLine\\\":12,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":210,\\\"startCol\\\":6,\\\"startLine\\\":12}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":210,\"startCol\":6,\"startLine\":12}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":244,\"endCol\":42,\"endLine\":11,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":244,\\\"endCol\\\":42,\\\"endLine\\\":11,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":221,\\\"startCol\\\":19,\\\"startLine\\\":11}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":221,\"startCol\":19,\"startLine\":11}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":276,\"endCol\":24,\"endLine\":13,\"intents\":[\"LOCAL_COPY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":276,\\\"endCol\\\":24,\\\"endLine\\\":13,\\\"intents\\\":[\\\"LOCAL_COPY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"local-copy:local-copy\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":260,\\\"startCol\\\":8,\\\"startLine\\\":13}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":260,\"startCol\":8,\"startLine\":13}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":319,\\\"endCol\\\":43,\\\"endLine\\\":8,\\\"intents\\\":[\\\"LOCAL_VALUE_MODIFY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"mutation:local-value-modify\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":284,\\\"startCol\\\":8,\\\"startLine\\\":8}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":284,\"startCol\":8,\"startLine\":8}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":363,\\\"endCol\\\":43,\\\"endLine\\\":9,\\\"intents\\\":[\\\"LOCAL_VALUE_MODIFY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"mutation:local-value-modify\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":328,\\\"startCol\\\":8,\\\"startLine\\\":9}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":328,\"startCol\":8,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":388,\"endCol\":91,\"endLine\":15,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":388,\\\"endCol\\\":91,\\\"endLine\\\":15,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":347,\\\"startCol\\\":50,\\\"startLine\\\":15}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":347,\"startCol\":50,\"startLine\":15}",
+        "language": "kotlin",
+        "path": "ServiceIntents.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":401,\"endCol\":15,\"endLine\":13,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":401,\\\"endCol\\\":15,\\\"endLine\\\":13,\\\"intents\\\":[\\\"LOCAL_VALUE_MODIFY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"mutation:local-value-modify\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":394,\\\"startCol\\\":8,\\\"startLine\\\":13}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":394,\"startCol\":8,\"startLine\":13}",
+        "language": "kotlin",
+        "path": "Mutation.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":57,\"endCol\":57,\"endLine\":0,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":57,\\\"endCol\\\":57,\\\"endLine\\\":0,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":21,\\\"startCol\\\":21,\\\"startLine\\\":0}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":21,\"startCol\":21,\"startLine\":0}",
+        "language": "kotlin",
+        "path": "ServiceIntents.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.8,\"endByte\":78,\"endCol\":55,\"endLine\":1,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":78,\\\"endCol\\\":55,\\\"endLine\\\":1,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":37,\\\"startCol\\\":14,\\\"startLine\\\":1}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":37,\"startCol\":14,\"startLine\":1}",
+        "language": "typescript",
+        "path": "ServiceIntents.ts"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":416,\"endCol\":52,\"endLine\":10,\"intents\":[\"DATA_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":416,\\\"endCol\\\":52,\\\"endLine\\\":10,\\\"intents\\\":[\\\"DATA_MODIFY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"mutation:data-modify\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":372,\\\"startCol\\\":8,\\\"startLine\\\":10}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":372,\"startCol\":8,\"startLine\":10}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":469,\"endCol\":52,\"endLine\":11,\"intents\":[\"DATA_MODIFY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":469,\\\"endCol\\\":52,\\\"endLine\\\":11,\\\"intents\\\":[\\\"DATA_MODIFY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"mutation:data-modify\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":425,\\\"startCol\\\":8,\\\"startLine\\\":11}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":425,\"startCol\":8,\"startLine\":11}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":550,\"endCol\":25,\"endLine\":33,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":550,\\\"endCol\\\":25,\\\"endLine\\\":33,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"return-value:return-value\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":527,\\\"startCol\\\":2,\\\"startLine\\\":33}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":527,\"startCol\":2,\"startLine\":33}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.9,\"endByte\":551,\"endCol\":19,\"endLine\":31,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":551,\\\"endCol\\\":19,\\\"endLine\\\":31,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"return-value:return-value\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":534,\\\"startCol\\\":2,\\\"startLine\\\":31}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":534,\"startCol\":2,\"startLine\":31}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":199,\"endCol\":27,\"endLine\":9,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":199,\\\"endCol\\\":27,\\\"endLine\\\":9,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"bookkeeping:bookkeeping\\\",\\\"source\\\":\\\"comment\\\",\\\"startByte\\\":152,\\\"startCol\\\":4,\\\"startLine\\\":8}\"],\"role\":\"source-intent\",\"source\":\"comment\",\"startByte\":152,\"startCol\":4,\"startLine\":8}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":423,\"endCol\":18,\"endLine\":25,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":423,\\\"endCol\\\":18,\\\"endLine\\\":25,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"bookkeeping:bookkeeping\\\",\\\"source\\\":\\\"annotation\\\",\\\"startByte\\\":409,\\\"startCol\\\":4,\\\"startLine\\\":25}\"],\"role\":\"source-intent\",\"source\":\"annotation\",\"startByte\":409,\"startCol\":4,\"startLine\":25}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":1.0,\"endByte\":676,\"endCol\":44,\"endLine\":29,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":676,\\\"endCol\\\":44,\\\"endLine\\\":29,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":640,\\\"startCol\\\":8,\\\"startLine\\\":29}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":640,\"startCol\":8,\"startLine\":29}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.annotation.missing-or-value-mismatch",
+      "reason": "Frozen annotation is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "093-v2-non-kotlin-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":185,\"endCol\":7,\"endLine\":9,\"intents\":[\"SERVICE_INIT\"],\"reason\":\"LOW_CONFIDENCE\",\"source\":\"rule:service:init\",\"startByte\":180,\"startCol\":2,\"startLine\":9}",
+        "language": "typescript",
+        "path": "ServiceIntents.ts"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":204,\"endCol\":35,\"endLine\":3,\"intents\":[\"LOOKUP\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":184,\"startCol\":15,\"startLine\":3}",
+        "language": "kotlin",
+        "path": "Composition.kt"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":256,\"endCol\":33,\"endLine\":7,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:local-value-modify\",\"startByte\":231,\"startCol\":8,\"startLine\":7}",
+        "language": "kotlin",
+        "path": "Mutation.kt"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":276,\"endCol\":24,\"endLine\":13,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:local-value-modify\",\"startByte\":260,\"startCol\":8,\"startLine\":13}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:local-value-modify\",\"startByte\":284,\"startCol\":8,\"startLine\":8}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:local-value-modify\",\"startByte\":328,\"startCol\":8,\"startLine\":9}",
+        "language": "kotlin",
+        "path": "NeighboursCli.kt"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":494,\"endCol\":35,\"endLine\":16,\"intents\":[\"DATA_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:data-modify\",\"startByte\":467,\"startCol\":8,\"startLine\":16}",
+        "language": "kotlin",
+        "path": "Mutation.kt"
+      },
+      "id": "cli.candidate.extra",
+      "reason": "V2 emitted a candidate absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":181,\"endCol\":29,\"endLine\":10,\"intents\":[\"LOCAL_VALUE_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:local-value-modify\",\"startByte\":170,\"startCol\":18,\"startLine\":10}",
+        "language": "javascript",
+        "path": "Sample.js"
+      },
+      "id": "cli.candidate.missing",
+      "reason": "Frozen candidate is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":185,\"endCol\":7,\"endLine\":9,\"intents\":[\"SERVICE_INIT\"],\"rationale\":\"hidden initialization helper\",\"reason\":\"LOW_CONFIDENCE\",\"source\":\"rule:service:init\",\"startByte\":180,\"startCol\":2,\"startLine\":9}",
+        "language": "typescript",
+        "path": "ServiceIntents.ts"
+      },
+      "id": "cli.candidate.missing",
+      "reason": "Frozen candidate is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":676,\"endCol\":44,\"endLine\":29,\"intents\":[\"DATA_MODIFY\"],\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:mutation:data-modify\",\"startByte\":640,\"startCol\":8,\"startLine\":29}",
+        "language": "csharp",
+        "path": "Sample.cs"
+      },
+      "id": "cli.candidate.missing",
+      "reason": "Frozen candidate is missing or differs in V2 output",
+      "surface": "cli",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "differences": "params.analysisRevision expected=4 actual=3 | params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\" | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\" | params.revision expected=1 actual=0",
+        "method": "cint/publishTags",
+        "scenario": "protocol-kotlin-analyze",
+        "step": "5"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.analysisRevision expected=4 actual=3 | params.suggestionRevision expected=4 actual=3",
+        "method": "cint/publishCandidates",
+        "scenario": "protocol-kotlin-analyze",
+        "step": "5"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "094-v2-ipc-payload-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\" | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-document-lifecycle",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\" | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-kotlin-analyze",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\" | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-kotlin-analyze",
+        "step": "2"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\" | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-restrictions-flow",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\" | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-suggest-disabled-flow",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-document-lifecycle",
+        "step": "2"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=11 actual=12 | params.annotations[10].confidence expected=1.0 actual=0.9 | params.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | params.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | params.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | params.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | params.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | params.annotations[10].source expected=\"cfg\" actual=\"treesitter\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-document-lifecycle",
+        "step": "3"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=17 actual=16 | params.annotations[0].confidence expected=0.55 actual=0.7 | params.annotations[0].endByte expected=47 actual=48 | params.annotations[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.7 | params.annotations[0].provenance[0].endByte expected=47 actual=48 | params.annotations[0].provenance[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].startByte expected=32 actual=26 | params.annotations[0].provenance[0].startCol expected=6 actual=0 | params.annotations[0].startByte expected=32 actual=26 | params.annotations[0].startCol expected=6 actual=0 | params.annotations[1].confidence expected=1.0 actual=0.55 | params.annotations[1].endByte expected=139 actual=47 | params.annotations[1].endLine expected=10 actual=2 | params.annotations[1].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].confidence expected=1.0 actual=0.55 | params.annotations[1].provenance[0].endByte expected=139 actual=47 | params.annotations[1].provenance[0].endLine expected=10 actual=2 | params.annotations[1].provenance[0].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].provenance[0].rule expected=\"bookkeeping:bookkeeping\" actual=\"core:derivative-use\" | params.annotations[1].provenance[0].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].provenance[0].startByte expected=105 actual=32 | params.annotations[1].provenance[0].startCol expected=2 actual=6 | params.annotations[1].provenance[0].startLine expected=9 actual=2 | params.annotations[1].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].startByte expected=105 actual=32 | params.annotations[1].startCol expected=2 actual=6 | params.annotations[1].startLine expected=9 actual=2 | params.annotations[2].confidence expected=0.9 actual=1.0 | params.annotations[2].endByte expected=220 actual=139 | params.annotations[2].endCol expected=5 actual=21 | params.annotations[2].endLine expected=15 actual=10 | params.annotations[2].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\" | params.annotations[2].provenance[0].confidence expected=0.9 actual=1.0 | params.annotations[2].provenance[0].endByte expected=220 actual=139 | params.annotations[2].provenance[0].endCol expected=5 actual=21 | params.annotations[2].provenance[0].endLine expected=15 actual=10 | params.annotations[2].provenance[0].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-typescript-analyze",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=17 actual=16 | params.annotations[0].confidence expected=0.55 actual=0.7 | params.annotations[0].endByte expected=47 actual=48 | params.annotations[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.7 | params.annotations[0].provenance[0].endByte expected=47 actual=48 | params.annotations[0].provenance[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].startByte expected=32 actual=26 | params.annotations[0].provenance[0].startCol expected=6 actual=0 | params.annotations[0].startByte expected=32 actual=26 | params.annotations[0].startCol expected=6 actual=0 | params.annotations[1].confidence expected=1.0 actual=0.55 | params.annotations[1].endByte expected=139 actual=47 | params.annotations[1].endLine expected=10 actual=2 | params.annotations[1].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].confidence expected=1.0 actual=0.55 | params.annotations[1].provenance[0].endByte expected=139 actual=47 | params.annotations[1].provenance[0].endLine expected=10 actual=2 | params.annotations[1].provenance[0].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].provenance[0].rule expected=\"bookkeeping:bookkeeping\" actual=\"core:derivative-use\" | params.annotations[1].provenance[0].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].provenance[0].startByte expected=105 actual=32 | params.annotations[1].provenance[0].startCol expected=2 actual=6 | params.annotations[1].provenance[0].startLine expected=9 actual=2 | params.annotations[1].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].startByte expected=105 actual=32 | params.annotations[1].startCol expected=2 actual=6 | params.annotations[1].startLine expected=9 actual=2 | params.annotations[2].confidence expected=0.9 actual=1.0 | params.annotations[2].endByte expected=220 actual=139 | params.annotations[2].endCol expected=5 actual=21 | params.annotations[2].endLine expected=15 actual=10 | params.annotations[2].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\" | params.annotations[2].provenance[0].confidence expected=0.9 actual=1.0 | params.annotations[2].provenance[0].endByte expected=220 actual=139 | params.annotations[2].provenance[0].endCol expected=5 actual=21 | params.annotations[2].provenance[0].endLine expected=15 actual=10 | params.annotations[2].provenance[0].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-typescript-analyze",
+        "step": "2"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.annotations.size expected=8 actual=5 | params.annotations[0].confidence expected=0.55 actual=0.5 | params.annotations[0].endByte expected=219 actual=520 | params.annotations[0].endCol expected=55 actual=5 | params.annotations[0].endLine expected=6 actual=13 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.5 | params.annotations[0].provenance[0].endByte expected=219 actual=520 | params.annotations[0].provenance[0].endCol expected=55 actual=5 | params.annotations[0].provenance[0].endLine expected=6 actual=13 | params.annotations[0].provenance[0].role expected=\"derivative-use\" actual=\"source-intent\" | params.annotations[0].provenance[0].rule expected=\"core:derivative-use\" actual=\"knowledge:function-annotation\" | params.annotations[0].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[0].provenance[0].startByte expected=172 actual=26 | params.annotations[0].provenance[0].startCol expected=8 actual=4 | params.annotations[0].provenance[0].startLine expected=6 actual=1 | params.annotations[0].role expected=\"derivative-use\" actual=\"source-intent\" | params.annotations[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[0].startByte expected=172 actual=26 | params.annotations[0].startCol expected=8 actual=4 | params.annotations[0].startLine expected=6 actual=1 | params.annotations[1].endByte expected=275 actual=219 | params.annotations[1].endLine expected=7 actual=6 | params.annotations[1].provenance[0].endByte expected=275 actual=219 | params.annotations[1].provenance[0].endLine expected=7 actual=6 | params.annotations[1].provenance[0].startByte expected=228 actual=172 | params.annotations[1].provenance[0].startLine expected=7 actual=6 | params.annotations[1].startByte expected=228 actual=172 | params.annotations[1].startLine expected=7 actual=6 | params.annotations[2].confidence expected=0.8 actual=0.55 | params.annotations[2].endByte expected=319 actual=275 | params.annotations[2].endCol expected=43 actual=55 | params.annotations[2].endLine expected=8 actual=7 | params.annotations[2].intents[0] expected=\"LOCAL_VALUE_MODIFY\" actual=\"DATA_MODIFY\" | params.annotations[2].provenance[0].confidence expected=0.8 actual=0.55 | params.annotations[2].provenance[0].endByte expected=319 actual=275 | params.annotations[2].provenance[0].endCol expected=43 actual=55 | params.annotations[2].provenance[0].endLine expected=8 actual=7 | params.annotations[2].provenance[0].intents[0] expected=\"LOCAL_VALUE_MODIFY\" actual=\"DATA_MODIFY\" | params.annotations[2].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[2].provenance[0].rule expected=\"mutation:local-value-modify\" actual=\"core:derivative-use\"",
+        "method": "cint/publishTags",
+        "scenario": "protocol-suggest-flow",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "differences": "params.candidates.size expected=19 actual=16 | params.candidates[0].candidateId expected=\"65b85a6caa21bf478eb900a977fbc2d9678a63edea6b325de3e773082352f169\" actual=\"d7c80a62351b69567e39cb92434d030d9fb80fbc8a6ef3df1c0a793ebc74f733\" | params.candidates[0].contentHash expected=\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[1].candidateId expected=\"e420f3cbcfd82477e018062a231ea6bafd65d6cf6c1e4f10eec4258836e1089b\" actual=\"b54755b6e384aeb506bca8552480cf539dbc3480a6e141e7f94ee37404c587d9\" | params.candidates[1].contentHash expected=\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[2].candidateId expected=\"8e0fbbfb30011301fd714a8f8faaf1e7d913636b97c4da8ba145cb629d78d0f2\" actual=\"37d485f7a24f5db0d97454be6fa37bce662e817662f308753fdb4de007aa7649\" | params.candidates[2].contentHash expected=\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[3].candidateId expected=\"5e1b319e56776ccc5a831d1f7be83e9963e6d75b97aaf7076d5d1bd750b560cc\" actual=\"2477510fcd65f6d374282650e6853c2c31f7c612db1defa20c57d97f631b172e\" | params.candidates[3].contentHash expected=\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[4].candidateId expected=\"e6b092e77500d8010ef8b305d7cd9d0dd08251885d6b3049c0c840cd06dc5a62\" actual=\"1e64c845f4d6f5961c48e3bc8ac61dba0462f7c1e85c4f695931aae6dd744083\" | params.candidates[4].contentHash expected=\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[4].intents[0] expected=\"LOOKUP\" actual=\"LOCAL_VALUE_MODIFY\" | params.candidates[4].source expected=\"rule:data-access:lookup\" actual=\"rule:mutation:local-value-modify\" | params.candidates[4].startByte expected=295 actual=284 | params.candidates[4].startCol expected=19 actual=8 | params.candidates[5].candidateId expected=\"01fe205662e0ef52759a9dc72ed6f83a2d1c110b043d87b2493c97184a873436\" actual=\"3bf3a437d72ca97613d72531639ae67521f8801599d629e380f38202f66368fc\" | params.candidates[5].contentHash expected=\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[5].intents[0] expected=\"SEARCH\" actual=\"LOOKUP\" | params.candidates[5].source expected=\"rule:data-access:search\" actual=\"rule:data-access:lookup\" | params.candidates[6].candidateId expected=\"86b90512bf06091f45567cf148c5303716e5bcef6dedb08a4044780389c7b94a\" actual=\"40e29afd215a2d7481ad5c5e2964d73e93e0448f0b4368524fa012d20000a2aa\" | params.candidates[6].contentHash expected=\"fb6e20f2cf37e0dde0b88472b7139bd416f9293d2895f757906a8cc9f8feb6f0\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[6].endByte expected=318 actual=319 | params.candidates[6].endCol expected=42 actual=43 | params.candidates[6].intents[0] expected=\"SERVICE_DELEGATION\" actual=\"SEARCH\" | params.candidates[6].reason expected=\"LOW_CONFIDENCE\" actual=\"PACK_DOMAIN\" | params.candidates[6].source expected=\"rule:service:delegation\" actual=\"rule:data-access:search\" | params.candidates[6].startByte expected=305 actual=295 | params.candidates[6].startCol expected=29 actual=19 | params.candidates[7].candidateId expected=\"73c85c7686a2f59502360a11150b3268c14f36dc89bb4782b8c80ade85bd6e08\" actual=\"454679a8065b91fa0eedc68c3234a7c6aeabecf0a1a00579f99402fb1f05f4f7\" | params.candidates[7].contentHash expected=\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[7].intents[0] expected=\"LOOKUP\" actual=\"LOCAL_VALUE_MODIFY\" | params.candidates[7].source expected=\"rule:data-access:lookup\" actual=\"rule:mutation:local-value-modify\" | params.candidates[7].startByte expected=339 actual=328 | params.candidates[7].startCol expected=19 actual=8 | params.candidates[8].candidateId expected=\"2228a02c466330852e7d547fa1a0f3a30b2ac7c0c67a8e3e19ca4287de6a9f79\" actual=\"f60786ffcf23dc270f2efec1795347f36c78ec5c3681efc53be3752b37111eaa\" | params.candidates[8].contentHash expected=\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[8].intents[0] expected=\"SEARCH\" actual=\"LOOKUP\" | params.candidates[8].source expected=\"rule:data-access:search\" actual=\"rule:data-access:lookup\" | params.candidates[9].candidateId expected=\"80bccff5d493dfe8ccfe7590bb4ae723e89afe8743f4fdbfccd5686f450120e1\" actual=\"2ce90ca54b34f12f96677d4d8f5375b52c0dd469457cf9b0dc9eceb5dc72176a\" | params.candidates[9].contentHash expected=\"90b2907e86dc530cabe1bf13e68aaca07c57744f2fa2e22817485ab456895a2c\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\"",
+        "method": "cint/publishCandidates",
+        "scenario": "protocol-suggest-flow",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "differences": "params.candidates[0].candidateId expected=\"4780f3bf5aefd460fd6cee3a533401ea3f172384f3f8c782545f5b21cf9f1669\" actual=\"936c6b481ba36ce1db375d2ac3a229e929420279784974f95d53ad4776165fc4\" | params.candidates[0].contentHash expected=\"47ece857e6f67cf0c4b7ae3b08135afb022f48dd73fa70c9e273dab961786024\" actual=\"53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68\" | params.groups.size expected=1 actual=0",
+        "method": "cint/publishCandidates",
+        "scenario": "protocol-typescript-analyze",
+        "step": "1"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "differences": "params.candidates[0].candidateId expected=\"4780f3bf5aefd460fd6cee3a533401ea3f172384f3f8c782545f5b21cf9f1669\" actual=\"936c6b481ba36ce1db375d2ac3a229e929420279784974f95d53ad4776165fc4\" | params.candidates[0].contentHash expected=\"47ece857e6f67cf0c4b7ae3b08135afb022f48dd73fa70c9e273dab961786024\" actual=\"53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68\" | params.groups.size expected=1 actual=0",
+        "method": "cint/publishCandidates",
+        "scenario": "protocol-typescript-analyze",
+        "step": "2"
+      },
+      "id": "ipc.payload",
+      "reason": "V2 message payload differs from the frozen transcript",
+      "surface": "ipc",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "context": {
+        "differences": "tags.annotations.size expected=11 actual=12 | tags.annotations[1].provenance[0].source expected=\"comment\" actual=\"annotation\" | tags.annotations[1].source expected=\"comment\" actual=\"annotation\" | tags.annotations[8].provenance[0].source expected=\"comment\" actual=\"annotation\" | tags.annotations[8].source expected=\"comment\" actual=\"annotation\" | tags.annotations[10].confidence expected=1.0 actual=0.9 | tags.annotations[10].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | tags.annotations[10].provenance[0].confidence expected=1.0 actual=0.9 | tags.annotations[10].provenance[0].intents[0] expected=\"UNTAGGED\" actual=\"RETURN_VALUE\" | tags.annotations[10].provenance[0].role expected=\"scaffold\" actual=\"source-intent\" | tags.annotations[10].provenance[0].rule expected=\"core:return-category\" actual=\"return-value:return-value\" | tags.annotations[10].provenance[0].source expected=\"cfg\" actual=\"treesitter\" | tags.annotations[10].role expected=\"scaffold\" actual=\"source-intent\" | tags.annotations[10].source expected=\"cfg\" actual=\"treesitter\""
+      },
+      "id": "renderer.annotations",
+      "reason": "V2-derived renderer projection differs from the frozen renderer baseline",
+      "surface": "ipc",
+      "ticket": "090-v2-composition-parity"
+    }
+  ],
+  "deferrals": [
+    {
+      "reason": "Port V1 logging, validation, data-access, return, local-copy, and span/confidence semantics.",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "reason": "Port @Bookkeeping/cint declaration and validation rejection/predicate/bookkeeping gating.",
+      "ticket": "089-v2-bookkeeping-validation-parity"
+    },
+    {
+      "reason": "Port V1 scaffold, derivative-use, return-category, and function-scaffold composition.",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "reason": "Complete candidate identity, grouping, and mutation/service candidate parity.",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "reason": "Complete service init constructor-injection and lifecycle spans.",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "reason": "Complete non-Kotlin span and syntactic-fact parity.",
+      "ticket": "093-v2-non-kotlin-parity"
+    }
+  ],
+  "followUpTickets": [
+    "088-v2-detection-fact-parity",
+    "090-v2-composition-parity",
+    "091-v2-candidate-parity",
+    "092-v2-service-init-parity",
+    "093-v2-non-kotlin-parity",
+    "094-v2-ipc-payload-parity"
+  ],
+  "formatVersion": 1,
+  "intentionalDifferences": [
+    {
+      "id": "cli.candidate-optionals",
+      "reason": "Absent optional candidate provider/model/rationale/path fields are omitted rather than emitted as null.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.exit-codes",
+      "reason": "The V2 CLI uses stable exit codes and structured JSON errors on stderr.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.format-selector",
+      "reason": "The V2 CLI supports json and ndjson output formats.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.include-all",
+      "reason": "--all includes files with no annotations, candidates, or diagnostics.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.knowledge-init",
+      "reason": "--init materializes pack defaults into the knowledge store; no-init analysis is in-memory.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.meta-deterministic",
+      "reason": "meta.timestamp and meta.elapsedMs are omitted so CLI output is reproducible.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.ordering",
+      "reason": "Files, annotations, candidates, and intents are sorted deterministically.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.provider-required",
+      "reason": "The V2 CLI has no --no-lsp path and rejects the flag; a semantic provider is required.",
+      "scope": "cli",
+      "source": "analysis-engine-v2/apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "annotation.shape",
+      "reason": "flat span + diagnostics + provenance.ruleId/packId + optional evidence",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "annotation.source-vocabulary",
+      "reason": "treesitter/heuristic/annotation/cfg/ai; runtime knowledge/rule/candidate/composition labels are mapped per protocol",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "candidate.shape",
+      "reason": "origin (including promptVersion) + category + fingerprints + operations",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "candidates.decide",
+      "reason": "cint/candidates/decide request with candidateId, decision, optional uri/reason",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "config.protocol",
+      "reason": "config + sources JSON, write and schema methods",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "error.handling",
+      "reason": "standard JSON-RPC codes + structured data.kind/data.details",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "fingerprint.schema",
+      "reason": "SHA-256 schema fingerprint including method set, every wire DTO field, kind, optionality, nullability, and enum constants",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.additions",
+      "reason": "V1 fields retained; fingerprint/server/capabilities added; capabilities is an object",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.pack-fields",
+      "reason": "initialize packs expose manifest id/name/version/rules/languages with an empty fields array until the runtime exposes a config schema",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "legacy.protocol-range",
+      "reason": "protocols 1-4 accepted without fingerprint and reported via negotiatedProtocol/isLegacy; protocol 5 requires the current fingerprint",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "operation.fields",
+      "reason": "legacy fields retained; intents + origin added",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "protocol.version",
+      "reason": "5 (legacy 1-4 negotiated without fingerprint)",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "086-external-protocol-versioning"
+    },
+    {
+      "id": "publishCandidates.fields",
+      "reason": "proposals + analysisRevision + proposalRevision",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "publishTags.fields",
+      "reason": "configRevision + analysisVersion + diagnostics + populated nodeAnchor",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "restrictions.protocol",
+      "reason": "cint/restrictions GET-style + upsert; typed scope/condition fields",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "059-ai-restriction-proposals"
+    },
+    {
+      "id": "server.unsupported-operations",
+      "reason": "server wires analyze, documents, status, and metrics to runtime; config, suggest, restrictions, and candidates/decide return structured unsupported-operation errors until runtime exposes those surfaces",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "status.protocol",
+      "reason": "cint/status + cint/metrics with version/uptime/activeDocuments/suggestionQueue",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "suggest.protocol",
+      "reason": "selection span + stream/history methods + JSON-RPC cancellation",
+      "scope": "protocol",
+      "source": "analysis-engine-v2/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "analyze.http.shape",
+      "reason": "The HTTP facade follows the V2 server contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "annotation.shape",
+      "reason": "V2 adds rule identity and diagnostics without replacing the flat span shape.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "candidate.shape",
+      "reason": "The V2 proposal contract replaces rule/string provenance on candidates.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "cli.output",
+      "reason": "The CLI output contract is owned by the V2 CLI ticket.",
+      "scope": "cli",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "config.files",
+      "reason": "V2 file layout is owned by the packs/defaults ticket.",
+      "scope": "files",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "config.protocol",
+      "reason": "V2 config is JSON-first and owned by the packs/defaults contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "error.handling",
+      "reason": "Structured errors are part of the V2 IPC contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.suggestions",
+      "reason": "V2 suggestion capability defaults are owned by the V2 server ticket.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "tentative",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "language.support",
+      "reason": "Language facade ownership is defined by the V2 languages ticket.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "074-v2-languages-facade"
+    },
+    {
+      "id": "lsp.integration",
+      "reason": "LSP behavior is owned by the V2 LSP provider ticket.",
+      "scope": "all",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "073-v2-lsp-provider"
+    },
+    {
+      "id": "performance.targets",
+      "reason": "Performance targets are validated by the V2 parity integration ticket.",
+      "scope": "all",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "tentative",
+      "ticket": "084-v2-parity-integration"
+    },
+    {
+      "id": "protocol.version",
+      "reason": "The V2 wire contract will be versioned independently; V1 protocol 4 is the comparison baseline.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "086-external-protocol-versioning"
+    },
+    {
+      "id": "publishCandidates.fields",
+      "reason": "Candidate publication is replaced by the unified V2 proposal shape.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "publishTags.fields",
+      "reason": "Publication field names and additions are part of the V2 IPC contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "renderer.projection",
+      "reason": "Renderer extraction owns the V2 display projection.",
+      "scope": "renderer",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "087-extract-nvim-renderer"
+    },
+    {
+      "id": "restrictions.protocol",
+      "reason": "V2 extends restrictions with scope and conditional application.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "059-ai-restriction-proposals"
+    },
+    {
+      "id": "status.protocol",
+      "reason": "Status and metrics are added by the V2 server contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "suggest.protocol",
+      "reason": "Suggestions move to streaming and span-based selection in V2.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "transport.framing",
+      "reason": "Transport framing remains tentative until ticket 079 decides whether additional transports are supported.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "tentative",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "annotation.shape",
+      "reason": "V2 annotations add diagnostics and ruleId/packId provenance.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "candidate.shape",
+      "reason": "V2 candidates are proposals with origin, category, fingerprints, and operations.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "config.protocol",
+      "reason": "V2 config is JSON-first and served by the runtime surface.",
+      "source": "ipc",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "error.handling",
+      "reason": "V2 errors carry structured data.kind/data.details.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "http.facade",
+      "reason": "The V2 live server currently exposes only the Unix-socket surface; HTTP analyze/health replay is deferred until an HTTP facade exists.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "initialize.additions",
+      "reason": "V2 initialize adds fingerprint, server, and capabilities.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "protocol.version",
+      "reason": "Protocol 5 is negotiated for V2 while legacy 4 replays keep V1 shapes.",
+      "source": "ipc",
+      "ticket": "086-external-protocol-versioning"
+    },
+    {
+      "id": "restrictions.protocol",
+      "reason": "V2 restrictions use GET-style and upsert methods.",
+      "source": "ipc",
+      "ticket": "059-ai-restriction-proposals"
+    },
+    {
+      "id": "server.unsupported-operations",
+      "reason": "Config, suggest, restrictions, and candidate decisions return structured unsupported-operation errors until runtime exposes them.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "status.protocol",
+      "reason": "V2 adds live status and metrics surfaces.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "suggest.protocol",
+      "reason": "V2 suggestions use selection spans and streaming methods.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    }
+  ],
+  "ipc": {
+    "renderer": [
+      {
+        "annotationCount": 12,
+        "checks": {
+          "annotation.confidenceFinite": true,
+          "annotation.flatSpan": true,
+          "annotation.provenanceIdentity": true,
+          "initialize.capabilities": true,
+          "initialize.fingerprint": true,
+          "publishCandidates.proposalRevision": true,
+          "publishCandidates.proposals": true,
+          "publishTags.analysisVersion": true,
+          "publishTags.configRevision": true,
+          "publishTags.diagnostics": true
+        },
+        "differenceCount": 14,
+        "intentionalSections": [
+          {
+            "intentionalDifferenceId": "server.unsupported-operations",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "server.unsupported-operations",
+            "section": "restrictions"
+          },
+          {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "status.protocol",
+            "section": "status"
+          },
+          {
+            "intentionalDifferenceId": "http.facade",
+            "section": "http"
+          }
+        ],
+        "passed": false,
+        "source": "V2 protocol 5 publishTags",
+        "verified": true
+      }
+    ],
+    "rendererDerivation": {
+      "baseline": "frozen-v1-corpus/renderer-visible-v1.json",
+      "differenceCount": 14,
+      "passed": false,
+      "source": "V2",
+      "verified": true
+    },
+    "scenarios": [
+      {
+        "frozenMessages": 9,
+        "frozenSequence": [
+          "response:1",
+          "response:2",
+          "response:3",
+          "response:4",
+          "response:5",
+          "response:6",
+          "response:7",
+          "response:8",
+          "response:9"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "config.protocol"
+        ],
+        "name": "protocol-config-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:2"
+            ],
+            "index": 1,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 2,
+            "method": "cint/config/append",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:4"
+            ],
+            "index": 3,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 4,
+            "method": "cint/config/append",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:6"
+            ],
+            "index": 5,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:7"
+            ],
+            "index": 6,
+            "method": "cint/config/remove",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:8"
+            ],
+            "index": 7,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:9"
+            ],
+            "index": 8,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:9"
+            ]
+          }
+        ],
+        "v2Messages": 9,
+        "v2Sequence": [
+          "response:1",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:9"
+        ]
+      },
+      {
+        "frozenMessages": 9,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions"
+        ],
+        "name": "protocol-document-lifecycle",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 2,
+            "method": "textDocument/didChange",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 3,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [],
+            "index": 4,
+            "method": "textDocument/didClose",
+            "methodShapeMatches": true,
+            "v2Methods": []
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 5,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 9,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ]
+      },
+      {
+        "frozenMessages": 5,
+        "frozenSequence": [
+          "response:1",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "restrictions.protocol",
+          "config.protocol"
+        ],
+        "name": "protocol-error-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 1,
+            "method": "cint/restrictions/list",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 2,
+            "method": "cint/config/append",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 3,
+            "method": "cint/config/append",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 4,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:5"
+            ]
+          }
+        ],
+        "v2Messages": 5,
+        "v2Sequence": [
+          "response:1",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ]
+      },
+      {
+        "frozenMessages": 17,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:4",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:5",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:6",
+          "response:7"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "config.protocol"
+        ],
+        "name": "protocol-kotlin-analyze",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:4"
+            ],
+            "index": 4,
+            "method": "cint/config/append",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:5"
+            ],
+            "index": 5,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:5"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:6"
+            ],
+            "index": 6,
+            "method": "cint/config/remove",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:7"
+            ],
+            "index": 7,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:7"
+            ]
+          }
+        ],
+        "v2Messages": 13,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "error:-32000",
+          "error:-32000",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:5",
+          "error:-32000",
+          "response:7"
+        ]
+      },
+      {
+        "frozenMessages": 9,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:3",
+          "response:4",
+          "response:5"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "restrictions.protocol"
+        ],
+        "name": "protocol-restrictions-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/restrictions/list",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:3"
+            ],
+            "index": 3,
+            "method": "cint/restrictions/remove",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:4"
+            ],
+            "index": 4,
+            "method": "cint/restrictions/list",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 5,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:5"
+            ]
+          }
+        ],
+        "v2Messages": 7,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ]
+      },
+      {
+        "frozenMessages": 3,
+        "frozenSequence": [
+          "response:1",
+          "error:-32000",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "status.protocol"
+        ],
+        "name": "protocol-status-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 1,
+            "method": "cint/status",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 2,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 3,
+        "v2Sequence": [
+          "response:1",
+          "response:2",
+          "response:3"
+        ]
+      },
+      {
+        "frozenMessages": 5,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "suggest.protocol"
+        ],
+        "name": "protocol-suggest-disabled-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/suggest",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 5,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "error:-32000",
+          "response:3"
+        ]
+      },
+      {
+        "frozenMessages": 8,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3",
+          "response:4",
+          "response:5"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions",
+          "suggest.protocol"
+        ],
+        "name": "protocol-suggest-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/suggest",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "cint/suggest/cancel",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:4"
+            ],
+            "index": 4,
+            "method": "cint/suggest/log",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 5,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:5"
+            ]
+          }
+        ],
+        "v2Messages": 7,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ]
+      },
+      {
+        "frozenMessages": 7,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.additions"
+        ],
+        "name": "protocol-typescript-analyze",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 7,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ]
+      }
+    ]
+  },
+  "summary": {
+    "annotationsCompared": 211,
+    "annotationsMatched": 155,
+    "candidatesCompared": 45,
+    "candidatesMatched": 42,
+    "cliFilesCompared": 16,
+    "cliFilesMatched": 16,
+    "defects": 115,
+    "intentionalDifferences": 56,
+    "ipcDefects": 16,
+    "ipcScenarios": 9,
+    "rendererChecksPassed": true,
+    "rendererDerivationVerified": true,
+    "rendererDifferenceCount": 14
+  },
+  "syntax": [
+    {
+      "calls": 87,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 11,
+      "functions": 50,
+      "guards": 13,
+      "language": "kotlin",
+      "parseFailures": 0,
+      "properties": 26,
+      "returns": 9,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 8,
+      "comments": 0,
+      "constructCoverage": true,
+      "files": 2,
+      "functions": 6,
+      "guards": 2,
+      "language": "typescript",
+      "parseFailures": 0,
+      "properties": 5,
+      "returns": 5,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 10,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 1,
+      "functions": 4,
+      "guards": 2,
+      "language": "javascript",
+      "parseFailures": 0,
+      "properties": 8,
+      "returns": 3,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 8,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 1,
+      "functions": 3,
+      "guards": 2,
+      "language": "csharp",
+      "parseFailures": 0,
+      "properties": 4,
+      "returns": 3,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 5,
+      "comments": 0,
+      "constructCoverage": true,
+      "files": 1,
+      "functions": 2,
+      "guards": 1,
+      "language": "vue",
+      "parseFailures": 0,
+      "properties": 4,
+      "returns": 0,
+      "unstableFingerprints": 0
+    }
+  ],
+  "ticket": "084-v2-parity-integration"
+}

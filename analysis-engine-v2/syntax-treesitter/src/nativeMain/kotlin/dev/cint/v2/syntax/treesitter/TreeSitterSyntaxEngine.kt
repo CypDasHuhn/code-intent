@@ -63,6 +63,7 @@ actual fun createSyntaxEngine(language: String): SyntaxEngine {
             language = language,
             reason = "no tree-sitter grammar is registered for '$language'",
         )
+    if (language == "vue") return VueSyntaxEngine()
     return NativeTreeSitterSyntaxEngine(grammar)
 }
 

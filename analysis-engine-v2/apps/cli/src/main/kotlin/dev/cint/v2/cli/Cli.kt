@@ -221,6 +221,9 @@ object Cli {
                     emptySet()
                 },
             detectLanguages = options.initializeKnowledge && !options.languageExplicit,
+            materializeDefaultsOnOpen = options.initializeKnowledge,
+            applyUnmaterializedDefaults = false,
+            enableCallChains = false,
             semanticTimeoutMs = options.providerTimeoutMs ?: 5_000,
             providerConfigs = provider?.let { mapOf(options.language to it) } ?: emptyMap(),
         )
