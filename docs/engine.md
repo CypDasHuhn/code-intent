@@ -109,10 +109,34 @@ implementation notes.
 
 ### MCP
 
-`cint-mcp` exposes `analysis.run`, `repo.status`, `repo.index`,
-`repo.languages`, `knowledge.snapshot`, `knowledge.suggestDefaults`,
-`knowledge.materializeDefaults`, and the function/span/pattern knowledge tools.
-It is the primary agent workflow; fallback AI is separate and optional.
+`cint-mcp` exposes discovery, analysis, knowledge, and provider tools:
+
+- `repo.files` lists analyzable files under the configured root with language
+  and extension filters, deterministic ordering, and documented skips for
+  generated directories (`.git`, `.cint`, `build`, `out`, `target`,
+  `node_modules`, and similar). It does not require git.
+- `analysis.symbols` returns a compact declaration, call, and import inventory
+  with receiver/declaring types, spans, and language for target paths.
+- `knowledge.resolveSelector` dry-runs a function or span selector against
+  target paths or the repository root and reports matches plus unsupported
+  reasons without mutating knowledge.
+- `analysis.run`, `repo.status`, and `repo.index` run or report analysis.
+- `repo.languages` lists supported languages, resolved provider modes, and
+  provider configuration status without starting an LSP.
+- `knowledge.snapshot`, `knowledge.suggestDefaults`,
+  `knowledge.materializeDefaults`, and the function/span/pattern knowledge
+  tools read or write knowledge.
+
+The intended agent workflow is: discover with `repo.files`, inspect with
+`analysis.symbols` or `analysis.run`, dry-run selectors with
+`knowledge.resolveSelector`, then write knowledge through the validated
+function/span/pattern or `changes.propose`/`changes.apply` tools. MCP is the
+primary agent workflow; fallback AI is separate and optional.
+
+Configure non-Kotlin providers with `--provider-config PATH` or repeatable
+`--provider-command LANGUAGE=COMMAND` flags; `--provider-mode` and
+`--provider-endpoint` cover attached and editor modes. Kotlin keeps its managed
+default. `analysis.run` fails explicitly when a provider is missing.
 
 ```sh
 ./apps/mcp/build/install/cint-mcp/bin/cint-mcp --root /path/to/project \

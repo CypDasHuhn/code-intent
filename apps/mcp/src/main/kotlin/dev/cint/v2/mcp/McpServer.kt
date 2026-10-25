@@ -255,7 +255,9 @@ class McpServer(
             )
             put(
                 "instructions",
-                "Read V2 analysis and knowledge, then write knowledge through validated tools.",
+                "Discover files with repo.files, inspect symbols with analysis.symbols, " +
+                    "dry-run selectors with knowledge.resolveSelector, then read analysis and " +
+                    "write knowledge through validated tools.",
             )
         }
     }

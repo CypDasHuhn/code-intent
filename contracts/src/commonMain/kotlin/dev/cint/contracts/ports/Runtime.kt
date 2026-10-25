@@ -54,6 +54,30 @@ interface Runtime {
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<String?> = ResultFactory.success(null)
 
+    fun repositoryFiles(
+        request: RepositoryFilesRequest = RepositoryFilesRequest(),
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<RepositoryFilesResult> =
+        ResultFactory.failure(
+            ContractError.PreconditionFailed("repository file discovery is not supported by this runtime"),
+        )
+
+    fun repositorySymbols(
+        request: RepositorySymbolsRequest,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<RepositorySymbolsResult> =
+        ResultFactory.failure(
+            ContractError.PreconditionFailed("repository symbol discovery is not supported by this runtime"),
+        )
+
+    fun resolveSelector(
+        request: SelectorResolutionRequest,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<SelectorResolution> =
+        ResultFactory.failure(
+            ContractError.PreconditionFailed("selector resolution is not supported by this runtime"),
+        )
+
     fun knowledge(): KnowledgeStore
 
     fun materializeDefaults(

@@ -10,11 +10,13 @@ import dev.cint.contracts.data.ErrorSeverity
 import dev.cint.contracts.facts.IndexedSource
 import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
+import dev.cint.contracts.knowledge.Selector
 import dev.cint.contracts.ports.AnalysisRequest
 import dev.cint.contracts.ports.IntentPipeline
 import dev.cint.contracts.ports.KnowledgeStore
 import dev.cint.contracts.ports.RuleEvaluatorRegistry
 import dev.cint.contracts.ports.RulePackSource
+import dev.cint.contracts.ports.SelectorResolution
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
@@ -125,6 +127,12 @@ class DefaultIntentPipeline(
             ),
         )
     }
+
+    override fun resolveSelector(
+        selector: Selector,
+        source: IndexedSource,
+        cancellation: CancellationToken,
+    ): ContractResult<SelectorResolution> = resolveSelectorInSource(selector, source, cancellation)
 
     private fun applyFallbackAi(
         language: String?,

@@ -957,6 +957,9 @@ class McpServerTest {
                 "changes.apply",
                 "repo.status",
                 "repo.index",
+                "repo.files",
+                "analysis.symbols",
+                "knowledge.resolveSelector",
             )
     }
 }
