@@ -1,6 +1,6 @@
 ---
 name: V2 live server app
-status: todo
+status: done
 depends-on: [078, 079]
 reviewers: [correctness, api-fidelity]
 ---

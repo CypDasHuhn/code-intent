@@ -1,6 +1,6 @@
 ---
 name: V2 MCP tool server
-status: todo
+status: done
 depends-on: [068, 078]
 reviewers: [correctness, architecture]
 ---
