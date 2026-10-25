@@ -116,7 +116,8 @@ implementation notes.
   generated directories (`.git`, `.cint`, `build`, `out`, `target`,
   `node_modules`, and similar). It does not require git.
 - `analysis.symbols` returns a compact declaration, call, and import inventory
-  with receiver/declaring types, spans, and language for target paths.
+  with receiver/declaring types, spans, and language for target paths. Receiver
+  and declaring types include semantic facts when the index requested them.
 - `knowledge.resolveSelector` dry-runs a function or span selector against
   target paths or the repository root and reports matches plus unsupported
   reasons without mutating knowledge.
@@ -127,11 +128,16 @@ implementation notes.
   `knowledge.materializeDefaults`, and the function/span/pattern knowledge
   tools read or write knowledge.
 
-The intended agent workflow is: discover with `repo.files`, inspect with
-`analysis.symbols` or `analysis.run`, dry-run selectors with
-`knowledge.resolveSelector`, then write knowledge through the validated
-function/span/pattern or `changes.propose`/`changes.apply` tools. MCP is the
-primary agent workflow; fallback AI is separate and optional.
+The intended agent workflow is documented in
+[`docs/mcp-agent-workflow.md`](mcp-agent-workflow.md): discover with
+`repo.files`, inspect with `analysis.symbols`, run `analysis.run`, dry-run
+selectors with `knowledge.resolveSelector`, then write knowledge through the
+validated function/span/pattern or `changes.propose`/`changes.apply` tools.
+After a knowledge change, rerun analysis with `forceFullAnalysis: true` because
+the init checkpoint skips unchanged content hashes. Restarting `cint-mcp` with
+the same root, knowledge path, and checkpoint path resumes init and preserves
+knowledge records. MCP is the primary agent workflow; fallback AI is separate
+and optional.
 
 Configure non-Kotlin providers with `--provider-config PATH` or repeatable
 `--provider-command LANGUAGE=COMMAND` flags; `--provider-mode` and

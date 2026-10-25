@@ -1,6 +1,10 @@
 package dev.cint.runtime
 
 import dev.cint.contracts.facts.FactBatch
+import dev.cint.contracts.facts.SemanticFact
+import dev.cint.contracts.facts.SemanticRequestKind
+import dev.cint.contracts.facts.SemanticResult
+import dev.cint.contracts.facts.SyntaxNode
 import dev.cint.contracts.ports.RepositoryFile
 import dev.cint.contracts.ports.RepositoryFilesRequest
 import dev.cint.contracts.ports.RepositoryFilesResult
@@ -166,6 +170,7 @@ internal object RepositoryDiscovery {
         path: String,
         language: String?,
         facts: FactBatch,
+        semanticFacts: List<SemanticFact> = emptyList(),
     ): RepositorySymbolInventory {
         val tree = facts.syntaxTree
         val functionsById = facts.functions.associateBy { it.nodeId }
@@ -189,6 +194,9 @@ internal object RepositoryDiscovery {
             facts.calls
                 .mapNotNull { call ->
                     val node = tree?.getNode(call.nodeId) ?: tree?.getNode(call.siteId) ?: return@mapNotNull null
+                    val receiverType =
+                        call.receiverType?.takeIf { it.isNotBlank() }
+                            ?: resolvedReceiverType(call.receiverId?.let { id -> tree?.getNode(id) }, semanticFacts)
                     SymbolCall(
                         nodeId = node.id,
                         callee = call.callee,
@@ -196,8 +204,8 @@ internal object RepositoryDiscovery {
                         span = node.span,
                         startByte = node.startByte,
                         endByte = node.endByte,
-                        receiverType = call.receiverType?.takeIf { it.isNotBlank() },
-                        declaringType = call.receiverType?.takeIf { it.isNotBlank() },
+                        receiverType = receiverType,
+                        declaringType = receiverType,
                         resolvedTarget = call.resolvedTarget?.takeIf { it.isNotBlank() },
                     )
                 }.sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.nodeId }))
@@ -218,5 +226,28 @@ internal object RepositoryDiscovery {
             calls = calls,
             imports = imports,
         )
+    }
+
+    private fun resolvedReceiverType(
+        receiver: SyntaxNode?,
+        semanticFacts: List<SemanticFact>,
+    ): String? {
+        if (receiver == null) return null
+        return semanticFacts
+            .mapNotNull { fact ->
+                val offset = fact.request.offset
+                if (offset < receiver.startByte || offset > receiver.endByte) return@mapNotNull null
+                if (fact.request.kind != SemanticRequestKind.TYPE_AT &&
+                    fact.request.kind != SemanticRequestKind.SYMBOL_AT
+                ) {
+                    return@mapNotNull null
+                }
+                when (val result = fact.result) {
+                    is SemanticResult.TypeAt -> result.typeRef?.fqName
+                    is SemanticResult.SymbolAt -> result.symbol?.fqName ?: result.symbol?.containerName
+                    else -> null
+                }?.takeIf { it.isNotBlank() }
+            }.sorted()
+            .firstOrNull()
     }
 }

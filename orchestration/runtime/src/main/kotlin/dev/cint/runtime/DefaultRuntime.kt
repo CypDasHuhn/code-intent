@@ -173,6 +173,7 @@ class DefaultRuntime private constructor(
                     path = path,
                     language = source.facts.syntaxTree?.language,
                     facts = source.facts,
+                    semanticFacts = source.semanticFacts,
                 )
         }
         return ResultFactory.success(RepositorySymbolsResult(sources = sources, count = sources.size))

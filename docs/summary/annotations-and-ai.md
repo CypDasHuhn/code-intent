@@ -60,10 +60,14 @@ Configure non-Kotlin providers with `--provider-config PATH` or repeatable
 default. `repo.languages` lists resolved modes and configuration status without
 starting an LSP, and `analysis.run` fails explicitly when a provider is missing.
 
-An agent should list analyzable files, inspect compact symbols, dry-run a
-selector, and only then write knowledge. `knowledge.resolveSelector` reports
-matches and unsupported `receiverType`/`declaringType` reasons without changing
-knowledge.
+An agent should list analyzable files, inspect compact symbols, run analysis,
+dry-run a selector, and only then write knowledge.
+`knowledge.resolveSelector` reports matches and unsupported
+`receiverType`/`declaringType` reasons without changing knowledge. Rerun with
+`forceFullAnalysis: true` after a knowledge change because checkpoint resume
+skips unchanged content hashes. The tested end-to-end sequence and known limits
+are in
+[`docs/mcp-agent-workflow.md`](../mcp-agent-workflow.md).
 
 MCP handlers call `runtime`; tool DTOs live in `contracts`. MCP is not the
 renderer IPC protocol.

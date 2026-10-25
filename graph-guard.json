@@ -56,6 +56,7 @@
     ["server", "index"],
     ["server", "test-fixtures"],
     ["server", "languages"],
+    ["mcp", "index"],
     ["mcp", "knowledge"],
     ["mcp", "knowledge-persistence"],
     ["mcp", "languages"],
