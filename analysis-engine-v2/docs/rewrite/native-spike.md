@@ -51,40 +51,42 @@ exits `2`.
 ## Contract alignment
 
 `syntax-treesitter` no longer defines a parallel parser API. `commonMain` exposes
-`expect fun createSyntaxEngine(): SyntaxEngine`, and the native actual implements
+`expect fun createSyntaxEngine(language: String): SyntaxEngine`, and the native actual implements
 `dev.cint.contracts.ports.SyntaxEngine` from `contracts`:
 
 - `parse(content: ByteArray, previous, cancellation)` returns `ContractResult<SyntaxTree>`
   using `contracts.facts.SyntaxTree` / `SyntaxNode`.
 - The adapter performs no file IO. Fixture loading lives in `native-spike` only.
-- `diff` returns `WHOLE_FILE` when content hashes differ, otherwise `EMPTY`.
-- `nodeHash` computes a `NodeHash` from the requested node and returns `NotFound` for unknown ids.
-- `facts` currently returns `FactBatch(syntaxTree = tree)` without extracted facts. Fact queries
-  are a later adapter concern, not part of this spike.
+- `diff` returns tree-sitter changed ranges for an edited previous tree, `EMPTY` for identical
+  content, and `WHOLE_FILE` when the previous source cannot be reconstructed.
+- `nodeHash` computes a Merkle `NodeHash` over kind, child hashes, and text, and returns
+  `NotFound` for unknown ids.
+- `facts` extracts the contract's `FactBatch` categories in batch.
 
-The JVM actual returns `DependencyUnavailable` for tree-sitter operations instead of faking a
-parse. It is not used as proof.
+The JVM actual uses the same grammar set through the pinned `io.github.bonede:tree-sitter*`
+artifacts. Ticket 072 replaced the earlier JVM `DependencyUnavailable` placeholder with a real
+implementation; see `syntax-treesitter/GRAMMARS.md`.
 
 ## Reproduce
 
-The spike executable is opt-in. However, `syntax-treesitter` is a normal module and configures its
-Linux `linuxX64` cinterop unconditionally, so any default build that configures or compiles that
-target (including `just v2-build`) requires the `tree-sitter` and `tree-sitter-c` system
-headers/libraries in `CINT_TREE_SITTER_INCLUDE`/`CINT_TREE_SITTER_LIB` (defaults `/usr/include`
-and `/usr/lib`). The spike is not linked unless it is included with `-PnativeSpike`. From the
-repository root:
+The spike executable is opt-in. `syntax-treesitter` builds against the checked-in
+`analysis-engine-v2/native-libs/tree-sitter` runtime and loads grammar libraries from
+`analysis-engine-v2/native-libs/tree-sitter-grammars/lib` at runtime. The spike is not linked
+unless it is included with `-PnativeSpike`. From the repository root:
 
 ```bash
 cd analysis-engine-v2
 ./gradlew --no-daemon -PnativeSpike :native-spike:linkDebugExecutableLinuxX64
-./native-spike/build/bin/linuxX64/debugExecutable/native-spike.kexe native-spike/fixtures/sample.c
+CINT_TREE_SITTER_GRAMMAR_PATH="$PWD/native-libs/tree-sitter-grammars/lib" \
+  ./native-spike/build/bin/linuxX64/debugExecutable/native-spike.kexe native-spike/fixtures/sample.c
 ```
 
 Release form:
 
 ```bash
 ./gradlew --no-daemon -PnativeSpike :native-spike:linkReleaseExecutableLinuxX64
-./native-spike/build/bin/linuxX64/releaseExecutable/native-spike.kexe native-spike/fixtures/sample.c
+CINT_TREE_SITTER_GRAMMAR_PATH="$PWD/native-libs/tree-sitter-grammars/lib" \
+  ./native-spike/build/bin/linuxX64/releaseExecutable/native-spike.kexe native-spike/fixtures/sample.c
 ```
 
 The fixture is `analysis-engine-v2/native-spike/fixtures/sample.c`. The binary also finds
@@ -101,12 +103,9 @@ a throwaway leaf and no production module imports it.
 - Gradle: 9.7.0 (wrapper)
 - Kotlin: 2.4.10, Kotlin/Native prebuilt `kotlin-native-prebuilt-linux-x86_64-2.4.10`
 - `kotlinx-serialization-json`: 1.7.3
-- tree-sitter runtime: Arch package `tree-sitter 0.26.9-1`
-  - `/usr/lib/libtree-sitter.so` -> `/usr/lib/libtree-sitter.so.0.26`
-  - `/usr/include/tree_sitter/api.h`
-- tree-sitter C grammar: Arch package `tree-sitter-c 0.24.1-2`
-  - `/usr/lib/libtree-sitter-c.so` -> `/usr/lib/libtree-sitter-c.so.15.0`
-  - `/usr/include/tree_sitter/tree-sitter-c.h`
+- tree-sitter runtime: vendored `analysis-engine-v2/native-libs/tree-sitter` (0.27.1)
+- tree-sitter grammars: vendored from `io.github.bonede` Maven artifacts; versions and
+  reproduction steps are in `syntax-treesitter/GRAMMARS.md`
 - JVM HTTP fallback: ktor `3.1.0` (`ktor-client-apache`)
 
 ## Build and link configuration
@@ -115,48 +114,35 @@ a throwaway leaf and no production module imports it.
 `linuxX64Main`) with the `tree-sitter` cinterop for `linuxX64`. It owns all include, library and
 linker flags. `native-spike` declares no linker options.
 
-The cinterop def is generated into `analysis-engine-v2/syntax-treesitter/build/cinterop/tree-sitter.def`
-at configuration time from the environment:
-
-```bash
-CINT_TREE_SITTER_INCLUDE=/usr/include \
-CINT_TREE_SITTER_LIB=/usr/lib \
-./gradlew --no-daemon -PnativeSpike :native-spike:linkDebugExecutableLinuxX64
-```
-
-Both variables default to `/usr/include` and `/usr/lib`. The generated def contains:
+The cinterop def is generated by the `generateTreeSitterDef` task, not at configuration time.
+It points at the vendored runtime and uses an `$ORIGIN` rpath for grammar libraries:
 
 ```
-headers = tree_sitter/api.h tree_sitter/tree-sitter-c.h
-headerFilter = tree_sitter/api.h tree_sitter/tree-sitter-c.h
+headers = tree_sitter/api.h grammar_dl.h
+headerFilter = tree_sitter/api.h grammar_dl.h
 package = dev.cint.v2.syntax.treesitter.cinterop
-compilerOpts.linux = -I$CINT_TREE_SITTER_INCLUDE
-linkerOpts.linux = -L$CINT_TREE_SITTER_LIB -ltree-sitter -ltree-sitter-c
+compilerOpts.linux = -I<native-libs/tree-sitter/include> -I<syntax-treesitter/src/nativeMain/cinterop>
+linkerOpts.linux = <native-libs/tree-sitter/lib/libtree-sitter.a> -ldl --rpath=$ORIGIN
 ```
 
-Because the linker options are recorded in the cinterop klib, any future consumer of
-`syntax-treesitter` inherits them; `ldd` on the spike confirms `libtree-sitter.so.0.26` and
-`libtree-sitter-c.so.15.0`.
-
-### System packages are required
-
-There is no vendored grammar fallback. The checked-in
-`analysis-engine-v2/native-libs/tree-sitter` contains tree-sitter 0.28 headers/library but no
-grammar, and it is not used here. A machine without `tree-sitter` and `tree-sitter-c` installed
-must install distro packages whose headers/libraries can be pointed at with the variables above;
-this spike does not provide a from-source vendoring recipe. That is a deliberate scope cut, not a
-claim that the vendored directory is a working fallback.
+The native test task copies the pinned grammar libraries next to the test executable. At
+runtime the adapter loads a grammar with `dlopen`/`dlsym`; `CINT_TREE_SITTER_GRAMMAR_PATH` can
+override the grammar search path. `CINT_TREE_SITTER_INCLUDE`, `CINT_TREE_SITTER_LIB`, and
+`CINT_TREE_SITTER_GRAMMAR_LIB` can override build-time directories. A missing grammar produces
+`DependencyUnavailable` instead of falling back to another language.
 
 ### tree-sitter parsing path
 
 `NativeTreeSitterSyntaxEngine`:
 
-1. `ts_parser_new()`
-2. `ts_parser_set_language(parser, tree_sitter_c())`
-3. `ts_parser_parse_string(parser, null, source, byteLength)`
+1. `dlopen`/`dlsym` the language's grammar library and resolve its `tree_sitter_*` entry point
+2. `ts_parser_new()`, `ts_parser_set_language(...)`
+3. for incremental input, reconstruct the previous source, apply `TSInputEdit`, and call
+   `ts_parser_parse_string(parser, oldTree, source, byteLength)`
 4. `ts_tree_root_node()`, recursive `ts_node_child_count()` / `ts_node_child()` walk into
    `SyntaxTree`/`SyntaxNode`, including byte/line/column spans and source text
-5. Freed with `ts_tree_delete()` and `ts_parser_delete()`
+5. `ts_tree_get_changed_ranges()` for `diff`; freed with `ts_tree_delete()` and
+   `ts_parser_delete()`
 
 The spike asserts root `translation_unit`, more than 10 nodes, and zero `ERROR` nodes. The fixture
 parse produced 74 nodes.
@@ -201,10 +187,9 @@ contract types reach the spike through `syntax-treesitter`'s `api(project(":cont
 
 ## Residual gaps
 
-- Native parser registers only the `tree-sitter-c` grammar and only supports language `c`.
-- Other languages need grammar shared libraries and cinterop entries.
 - Native TLS/HTTP remains JVM-only as described above.
-- Fact extraction is not implemented; `facts` returns the syntax tree only.
+- Vendored native grammar binaries cover x86_64 Linux only; other architectures must supply
+  their own libraries through `CINT_TREE_SITTER_GRAMMAR_PATH`.
 - The Unix-socket server is an in-process `fork()` helper for the spike, not a reusable server API.
 - The ticket path `docs/rewrite/native-spike.md` differs from the actual file location; the
   repo-root file is only a pointer, not a duplicate.
@@ -219,5 +204,6 @@ just v2-build
 # opt-in native spike
 cd analysis-engine-v2
 ./gradlew --no-daemon -PnativeSpike :native-spike:linkDebugExecutableLinuxX64
-./native-spike/build/bin/linuxX64/debugExecutable/native-spike.kexe native-spike/fixtures/sample.c
+CINT_TREE_SITTER_GRAMMAR_PATH="$PWD/native-libs/tree-sitter-grammars/lib" \
+  ./native-spike/build/bin/linuxX64/debugExecutable/native-spike.kexe native-spike/fixtures/sample.c
 ```

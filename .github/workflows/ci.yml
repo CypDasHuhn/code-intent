@@ -74,3 +74,6 @@ jobs:
 
       - name: V2 Test
         run: just v2-test
+
+      - name: V2 Syntax Provenance
+        run: just v2-syntax-provenance

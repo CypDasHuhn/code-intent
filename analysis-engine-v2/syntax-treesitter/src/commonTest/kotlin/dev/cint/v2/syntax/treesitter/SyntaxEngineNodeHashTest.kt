@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 class SyntaxEngineNodeHashTest {
     @Test
     fun nodeHashCoversTheWholeSubtree() {
-        val engine = createSyntaxEngine()
+        val engine = createSyntaxEngine("c")
         val first = tree("a", "b")
         val changed = tree("A", "b")
 
@@ -28,7 +28,7 @@ class SyntaxEngineNodeHashTest {
 
     @Test
     fun missingNodeIsReported() {
-        val result = createSyntaxEngine().nodeHash(tree("a", "b"), "missing")
+        val result = createSyntaxEngine("c").nodeHash(tree("a", "b"), "missing")
 
         assertTrue(result.isFailure)
         assertIs<ContractError.NotFound>(result.errorOrNull)

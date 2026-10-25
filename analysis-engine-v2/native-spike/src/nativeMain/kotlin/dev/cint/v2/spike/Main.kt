@@ -41,7 +41,7 @@ fun main(args: Array<String>) {
     println()
     println("--- tree-sitter (tree-sitter-c, SyntaxEngine) ---")
     try {
-        val result = createSyntaxEngine().parse(readFixture(fixture), previous = null)
+        val result = createSyntaxEngine("c").parse(readFixture(fixture), previous = null)
         if (!result.isSuccess) {
             error("parse failed: ${result.errorOrNull}")
         }

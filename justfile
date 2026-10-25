@@ -87,6 +87,10 @@ v2-build:
 v2-test:
     cd {{engine-v2}} && ./gradlew --no-daemon check
 
+# Regenerate the V1 Kotlin syntax snapshot from the pinned V1 commit and compare it to the checked-in files.
+v2-syntax-provenance:
+    ./analysis-engine-v2/scripts/verify-v1-syntax-snapshot.sh
+
 # Run V2 graph guard against the declared graph and its self-test cases.
 v2-graph-guard:
     cd {{engine-v2}} && ./gradlew --no-daemon graphGuard graphGuardSelfTest

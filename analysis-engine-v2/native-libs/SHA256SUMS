@@ -1,0 +1,9 @@
+15064c81a04872c4142993b0a1232448e4bb810aa8cef71f016d0b6931cc5e2a  tree-sitter-grammars/lib/libtree-sitter-c.so
+6392870371e3557611c3c10719cd95a266a588b055753a7fc46f51e3d0e27c07  tree-sitter-grammars/lib/libtree-sitter-c-sharp.so
+c9018a3fa7356eed18d74f28e82075d71f3cbdafd7fbf82f99d5a5b41627a1d9  tree-sitter-grammars/lib/libtree-sitter-javascript.so
+749c42b7dffc26eb48c47939037f43309b908f07244b7a7b38b7b4dc7d155f30  tree-sitter-grammars/lib/libtree-sitter-kotlin.so
+7e8a7423ee2387f9145106281343df8cd1c430eb460311313d2dd53b9af7e45a  tree-sitter-grammars/lib/libtree-sitter-typescript.so
+5f4b41ec1003d42531c86d8aa9b0dff74754f7a534839bad3a88026b1b51470c  tree-sitter-grammars/lib/libtree-sitter-vue.so
+5a597cb122aa6f2e686e3816a321cffe17afcd2251a8eac6f4fb24f7a4dcd8a7  tree-sitter/lib/libtree-sitter.a
+efffa740ce0d960560551a6485ecea522d96686826d4ef49f3e4ba1a34b4b9ef  tree-sitter/lib/libtree-sitter.so
+f8480415ae20cb5e0fd519ba44c84268c5acb4c918106238fc1d328d91431783  tree-sitter/include/tree_sitter/api.h
