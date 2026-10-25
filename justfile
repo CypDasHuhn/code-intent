@@ -87,9 +87,9 @@ v2-build:
 v2-test:
     cd {{engine-v2}} && ./gradlew --no-daemon check
 
-# Run V2 graph guard only.
+# Run V2 graph guard against the declared graph and its self-test cases.
 v2-graph-guard:
-    cd {{engine-v2}} && ./gradlew --no-daemon graphGuard
+    cd {{engine-v2}} && ./gradlew --no-daemon graphGuard graphGuardSelfTest
 
 # Build V2 CLI distribution.
 v2-cli:

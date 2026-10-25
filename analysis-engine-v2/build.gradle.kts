@@ -1,21 +1,13 @@
-import com.google.gson.Gson
-import org.gradle.api.tasks.TaskAction
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.Project
+import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.File
-import java.nio.file.Files
-import java.util.regex.Pattern
-
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.google.code.gson:gson:2.11.0")
-    }
-}
+import v2.graphguard.GraphGuardValidator
+import v2.graphguard.ProjectGraph
 
 plugins {
     kotlin("jvm") version "2.4.10" apply false
@@ -58,122 +50,53 @@ subprojects {
     }
 }
 
-data class GraphGuardConfig(
-    val modules: List<String>,
-    val allowedEdges: List<List<String>>
-)
+object ProjectGraphCollector {
+    fun collect(root: Project): ProjectGraph {
+        val modules = linkedSetOf<String>()
+        val dependencies = linkedMapOf<String, Set<String>>()
+        val rootDependencies = linkedSetOf<String>()
+        val missingBuildFiles = linkedSetOf<String>()
+
+        for (candidate in root.allprojects) {
+            val declaredDependencies = candidate.configurations.flatMap { configuration ->
+                configuration.dependencies.mapNotNull { dependency ->
+                    (dependency as? ProjectDependency)?.path
+                }
+            }.map { path -> path.removePrefix(":") }.toSet()
+
+            if (candidate.path == ":") {
+                rootDependencies.addAll(declaredDependencies)
+                continue
+            }
+
+            val module = candidate.path.removePrefix(":")
+            modules.add(module)
+            dependencies[module] = declaredDependencies
+            if (!candidate.buildFile.isFile) {
+                missingBuildFiles.add(module)
+            }
+        }
+
+        return ProjectGraph(modules, dependencies, rootDependencies, missingBuildFiles)
+    }
+}
 
 open class GraphGuardTask : DefaultTask() {
     @TaskAction
     fun validateGraph() {
-        val configFile = project.file("graph-guard.json")
-        val configContent = Files.readString(configFile.toPath())
-        val gson = Gson()
-        val config = gson.fromJson(configContent, GraphGuardConfig::class.java)
+        val config = GraphGuardValidator.loadConfig(project.file("graph-guard.json").readText())
+        val graph = ProjectGraphCollector.collect(project.rootProject)
+        val result = GraphGuardValidator.validate(config, graph)
 
-        val allowedEdges = config.allowedEdges.map { edge -> "${edge[0]}->${edge[1]}" }.toSet()
-        val modules = config.modules.toSet()
-
-        val errors = mutableListOf<String>()
-        val warnings = mutableListOf<String>()
-
-        val rootDir = project.rootDir
-
-        val moduleToDir = mapOf(
-            "contracts" to "contracts",
-            "core" to "core",
-            "packs" to "packs",
-            "index" to "index",
-            "knowledge" to "knowledge",
-            "languages" to "languages",
-            "syntax-treesitter" to "syntax-treesitter",
-            "lsp" to "lsp",
-            "intent-pipeline" to "intent-pipeline",
-            "runtime" to "runtime",
-            "ai" to "ai",
-            "ipc" to "ipc",
-            "cli" to "apps/cli",
-            "server" to "apps/server",
-            "mcp" to "apps/mcp",
-            "test-fixtures" to "tests/fixtures",
-            "integration-tests" to "tests/integration"
-        )
-
-        for (module in config.modules) {
-            val moduleDir = moduleToDir[module] ?: module
-            val buildFile = File(rootDir, "$moduleDir/build.gradle.kts")
-
-            if (!buildFile.exists()) {
-                warnings.add("Module '$module' has no build.gradle.kts at $moduleDir")
-            } else {
-                validateBuildFile(buildFile, module, allowedEdges, modules, errors, warnings)
-            }
-        }
-
-        checkReverseEdges(allowedEdges, errors)
-
-        if (!errors.isEmpty()) {
+        if (!result.passed) {
             logger.error("GRAPH GUARD FAILED:")
-            for (error in errors) {
+            for (error in result.errors) {
                 logger.error("  ERROR: $error")
             }
-            throw GradleException("Graph guard validation failed with ${errors.size} error(s)")
-        } else {
-            logger.lifecycle("GRAPH GUARD PASSED")
-            for (warning in warnings) {
-                logger.warn("  WARNING: $warning")
-            }
-        }
-    }
-
-    private fun validateBuildFile(
-        buildFile: File,
-        module: String,
-        allowedEdges: Set<String>,
-        modules: Set<String>,
-        errors: MutableList<String>,
-        warnings: MutableList<String>
-    ) {
-        val content = Files.readString(buildFile.toPath())
-
-        val projectDepPattern = Pattern.compile("implementation\\(project\\(\"\\:([^\"]+)\"\\)\\)")
-        val matcher = projectDepPattern.matcher(content)
-
-        while (matcher.find()) {
-            val dep = matcher.group(1)
-            val edge = "$module->$dep"
-
-            if (!modules.contains(dep)) {
-                errors.add("Module '$module' depends on unknown module '$dep'")
-            } else if (!allowedEdges.contains(edge)) {
-                errors.add("Module '$module' has undeclared dependency on '$dep' (edge '$edge' not in allowedEdges)")
-            }
+            throw GradleException("Graph guard validation failed with ${result.errors.size} error(s)")
         }
 
-        val apiDepPattern = Pattern.compile("api\\(project\\(\"\\:([^\"]+)\"\\)\\)")
-        val apiMatcher = apiDepPattern.matcher(content)
-        while (apiMatcher.find()) {
-            val dep = apiMatcher.group(1)
-            val edge = "$module->$dep"
-
-            if (!modules.contains(dep)) {
-                errors.add("Module '$module' depends on unknown module '$dep' (api)")
-            } else if (!allowedEdges.contains(edge)) {
-                errors.add("Module '$module' has undeclared api dependency on '$dep' (edge '$edge' not in allowedEdges)")
-            }
-        }
-    }
-
-    private fun checkReverseEdges(allowedEdges: Set<String>, errors: MutableList<String>) {
-        for (edge in allowedEdges) {
-            val parts = edge.split("->")
-            if (parts.size == 2) {
-                val reverse = "${parts[1]}->${parts[0]}"
-                if (allowedEdges.contains(reverse)) {
-                    errors.add("Reverse edge detected: both '$edge' and '$reverse' are allowed (creates cycle)")
-                }
-            }
-        }
+        logger.lifecycle("GRAPH GUARD PASSED")
     }
 }
 
@@ -182,6 +105,13 @@ tasks.register("graphGuard", GraphGuardTask::class) {
     group = "verification"
 }
 
+tasks.register<Exec>("graphGuardSelfTest") {
+    description = "Runs build-logic tests proving the guard fails illegal, reverse, root, and missing edges"
+    group = "verification"
+    workingDir = file("buildSrc")
+    commandLine(rootProject.file("gradlew").absolutePath, "--no-daemon", "test")
+}
+
 tasks.named("check") {
-    dependsOn("graphGuard")
+    dependsOn("graphGuard", "graphGuardSelfTest")
 }

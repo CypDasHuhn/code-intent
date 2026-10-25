@@ -1,23 +1,4 @@
 {
-  "modules": [
-    "contracts",
-    "core",
-    "packs",
-    "index",
-    "knowledge",
-    "languages",
-    "syntax-treesitter",
-    "lsp",
-    "intent-pipeline",
-    "runtime",
-    "ai",
-    "ipc",
-    "cli",
-    "server",
-    "mcp",
-    "test-fixtures",
-    "integration-tests"
-  ],
   "allowedEdges": [
     ["core", "contracts"],
     ["packs", "contracts"],

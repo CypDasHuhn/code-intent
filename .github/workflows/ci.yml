@@ -49,3 +49,28 @@ jobs:
 
       - name: Test renderer
         run: just test-nvim
+
+  v2-skeleton:
+    name: V2 Skeleton (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: extractions/setup-just@v2
+
+      - name: V2 Build
+        run: just v2-build
+
+      - name: V2 Graph Guard
+        run: just v2-graph-guard
+
+      - name: V2 Test
+        run: just v2-test
