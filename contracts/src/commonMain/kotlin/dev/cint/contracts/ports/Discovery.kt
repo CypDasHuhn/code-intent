@@ -77,6 +77,7 @@ data class SymbolCall(
     val endByte: Int,
     val receiverType: String? = null,
     val declaringType: String? = null,
+    val resolvedTarget: String? = null,
 )
 
 @Serializable

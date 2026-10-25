@@ -197,7 +197,8 @@ internal object RepositoryDiscovery {
                         startByte = node.startByte,
                         endByte = node.endByte,
                         receiverType = call.receiverType?.takeIf { it.isNotBlank() },
-                        declaringType = call.resolvedTarget?.takeIf { it.isNotBlank() },
+                        declaringType = call.receiverType?.takeIf { it.isNotBlank() },
+                        resolvedTarget = call.resolvedTarget?.takeIf { it.isNotBlank() },
                     )
                 }.sortedWith(compareBy({ it.startByte }, { it.endByte }, { it.nodeId }))
         val imports =
