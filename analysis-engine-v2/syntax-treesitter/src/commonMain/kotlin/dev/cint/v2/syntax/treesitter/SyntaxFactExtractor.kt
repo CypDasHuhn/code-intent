@@ -435,11 +435,24 @@ internal object SyntaxFactExtractor {
             found.map { it.text } to found.map { it.id }
         }
 
-        fun declarationKind(node: SyntaxNode): DeclarationKind = when {
-            node.kind in profile.functionKinds -> DeclarationKind.FUNCTION
-            node.kind in profile.propertyKinds -> DeclarationKind.PROPERTY
-            else -> DeclarationKind.VARIABLE
+        fun scopeKindOf(id: String?): ScopeKind? {
+            val scope = id?.let { scopeId -> scopeNodes.firstOrNull { it.id == scopeId } } ?: return null
+            return when {
+                scope.id == tree.rootId -> ScopeKind.FILE
+                scope.kind in profile.classKinds || scope.kind == "class_body" -> ScopeKind.CLASS
+                scope.kind in profile.functionKinds -> ScopeKind.FUNCTION
+                scope.kind in profile.lambdaKinds -> ScopeKind.LAMBDA
+                else -> ScopeKind.BLOCK
+            }
         }
+
+        fun declarationKind(node: SyntaxNode): DeclarationKind =
+            when {
+                node.kind in profile.functionKinds -> DeclarationKind.FUNCTION
+                scopeKindOf(owningScope(node)) in
+                    setOf(ScopeKind.FUNCTION, ScopeKind.LAMBDA, ScopeKind.BLOCK) -> DeclarationKind.VARIABLE
+                else -> DeclarationKind.PROPERTY
+            }
 
         val writes = if (FactCategory.WRITES in requested) {
             nodes.mapNotNull { node ->

@@ -276,8 +276,37 @@ private class ValidationEvaluator :
                 view.candidateNode(emittedCondition, 0.4, CandidateReason.GAP)?.let { result += it }
             }
         }
+        val root = view.rootNode()
+        if (root != null) {
+            for (node in view.descendants(root)) {
+                if (!isElvis(view, node)) continue
+                val right =
+                    node.childIds
+                        .mapNotNull { view.node(it) }
+                        .lastOrNull { it.text.trim() !in COALESCE_TOKENS } ?: continue
+                if (!hasRejectingExit(view, right)) continue
+                if (hasKnownWrites(view, node)) continue
+                view.emitNode(node, 0.6, "treesitter")?.let(result::add)
+            }
+        }
         return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
     }
+
+    private fun isElvis(
+        view: RuleEvaluationView,
+        node: SyntaxNode,
+    ): Boolean =
+        node.kind == "elvis_expression" ||
+            (
+                node.kind == "binary_expression" &&
+                    node.childIds.mapNotNull { view.node(it) }.any { it.text.trim() in COALESCE_TOKENS }
+            )
+
+    private fun hasKnownWrites(view: RuleEvaluationView, node: SyntaxNode): Boolean =
+        view.writes.any { write -> view.node(write.nodeId)?.let { within(it, node) } == true } ||
+            setOf(Intents.BOOKKEEPING, Intents.DATA_MODIFY, Intents.LOCAL_VALUE_MODIFY).any { intent ->
+                view.annotations(intent).any { it.startByte >= node.startByte && it.endByte <= node.endByte }
+            }
 
     private fun hasValidationComment(
         view: RuleEvaluationView,
@@ -453,7 +482,7 @@ private class DataModifyEvaluator : V1Evaluator(RuleSpec("mutation:data-modify",
             val exactPath = PERSISTENCE_PATHS.any { path == it || path.endsWith(".$it") }
             val configured = PERSISTENCE_CALLS.any { it == callee } || PERSISTENCE_PREFIXES.any { callee.startsWith(it) }
             when {
-                exactPath || (configured && persistent) ->
+                durableCallback(view, call) || exactPath || (configured && persistent) ->
                     view.emitNode(view.node(call.nodeId), 0.9, "treesitter")?.let(result::add)
                 configured && receiver.isNotEmpty() && !MUTABLE_RECEIVER_NAMES.any { it.equals(receiverName, true) } ->
                     view.candidateNode(view.node(call.nodeId))?.let { result += it }
@@ -546,9 +575,7 @@ private class ServiceDelegationEvaluator :
                 }
             if (evidence != null) {
                 view.emitNode(view.node(call.nodeId), evidence.first, evidence.second)?.let(result::add)
-            } else if (callee in parameterNames(view, call) &&
-                view.intentsAt(view.node(call.nodeId) ?: continue).none { it == Intents.DATA_MODIFY }
-            ) {
+            } else if (callee in parameterNames(view, call)) {
                 view.candidateNode(view.node(call.nodeId), reason = CandidateReason.LOW_CONFIDENCE)?.let { result += it }
             }
         }
@@ -772,12 +799,15 @@ private fun expressionEnd(statement: SyntaxNode, expression: SyntaxNode): Syntax
     )
 }
 
-private fun parameterNames(view: RuleEvaluationView, call: CallFact): Set<String> {
-    val callNode = view.node(call.nodeId) ?: return emptySet()
-    val function = view.enclosingFunction(callNode) ?: return emptySet()
-    val text = view.node(function.nodeId)?.text ?: return emptySet()
+private fun parameterNames(view: RuleEvaluationView, call: CallFact): Set<String> =
+    parameterDeclarations(view, call).mapNotNull(::parameterName).toSet()
+
+private fun parameterDeclarations(view: RuleEvaluationView, call: CallFact): List<String> {
+    val callNode = view.node(call.nodeId) ?: return emptyList()
+    val function = view.enclosingFunction(callNode) ?: return emptyList()
+    val text = view.node(function.nodeId)?.text ?: return emptyList()
     val open = text.indexOf('(')
-    if (open < 0) return emptySet()
+    if (open < 0) return emptyList()
     var depth = 0
     var close = -1
     for (index in open until text.length) {
@@ -786,12 +816,105 @@ private fun parameterNames(view: RuleEvaluationView, call: CallFact): Set<String
             if (depth == 0) { close = index; break }
         }
     }
-    if (close <= open) return emptySet()
-    return text.substring(open + 1, close)
-        .split(',')
-        .mapNotNull { parameter ->
-            parameter.substringBefore(':').substringBefore('=').trim().split(Regex("\\s+")).lastOrNull()
-        }.filter { it.isNotBlank() }.toSet()
+    if (close <= open) return emptyList()
+    return splitParameters(text.substring(open + 1, close))
+}
+
+private fun parameterName(parameter: String): String? =
+    parameter.substringBefore(':').substringBefore('=').trim().split(Regex("\\s+")).lastOrNull()?.takeIf { it.isNotBlank() }
+
+private fun parameterDefault(parameter: String): String? {
+    val assignment = assignmentIndex(parameter)
+    if (assignment < 0) return null
+    return parameter.substring(assignment + 1).trim().ifEmpty { null }
+}
+
+private fun parameterType(parameter: String): String? {
+    val assignment = assignmentIndex(parameter)
+    val signature = if (assignment >= 0) parameter.substring(0, assignment) else parameter
+    val colon = signature.indexOf(':')
+    if (colon < 0) return null
+    return signature.substring(colon + 1).trim().ifEmpty { null }
+}
+
+private fun durableCallback(view: RuleEvaluationView, call: CallFact): Boolean {
+    val callee = call.callee.orEmpty()
+    if (callee.isEmpty()) return false
+    for (parameter in parameterDeclarations(view, call)) {
+        if (parameterName(parameter) != callee) continue
+        val default = parameterDefault(parameter) ?: continue
+        if (!isFunctionTyped(parameterType(parameter), default)) continue
+        if ((PERSISTENCE_PATHS + PERSISTENCE_CALLS).any { target -> referencesTarget(default, target) }) return true
+    }
+    return false
+}
+
+private fun isFunctionTyped(type: String?, default: String): Boolean {
+    val declared = type.orEmpty()
+    if (FUNCTION_TYPE_MARKERS.any { declared.contains(it) }) return true
+    return FUNCTION_DEFAULT_MARKERS.any { default.contains(it) }
+}
+
+private fun referencesTarget(default: String, target: String): Boolean {
+    if (!target.contains('.')) return false
+    val normalized = default.replace("::", ".")
+    return Regex("""(?<![A-Za-z0-9_$])${Regex.escape(target)}(?![A-Za-z0-9_$])""").containsMatchIn(normalized)
+}
+
+private fun splitParameters(parameters: String): List<String> {
+    val result = mutableListOf<String>()
+    var angle = 0
+    var parens = 0
+    var brackets = 0
+    var braces = 0
+    var start = 0
+    for (index in parameters.indices) {
+        when (parameters[index]) {
+            '<' -> angle++
+            '>' -> if (angle > 0) angle--
+            '(' -> parens++
+            ')' -> if (parens > 0) parens--
+            '[' -> brackets++
+            ']' -> if (brackets > 0) brackets--
+            '{' -> braces++
+            '}' -> if (braces > 0) braces--
+            ',' -> if (angle == 0 && parens == 0 && brackets == 0 && braces == 0) {
+                result += parameters.substring(start, index).trim()
+                start = index + 1
+            }
+        }
+    }
+    result += parameters.substring(start).trim()
+    return result.filter { it.isNotEmpty() }
+}
+
+private fun assignmentIndex(text: String): Int {
+    var angle = 0
+    var parens = 0
+    var brackets = 0
+    var braces = 0
+    for (index in text.indices) {
+        when (text[index]) {
+            '<' -> angle++
+            '>' -> if (angle > 0) angle--
+            '(' -> parens++
+            ')' -> if (parens > 0) parens--
+            '[' -> brackets++
+            ']' -> if (brackets > 0) brackets--
+            '{' -> braces++
+            '}' -> if (braces > 0) braces--
+            '=' -> {
+                if (angle == 0 && parens == 0 && brackets == 0 && braces == 0) {
+                    val previous = text.getOrNull(index - 1)
+                    val next = text.getOrNull(index + 1)
+                    if (next != '>' && next != '=' && previous != '=' && previous != '!' && previous != '<' && previous != '>') {
+                        return index
+                    }
+                }
+            }
+        }
+    }
+    return -1
 }
 
 private fun SyntaxNode.trimmedEnd(): SyntaxNode {
@@ -827,7 +950,7 @@ private fun isAmbiguous(callee: String): Boolean =
 
 private fun isLiteral(text: String): Boolean {
     val value = text.trim()
-    if (value in REJECTION_VALUES) return true
+    if (value == "true" || value in REJECTION_VALUES) return true
     if (value.startsWith("\"") || value.startsWith("'") || value.startsWith("`")) return true
     return value.toLongOrNull() != null || value.toDoubleOrNull() != null
 }
@@ -923,6 +1046,10 @@ private val PREDICATE_CALLS =
 private val PREDICATE_PREFIXES = listOf("is", "has", "Is", "Has")
 private val REJECTION_VALUES =
     setOf("null", "undefined", "false", "0", "-1", "\"\"", "''", "[]", "{}", "emptyList()", "emptyMap()", "emptySet()", "listOf()", "mapOf()", "setOf()", "arrayOf()", "String.Empty")
+private val COALESCE_TOKENS = setOf("??", "?:")
+private val FUNCTION_TYPE_MARKERS =
+    listOf("->", "=>", "function", "Func<", "Action<", "Consumer<", "Supplier<", "Predicate<", "Callable<", "Runnable", "BiFunction", "BiConsumer", "UnaryOperator", "Function<", "BiPredicate<")
+private val FUNCTION_DEFAULT_MARKERS = setOf("::", "=>", "->", "{")
 private val CONSTANT_COMPARISON = Regex("""^(?:true|false|-?\d+)\s*(?:==|!=)\s*(?:true|false|-?\d+)$""")
 
 private val SEARCH_CALLS =
