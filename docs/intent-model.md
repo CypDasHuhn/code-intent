@@ -643,31 +643,31 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 
 ## 10. Implementation snapshot
 
-The current engine is the V2 tree under `analysis-engine/`. Key files:
+The current engine is the repository root. Key files:
 
-- `analysis-engine/contracts/src/commonMain/kotlin/dev/cint/contracts/data/` —
+- `contracts/src/commonMain/kotlin/dev/cint/contracts/data/` —
   intents, roles, annotations, candidates, provenance, and spans.
-- `analysis-engine/contracts/src/commonMain/kotlin/dev/cint/contracts/ports/` —
+- `contracts/src/commonMain/kotlin/dev/cint/contracts/ports/` —
   `SyntaxEngine`, `SemanticProvider`, `Index`, `KnowledgeStore`,
   `RulePackSource`, `IntentPipeline`, `Runtime`, and transports.
-- `analysis-engine/contracts/src/commonMain/kotlin/dev/cint/contracts/knowledge/` —
+- `contracts/src/commonMain/kotlin/dev/cint/contracts/knowledge/` —
   function annotations, span overrides, pattern hypotheses, pack defaults, and
   `KnowledgeChange`.
-- `analysis-engine/core/src/main/kotlin/dev/cint/core/` — scheduler, strata,
+- `analysis/core/src/main/kotlin/dev/cint/core/` — scheduler, strata,
   capability view, annotation store, and composition.
-- `analysis-engine/packs/src/main/resources/packs/bundled-packs.json` —
+- the `packs` module's bundled pack resource `packs/bundled-packs.json` —
   manifest packs, playbooks, owned intents, and seed defaults.
-- `analysis-engine/index/` — hashing, incremental cache, and indexed source.
-- `analysis-engine/knowledge/` and `analysis-engine/knowledge-persistence/` —
+- `sources/index/` — hashing, incremental cache, and indexed source.
+- `analysis/knowledge/` and `analysis/knowledge-persistence/` —
   materialized knowledge semantics and JSON/checkpoint adapters.
-- `analysis-engine/languages/` — descriptor catalog and adapter binding.
-- `analysis-engine/syntax-treesitter/` — tree-sitter parse/facts and node hashes.
-- `analysis-engine/lsp/` — managed, attached, and editor-proxy semantic
+- `sources/languages/` — descriptor catalog and adapter binding.
+- `sources/syntax-treesitter/` — tree-sitter parse/facts and node hashes.
+- `sources/lsp/` — managed, attached, and editor-proxy semantic
   providers.
-- `analysis-engine/intent-pipeline/` — pack plans, knowledge resolution, and
+- `analysis/intent-pipeline/` — pack plans, knowledge resolution, and
   deterministic function propagation.
-- `analysis-engine/runtime/` — orchestration and the public `analyze` surface.
-- `analysis-engine/apps/cli`, `apps/server`, `apps/mcp` — batch, live daemon,
+- `orchestration/runtime/` — orchestration and the public `analyze` surface.
+- `apps/cli`, `apps/server`, `apps/mcp` — batch, live daemon,
   and agent servers.
 
 Key client files:

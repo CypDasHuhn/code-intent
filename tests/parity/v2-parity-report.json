@@ -1,0 +1,1912 @@
+{
+  "cli": {
+    "files": [
+      {
+        "actualAnnotations": 11,
+        "actualCandidates": 0,
+        "expectedAnnotations": 11,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 11,
+        "matchedCandidates": 0,
+        "path": "Bookkeeping.kt"
+      },
+      {
+        "actualAnnotations": 20,
+        "actualCandidates": 2,
+        "expectedAnnotations": 20,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 20,
+        "matchedCandidates": 2,
+        "path": "Catches.kt"
+      },
+      {
+        "actualAnnotations": 17,
+        "actualCandidates": 2,
+        "expectedAnnotations": 17,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 17,
+        "matchedCandidates": 2,
+        "path": "Composition.kt"
+      },
+      {
+        "actualAnnotations": 13,
+        "actualCandidates": 0,
+        "expectedAnnotations": 13,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 13,
+        "matchedCandidates": 0,
+        "path": "ErrorHandling.kt"
+      },
+      {
+        "actualAnnotations": 3,
+        "actualCandidates": 0,
+        "expectedAnnotations": 3,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 3,
+        "matchedCandidates": 0,
+        "path": "Heuristics.kt"
+      },
+      {
+        "actualAnnotations": 12,
+        "actualCandidates": 2,
+        "expectedAnnotations": 12,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 12,
+        "matchedCandidates": 2,
+        "path": "LoggerInteractions.kt"
+      },
+      {
+        "actualAnnotations": 8,
+        "actualCandidates": 4,
+        "expectedAnnotations": 8,
+        "expectedCandidates": 4,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 8,
+        "matchedCandidates": 4,
+        "path": "Mutation.kt"
+      },
+      {
+        "actualAnnotations": 8,
+        "actualCandidates": 19,
+        "expectedAnnotations": 8,
+        "expectedCandidates": 19,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 8,
+        "matchedCandidates": 19,
+        "path": "NeighboursCli.kt"
+      },
+      {
+        "actualAnnotations": 16,
+        "actualCandidates": 2,
+        "expectedAnnotations": 16,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 16,
+        "matchedCandidates": 2,
+        "path": "PurityAssist.kt"
+      },
+      {
+        "actualAnnotations": 18,
+        "actualCandidates": 2,
+        "expectedAnnotations": 18,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 18,
+        "matchedCandidates": 2,
+        "path": "Scaffolds.kt"
+      },
+      {
+        "actualAnnotations": 11,
+        "actualCandidates": 5,
+        "expectedAnnotations": 11,
+        "expectedCandidates": 5,
+        "hashMatches": true,
+        "language": "kotlin",
+        "matchedAnnotations": 11,
+        "matchedCandidates": 5,
+        "path": "ServiceIntents.kt"
+      },
+      {
+        "actualAnnotations": 17,
+        "actualCandidates": 1,
+        "expectedAnnotations": 17,
+        "expectedCandidates": 1,
+        "hashMatches": true,
+        "language": "typescript",
+        "matchedAnnotations": 17,
+        "matchedCandidates": 1,
+        "path": "Sample.ts"
+      },
+      {
+        "actualAnnotations": 7,
+        "actualCandidates": 3,
+        "expectedAnnotations": 7,
+        "expectedCandidates": 3,
+        "hashMatches": true,
+        "language": "typescript",
+        "matchedAnnotations": 7,
+        "matchedCandidates": 3,
+        "path": "ServiceIntents.ts"
+      },
+      {
+        "actualAnnotations": 22,
+        "actualCandidates": 2,
+        "expectedAnnotations": 22,
+        "expectedCandidates": 2,
+        "hashMatches": true,
+        "language": "javascript",
+        "matchedAnnotations": 22,
+        "matchedCandidates": 2,
+        "path": "Sample.js"
+      },
+      {
+        "actualAnnotations": 19,
+        "actualCandidates": 1,
+        "expectedAnnotations": 19,
+        "expectedCandidates": 1,
+        "hashMatches": true,
+        "language": "csharp",
+        "matchedAnnotations": 19,
+        "matchedCandidates": 1,
+        "path": "Sample.cs"
+      },
+      {
+        "actualAnnotations": 9,
+        "actualCandidates": 0,
+        "expectedAnnotations": 9,
+        "expectedCandidates": 0,
+        "hashMatches": true,
+        "language": "vue",
+        "matchedAnnotations": 9,
+        "matchedCandidates": 0,
+        "path": "Sample.vue"
+      }
+    ],
+    "scenarios": []
+  },
+  "closable": true,
+  "corpus": {
+    "manifestHashMismatches": [],
+    "protocolVersion": "4",
+    "v1Commit": "3ccea9e9cdb5a4e652182136866b24929bbed0b3"
+  },
+  "defects": [],
+  "deferrals": [
+    {
+      "reason": "Port V1 logging, validation, data-access, return, local-copy, and span/confidence semantics.",
+      "ticket": "088-v2-detection-fact-parity"
+    },
+    {
+      "reason": "Port @Bookkeeping/cint declaration and validation rejection/predicate/bookkeeping gating.",
+      "ticket": "089-v2-bookkeeping-validation-parity"
+    },
+    {
+      "reason": "Port V1 scaffold, derivative-use, return-category, and function-scaffold composition.",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "reason": "Complete candidate identity, grouping, and mutation/service candidate parity.",
+      "ticket": "091-v2-candidate-parity"
+    },
+    {
+      "reason": "Complete service init constructor-injection and lifecycle spans.",
+      "ticket": "092-v2-service-init-parity"
+    },
+    {
+      "reason": "Complete non-Kotlin span and syntactic-fact parity.",
+      "ticket": "093-v2-non-kotlin-parity"
+    }
+  ],
+  "followUpTickets": [],
+  "formatVersion": 1,
+  "intentionalDifferences": [
+    {
+      "id": "cli.candidate-optionals",
+      "reason": "Absent optional candidate provider/model/rationale/path fields are omitted rather than emitted as null.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.exit-codes",
+      "reason": "The V2 CLI uses stable exit codes and structured JSON errors on stderr.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.format-selector",
+      "reason": "The V2 CLI supports json and ndjson output formats.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.include-all",
+      "reason": "--all includes files with no annotations, candidates, or diagnostics.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.knowledge-init",
+      "reason": "--init materializes pack defaults into the knowledge store; no-init analysis is in-memory.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.meta-deterministic",
+      "reason": "meta.timestamp and meta.elapsedMs are omitted so CLI output is reproducible.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.ordering",
+      "reason": "Files, annotations, candidates, and intents are sorted deterministically.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "cli.provider-required",
+      "reason": "The V2 CLI has no --no-lsp path and rejects the flag; a semantic provider is required.",
+      "scope": "cli",
+      "source": "apps/cli/CLI_DIFFERENCES.md",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "analyze.http.shape",
+      "reason": "The HTTP facade follows the V2 server contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "annotation.shape",
+      "reason": "V2 adds rule identity and diagnostics without replacing the flat span shape.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "candidate.shape",
+      "reason": "The V2 proposal contract replaces rule/string provenance on candidates.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "cli.output",
+      "reason": "The CLI output contract is owned by the V2 CLI ticket.",
+      "scope": "cli",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "080-v2-cli"
+    },
+    {
+      "id": "config.files",
+      "reason": "V2 file layout is owned by the packs/defaults ticket.",
+      "scope": "files",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "config.protocol",
+      "reason": "V2 config is JSON-first and owned by the packs/defaults contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "error.handling",
+      "reason": "Structured errors are part of the V2 IPC contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.suggestions",
+      "reason": "V2 suggestion capability defaults are owned by the V2 server ticket.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "tentative",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "language.support",
+      "reason": "Language facade ownership is defined by the V2 languages ticket.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "074-v2-languages-facade"
+    },
+    {
+      "id": "lsp.integration",
+      "reason": "LSP behavior is owned by the V2 LSP provider ticket.",
+      "scope": "all",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "073-v2-lsp-provider"
+    },
+    {
+      "id": "performance.targets",
+      "reason": "Performance targets are validated by the V2 parity integration ticket.",
+      "scope": "all",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "tentative",
+      "ticket": "084-v2-parity-integration"
+    },
+    {
+      "id": "protocol.version",
+      "reason": "The V2 wire contract will be versioned independently; V1 protocol 4 is the comparison baseline.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "086-external-protocol-versioning"
+    },
+    {
+      "id": "publishCandidates.fields",
+      "reason": "Candidate publication is replaced by the unified V2 proposal shape.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "publishTags.fields",
+      "reason": "Publication field names and additions are part of the V2 IPC contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "renderer.projection",
+      "reason": "Renderer extraction owns the V2 display projection.",
+      "scope": "renderer",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "087-extract-nvim-renderer"
+    },
+    {
+      "id": "restrictions.protocol",
+      "reason": "V2 extends restrictions with scope and conditional application.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "059-ai-restriction-proposals"
+    },
+    {
+      "id": "status.protocol",
+      "reason": "Status and metrics are added by the V2 server contract.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "suggest.protocol",
+      "reason": "Suggestions move to streaming and span-based selection in V2.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "transport.framing",
+      "reason": "Transport framing remains tentative until ticket 079 decides whether additional transports are supported.",
+      "scope": "protocol",
+      "source": "frozen-v1-corpus/known-differences.json",
+      "status": "tentative",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "annotation.shape",
+      "reason": "V2 annotations add diagnostics and ruleId/packId provenance.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "candidate.shape",
+      "reason": "V2 candidates are proposals with origin, category, fingerprints, and operations.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "config.protocol",
+      "reason": "V2 config is JSON-first and served by the runtime surface.",
+      "source": "ipc",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "error.handling",
+      "reason": "V2 errors carry structured data.kind/data.details.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "http.facade",
+      "reason": "The V2 live server currently exposes only the Unix-socket surface; HTTP analyze/health replay is deferred until an HTTP facade exists.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "initialize.additions",
+      "reason": "V2 initialize adds fingerprint, server, and capabilities.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.pack-fields",
+      "reason": "V2 exposes its own default pack catalog with manifest metadata and an empty config-field list.",
+      "source": "ipc",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "initialize.suggestions",
+      "reason": "V2 suggestion capability defaults are owned by the V2 server ticket.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "protocol.version",
+      "reason": "Protocol 5 is negotiated for V2 while legacy 4 replays keep V1 shapes.",
+      "source": "ipc",
+      "ticket": "086-external-protocol-versioning"
+    },
+    {
+      "id": "restrictions.protocol",
+      "reason": "V2 restrictions use GET-style and upsert methods.",
+      "source": "ipc",
+      "ticket": "059-ai-restriction-proposals"
+    },
+    {
+      "id": "server.unsupported-operations",
+      "reason": "Config, suggest, restrictions, and candidate decisions return structured unsupported-operation errors until runtime exposes them.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "status.protocol",
+      "reason": "V2 adds live status and metrics surfaces.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "suggest.candidate-enrichment",
+      "reason": "V2 does not implement cint/suggest, so V1 fake-provider candidate enrichment and its suggestionRevision are absent.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "suggest.protocol",
+      "reason": "V2 suggestions use selection spans and streaming methods.",
+      "source": "ipc",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "annotation.shape",
+      "reason": "flat span + diagnostics + provenance.ruleId/packId + optional evidence",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "annotation.source-vocabulary",
+      "reason": "treesitter/heuristic/annotation/cfg/ai; runtime knowledge/rule/candidate/composition labels are mapped per protocol",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "candidate.shape",
+      "reason": "origin (including promptVersion) + category + fingerprints + operations",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "candidates.decide",
+      "reason": "cint/candidates/decide request with candidateId, decision, optional uri/reason",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "config.protocol",
+      "reason": "config + sources JSON, write and schema methods",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "error.handling",
+      "reason": "standard JSON-RPC codes + structured data.kind/data.details",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "fingerprint.schema",
+      "reason": "SHA-256 schema fingerprint including method set, every wire DTO field, kind, optionality, nullability, and enum constants",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.additions",
+      "reason": "V1 fields retained; fingerprint/server/capabilities added; capabilities is an object",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "initialize.pack-fields",
+      "reason": "initialize packs expose manifest id/name/version/rules/languages with an empty fields array until the runtime exposes a config schema",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "legacy.protocol-range",
+      "reason": "protocols 3-4 accepted without fingerprint and reported via negotiatedProtocol/isLegacy; protocols 1-2 and versions outside 3-5 are rejected; protocol 5 requires the current fingerprint",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "operation.fields",
+      "reason": "legacy fields retained; intents + origin added",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "protocol.version",
+      "reason": "5 (legacy 3-4 negotiated without fingerprint)",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "086-external-protocol-versioning"
+    },
+    {
+      "id": "publishCandidates.fields",
+      "reason": "proposals + analysisRevision + proposalRevision",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "publishTags.fields",
+      "reason": "configRevision + analysisVersion + diagnostics + populated nodeAnchor",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "restrictions.protocol",
+      "reason": "cint/restrictions GET-style + upsert; typed scope/condition fields",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "059-ai-restriction-proposals"
+    },
+    {
+      "id": "server.unsupported-operations",
+      "reason": "server wires analyze, documents, status, and metrics to runtime; config, suggest, restrictions, and candidates/decide return structured unsupported-operation errors until runtime exposes those surfaces",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "status.protocol",
+      "reason": "cint/status + cint/metrics with version/uptime/activeDocuments/suggestionQueue",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "suggest.protocol",
+      "reason": "selection span + stream/history methods + JSON-RPC cancellation",
+      "scope": "protocol",
+      "source": "orchestration/ipc/known-differences-v2.json",
+      "status": "decided",
+      "ticket": "079-v2-ipc-protocol"
+    }
+  ],
+  "ipc": {
+    "renderer": [
+      {
+        "annotationCount": 11,
+        "checks": {
+          "annotation.confidenceFinite": true,
+          "annotation.flatSpan": true,
+          "annotation.provenanceIdentity": true,
+          "initialize.capabilities": true,
+          "initialize.fingerprint": true,
+          "initialize.languages": true,
+          "publishCandidates.proposalRevision": true,
+          "publishCandidates.proposals": true,
+          "publishTags.analysisVersion": true,
+          "publishTags.configRevision": true,
+          "publishTags.diagnostics": true
+        },
+        "differenceCount": 74,
+        "intentionalSections": [
+          {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "suggest.candidate-enrichment",
+            "section": "candidates"
+          },
+          {
+            "intentionalDifferenceId": "suggest.candidate-enrichment",
+            "section": "candidates"
+          },
+          {
+            "intentionalDifferenceId": "suggest.candidate-enrichment",
+            "section": "candidates"
+          },
+          {
+            "intentionalDifferenceId": "suggest.candidate-enrichment",
+            "section": "candidates"
+          },
+          {
+            "intentionalDifferenceId": "suggest.candidate-enrichment",
+            "section": "candidates"
+          },
+          {
+            "intentionalDifferenceId": "suggest.protocol",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "suggest.protocol",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "suggest.protocol",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "restrictions.protocol",
+            "section": "restrictions"
+          },
+          {
+            "intentionalDifferenceId": "restrictions.protocol",
+            "section": "restrictions"
+          },
+          {
+            "intentionalDifferenceId": "restrictions.protocol",
+            "section": "restrictions"
+          },
+          {
+            "intentionalDifferenceId": "status.protocol",
+            "section": "status"
+          },
+          {
+            "intentionalDifferenceId": "status.protocol",
+            "section": "status"
+          }
+        ],
+        "passed": true,
+        "sections": [
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#tags.annotations",
+            "compared": true,
+            "differenceCount": 0,
+            "differences": [],
+            "intentionalDifferenceIds": [],
+            "name": "tags.annotations",
+            "ownerTicket": "090-v2-composition-parity",
+            "passed": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#candidates",
+            "compared": true,
+            "differenceCount": 35,
+            "differences": [
+              "candidates.candidates[6].aiEligible expected=false actual=true",
+              "candidates.candidates[6].confidence expected=0.75 actual=0.4",
+              "candidates.candidates[6].model expected=\"fake-intent-v1\" actual=<missing>",
+              "candidates.candidates[6].promptVersion expected=\"fake-prompt-v2\" actual=<missing>",
+              "candidates.candidates[6].provider expected=\"fake\" actual=<missing>",
+              "candidates.candidates[6].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.candidates[6].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.candidates[9].aiEligible expected=false actual=true",
+              "candidates.candidates[9].confidence expected=0.75 actual=0.4",
+              "candidates.candidates[9].model expected=\"fake-intent-v1\" actual=<missing>",
+              "candidates.candidates[9].promptVersion expected=\"fake-prompt-v2\" actual=<missing>",
+              "candidates.candidates[9].provider expected=\"fake\" actual=<missing>",
+              "candidates.candidates[9].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.candidates[9].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.groups[3].candidates[0].aiEligible expected=false actual=true",
+              "candidates.groups[3].candidates[0].confidence expected=0.75 actual=0.4",
+              "candidates.groups[3].candidates[0].model expected=\"fake-intent-v1\" actual=<missing>",
+              "candidates.groups[3].candidates[0].promptVersion expected=\"fake-prompt-v2\" actual=<missing>",
+              "candidates.groups[3].candidates[0].provider expected=\"fake\" actual=<missing>",
+              "candidates.groups[3].candidates[0].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.groups[3].candidates[0].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.groups[3].operations[0].confidence expected=0.75 actual=0.4",
+              "candidates.groups[3].operations[0].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.groups[3].operations[0].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.groups[5].candidates[0].aiEligible expected=false actual=true",
+              "candidates.groups[5].candidates[0].confidence expected=0.75 actual=0.4",
+              "candidates.groups[5].candidates[0].model expected=\"fake-intent-v1\" actual=<missing>",
+              "candidates.groups[5].candidates[0].promptVersion expected=\"fake-prompt-v2\" actual=<missing>",
+              "candidates.groups[5].candidates[0].provider expected=\"fake\" actual=<missing>",
+              "candidates.groups[5].candidates[0].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.groups[5].candidates[0].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.groups[5].operations[0].confidence expected=0.75 actual=0.4",
+              "candidates.groups[5].operations[0].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.groups[5].operations[0].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.suggestionRevision expected=2 actual=1"
+            ],
+            "intentionalDifferenceIds": [
+              "suggest.candidate-enrichment"
+            ],
+            "name": "candidates",
+            "ownerTicket": "091-v2-candidate-parity",
+            "passed": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#configFlow",
+            "compared": true,
+            "differenceCount": 8,
+            "differences": [
+              "config.reads[0].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[0].overlay expected={} actual=<missing>",
+              "config.reads[1].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[1].overlay expected={\"validation\":{\"predicates\":[\"fixturePredicate\"]}} actual=<missing>",
+              "config.reads[2].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[2].overlay expected={\"logging\":{\"kotlin\":{\"methods\":[\"trace\"]}},\"validation\":{\"predicates\":[\"fixturePredicate\"]}} actual=<missing>",
+              "config.reads[3].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[3].overlay expected={\"logging\":{\"kotlin\":{\"methods\":[\"trace\"]}}} actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "config.protocol"
+            ],
+            "name": "config",
+            "ownerTicket": "069-v2-packs-and-defaults",
+            "passed": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#documentLifecycle",
+            "compared": true,
+            "differenceCount": 0,
+            "differences": [],
+            "intentionalDifferenceIds": [],
+            "name": "documentLifecycle",
+            "ownerTicket": "090-v2-composition-parity",
+            "passed": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#suggest",
+            "compared": true,
+            "differenceCount": 22,
+            "differences": [
+              "suggest.disabled.accepted expected=false actual=<missing>",
+              "suggest.disabled.count expected=0 actual=<missing>",
+              "suggest.disabled.disabled expected=true actual=<missing>",
+              "suggest.disabled.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/suggest\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/suggest\"}}}",
+              "suggest.enabled.accepted expected=true actual=<missing>",
+              "suggest.enabled.cancelled expected=false actual=<missing>",
+              "suggest.enabled.count expected=19 actual=<missing>",
+              "suggest.enabled.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/suggest\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/suggest\"}}}",
+              "suggest.enabled.restrictions expected=0 actual=<missing>",
+              "suggest.log.additions expected=0 actual=<missing>",
+              "suggest.log.budgetExhausted expected=false actual=<missing>",
+              "suggest.log.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/suggest/log\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/suggest/log\"}}}",
+              "suggest.log.events expected=[] actual=<missing>",
+              "suggest.log.graded expected=0 actual=<missing>",
+              "suggest.log.incomplete expected=false actual=<missing>",
+              "suggest.log.overhead expected=0 actual=<missing>",
+              "suggest.log.reused expected=0 actual=<missing>",
+              "suggest.log.toolCalls expected=0 actual=<missing>",
+              "suggest.log.total expected=0 actual=<missing>",
+              "suggest.log.turns expected=0 actual=<missing>",
+              "suggest.log.uncovered expected=[] actual=<missing>",
+              "suggest.log.uri expected=\"file:///test/NeighboursCli.kt\" actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "suggest.protocol"
+            ],
+            "name": "suggest",
+            "ownerTicket": "079-v2-ipc-protocol",
+            "passed": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#restrictions",
+            "compared": true,
+            "differenceCount": 7,
+            "differences": [
+              "restrictions.afterRemoval.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/restrictions\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/restrictions\"}}}",
+              "restrictions.afterRemoval.restrictions expected=[] actual=<missing>",
+              "restrictions.listed.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/restrictions\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/restrictions\"}}}",
+              "restrictions.listed.restrictions expected=[{\"add\":[{\"confidence\":0.8,\"endOffset\":7,\"intent\":\"SEARCH\",\"rationale\":\"fixture restriction\",\"startOffset\":0}],\"contentHash\":\"fixture\",\"createdAt\":\"2026-10-24T00:00:00Z\",\"endCol\":7,\"endLine\":0,\"id\":\"fixture-restriction\",\"model\":\"fake-intent-v1\",\"path\":\"file:///test/Bookkeeping.kt\",\"promptVersion\":\"fake-prompt-v2\",\"provider\":\"fake\",\"remove\":[{\"confidence\":0.7,\"endOffset\":7,\"intent\":\"LOGGING\",\"rationale\":\"fixture restriction\",\"startOffset\":0}],\"startCol\":0,\"startLine\":0,\"status\":\"dormant\",\"symbol\":null,\"unitFingerprint\":null}] actual=<missing>",
+              "restrictions.removed.accepted expected=true actual=<missing>",
+              "restrictions.removed.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/restrictions/remove\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/restrictions/remove\"}}}",
+              "restrictions.removed.removed expected=true actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "restrictions.protocol"
+            ],
+            "name": "restrictions",
+            "ownerTicket": "059-ai-restriction-proposals",
+            "passed": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#status",
+            "compared": true,
+            "differenceCount": 2,
+            "differences": [
+              "status.liveStatus expected=<missing> actual={\"status\":\"ok\",\"version\":\"0.1.0\",\"uptimeMs\":<UPTIME>,\"activeDocuments\":0,\"suggestionQueue\":0}",
+              "status.liveStatusError expected={\"code\":-32000,\"message\":\"unknown method: cint/status\"} actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "status.protocol"
+            ],
+            "name": "status",
+            "ownerTicket": "081-v2-server",
+            "passed": true,
+            "unmatchedCount": 0
+          }
+        ],
+        "source": "V2 protocol 5 tags; V2 frozen-replay projections for candidates, config, lifecycle, suggest, restrictions, and status",
+        "unexercisedDifferenceIds": [],
+        "unmatchedCount": 0,
+        "verified": true
+      }
+    ],
+    "rendererDerivation": {
+      "baseline": "frozen-v1-corpus/renderer-visible-v1.json",
+      "differenceCount": 74,
+      "passed": true,
+      "sectionsCompared": 7,
+      "source": "V2",
+      "unmatchedCount": 0,
+      "verified": true
+    },
+    "scenarios": [
+      {
+        "frozenMessages": 9,
+        "frozenSequence": [
+          "response:1",
+          "response:2",
+          "response:3",
+          "response:4",
+          "response:5",
+          "response:6",
+          "response:7",
+          "response:8",
+          "response:9"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "config.protocol"
+        ],
+        "name": "protocol-config-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:2"
+            ],
+            "index": 1,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 2,
+            "method": "cint/config/append",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:4"
+            ],
+            "index": 3,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 4,
+            "method": "cint/config/append",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:6"
+            ],
+            "index": 5,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:7"
+            ],
+            "index": 6,
+            "method": "cint/config/remove",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:8"
+            ],
+            "index": 7,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:9"
+            ],
+            "index": 8,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:9"
+            ]
+          }
+        ],
+        "v2Messages": 9,
+        "v2Sequence": [
+          "response:1",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:9"
+        ]
+      },
+      {
+        "frozenMessages": 9,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields"
+        ],
+        "name": "protocol-document-lifecycle",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 2,
+            "method": "textDocument/didChange",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 3,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [],
+            "index": 4,
+            "method": "textDocument/didClose",
+            "methodShapeMatches": true,
+            "v2Methods": []
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 5,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 9,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ]
+      },
+      {
+        "frozenMessages": 5,
+        "frozenSequence": [
+          "response:1",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "protocol.version",
+          "restrictions.protocol",
+          "config.protocol"
+        ],
+        "name": "protocol-error-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 1,
+            "method": "cint/restrictions/list",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 2,
+            "method": "cint/config/append",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 3,
+            "method": "cint/config/append",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 4,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:5"
+            ]
+          }
+        ],
+        "v2Messages": 5,
+        "v2Sequence": [
+          "response:1",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ]
+      },
+      {
+        "frozenMessages": 17,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:4",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:5",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:6",
+          "response:7"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "config.protocol"
+        ],
+        "name": "protocol-kotlin-analyze",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "cint/config/read",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:4"
+            ],
+            "index": 4,
+            "method": "cint/config/append",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:5"
+            ],
+            "index": 5,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:5"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:6"
+            ],
+            "index": 6,
+            "method": "cint/config/remove",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:7"
+            ],
+            "index": 7,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:7"
+            ]
+          }
+        ],
+        "v2Messages": 13,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "error:-32000",
+          "error:-32000",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:5",
+          "error:-32000",
+          "response:7"
+        ]
+      },
+      {
+        "frozenMessages": 9,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:3",
+          "response:4",
+          "response:5"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "initialize.suggestions",
+          "restrictions.protocol"
+        ],
+        "name": "protocol-restrictions-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/restrictions/list",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:3"
+            ],
+            "index": 3,
+            "method": "cint/restrictions/remove",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:4"
+            ],
+            "index": 4,
+            "method": "cint/restrictions/list",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 5,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:5"
+            ]
+          }
+        ],
+        "v2Messages": 7,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ]
+      },
+      {
+        "frozenMessages": 3,
+        "frozenSequence": [
+          "response:1",
+          "error:-32000",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "status.protocol"
+        ],
+        "name": "protocol-status-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "error:-32000"
+            ],
+            "index": 1,
+            "method": "cint/status",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 2,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 3,
+        "v2Sequence": [
+          "response:1",
+          "response:2",
+          "response:3"
+        ]
+      },
+      {
+        "frozenMessages": 5,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "suggest.protocol"
+        ],
+        "name": "protocol-suggest-disabled-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/suggest",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 5,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "error:-32000",
+          "response:3"
+        ]
+      },
+      {
+        "frozenMessages": 8,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3",
+          "response:4",
+          "response:5"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields",
+          "initialize.suggestions",
+          "suggest.protocol"
+        ],
+        "name": "protocol-suggest-flow",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/suggest",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "cint/suggest/cancel",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:4"
+            ],
+            "index": 4,
+            "method": "cint/suggest/log",
+            "methodShapeMatches": false,
+            "v2Methods": [
+              "error:-32000"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:5"
+            ],
+            "index": 5,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:5"
+            ]
+          }
+        ],
+        "v2Messages": 7,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "error:-32000",
+          "error:-32000",
+          "error:-32000",
+          "response:5"
+        ]
+      },
+      {
+        "frozenMessages": 7,
+        "frozenSequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ],
+        "intentionalDifferenceIds": [
+          "initialize.pack-fields"
+        ],
+        "name": "protocol-typescript-analyze",
+        "steps": [
+          {
+            "frozenMethods": [
+              "response:1"
+            ],
+            "index": 0,
+            "method": "initialize",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:1"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ],
+            "index": 1,
+            "method": "textDocument/didOpen",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ],
+            "index": 2,
+            "method": "cint/analyze",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "cint/publishTags",
+              "cint/publishCandidates",
+              "response:2"
+            ]
+          },
+          {
+            "frozenMethods": [
+              "response:3"
+            ],
+            "index": 3,
+            "method": "shutdown",
+            "methodShapeMatches": true,
+            "v2Methods": [
+              "response:3"
+            ]
+          }
+        ],
+        "v2Messages": 7,
+        "v2Sequence": [
+          "response:1",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "cint/publishTags",
+          "cint/publishCandidates",
+          "response:2",
+          "response:3"
+        ]
+      }
+    ]
+  },
+  "summary": {
+    "annotationsCompared": 211,
+    "annotationsMatched": 211,
+    "candidatesCompared": 45,
+    "candidatesMatched": 45,
+    "cliFilesCompared": 16,
+    "cliFilesMatched": 16,
+    "defects": 0,
+    "intentionalDifferences": 59,
+    "ipcDefects": 0,
+    "ipcScenarios": 9,
+    "rendererChecksPassed": true,
+    "rendererDerivationVerified": true,
+    "rendererDifferenceCount": 74,
+    "rendererPassed": true,
+    "rendererSectionsCompared": 7,
+    "rendererUnmatchedCount": 0
+  },
+  "syntax": [
+    {
+      "calls": 87,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 11,
+      "fingerprint": "eab6b0f8cfcb3681a69f3a22ec2b0f1943d3ba0aa58193d65d907efe29e63c62",
+      "functions": 50,
+      "guards": 13,
+      "language": "kotlin",
+      "parseFailures": 0,
+      "properties": 26,
+      "returns": 9,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 8,
+      "comments": 0,
+      "constructCoverage": true,
+      "files": 2,
+      "fingerprint": "78d1ff49a2b73cde4286de6a5c96cbe352f3482cf3578cb1b5dd9468e84a3047",
+      "functions": 6,
+      "guards": 2,
+      "language": "typescript",
+      "parseFailures": 0,
+      "properties": 5,
+      "returns": 5,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 10,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 1,
+      "fingerprint": "226b7d545f5d854ea30c5f055e5af7b8d563f9e34db55c99ccc6cf43222488b0",
+      "functions": 4,
+      "guards": 2,
+      "language": "javascript",
+      "parseFailures": 0,
+      "properties": 8,
+      "returns": 4,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 8,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 1,
+      "fingerprint": "3f61783abfe23de5a0f4eef7ca29f62296338e009c59e7dc1e7a29015efffea6",
+      "functions": 3,
+      "guards": 2,
+      "language": "csharp",
+      "parseFailures": 0,
+      "properties": 4,
+      "returns": 3,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 5,
+      "comments": 0,
+      "constructCoverage": true,
+      "files": 1,
+      "fingerprint": "72ac9e9428c4d165cb144a8101e7749d8fd25856d8a71ab8e6f7ca3389bb4b5a",
+      "functions": 2,
+      "guards": 1,
+      "language": "vue",
+      "parseFailures": 0,
+      "properties": 4,
+      "returns": 1,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 1,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 1,
+      "fingerprint": "6dd182c0cdb65c83cb477b00039dc4662ecb5f40f309d7176094f995bcce3b6e",
+      "functions": 2,
+      "guards": 1,
+      "language": "c",
+      "parseFailures": 0,
+      "properties": 4,
+      "returns": 3,
+      "unstableFingerprints": 0
+    }
+  ],
+  "ticket": "084-v2-parity-integration"
+}

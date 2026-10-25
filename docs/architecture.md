@@ -1,8 +1,7 @@
 # CodeIntent — Architecture
 
 CodeIntent is a fixed analysis hull with loadable detection and persisted
-project knowledge. The current engine is the V2 engine under `analysis-engine/`;
-the module graph is enforced by `graphGuard` and documented in
+project knowledge. The engine is the repository root; the module graph is enforced by `graphGuard` and documented in
 [`rewrite/module-graph.md`](rewrite/module-graph.md).
 
 ## Goal
@@ -48,8 +47,8 @@ source / buffer
 | `runtime` | orchestration, lifecycle, `analyze` | parser/LSP adapters, IPC, apps |
 | `cli`, `server`, `mcp` | app process and transport | core internals, adapters |
 
-The full allowed-edge set and the native-spike exception are in
-`analysis-engine/graph-guard.json` and `docs/rewrite/module-graph.md`.
+The full allowed-edge set is in `graph-guard.json` and
+`docs/rewrite/module-graph.md`.
 
 ## Deterministic kernel
 
@@ -107,7 +106,6 @@ contract in [`docs/ipc/PROTOCOL.md`](ipc/PROTOCOL.md).
 
 ## Native platform
 
-`syntax-treesitter` and `contracts` are multiplatform. The native spike proves
-tree-sitter, JSON, Unix sockets, and child processes on Kotlin/Native. HTTP/TLS
-remains JVM-only; details and reproduction commands are in
-[`analysis-engine/docs/rewrite/native-spike.md`](../analysis-engine/docs/rewrite/native-spike.md).
+`syntax-treesitter` and `contracts` are multiplatform. The checked-in native
+tree-sitter runtime and grammars live under
+`sources/syntax-treesitter/native/`; HTTP/TLS remains JVM-only.

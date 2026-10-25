@@ -1,7 +1,7 @@
 # Current State and Continuation Notes
 
 As of 2026-10-25, after the V1 to V2 cutover (ticket 085). The repository
-contains one engine under `analysis-engine/`.
+contains one engine at the repository root.
 
 ## Where the project is
 
@@ -25,7 +25,7 @@ CodeIntent is a Kotlin analysis engine plus an external Neovim client.
 
 | ticket | result |
 |---|---|
-| 085 | Cut over to V2: removed V1, promoted the V2 tree to `analysis-engine/`, dropped temporary `-v2` executable names, unified just/CI/scripts/docs, and updated the renderer server path. |
+| 085 | Cut over to V2: removed V1, promoted the V2 tree to `analysis-engine/` (later moved to the repository root by 096), dropped temporary `-v2` executable names, unified just/CI/scripts/docs, and updated the renderer server path. |
 | 084 | Frozen corpus, protocol, CLI, server, and MCP parity suite, with committed parity reports and defect baselines. |
 | 088-094 | Detection, bookkeeping/validation, composition, candidate, service-init, non-Kotlin syntax, and IPC payload parity. |
 

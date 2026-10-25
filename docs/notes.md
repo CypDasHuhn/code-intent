@@ -34,7 +34,7 @@ the initial inspiration (language-agnostic code graph).
 ## 2. Architecture / flow
 
 ```
-source repo -> analysis-engine
+source repo -> engine root
               tree-sitter -> syntax facts -> CFG
               LSP (optional) -> type facts
               rules -> annotations -> JSON-RPC over Unix socket
@@ -44,7 +44,7 @@ source repo -> analysis-engine
 
 Components:
 
-- `analysis-engine/` — Kotlin/JVM Gradle app. Parses, builds facts/CFG, tags.
+- engine root — Kotlin/JVM Gradle app. Parses, builds facts/CFG, tags.
 - `code-intent.nvim` (sibling repository) — Lua Neovim plugin. Socket-only;
   renders published tags.
 
@@ -137,7 +137,7 @@ not in one global file; the engine never branches on language.
 ## 5. Detection as implemented (current rulepacks)
 
 Detection is data-driven over `View` facts; rulepacks do not walk grammar node
-kinds directly. The bundled packs live in `analysis-engine/packs/src/main/resources/packs/bundled-packs.json`:
+kinds directly. The bundled packs live in the `packs` module resource `packs/bundled-packs.json`:
 
 - `logging:logging` — one `LOGGING` rule with print, logger-interaction, and
   logging-state matchers. It recognizes configured print calls/qualifiers,
@@ -277,7 +277,7 @@ interpreter) collides with the short handle, but the repo name disambiguates.
 - `fa4fe4d` content-hash staleness guard (CLI + renderer).
 - Verified: fixture + `mtquery` (78 files, ~1s full scan), e2e CLI->renderer.
 - dotfiles: added PATH entry in `shell/paths/10-unix.lua` ->
-  `analysis-engine/apps/cli/build/install/cint/bin`; regenerate via
+  `apps/cli/build/install/cint/bin`; regenerate via
   `lua bootstrap.lua shell`. (Committed? check; may be uncommitted.)
 - Environment gotchas: system gradle broken
   (`GRADLE_HOME=/usr/share/java/gradle` missing module) -> use sdkman gradle or

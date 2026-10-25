@@ -3,7 +3,7 @@
 This is the external contract between the CodeIntent engine and editor clients
 such as the sibling `code-intent.nvim` repository. The engine implementation
 notes are in
-[`analysis-engine/ipc/PROTOCOL.md`](../../analysis-engine/ipc/PROTOCOL.md).
+[`orchestration/ipc/PROTOCOL.md`](../../orchestration/ipc/PROTOCOL.md).
 
 Transport is NDJSON: one UTF-8 JSON-RPC 2.0 object per line over a Unix socket.
 Blank lines are ignored.
@@ -11,7 +11,7 @@ Blank lines are ignored.
 ## Versions and compatibility
 
 The current protocol is **5**. `ProtocolCompatibility.matrix` in
-`analysis-engine/ipc` is the machine-readable source of truth and is published
+`orchestration/ipc` is the machine-readable source of truth and is published
 in the schema (see below).
 
 | version | status | fingerprint required | initialize shape | behavior |
@@ -63,7 +63,7 @@ dropped because they have no correlatable reply.
 
 ## Published schema
 
-[`analysis-engine/ipc/protocol.schema.json`](../../analysis-engine/ipc/protocol.schema.json)
+[`orchestration/ipc/protocol.schema.json`](../../orchestration/ipc/protocol.schema.json)
 is a checked-in JSON Schema (draft 2020-12) generated from every wire DTO. It
 contains:
 
@@ -80,7 +80,6 @@ contains:
 Regenerate after changing a wire DTO:
 
 ```sh
-cd analysis-engine
 ./gradlew :ipc:generateProtocolSchema
 ```
 
@@ -102,7 +101,7 @@ receive a JSON-RPC reply.
 Server-to-client notifications: `cint/publishTags`, `cint/publishCandidates`,
 `cint/suggest/progress`, and `cint/error`. They are not routable client request
 methods and are therefore published separately in the schema. See the engine
-protocol notes and `analysis-engine/ipc/known-differences-v2.json` for
+protocol notes and `orchestration/ipc/known-differences-v2.json` for
 intentional V1/V2 shape differences.
 
 ## Errors

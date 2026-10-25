@@ -51,7 +51,7 @@ jobs:
         run: just parity
 
       - name: Parity report committed
-        run: git diff --exit-code -- analysis-engine/parity
+        run: git diff --exit-code -- tests/parity
 
       - name: Smoke
         run: just smoke

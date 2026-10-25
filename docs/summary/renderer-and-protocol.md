@@ -6,7 +6,7 @@ The Neovim client lives in the external sibling repository `code-intent.nvim`.
 This engine repository contains no Neovim code and runs no renderer tests. The
 canonical external contract is [`../ipc/PROTOCOL.md`](../ipc/PROTOCOL.md); the
 engine-side implementation notes are
-[`../../analysis-engine/ipc/PROTOCOL.md`](../../analysis-engine/ipc/PROTOCOL.md).
+[`../../orchestration/ipc/PROTOCOL.md`](../../orchestration/ipc/PROTOCOL.md).
 
 The external repo owns the plugin entry points, commands, render handlers,
 profiles/shards, hover, review UX, and its headless Neovim test suite. It pins
@@ -17,7 +17,7 @@ the engine protocol version and schema fingerprint, installs the engine with
 
 The current protocol is **5**. Protocols 3-4 are legacy replay versions; 1-2 are rejected. The
 engine publishes `ProtocolCompatibility.matrix` and
-`analysis-engine/ipc/protocol.schema.json`; the fingerprint is derived from all
+`orchestration/ipc/protocol.schema.json`; the fingerprint is derived from all
 wire DTOs. Protocol 5 clients must send the exact current fingerprint during
 `initialize` or the engine returns `-32000` with
 `data.kind = "fingerprint-mismatch"`. Versions outside the supported range fail
@@ -39,7 +39,7 @@ returns structured `unsupported-operation` errors for config, suggest,
 restrictions, and candidate decisions until runtime exposes those surfaces.
 
 See the protocol documents for payloads, errors, revisions, and the intentional
-V1/V2 differences in `analysis-engine/ipc/known-differences-v2.json`.
+V1/V2 differences in `orchestration/ipc/known-differences-v2.json`.
 
 ## Renderer tests
 

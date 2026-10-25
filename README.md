@@ -21,15 +21,22 @@ This note here is the last Human-written lines in this repository.
 
 ## Components
 
-| dir                                   | what                                                                                                                                                                             |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`analysis-engine/`](analysis-engine) | Kotlin engine. Manifest packs, deterministic core, tree-sitter syntax adapter, mandatory semantic provider, persisted knowledge, runtime orchestration, batch CLI, live Unix-socket daemon, and MCP server. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# language support. |
+| dir | what |
+| --- | --- |
+| [`contracts/`](contracts) | Data model, ports, manifests, and wire DTOs. |
+| [`analysis/`](analysis) | Deterministic core, packs, intent pipeline, and persisted knowledge. |
+| [`sources/`](sources) | Index, language facade, tree-sitter adapter with vendored native grammars, and LSP providers. |
+| [`orchestration/`](orchestration) | Runtime composition, fallback AI, and renderer IPC. |
+| [`apps/`](apps) | Batch CLI, live Unix-socket daemon, and MCP server. |
+| [`tests/`](tests) | Shared fakes, integration/parity tests, and committed parity reports. |
+| [`tools/`](tools) | V1 syntax capture tooling. |
+| [`scripts/`](scripts) | Build, corpus, parity, smoke, and release scripts. |
 
 The Neovim client lives in
 [`code-intent.nvim`](https://github.com/CypDasHuhn/code-intent.nvim) (sibling
 checkout at `../code-intent.nvim`). This repository publishes the versioned renderer
 protocol in [`docs/ipc/PROTOCOL.md`](docs/ipc/PROTOCOL.md) and
-[`analysis-engine/ipc/protocol.schema.json`](analysis-engine/ipc/protocol.schema.json).
+[`orchestration/ipc/protocol.schema.json`](orchestration/ipc/protocol.schema.json).
 It contains no Neovim code and runs no renderer tests.
 
 ## Flow
@@ -62,9 +69,9 @@ source adapters.
 
 ```sh
 just install
-./analysis-engine/apps/cli/build/install/cint/bin/cint /path/to/project --out tags.json
+./apps/cli/build/install/cint/bin/cint /path/to/project --out tags.json
 # or run the live daemon directly
-./analysis-engine/apps/server/build/install/cint-server/bin/cint-server --socket /tmp/cint.sock --root /path/to/project
+./apps/server/build/install/cint-server/bin/cint-server --socket /tmp/cint.sock --root /path/to/project
 ```
 
 See [`docs/engine.md`](docs/engine.md) for the module

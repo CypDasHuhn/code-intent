@@ -1,13 +1,11 @@
 # CodeIntent Engine
 
 The engine turns source files into intent annotations and review candidates. The
-repository now contains one engine, `analysis-engine/`, built as a Kotlin
-multi-module project. Tree-sitter supplies syntax, a semantic provider supplies
+repository root is the engine, built as a Kotlin multi-module project. Tree-sitter supplies syntax, a semantic provider supplies
 types, manifest packs supply detection and seed defaults, and persisted
 knowledge supplies project-specific function contracts.
 
-All commands below run from the repository root unless a `cd analysis-engine`
-is shown.
+All commands below run from the repository root.
 
 ## Modules
 
@@ -15,7 +13,7 @@ is shown.
 |---|---|
 | `contracts` | Data model and narrow ports: intents, facts, annotations, candidates, knowledge DTOs, manifests, IPC/MCP messages. No JVM types. |
 | `core` | Deterministic kernel: scheduler, strata, fixpoint, capability view, annotation store, composition. |
-| `packs` | Bundled manifest packs, playbooks, matchers, and seed defaults (`packs/src/main/resources/packs/bundled-packs.json`). |
+| `packs` | Bundled manifest packs, playbooks, matchers, and seed defaults (the module's bundled pack resource). |
 | `index` | File hashing, incremental fact cache, dependency tracking, and `IndexedSource` construction. |
 | `knowledge` | Materialized function annotations, span overrides, pattern hypotheses, pack defaults, provenance, validation, and mutations. |
 | `knowledge-persistence` | JSON snapshot and init-checkpoint adapters around knowledge. |
@@ -41,7 +39,7 @@ uses `ipc`).
 ## Languages
 
 Kotlin, C, JavaScript, TypeScript, Vue, and C# are registered in
-`languages/src/main/kotlin/dev/cint/v2/languages/TreeSitterLanguageRegistry.kt`.
+`sources/languages/src/main/kotlin/dev/cint/v2/languages/TreeSitterLanguageRegistry.kt`.
 Each descriptor carries extensions, aliases, grammar name, MIME types, root
 markers, provider mode, and syntax profile.
 
@@ -87,7 +85,7 @@ invokes `intent-pipeline`. It is the only analysis surface apps need.
 ### CLI
 
 ```sh
-./analysis-engine/apps/cli/build/install/cint/bin/cint <root> [options]
+./apps/cli/build/install/cint/bin/cint <root> [options]
 ```
 
 Useful options: `--knowledge <path>`, `--init`, `--out/-o`, `--format
@@ -99,14 +97,14 @@ rejected.
 ### Live server
 
 ```sh
-./analysis-engine/apps/server/build/install/cint-server/bin/cint-server --socket /path/to/project.sock --root /path/to/project
+./apps/server/build/install/cint-server/bin/cint-server --socket /path/to/project.sock --root /path/to/project
 ```
 
 The live transport is NDJSON JSON-RPC over a Unix socket. Current protocol is 5;
 protocols 3-4 are accepted as legacy and receive V1-shaped initialize payloads; protocols 1-2 are rejected.
 See [`docs/ipc/PROTOCOL.md`](ipc/PROTOCOL.md) for the external contract,
 compatibility matrix, and published schema, and
-[`analysis-engine/ipc/PROTOCOL.md`](../analysis-engine/ipc/PROTOCOL.md) for
+[`orchestration/ipc/PROTOCOL.md`](../orchestration/ipc/PROTOCOL.md) for
 implementation notes.
 
 ### MCP

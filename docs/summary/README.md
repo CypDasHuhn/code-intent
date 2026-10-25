@@ -4,9 +4,8 @@ This directory is a compact, continuation-oriented map of CodeIntent. It is
 derived from the canonical docs and the current code; when they disagree, the
 canonical docs and the code win.
 
-The repository has completed the V1 to V2 cutover. It contains one engine under
-`analysis-engine/`; V1 remains only in git history and the frozen corpus used
-for parity tests.
+The repository has completed the V1 to V2 cutover. It contains one engine at the repository root; V1 remains only in git history
+and the frozen corpus used for parity tests.
 
 ## Reading order
 
@@ -31,8 +30,8 @@ Canonical references: [../architecture.md](../architecture.md),
 just build && just test-engine && just lint
 ```
 
-- Engine: `analysis-engine/` (Gradle, Kotlin, tree-sitter, LSP, CLI, live
-  server, MCP).
+- Engine: repository root (Gradle, Kotlin, tree-sitter, LSP, CLI, live server,
+  MCP).
 - Client: external `code-intent.nvim` repository (Lua, headless Neovim tests).
 - Frozen V1 corpus: `frozen-v1-corpus/` (read-only parity reference).
 - Task queue: `docs/tasks/README.md`.

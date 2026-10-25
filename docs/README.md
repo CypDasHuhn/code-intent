@@ -32,13 +32,11 @@ read-only parity reference.
 
 ## Rewrite
 
-- [rewrite/module-graph.md](rewrite/module-graph.md) — project layout,
-  dependency graph, interaction contracts, and the native-spike exception.
+- [rewrite/module-graph.md](rewrite/module-graph.md) — authoritative grouped
+  project layout, dependency graph, and interaction contracts.
 - [rewrite/knowledge-model.md](rewrite/knowledge-model.md) — persisted function
   annotations, span overrides, materialized pack defaults, deterministic
   propagation, and the MCP-first AI workflow.
-- [rewrite/native-spike.md](rewrite/native-spike.md) — pointer to the native
-  spike findings.
 - [rewrite/knowledge-store-format.md](rewrite/knowledge-store-format.md) —
   persisted knowledge snapshot shape.
 
@@ -60,7 +58,7 @@ read-only parity reference.
 - [../README.md](../README.md) — project overview, components, flow, quick start.
 - [ipc/PROTOCOL.md](ipc/PROTOCOL.md) — external renderer wire protocol,
   compatibility matrix, handshake, and published schema.
-- [../analysis-engine/ipc/PROTOCOL.md](../analysis-engine/ipc/PROTOCOL.md) —
+- [../orchestration/ipc/PROTOCOL.md](../orchestration/ipc/PROTOCOL.md) —
   engine-side protocol implementation notes.
 - `code-intent.nvim` (sibling repository) — Neovim client setup, commands,
   profiles, shards, handlers, and tests.

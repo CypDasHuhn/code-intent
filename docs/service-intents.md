@@ -98,4 +98,4 @@ positions. `testing-grounds/kotlin/ServiceIntents.kt` is the shared fixture.
 
 ## Registration and host coverage
 
-The pack is declared in `analysis-engine/packs/src/main/resources/packs/bundled-packs.json` as the `service` pack. Bundled discovery and runtime binding are covered by the pack, pipeline, and frozen-corpus parity tests. Classification itself is covered by the direct pack tests and the frozen-corpus parity suite.
+The pack is declared in the bundled pack resource `packs/bundled-packs.json` as the `service` pack. Bundled discovery and runtime binding are covered by the pack, pipeline, and frozen-corpus parity tests. Classification itself is covered by the direct pack tests and the frozen-corpus parity suite.

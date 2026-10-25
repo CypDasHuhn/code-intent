@@ -6,11 +6,11 @@ version="${CINT_ENGINE_VERSION:-0.1.0}"
 release_root="$root/build/release"
 staging="$release_root/cint-engine-$version"
 artifact="$release_root/cint-engine-$version.tar.gz"
-schema="$root/analysis-engine/ipc/protocol.schema.json"
+schema="$root/orchestration/ipc/protocol.schema.json"
 
-cli="$root/analysis-engine/apps/cli/build/install/cint"
-server="$root/analysis-engine/apps/server/build/install/cint-server"
-mcp="$root/analysis-engine/apps/mcp/build/install/cint-mcp"
+cli="$root/apps/cli/build/install/cint"
+server="$root/apps/server/build/install/cint-server"
+mcp="$root/apps/mcp/build/install/cint-mcp"
 
 for path in "$cli" "$server" "$mcp" "$schema"; do
   if [ ! -e "$path" ]; then

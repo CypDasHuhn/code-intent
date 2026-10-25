@@ -1,8 +1,7 @@
 # Module Graph and Boundaries
 
-The current engine lives under `analysis-engine/` and is the V2 implementation.
-Every project, dependency, and interaction contract is declared before feature
-code and enforced by `graphGuard`.
+The engine is the repository root. Every project, dependency, and interaction
+contract is declared before feature code and enforced by `graphGuard`.
 
 V1 proved the intent model, the rule/fact split, and the renderer protocol. It
 remains the behavioral reference in git history and the frozen corpus. It is not
@@ -68,29 +67,55 @@ that fails the build when an edge is added outside the graph.
 
 ## Project tree
 
-Names describe roles, not directory nesting.
+Names describe roles, not directory nesting. This grouped tree is
+authoritative: it supersedes the flat tree described by the original 063 scope
+and the amended 063 ticket. Physical grouping does not change canonical Gradle
+project names or dependency edges.
 
 ```text
-analysis-engine/
-  contracts/          :contracts
-  core/               :core
-  packs/              :packs
-  index/              :index
-  knowledge/          :knowledge
-  knowledge-persistence/ :knowledge-persistence
-  languages/          :languages
-  syntax-treesitter/  :syntax-treesitter
-  lsp/                :lsp
-  intent-pipeline/    :intent-pipeline
-  runtime/            :runtime
-  ai/                 :ai
-  ipc/                :ipc
-  apps/cli/           :cli
-  apps/server/        :server
-  apps/mcp/           :mcp
-  tests/fixtures/     :test-fixtures
-  tests/integration/  :integration-tests
+contracts/                    :contracts
+
+analysis/
+  core/                       :core
+  packs/                      :packs
+  intent-pipeline/            :intent-pipeline
+  knowledge/                  :knowledge
+  knowledge-persistence/      :knowledge-persistence
+
+sources/
+  index/                      :index
+  languages/                  :languages
+  syntax-treesitter/          :syntax-treesitter
+    native/                   vendored tree-sitter runtime and grammars
+  lsp/                        :lsp
+
+orchestration/
+  runtime/                    :runtime
+  ai/                         :ai
+  ipc/                        :ipc
+
+apps/
+  cli/                        :cli
+  server/                     :server
+  mcp/                        :mcp
+
+tests/
+  fixtures/                   :test-fixtures
+  integration/                :integration-tests
+  parity/                     parity reports and defect baselines
+
+tools/                        V1 syntax capture tooling
+scripts/                      build, corpus, parity, smoke, and release scripts
 ```
+
+Support assets have one home: vendored native libraries live under
+`sources/syntax-treesitter/native/`, tools under `tools/`, parity artifacts
+under `tests/parity/`, and engine scripts merged into the root `scripts/`.
+Ticket 095 renames both the directory and the Gradle project:
+`analysis/packs/` (`:packs`) becomes `analysis/default-rulepacks/`
+(`:default-rulepacks`). Update `settings.gradle.kts`, `graph-guard.json`, this
+tree, and every dependency reference in the same change. Until 095 lands,
+`:packs` is the current canonical name.
 
 `ai` is the former `suggest`; `ipc` is the former `protocol`; `core` is the
 former `kernel`. Names are still provisional, but the roles are not.
@@ -453,10 +478,3 @@ the actual intent packs.
 - [x] Prove the CLI and server walking skeleton.
 - [x] Freeze the V1 corpus and IPC transcripts.
 - [x] Start the index and tree-sitter adapter.
-
-## Spike exception: native-spike
-
-`native-spike` is an opt-in, throwaway spike, not a production module. It is included only with
-`-PnativeSpike` (or when a `native-spike` task is named) and is excluded from default `just build` and CI. It has a single edge, `native-spike -> syntax-treesitter`; it does not depend on
-`contracts` directly, and no production module may depend on it. The cinterop and link
-configuration live in `syntax-treesitter`, not in the spike.

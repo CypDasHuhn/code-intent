@@ -17,7 +17,10 @@ source
 
 ## Modules
 
-Under `analysis-engine/`:
+The repository root is the engine root. Modules are physically grouped, but
+their canonical Gradle project names and dependency edges are unchanged.
+[`docs/rewrite/module-graph.md`](../rewrite/module-graph.md#project-tree) is the
+canonical module tree; this summary does not restate it.
 
 | module | role |
 |---|---|
@@ -40,6 +43,10 @@ Under `analysis-engine/`:
 Dependency direction: `contracts` <- `core` <- `intent-pipeline` <- `runtime` <-
 apps. `languages` is the only module that depends on `syntax-treesitter` and
 `lsp`. The graph guard enforces this.
+
+The canonical grouped tree, the 063 supersession note, and the 095
+`:packs`/`:default-rulepacks` rename plan live in
+[`docs/rewrite/module-graph.md`](../rewrite/module-graph.md#project-tree).
 
 ## Rule contract and scheduler
 
@@ -83,5 +90,5 @@ apps. `languages` is the only module that depends on `syntax-treesitter` and
   snapshot/default/materialization tools, and function/span/pattern tools.
 - The renderer consumes published data and never runs detection.
 
-See `analysis-engine/ipc/PROTOCOL.md` for the wire contract and
+See `orchestration/ipc/PROTOCOL.md` for the wire contract and
 `docs/rewrite/module-graph.md` for the full dependency matrix.
