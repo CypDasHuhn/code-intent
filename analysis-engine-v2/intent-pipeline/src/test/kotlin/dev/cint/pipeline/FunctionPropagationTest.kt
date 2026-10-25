@@ -95,7 +95,7 @@ class FunctionPropagationTest {
     fun propagationOnCleanInputDoesNotCallAiWithAnEnabledPolicy() {
         var aiCalls = 0
         val hook =
-            FallbackAiHook {
+            FallbackAiHook { _, _ ->
                 aiCalls += 1
                 throw AssertionError("AI must not run during deterministic propagation")
             }
@@ -126,7 +126,7 @@ class FunctionPropagationTest {
             analyze(
                 dirty,
                 listOf(annotation(signature = "fun findUser", intent = Intents.SEARCH)),
-                fallbackAi = FallbackAiHook {
+                fallbackAi = FallbackAiHook { _, _ ->
                     allowedCalls += 1
                     dev.cint.contracts.util.ResultFactory.success(noopChange())
                 },
@@ -141,7 +141,7 @@ class FunctionPropagationTest {
         analyze(
             dirty,
             listOf(annotation(signature = "fun findUser", intent = Intents.SEARCH)),
-            fallbackAi = FallbackAiHook {
+            fallbackAi = FallbackAiHook { _, _ ->
                 deniedCalls += 1
                 dev.cint.contracts.util.ResultFactory.success(noopChange())
             },

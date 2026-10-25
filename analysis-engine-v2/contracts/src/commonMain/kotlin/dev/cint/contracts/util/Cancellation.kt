@@ -1,6 +1,7 @@
 package dev.cint.contracts.util
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.SerialName
 
 @Serializable
@@ -16,6 +17,9 @@ sealed interface CancellationToken {
 
         fun fromBoolean(cancelled: Boolean): CancellationToken =
             if (cancelled) CancelledToken else NONE
+
+        fun from(provider: () -> Boolean): CancellationToken =
+            DynamicCancellationToken(provider)
     }
 }
 
@@ -29,6 +33,15 @@ class NotCancelled() : CancellationToken {
 @SerialName("CancelledToken")
 object CancelledToken : CancellationToken {
     override val isCancelled: Boolean = true
+}
+
+@Serializable
+@SerialName("DynamicCancellationToken")
+class DynamicCancellationToken(
+    @Transient private val provider: () -> Boolean = { false },
+) : CancellationToken {
+    override val isCancelled: Boolean
+        get() = provider()
 }
 
 @Serializable

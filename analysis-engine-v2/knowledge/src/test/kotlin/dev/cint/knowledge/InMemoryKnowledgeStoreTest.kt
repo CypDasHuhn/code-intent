@@ -233,6 +233,64 @@ class InMemoryKnowledgeStoreTest {
     }
 
     @Test
+    fun fallbackAiCannotReplaceAnotherWritersKnowledge() {
+        val selector = FunctionSelector(qualifiedName = "user")
+        val userSuggested = storeWith(annotation(selector, setOf(Intents.SEARCH), Status.SUGGESTED))
+        val aiSuggestion = FunctionAnnotation.create(
+            selector = selector,
+            intents = setOf(Intents.LOOKUP),
+            provenance = Provenance.AI_FALLBACK,
+            status = Status.SUGGESTED,
+            createdAt = later,
+        )
+
+        val suggested = userSuggested.setFunctionAnnotation(aiSuggestion)
+        assertTrue(suggested.isFailure)
+        assertIs<ContractError.PreconditionFailed>(suggested.errorOrNull)
+        assertEquals(setOf(Intents.SEARCH), userSuggested.functionAnnotations().getOrThrow().single().intents)
+
+        val userAccepted = storeWith(annotation(selector, setOf(Intents.SEARCH), Status.ACCEPTED))
+        val accepted = userAccepted.setFunctionAnnotation(aiSuggestion)
+        assertTrue(accepted.isFailure)
+        assertIs<ContractError.PreconditionFailed>(accepted.errorOrNull)
+        assertEquals(Status.ACCEPTED, userAccepted.functionAnnotations().getOrThrow().single().status)
+
+        val aiOnly = storeWith(aiSuggestion.copy(createdAt = fixedNow, updatedAt = fixedNow))
+        assertTrue(
+            aiOnly.setFunctionAnnotation(aiSuggestion.copy(intents = setOf(Intents.SEARCH), createdAt = later))
+                .isSuccess,
+        )
+        assertEquals(setOf(Intents.SEARCH), aiOnly.functionAnnotations().getOrThrow().single().intents)
+    }
+
+    @Test
+    fun fallbackAiCannotReplaceAnotherWritersSpanOverride() {
+        val selector = SpanSelector("A.kt", Span(1, 0, 1, 1), "h")
+        val store = InMemoryKnowledgeStore.empty(clock)
+        assertTrue(store.setSpanOverride(spanOverride(selector)).isSuccess)
+        val aiOverride = SpanOverride.create(
+            selector = selector,
+            intents = setOf(Intents.LOOKUP),
+            provenance = Provenance.AI_FALLBACK,
+            status = Status.SUGGESTED,
+            createdAt = later,
+        )
+
+        val result = store.setSpanOverride(aiOverride)
+
+        assertTrue(result.isFailure)
+        assertIs<ContractError.PreconditionFailed>(result.errorOrNull)
+        assertEquals(setOf(Intents.VALIDATION), store.spanOverrides().getOrThrow().single().intents)
+    }
+
+    private fun storeWith(annotation: FunctionAnnotation): InMemoryKnowledgeStore =
+        InMemoryKnowledgeStore.fromSnapshot(
+            snapshot(annotations = listOf(annotation)),
+            exists = true,
+            now = clock,
+        ).getOrThrow()
+
+    @Test
     fun invalidWritesAreRejectedWithoutChangingTheStore() {
         val store = InMemoryKnowledgeStore.empty(clock)
         val unknownIntent = store.setFunctionAnnotation(annotation(intents = setOf("NOT_AN_INTENT")))

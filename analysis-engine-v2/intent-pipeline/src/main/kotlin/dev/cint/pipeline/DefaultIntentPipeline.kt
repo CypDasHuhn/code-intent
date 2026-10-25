@@ -5,8 +5,10 @@ import dev.cint.ai.FallbackAiPolicy
 import dev.cint.ai.FallbackAiRequest
 import dev.cint.contracts.data.AnalysisError
 import dev.cint.contracts.data.AnalysisResult
+import dev.cint.contracts.data.Completeness
 import dev.cint.contracts.data.ErrorSeverity
 import dev.cint.contracts.facts.IndexedSource
+import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.contracts.ports.AnalysisRequest
 import dev.cint.contracts.ports.IntentPipeline
@@ -70,7 +72,7 @@ class DefaultIntentPipeline(
                 )
             }
 
-        val effectiveKnowledge =
+        val fallbackResult =
             applyFallbackAi(
                 language = language,
                 source = source,
@@ -79,6 +81,10 @@ class DefaultIntentPipeline(
                 errors = errors,
                 cancellation = cancellation,
             )
+        if (fallbackResult.isFailure) {
+            return ResultFactory.failure(fallbackResult.errorOrNull!!)
+        }
+        val effectiveKnowledge = fallbackResult.getOrThrow()
 
         val knowledgeResolution =
             knowledgeInputs.resolve(source, effectiveKnowledge, selected.defaults, cancellation)
@@ -121,42 +127,72 @@ class DefaultIntentPipeline(
         packDefaults: List<dev.cint.contracts.knowledge.PackDefault>,
         errors: MutableList<AnalysisError>,
         cancellation: CancellationToken,
-    ): KnowledgeSnapshot {
-        val request = FallbackAiRequest(language, source, knowledge, packDefaults)
-        if (!fallbackAiPolicy.shouldRun(request)) return knowledge
+    ): ContractResult<KnowledgeSnapshot> {
+        val cancelled = cancellation.throwIfCancelled()
+        if (cancelled.isFailure) return ResultFactory.failure(cancelled.errorOrNull!!)
+        val path = when (val input = source.input) {
+            is SourceInput.FilePath -> input.path
+            is SourceInput.InMemory -> input.path ?: input.documentId
+        }
+        val dirty = source.completeness != Completeness.COMPLETE || source.input.version > 0
         val hook = fallbackAi
-        if (hook == null) {
-            errors += aiUnavailable("fallback AI policy is enabled but no hook is configured")
-            return knowledge
-        }
         val store = knowledgeStore
-        if (store == null) {
-            errors += aiUnavailable("fallback AI policy is enabled but no knowledge store is configured")
-            return knowledge
+        val callerRequest = request(language, source, knowledge, packDefaults, dirty, path)
+        if (!fallbackAiPolicy.shouldRun(callerRequest)) return ResultFactory.success(knowledge)
+        if (hook == null || store == null) {
+            errors +=
+                aiUnavailable(
+                    if (hook == null) {
+                        "fallback AI policy is enabled but no hook is configured"
+                    } else {
+                        "fallback AI policy is enabled but no knowledge store is configured"
+                    },
+                )
+            return ResultFactory.success(knowledge)
         }
+        val current = store.snapshot(cancellation)
+        if (current.isFailure) {
+            val error = current.errorOrNull!!
+            if (error is ContractError.Cancelled) return ResultFactory.failure(error)
+            errors += aiUnavailable("fallback AI could not read the current knowledge snapshot: $error")
+            return ResultFactory.success(knowledge)
+        }
+        val currentKnowledge = current.getOrThrow()
+        val request = request(language, source, currentKnowledge, packDefaults, dirty, path)
+        if (!fallbackAiPolicy.shouldRun(request)) return ResultFactory.success(knowledge)
 
-        val proposal = hook.propose(request)
+        val proposal = hook.propose(request, cancellation)
         if (proposal.isFailure) {
-            errors += aiFailure(proposal.errorOrNull.toString())
-            return knowledge
+            val error = proposal.errorOrNull!!
+            if (error is ContractError.Cancelled) return ResultFactory.failure(error)
+            errors += aiFailure(error.toString())
+            return ResultFactory.success(knowledge)
         }
         val applied = store.proposeChange(proposal.getOrThrow(), cancellation)
         if (applied.isFailure) {
-            errors += aiFailure(applied.errorOrNull.toString())
-            return knowledge
+            val error = applied.errorOrNull!!
+            if (error is ContractError.Cancelled) return ResultFactory.failure(error)
+            errors += aiFailure(error.toString())
         }
-        val refreshed = store.snapshot(cancellation)
-        if (refreshed.isFailure) {
-            errors +=
-                AnalysisError(
-                    code = "FALLBACK_AI_REFRESH_FAILED",
-                    message = refreshed.errorOrNull.toString(),
-                    severity = ErrorSeverity.WARNING,
-                )
-            return knowledge
-        }
-        return refreshed.getOrThrow()
+        return ResultFactory.success(knowledge)
     }
+
+    private fun request(
+        language: String?,
+        source: IndexedSource,
+        knowledge: KnowledgeSnapshot,
+        packDefaults: List<dev.cint.contracts.knowledge.PackDefault>,
+        dirty: Boolean,
+        path: String?,
+    ): FallbackAiRequest =
+        FallbackAiRequest(
+            language = language,
+            source = source,
+            knowledge = knowledge,
+            packDefaults = packDefaults,
+            dirty = dirty,
+            changedPaths = if (dirty && path != null) setOf(path) else emptySet(),
+        )
 
     private fun aiFailure(message: String): AnalysisError =
         AnalysisError(

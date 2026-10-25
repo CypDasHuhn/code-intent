@@ -13,6 +13,7 @@ import dev.cint.contracts.knowledge.FunctionSelector
 import dev.cint.contracts.knowledge.KnowledgeChange
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.contracts.knowledge.PackDefault
+import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.ports.AnalysisRequest
 import dev.cint.contracts.ports.CandidateEmission
 import dev.cint.contracts.ports.KnowledgeStore
@@ -168,7 +169,7 @@ class DefaultIntentPipelineTest {
         val store = FakeKnowledgeStore(clock = clock)
         val pipeline = DefaultIntentPipeline(
             packSource,
-            fallbackAi = FallbackAiHook {
+            fallbackAi = FallbackAiHook { _, _ ->
                 calls += 1
                 ResultFactory.success(noopChange())
             },
@@ -191,7 +192,7 @@ class DefaultIntentPipelineTest {
         val proposal = annotation("findUser", Intents.LOOKUP).copy(status = Status.SUGGESTED)
         val pipeline = DefaultIntentPipeline(
             packSource,
-            fallbackAi = FallbackAiHook {
+            fallbackAi = FallbackAiHook { _, _ ->
                 calls += 1
                 ResultFactory.success(KnowledgeChange.SetFunctionAnnotation(proposal))
             },
@@ -207,14 +208,14 @@ class DefaultIntentPipelineTest {
 
         assertEquals(1, calls)
         assertTrue(store.functionAnnotations().getOrThrow().any { it.selector == proposal.selector })
-        assertTrue(result.annotations.any { it.intents == setOf(Intents.LOOKUP) })
+        assertFalse(result.annotations.any { it.intents == setOf(Intents.LOOKUP) })
     }
 
     @Test
     fun enabledFallbackAiWithoutStoreSurfacesSkipWarning() {
         val pipeline = DefaultIntentPipeline(
             emptyPackSource(),
-            fallbackAi = FallbackAiHook {
+            fallbackAi = FallbackAiHook { _, _ ->
                 calls += 1
                 ResultFactory.success(noopChange())
             },
@@ -233,12 +234,12 @@ class DefaultIntentPipelineTest {
     }
 
     @Test
-    fun fallbackAiRefreshFailureSurfacesWarningAndKeepsDeterministicResult() {
+    fun fallbackAiSnapshotFailureSkipsTheProviderAndKeepsDeterministicResult() {
         val delegate = dev.cint.knowledge.InMemoryKnowledgeStore.empty { clock.now }
         val store = FailingRefreshStore(delegate)
         val pipeline = DefaultIntentPipeline(
             emptyPackSource(),
-            fallbackAi = FallbackAiHook {
+            fallbackAi = FallbackAiHook { _, _ ->
                 calls += 1
                 ResultFactory.success(
                     KnowledgeChange.SetFunctionAnnotation(annotation("findUser", Intents.LOOKUP)),
@@ -254,9 +255,221 @@ class DefaultIntentPipelineTest {
             emptySnapshot(),
         ).getOrThrow()
 
-        assertEquals(1, calls)
-        assertEquals(listOf("FALLBACK_AI_REFRESH_FAILED"), result.errors.map { it.code })
+        assertEquals(0, calls)
+        assertEquals(listOf("FALLBACK_AI_UNAVAILABLE"), result.errors.map { it.code })
         assertTrue(result.annotations.isEmpty())
+    }
+
+    @Test
+    fun selectiveFallbackAiRunsForUninitializedOrDirtyInputsAndSkipsInitializedCleanOnes() {
+        val proposal = KnowledgeChange.SetFunctionAnnotation(
+            annotation("findUser", Intents.LOOKUP).copy(status = Status.SUGGESTED),
+        )
+        var calls = 0
+        fun pipeline(store: KnowledgeStore) = DefaultIntentPipeline(
+            emptyPackSource(),
+            fallbackAi = FallbackAiHook { _, _ ->
+                calls += 1
+                ResultFactory.success(proposal)
+            },
+            fallbackAiPolicy = FallbackAiPolicy.selective(),
+            knowledgeStore = store,
+        )
+
+        val uninitialized = dev.cint.knowledge.InMemoryKnowledgeStore.empty { clock.now }
+        pipeline(uninitialized).analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            uninitialized.snapshot().getOrThrow(),
+        ).getOrThrow()
+        assertEquals(1, calls)
+
+        calls = 0
+        val initialized = dev.cint.knowledge.InMemoryKnowledgeStore.existing { clock.now }
+        val cleanSource = sourceWithFunctions("findUser").copy(
+            input = SourceInput.InMemory("", "fake", 0, "Sample.fake"),
+        )
+        pipeline(initialized).analyze(
+            AnalysisRequest(language = "fake"),
+            cleanSource,
+            initialized.snapshot().getOrThrow(),
+        ).getOrThrow()
+        assertEquals(0, calls)
+
+        calls = 0
+        pipeline(initialized).analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            initialized.snapshot().getOrThrow(),
+        ).getOrThrow()
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun fallbackAiFailureLeavesKnowledgeAndAnalysisUntouched() {
+        val existing = annotation("findUser", Intents.LOOKUP)
+        val initial = KnowledgeSnapshot(
+            functionAnnotations = listOf(existing),
+            spanOverrides = emptyList(),
+            patternHypotheses = emptyList(),
+            materialized = true,
+            timestamp = 1,
+        )
+        val store = dev.cint.knowledge.InMemoryKnowledgeStore.fromSnapshot(initial) { clock.now }.getOrThrow()
+        val before = store.snapshot().getOrThrow()
+        val pipeline = DefaultIntentPipeline(
+            emptyPackSource(),
+            fallbackAi = FallbackAiHook { _, _ ->
+                ResultFactory.failure(ContractError.DependencyUnavailable("fallback-ai", "offline"))
+            },
+            fallbackAiPolicy = FallbackAiPolicy.enabled(),
+            knowledgeStore = store,
+        )
+
+        val result = pipeline.analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            store.snapshot().getOrThrow(),
+        ).getOrThrow()
+
+        assertEquals(before, store.snapshot().getOrThrow())
+        assertEquals(listOf("FALLBACK_AI_FAILED"), result.errors.map { it.code })
+        assertTrue(result.annotations.any { it.intents == setOf(Intents.LOOKUP) })
+    }
+
+    @Test
+    fun cancelledAnalysisNeverCallsFallbackAi() {
+        var calls = 0
+        val store = dev.cint.knowledge.InMemoryKnowledgeStore.empty { clock.now }
+        val pipeline = DefaultIntentPipeline(
+            emptyPackSource(),
+            fallbackAi = FallbackAiHook { _, _ ->
+                calls += 1
+                ResultFactory.success(noopChange())
+            },
+            fallbackAiPolicy = FallbackAiPolicy.enabled(),
+            knowledgeStore = store,
+        )
+
+        val result = pipeline.analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            store.snapshot().getOrThrow(),
+            CancellationToken.fromBoolean(true),
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals(ContractError.Cancelled("operation"), result.errorOrNull)
+        assertEquals(0, calls)
+        assertFalse(store.isMaterialized)
+    }
+
+    @Test
+    fun staleCallerSnapshotCannotOverwriteAcceptedKnowledgeThroughAi() {
+        val accepted = annotation("findUser", Intents.LOOKUP)
+        val initial = KnowledgeSnapshot(
+            functionAnnotations = listOf(accepted),
+            spanOverrides = emptyList(),
+            patternHypotheses = emptyList(),
+            materialized = true,
+            timestamp = 1,
+        )
+        val store = dev.cint.knowledge.InMemoryKnowledgeStore.fromSnapshot(initial) { clock.now }.getOrThrow()
+        val pipeline = DefaultIntentPipeline(
+            emptyPackSource(),
+            fallbackAi = FallbackAiHook { _, _ ->
+                ResultFactory.success(
+                    KnowledgeChange.SetFunctionAnnotation(
+                        annotation("findUser", Intents.SEARCH).copy(
+                            provenance = Provenance.AI_FALLBACK,
+                            status = Status.SUGGESTED,
+                        ),
+                    ),
+                )
+            },
+            fallbackAiPolicy = FallbackAiPolicy.enabled(),
+            knowledgeStore = store,
+        )
+
+        val result = pipeline.analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            emptySnapshot(),
+        ).getOrThrow()
+
+        assertEquals(setOf(Intents.LOOKUP), store.functionAnnotations().getOrThrow().single().intents)
+        assertEquals(listOf("FALLBACK_AI_FAILED"), result.errors.map { it.code })
+    }
+
+    @Test
+    fun fallbackAiSuggestionIsNotDerivedInTheSameRun() {
+        val suggested = annotation("findUser", Intents.LOOKUP).copy(
+            provenance = Provenance.AI_FALLBACK,
+            status = Status.SUGGESTED,
+        )
+        val snapshot = KnowledgeSnapshot(
+            functionAnnotations = listOf(suggested),
+            spanOverrides = emptyList(),
+            patternHypotheses = emptyList(),
+            materialized = true,
+            timestamp = 1,
+        )
+        val store = dev.cint.knowledge.InMemoryKnowledgeStore.fromSnapshot(snapshot) { clock.now }.getOrThrow()
+        val pipeline = DefaultIntentPipeline(emptyPackSource(), knowledgeStore = store)
+
+        val result = pipeline.analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            snapshot,
+        ).getOrThrow()
+
+        assertTrue(result.annotations.isEmpty())
+    }
+
+    @Test
+    fun cancelledFallbackAiPropagatesCancellationOutOfAnalyze() {
+        val store = dev.cint.knowledge.InMemoryKnowledgeStore.empty { clock.now }
+        val pipeline = DefaultIntentPipeline(
+            emptyPackSource(),
+            fallbackAi = FallbackAiHook { _, _ ->
+                ResultFactory.failure(ContractError.Cancelled("fallback-ai"))
+            },
+            fallbackAiPolicy = FallbackAiPolicy.enabled(),
+            knowledgeStore = store,
+        )
+
+        val result = pipeline.analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            store.snapshot().getOrThrow(),
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals(ContractError.Cancelled("fallback-ai"), result.errorOrNull)
+        assertFalse(store.isMaterialized)
+    }
+
+    @Test
+    fun disabledFallbackAiDoesNotReadTheKnowledgeStore() {
+        var calls = 0
+        val store = FailingRefreshStore(dev.cint.knowledge.InMemoryKnowledgeStore.empty { clock.now })
+        val pipeline = DefaultIntentPipeline(
+            emptyPackSource(),
+            fallbackAi = FallbackAiHook { _, _ ->
+                calls += 1
+                ResultFactory.success(noopChange())
+            },
+            knowledgeStore = store,
+        )
+
+        val result = pipeline.analyze(
+            AnalysisRequest(language = "fake"),
+            sourceWithFunctions("findUser"),
+            emptySnapshot(),
+        ).getOrThrow()
+
+        assertEquals(0, calls)
+        assertTrue(result.errors.isEmpty())
     }
 
     @Test

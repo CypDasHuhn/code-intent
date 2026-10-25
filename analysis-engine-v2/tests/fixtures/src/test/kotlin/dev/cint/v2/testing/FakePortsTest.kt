@@ -38,6 +38,7 @@ import dev.cint.contracts.mcp.McpResponse
 import dev.cint.v2.testing.fakes.CancellationScript
 import dev.cint.v2.testing.fakes.FakeCancellation
 import dev.cint.v2.testing.fakes.FakeClock
+import dev.cint.v2.testing.fakes.FakeFallbackAi
 import dev.cint.v2.testing.fakes.FakeHostSemanticChannel
 import dev.cint.v2.testing.fakes.FakeHostSemanticChannelProvider
 import dev.cint.v2.testing.fakes.FakeIndex
@@ -628,10 +629,11 @@ class FakePortsTest {
                 "McpTransport",
                 "RuleEvaluator",
                 "RuleEvaluatorRegistry",
+                "FallbackAi",
             ),
             FakePortCatalog.implementedPorts,
         )
-        assertEquals("ticket 077: no fallback-AI port exists in contracts yet", FakePortCatalog.deferredPorts["FallbackAi"])
+        assertTrue(FakePortCatalog.deferredPorts.isEmpty())
         assertNotNull(FakeSyntaxEngine("fake"))
         assertNotNull(FakeSemanticProvider("fake"))
         assertNotNull(FakeLanguageSupport(fakeDescriptor()))
@@ -651,6 +653,7 @@ class FakePortsTest {
         assertNotNull(FakeMcpTransport())
         assertNotNull(FakeRuleEvaluator(RuleSpec("fake", Intents.LOOKUP)))
         assertNotNull(FakeRuleEvaluatorRegistry())
+        assertNotNull(FakeFallbackAi())
     }
 
     private fun treeWithChild(leftText: String): SyntaxTree {

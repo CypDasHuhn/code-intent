@@ -112,9 +112,8 @@ object FakePortCatalog {
         "McpTransport",
         "RuleEvaluator",
         "RuleEvaluatorRegistry",
+        "FallbackAi",
     )
 
-    val deferredPorts: Map<String, String> = mapOf(
-        "FallbackAi" to "ticket 077: no fallback-AI port exists in contracts yet",
-    )
+    val deferredPorts: Map<String, String> = emptyMap()
 }

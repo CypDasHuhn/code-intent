@@ -180,6 +180,38 @@ class KnowledgePrecedenceTest {
     }
 
     @Test
+    fun fallbackAiSuggestionsAreExcludedUntilReviewed() {
+        val selector = FunctionSelector(qualifiedName = "findUser")
+        val suggested = FunctionAnnotation(
+            selector = selector,
+            intents = setOf(Intents.LOOKUP),
+            scope = AnnotationScope.GLOBAL,
+            provenance = Provenance.AI_FALLBACK,
+            confidence = Confidence.HIGH,
+            status = Status.SUGGESTED,
+            createdAt = now,
+            updatedAt = now,
+        )
+        val resolver = PrecedenceKnowledgeInputResolver()
+
+        val unreviewed = resolver.resolve(
+            source,
+            snapshot(functionAnnotations = listOf(suggested)),
+            emptyList(),
+            CancellationToken.NONE,
+        ).getOrThrow()
+        assertEquals(emptyList(), unreviewed.contributions)
+
+        val accepted = resolver.resolve(
+            source,
+            snapshot(functionAnnotations = listOf(suggested.copy(status = Status.ACCEPTED))),
+            emptyList(),
+            CancellationToken.NONE,
+        ).getOrThrow()
+        assertEquals(setOf(Intents.LOOKUP), accepted.contributions.single().intents)
+    }
+
+    @Test
     fun materializedSnapshotDoesNotResurrectRawPackDefaults() {
         val defaults = listOf(
             PackDefault(

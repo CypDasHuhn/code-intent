@@ -2,6 +2,7 @@ package dev.cint.knowledge
 
 import dev.cint.contracts.data.Intent
 import dev.cint.contracts.data.Provenance
+import dev.cint.contracts.data.Status
 import dev.cint.contracts.knowledge.AnnotationScope
 import dev.cint.contracts.knowledge.FunctionAnnotation
 import dev.cint.contracts.knowledge.FunctionSelector
@@ -15,6 +16,7 @@ import dev.cint.contracts.knowledge.SpanOverride
 import dev.cint.contracts.knowledge.SpanSelector
 import dev.cint.contracts.ports.KnowledgeStore
 import dev.cint.contracts.util.CancellationToken
+import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import kotlinx.datetime.Clock
@@ -101,6 +103,11 @@ class InMemoryKnowledgeStore private constructor(
             cancellationError(cancellation)?.let { return@synchronized ResultFactory.failure(it) }
             val key = annotation.identityKey
             val existing = annotations[key]
+            if (existing != null && annotation.provenance == Provenance.AI_FALLBACK && !replaceableByAi(existing.provenance, existing.status)) {
+                return@synchronized ResultFactory.failure(
+                    ContractError.PreconditionFailed("Fallback AI cannot replace existing function annotation $key"),
+                )
+            }
             if (existing != null && annotation.updatedAt < existing.updatedAt) {
                 return@synchronized ResultFactory.failure(staleWrite("function annotation"))
             }
@@ -168,6 +175,11 @@ class InMemoryKnowledgeStore private constructor(
             cancellationError(cancellation)?.let { return@synchronized ResultFactory.failure(it) }
             val key = override.selector.identityKey
             val existing = overrides[key]
+            if (existing != null && override.provenance == Provenance.AI_FALLBACK && !replaceableByAi(existing.provenance, existing.status)) {
+                return@synchronized ResultFactory.failure(
+                    ContractError.PreconditionFailed("Fallback AI cannot replace existing span override $key"),
+                )
+            }
             if (existing != null && override.updatedAt < existing.updatedAt) {
                 return@synchronized ResultFactory.failure(staleWrite("span override"))
             }
@@ -358,6 +370,9 @@ class InMemoryKnowledgeStore private constructor(
     private fun touch() {
         timestamp = now().toEpochMilliseconds()
     }
+
+    private fun replaceableByAi(provenance: Provenance, status: Status): Boolean =
+        provenance == Provenance.AI_FALLBACK && status == Status.SUGGESTED
 
     private fun captureState(): KnowledgeStoreState = KnowledgeStoreState(
         hasStore = hasStore,

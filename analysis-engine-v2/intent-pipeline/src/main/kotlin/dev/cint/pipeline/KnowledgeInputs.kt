@@ -64,7 +64,7 @@ class PrecedenceKnowledgeInputResolver : KnowledgeInputResolver {
                     .filter {
                         it.selector.path == path &&
                             it.selector.contentHash == source.contentHash &&
-                            KnowledgeStatusPolicy.eligible(it.status)
+                            KnowledgeStatusPolicy.derivable(it.status, it.provenance)
                     }.sortedWith(KnowledgePrecedence.spanOverrides())
             }
         for (override in overrides) {
@@ -101,7 +101,7 @@ class PrecedenceKnowledgeInputResolver : KnowledgeInputResolver {
 
         val annotations =
             snapshot.functionAnnotations
-                .filter { KnowledgeStatusPolicy.eligible(it.status) }
+                .filter { KnowledgeStatusPolicy.derivable(it.status, it.provenance) }
                 .filter { annotation ->
                     val applies = scopeApplies(annotation, path)
                     if (annotation.scope == AnnotationScope.FILE &&
