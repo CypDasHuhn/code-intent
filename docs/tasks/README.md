@@ -129,7 +129,7 @@ must be data/fact-driven rather than a hardcoded evaluator catalog.
 | id | name | status | depends-on | scope |
 |---|---|---|---|---|
 | 096 | [Engine at repository root and grouped module tree](096-engine-root-and-module-tree.md) | done | 085 | Remove the engine wrapper, delete stale build leftovers, group modules into contracts/analysis/sources/orchestration/apps/tests. |
-| 095 | [Language-neutral default rulepacks](095-language-neutral-default-rulepacks.md) | todo | 096 | Rename packs to default-rulepacks, one directory per pack; no language/symbol knowledge in rule code; facts behind languages, symbols in defaults. |
+| 095 | [Language-neutral default rulepacks](095-language-neutral-default-rulepacks.md) | done | 096 | Rename packs to default-rulepacks, one directory per pack; no language/symbol knowledge in rule code; facts behind languages, symbols in defaults. |
 
 ## Resolved decisions
 

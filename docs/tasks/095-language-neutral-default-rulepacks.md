@@ -1,6 +1,6 @@
 ---
 name: Language-neutral default rulepacks
-status: todo
+status: done
 depends-on: [096]
 reviewers: [architecture, detection-fidelity]
 ---
