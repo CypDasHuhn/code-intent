@@ -1,6 +1,6 @@
 ---
 name: Remove frozen corpus, buildSrc, and V1 syntax capture
-status: todo
+status: done
 depends-on: [096]
 reviewers: [architecture, correctness]
 ---

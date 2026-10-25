@@ -130,7 +130,7 @@ must be data/fact-driven rather than a hardcoded evaluator catalog.
 |---|---|---|---|---|
 | 096 | [Engine at repository root and grouped module tree](096-engine-root-and-module-tree.md) | done | 085 | Remove the engine wrapper, delete stale build leftovers, group modules into contracts/analysis/sources/orchestration/apps/tests. |
 | 095 | [Language-neutral default rulepacks](095-language-neutral-default-rulepacks.md) | done | 096 | Rename packs to default-rulepacks, one directory per pack; no language/symbol knowledge in rule code; facts behind languages, symbols in defaults. |
-| 097 | [Remove frozen corpus, buildSrc, and V1 syntax capture](097-remove-frozen-corpus-and-buildsrc.md) | todo | 096 | Delete the obsolete reference/parity infrastructure and inline the graph guard outside buildSrc. |
+| 097 | [Remove frozen corpus, buildSrc, and V1 syntax capture](097-remove-frozen-corpus-and-buildsrc.md) | done | 096 | Delete the obsolete reference/parity infrastructure and inline the graph guard outside buildSrc. |
 
 ## Resolved decisions
 
