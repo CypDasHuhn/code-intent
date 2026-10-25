@@ -1,6 +1,6 @@
 ---
 name: V2 fallback AI
-status: todo
+status: done
 depends-on: [067, 068, 075]
 reviewers: [correctness]
 ---

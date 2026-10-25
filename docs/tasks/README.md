@@ -98,8 +98,8 @@ concurrently once their dependencies are done.
 | 073 | 2 | [V2 LSP semantic provider](073-v2-lsp-provider.md) | done | 064, 065 | Managed, attached, and editor-proxy provider. |
 | 074 | 3 | [V2 languages facade](074-v2-languages-facade.md) | done | 065, 072, 073 | Bind descriptors to syntax/provider and return LanguageSupport. |
 | 075 | 3 | [V2 intent pipeline](075-v2-intent-pipeline.md) | done | 065, 067, 069, 070 | Pack selection, plan, core invocation, result shaping. |
-| 076 | 4 | [V2 function contracts and call-site propagation](076-v2-function-propagation.md) | todo | 068, 070, 075 | Resolve function annotations, overrides, and chain propagation. |
-| 077 | 4 | [V2 fallback AI](077-v2-fallback-ai.md) | todo | 067, 068, 075 | Dirty/uninitialized fallback using the knowledge mutation API. |
+| 076 | 4 | [V2 function contracts and call-site propagation](076-v2-function-propagation.md) | done | 068, 070, 075 | Resolve function annotations, overrides, and chain propagation. |
+| 077 | 4 | [V2 fallback AI](077-v2-fallback-ai.md) | done | 067, 068, 075 | Dirty/uninitialized fallback using the knowledge mutation API. |
 | 078 | 5 | [V2 runtime and knowledge lifecycle](078-v2-runtime.md) | todo | 068, 071, 074, 075, 076, 077 | Runtime orchestration, init/materialization, analyze/publish. |
 | 079 | 2 | [V2 renderer IPC protocol](079-v2-ipc-protocol.md) | done | 065, 066 | NDJSON protocol, handshake, transcript compatibility. |
 | 080 | 6 | [V2 CLI app](080-v2-cli.md) | todo | 078 | Batch CLI over runtime. |

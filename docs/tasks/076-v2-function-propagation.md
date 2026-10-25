@@ -1,6 +1,6 @@
 ---
 name: V2 function contracts and call-site propagation
-status: todo
+status: done
 depends-on: [068, 070, 075]
 reviewers: [correctness, architecture]
 ---
