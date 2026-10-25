@@ -1,6 +1,6 @@
 ---
 name: MCP classification golden path
-status: in-progress
+status: done
 depends-on: [098, 099]
 reviewers: [correctness, architecture]
 ---

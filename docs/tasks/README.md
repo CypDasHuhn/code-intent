@@ -133,7 +133,7 @@ must be data/fact-driven rather than a hardcoded evaluator catalog.
 | 097 | [Remove frozen corpus, buildSrc, and V1 syntax capture](097-remove-frozen-corpus-and-buildsrc.md) | done | 096 | Delete the obsolete reference/parity infrastructure and inline the graph guard outside buildSrc. |
 | 098 | [MCP repo discovery and selector validation](098-mcp-discovery-and-selector-validation.md) | done | 097 | Add repo file/symbol discovery and a read-only selector dry-run for agents. |
 | 099 | [MCP provider configuration and language startup](099-mcp-provider-configuration.md) | done | 097 | Expose per-language provider config and clear missing-oracle errors in `cint-mcp`. |
-| 100 | [MCP classification golden path](100-mcp-classification-golden-path.md) | in-progress | 098, 099 | End-to-end fixture repo: init, discover, classify internal/external symbols, rerun, restart. |
+| 100 | [MCP classification golden path](100-mcp-classification-golden-path.md) | done | 098, 099 | End-to-end fixture repo: init, discover, classify internal/external symbols, rerun, restart. |
 
 ## Resolved decisions
 
