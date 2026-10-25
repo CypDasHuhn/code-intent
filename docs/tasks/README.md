@@ -131,8 +131,8 @@ must be data/fact-driven rather than a hardcoded evaluator catalog.
 | 096 | [Engine at repository root and grouped module tree](096-engine-root-and-module-tree.md) | done | 085 | Remove the engine wrapper, delete stale build leftovers, group modules into contracts/analysis/sources/orchestration/apps/tests. |
 | 095 | [Language-neutral default rulepacks](095-language-neutral-default-rulepacks.md) | done | 096 | Rename packs to default-rulepacks, one directory per pack; no language/symbol knowledge in rule code; facts behind languages, symbols in defaults. |
 | 097 | [Remove frozen corpus, buildSrc, and V1 syntax capture](097-remove-frozen-corpus-and-buildsrc.md) | done | 096 | Delete the obsolete reference/parity infrastructure and inline the graph guard outside buildSrc. |
-| 098 | [MCP repo discovery and selector validation](098-mcp-discovery-and-selector-validation.md) | todo | 097 | Add repo file/symbol discovery and a read-only selector dry-run for agents. |
-| 099 | [MCP provider configuration and language startup](099-mcp-provider-configuration.md) | todo | 097 | Expose per-language provider config and clear missing-oracle errors in `cint-mcp`. |
+| 098 | [MCP repo discovery and selector validation](098-mcp-discovery-and-selector-validation.md) | in-progress | 097 | Add repo file/symbol discovery and a read-only selector dry-run for agents. |
+| 099 | [MCP provider configuration and language startup](099-mcp-provider-configuration.md) | in-progress | 097 | Expose per-language provider config and clear missing-oracle errors in `cint-mcp`. |
 | 100 | [MCP classification golden path](100-mcp-classification-golden-path.md) | todo | 098, 099 | End-to-end fixture repo: init, discover, classify internal/external symbols, rerun, restart. |
 
 ## Resolved decisions

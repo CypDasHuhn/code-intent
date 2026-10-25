@@ -1,6 +1,6 @@
 ---
 name: MCP repo discovery and selector validation
-status: todo
+status: in-progress
 depends-on: [097]
 reviewers: [correctness, architecture]
 ---

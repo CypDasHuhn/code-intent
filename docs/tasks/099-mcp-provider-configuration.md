@@ -1,6 +1,6 @@
 ---
 name: MCP provider configuration and language startup
-status: todo
+status: in-progress
 depends-on: [097]
 reviewers: [correctness, architecture]
 ---
