@@ -491,11 +491,11 @@ private class DataModifyEvaluator : V1Evaluator(RuleSpec("mutation:data-modify",
             val receiverName = receiver.substringAfterLast('.').trim('_')
             val persistent = persistentReceiver(receiver, receiverName)
             val exactPath = PERSISTENCE_PATHS.any { path == it || path.endsWith(".$it") }
-            val configured = PERSISTENCE_CALLS.any { it == callee } || PERSISTENCE_PREFIXES.any { callee.startsWith(it) }
+            val configured = configuredPersistence(callee, path)
             when {
                 durableCallback(view, call) || exactPath || (configured && persistent) ->
                     view.emitNode(view.node(call.nodeId), 0.9, "treesitter")?.let(result::add)
-                configured && receiver.isNotEmpty() && !MUTABLE_RECEIVER_NAMES.any { it.equals(receiverName, true) } ->
+                persistenceCandidate(view, call) ->
                     view.candidateNode(view.node(call.nodeId))?.let { result += it }
             }
         }
@@ -519,6 +519,7 @@ private class LocalValueModifyEvaluator :
             val node = view.node(write.nodeId) ?: continue
             if (write.kind == WriteKind.INCREMENT && node.text.contains("++") && isLoopCounter(view, node)) continue
             if (bookkeepingSpans.any { node.startByte >= it.first && node.endByte <= it.second }) continue
+            if (Intents.LOCAL_COPY in view.intentsAt(node)) continue
             if (write.targetName != null && write.targetName in localNames) {
                 view.emitNode(node, 0.8, "treesitter")?.let(result::add)
             } else if (write.kind == WriteKind.ASSIGNMENT && write.targetName != null) {
@@ -530,10 +531,13 @@ private class LocalValueModifyEvaluator :
             val receiver = call.receiverText(view)
             val receiverName = receiver.substringAfterLast('.').trim()
             val mutableReceiver = MUTABLE_RECEIVER_NAMES.any { it.equals(receiverName, true) }
+            if (persistenceEstablished(view, call) || persistentReceiver(receiver, receiverName.trim('_'))) continue
+            if (persistenceCandidate(view, call)) continue
             when {
                 MUTABLE_OPERATIONS.any { it == callee } && mutableReceiver ->
                     view.emitNode(view.node(call.nodeId), 0.8, "treesitter")?.let(result::add)
-                isLocalCandidate(callee) -> view.candidateNode(view.node(call.nodeId))?.let { result += it }
+                MUTABLE_OPERATIONS.any { it == callee } || isLocalCandidate(callee) ->
+                    view.candidateNode(view.node(call.nodeId))?.let { result += it }
             }
         }
         return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
@@ -633,7 +637,9 @@ private class ServiceInitEvaluator : V1Evaluator(RuleSpec("service:init", Intent
             if (name in INIT_METHODS) continue
             val node = view.node(function.nameNodeId ?: function.nodeId) ?: continue
             if (mostlyInit(view, function.nodeId, creations)) {
-                view.candidateNode(node, reason = CandidateReason.LOW_CONFIDENCE)?.let { result += it }
+                view.candidateNode(node, reason = CandidateReason.LOW_CONFIDENCE)
+                    ?.copy(rationale = "hidden initialization helper")
+                    ?.let { result += it }
             }
         }
         return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
@@ -1009,8 +1015,28 @@ private fun pathContainsFactory(path: String): Boolean =
 private fun isLookupOnly(callee: String): Boolean =
     LOOKUP_CALLS.any { it.equals(callee, true) } && !SEARCH_CALLS.any { it.equals(callee, true) }
 
-private fun isAmbiguous(callee: String): Boolean =
-    AMBIGUOUS_CALLS.any { it.equals(callee, true) } || AMBIGUOUS_PREFIXES.any { callee.startsWith(it, true) }
+private fun isAmbiguous(callee: String): Boolean {
+    if (COMPOUND_MUTATION_CALLS.any { it.equals(callee, true) }) return false
+    if (LOOKUP_CALLS.any { it.equals(callee, true) }) return false
+    if (SEARCH_CALLS.any { it.equals(callee, true) }) return false
+    if (SEARCH_PREFIXES.any { matchesTokenBoundaryPrefix(callee, it) }) return false
+    return AMBIGUOUS_CALLS.any { it.equals(callee, true) } || AMBIGUOUS_PREFIXES.any { callee.startsWith(it, true) }
+}
+
+private fun matchesTokenBoundaryPrefix(
+    callee: String,
+    prefix: String,
+): Boolean {
+    if (prefix.isEmpty()) return false
+    if (callee.equals(prefix, ignoreCase = true)) return true
+    if (callee.startsWith(prefix, ignoreCase = true)) {
+        val suffix = callee.substring(prefix.length)
+        if (suffix.isNotEmpty() && (suffix.first().isUpperCase() || suffix.first().isDigit() || !suffix.first().isLetterOrDigit())) {
+            return true
+        }
+    }
+    return false
+}
 
 private fun isLiteral(text: String): Boolean {
     val value = text.trim()
@@ -1031,6 +1057,44 @@ private fun persistentReceiver(receiver: String, receiverName: String): Boolean 
             PERSISTENCE_QUALIFIERS.any { qualifierMatches(receiver, it) } ||
                 PERSISTENCE_SUFFIXES.any { receiverName.endsWith(it, true) }
         )
+
+private fun configuredPersistence(callee: String, path: String): Boolean =
+    PERSISTENCE_CALLS.any { it == callee } ||
+        PERSISTENCE_PREFIXES.any { callee.startsWith(it, ignoreCase = true) } ||
+        PERSISTENCE_PATHS.any { path == it || path.endsWith(".$it") }
+
+private fun persistenceEstablished(view: RuleEvaluationView, call: CallFact): Boolean {
+    val callee = call.callee.orEmpty()
+    val path = call.path.orEmpty()
+    val receiver = call.receiverText(view)
+    val receiverName = receiver.substringAfterLast('.').trim('_')
+    if (durableCallback(view, call)) return true
+    if (PERSISTENCE_PATHS.any { path == it || path.endsWith(".$it") }) return true
+    return configuredPersistence(callee, path) && persistentReceiver(receiver, receiverName)
+}
+
+private fun persistenceCandidate(view: RuleEvaluationView, call: CallFact): Boolean {
+    val callee = call.callee.orEmpty()
+    if (callee.isEmpty()) return false
+    if (persistenceEstablished(view, call)) return false
+    val path = call.path.orEmpty()
+    val receiver = call.receiverText(view)
+    val receiverName = receiver.substringAfterLast('.').trim('_')
+    val configured = configuredPersistence(callee, path)
+    if (receiver.isEmpty()) return configured
+    if (persistentReceiver(receiver, receiverName)) {
+        return configured || MUTABLE_OPERATIONS.any { it == callee } || isLocalCandidate(callee)
+    }
+    val mutableReceiver = MUTABLE_RECEIVER_NAMES.any { it.equals(receiverName, true) }
+    if (mutableReceiver && !(configured && isReadCall(callee))) return false
+    if (MUTABLE_OPERATIONS.any { it == callee }) return configured
+    if (!configured) return false
+    if (isLocalCandidate(callee) && PERSISTENCE_CALLS.none { it == callee }) return false
+    return true
+}
+
+private fun isReadCall(callee: String): Boolean =
+    READ_CALL_PREFIXES.any { callee.startsWith(it, ignoreCase = true) }
 
 private fun isLocalCandidate(callee: String): Boolean {
     val lower = callee.lowercase()
@@ -1138,6 +1202,39 @@ private val TRANSFORMATION_CALLS =
 private val TRANSFORMATION_CANDIDATE_CALLS = setOf("transform", "process", "reshape", "convert", "apply", "adjust", "Transform", "Process", "Reshape", "Convert", "Apply", "Adjust")
 private val TRANSFORMATION_CANDIDATE_PREFIXES = listOf("transform", "process", "reshape", "convert")
 private val TRANSFORMATION_QUALIFIERS = setOf("list", "lists", "items", "values", "uses", "collection", "collections", "stream", "streams", "sequence", "sequences", "array", "arrays", "set", "sets", "map", "maps", "entries", "elements", "nodes", "results", "rows", "records", "children")
+
+private val COMPOUND_MUTATION_CALLS =
+    setOf(
+        "findOneAndUpdate",
+        "findOneAndDelete",
+        "findOneAndReplace",
+        "findOneAndIncrement",
+        "findOneAndDecrement",
+        "findOneAndModify",
+        "findAndModify",
+        "getAndUpdate",
+        "getAndIncrement",
+        "getAndDecrement",
+    )
+
+private val READ_CALL_PREFIXES =
+    setOf(
+        "find",
+        "get",
+        "query",
+        "search",
+        "load",
+        "read",
+        "count",
+        "exists",
+        "has",
+        "fetch",
+        "list",
+        "select",
+        "scan",
+        "head",
+        "contains",
+    )
 
 private val PERSISTENCE_CALLS =
     setOf("save", "saveAll", "saveAndFlush", "persist", "merge", "flush", "commit", "update", "updateAll", "updateOne", "updateMany", "updateById", "upsert", "put", "putObject", "putItem", "upload", "uploadObject", "copyObject", "writeObject", "insert", "insertOne", "insertMany", "insertAll", "delete", "deleteAll", "deleteById", "deleteOne", "deleteMany", "deleteAllById", "remove", "removeById", "publish", "publishEvent", "publishAll", "emit", "send", "sendAsync", "sendMessage", "sendMessageAsync", "convertAndSend", "sendAndReceive", "write", "writeText", "writeBytes", "writeString", "writeFile", "writeFileSync", "appendFile", "appendFileSync", "appendText", "appendBytes", "createNewFile", "deleteIfExists", "deleteRecursively", "unlink", "unlinkSync", "SaveChanges", "SaveChangesAsync", "WriteAllText", "WriteAllTextAsync", "WriteAllBytes", "WriteAllBytesAsync", "WriteAllLines", "WriteAllLinesAsync", "AppendAllText", "AppendAllTextAsync", "AppendAllLines", "AppendAllLinesAsync", "Delete", "Move", "Copy", "CreateDirectory")

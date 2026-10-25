@@ -138,29 +138,81 @@ internal fun legacyPublishMessages(
                 put("provenance", JsonArray(provenance))
             }
         }
-    val candidates =
+    val legacyCandidates =
         analysis.candidates.map { candidate ->
-            buildJsonObject {
-                put("candidateId", candidateId(candidate, uri))
-                put("path", candidate.path ?: uri)
-                put("contentHash", candidateContentHash(candidate, text) ?: hash)
-                put("intents", JsonArray(candidate.intents.sorted().map(::JsonPrimitive)))
-                put("source", legacyCandidateSource(candidate.source))
-                put("confidence", candidate.confidence.value)
-                put("startLine", candidate.span.startLine)
-                put("startCol", candidate.span.startCol)
-                put("endLine", candidate.span.endLine)
-                put("endCol", candidate.span.endCol)
-                put("startByte", candidate.startByte)
-                put("endByte", candidate.endByte)
-                put("reason", candidate.reason.name)
-                put("aiEligible", candidate.aiEligible)
-                candidate.rationale?.let { put("rationale", it) }
-                candidate.provider?.let { put("provider", it) }
-                candidate.model?.let { put("model", it) }
-                candidate.promptVersion?.let { put("promptVersion", it) }
-            }
+            val path = candidate.path ?: uri
+            val contentHash = candidateContentHash(candidate, text) ?: hash
+            LegacyCandidate(
+                candidate = candidate,
+                path = path,
+                contentHash = contentHash,
+                json =
+                    buildJsonObject {
+                        put("candidateId", legacyCandidateId(path, contentHash, candidate))
+                        put("path", path)
+                        put("contentHash", contentHash)
+                        put("intents", JsonArray(candidate.intents.sorted().map(::JsonPrimitive)))
+                        put("source", legacyCandidateSource(candidate.source))
+                        put("confidence", candidate.confidence.value)
+                        put("startLine", candidate.span.startLine)
+                        put("startCol", candidate.span.startCol)
+                        put("endLine", candidate.span.endLine)
+                        put("endCol", candidate.span.endCol)
+                        put("startByte", candidate.startByte)
+                        put("endByte", candidate.endByte)
+                        put("reason", candidate.reason.name)
+                        put("aiEligible", candidate.aiEligible)
+                        candidate.rationale?.let { put("rationale", it) }
+                        candidate.provider?.let { put("provider", it) }
+                        candidate.model?.let { put("model", it) }
+                        candidate.promptVersion?.let { put("promptVersion", it) }
+                    },
+            )
         }
+    val candidates = legacyCandidates.map { it.json }
+    val groups =
+        legacyCandidates
+            .groupBy { Triple(it.contentHash, it.candidate.startByte, it.candidate.endByte) }
+            .map { (key, grouped) -> key to grouped }
+            .sortedWith(compareBy({ it.first.second }, { it.first.third }, { it.first.first }))
+            .map { (key, grouped) ->
+                val (contentHash, startByte, endByte) = key
+                val first = grouped.first()
+                buildJsonObject {
+                    put("anchorId", legacyAnchorId(first.path, contentHash, startByte, endByte))
+                    put("path", first.path)
+                    put("contentHash", contentHash)
+                    put("startLine", first.candidate.span.startLine)
+                    put("startCol", first.candidate.span.startCol)
+                    put("endLine", first.candidate.span.endLine)
+                    put("endCol", first.candidate.span.endCol)
+                    put("startByte", startByte)
+                    put("endByte", endByte)
+                    put("candidates", JsonArray(grouped.map { it.json }))
+                    put(
+                        "operations",
+                        JsonArray(
+                            grouped.flatMap { entry ->
+                                entry.candidate.intents.sorted().map { intent ->
+                                    buildJsonObject {
+                                        put("kind", "ADD")
+                                        put("intent", intent)
+                                        put("startLine", entry.candidate.span.startLine)
+                                        put("startCol", entry.candidate.span.startCol)
+                                        put("endLine", entry.candidate.span.endLine)
+                                        put("endCol", entry.candidate.span.endCol)
+                                        put("startByte", entry.candidate.startByte)
+                                        put("endByte", entry.candidate.endByte)
+                                        put("confidence", entry.candidate.confidence.value)
+                                        entry.candidate.rationale?.let { put("rationale", it) }
+                                        put("source", legacyCandidateSource(entry.candidate.source))
+                                    }
+                                }
+                            },
+                        ),
+                    )
+                }
+            }
     val tags =
         buildJsonObject {
             put("uri", uri)
@@ -176,7 +228,7 @@ internal fun legacyPublishMessages(
             put("version", version)
             put("analysisRevision", analysisVersion)
             put("suggestionRevision", analysisVersion)
-            put("groups", JsonArray(emptyList()))
+            put("groups", JsonArray(groups))
             put("candidates", JsonArray(candidates))
         }
     return listOf(
@@ -333,6 +385,39 @@ private fun legacyCandidateSource(source: String): String =
         source.equals("ai", ignoreCase = true) -> "ai"
         else -> "rule:$source"
     }
+
+private data class LegacyCandidate(
+    val candidate: Candidate,
+    val path: String,
+    val contentHash: String,
+    val json: JsonObject,
+)
+
+private fun legacyCandidateId(
+    path: String,
+    contentHash: String,
+    candidate: Candidate,
+): String =
+    ContentHash.compute(
+        listOf(
+            path,
+            contentHash,
+            candidate.startByte.toString(),
+            candidate.endByte.toString(),
+            candidate.intents.sorted().joinToString(","),
+            candidate.reason.name,
+        ).joinToString("\n"),
+    ).value
+
+private fun legacyAnchorId(
+    path: String,
+    contentHash: String,
+    startByte: Int,
+    endByte: Int,
+): String =
+    ContentHash.compute(
+        listOf(path, contentHash, startByte.toString(), endByte.toString(), "", "ANCHOR").joinToString("\n"),
+    ).value
 
 private fun candidateId(
     candidate: Candidate,
