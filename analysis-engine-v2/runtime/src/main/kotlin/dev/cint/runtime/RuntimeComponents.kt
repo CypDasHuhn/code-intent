@@ -11,12 +11,12 @@ import dev.cint.contracts.ports.KnowledgeStoreFactory
 import dev.cint.contracts.ports.RuleEvaluatorRegistry
 import dev.cint.contracts.ports.RulePackSource
 import dev.cint.contracts.util.CancellationToken
-import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import dev.cint.knowledge.persistence.FileKnowledgeRepositoryFactory
 import dev.cint.knowledge.persistence.PersistentKnowledgeStores
 import dev.cint.packs.BundledRulePackSource
+import dev.cint.pipeline.BundledRuleEvaluators
 import dev.cint.pipeline.DefaultIntentPipeline
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -55,13 +55,7 @@ data class RuntimeComponents(
             return ResultFactory.success(factory(packSource, knowledgeStore))
         }
         pipeline?.let { return ResultFactory.success(it) }
-        val evaluators =
-            ruleEvaluators
-                ?: return ResultFactory.failure(
-                    ContractError.PreconditionFailed(
-                        "A rule evaluator registry is required for the default intent pipeline",
-                    ),
-                )
+        val evaluators = ruleEvaluators ?: BundledRuleEvaluators.registry()
         return ResultFactory.success(
             DefaultIntentPipeline(
                 packSource = packSource,

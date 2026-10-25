@@ -30,6 +30,7 @@
     ["runtime", "intent-pipeline"],
     ["runtime", "knowledge-persistence"],
     ["cli", "runtime"],
+    ["cli", "contracts"],
     ["server", "runtime"],
     ["server", "ipc"],
     ["mcp", "runtime"],
@@ -56,6 +57,8 @@
     ["integration-tests", "mcp"],
     ["integration-tests", "test-fixtures"],
     ["intent-pipeline", "test-fixtures"],
-    ["runtime", "test-fixtures"]
+    ["runtime", "test-fixtures"],
+    ["cli", "test-fixtures"],
+    ["cli", "languages"]
   ]
 }

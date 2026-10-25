@@ -24,7 +24,7 @@ import dev.cint.core.engine.RuleEngine
 
 class DefaultIntentPipeline(
     packSource: RulePackSource,
-    private val ruleEvaluators: RuleEvaluatorRegistry = RuleEvaluatorCatalog.bundled(),
+    private val ruleEvaluators: RuleEvaluatorRegistry = BundledRuleEvaluators.registry(),
     private val knowledgeInputs: KnowledgeInputResolver = PrecedenceKnowledgeInputResolver(),
     private val fallbackAi: FallbackAiHook? = null,
     private val fallbackAiPolicy: FallbackAiPolicy = FallbackAiPolicy.DISABLED,

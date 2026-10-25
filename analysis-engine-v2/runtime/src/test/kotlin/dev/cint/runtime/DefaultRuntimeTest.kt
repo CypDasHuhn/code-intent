@@ -215,15 +215,14 @@ class DefaultRuntimeTest {
     }
 
     @Test
-    fun defaultFactoryRequiresAnExplicitEvaluatorRegistry() {
+    fun defaultFactoryUsesTheBundledEvaluatorRegistry() {
         val result =
             RuntimeFactory.create(
                 RuntimeConfig(),
                 RuntimeComponents(packSourceFactory = { FakeRulePackSource() }),
             )
 
-        assertTrue(result.isFailure)
-        assertIs<ContractError.PreconditionFailed>(result.errorOrNull)
+        assertTrue(result.isSuccess)
     }
 
     @Test
