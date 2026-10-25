@@ -59,11 +59,34 @@ private class NativeTreeSitterSyntaxEngine : SyntaxEngine {
     }
 
     override fun nodeHash(tree: SyntaxTree, nodeId: String): ContractResult<String> {
-        val node = tree.getNode(nodeId)
-            ?: return contractFailure(ContractError.NotFound("SyntaxNode", nodeId))
-        return ResultFactory.success(
-            NodeHash.compute(node.kind, emptyList(), ContentHash.compute(node.text)).value
-        )
+        if (tree.getNode(nodeId) == null) {
+            return contractFailure(ContractError.NotFound("SyntaxNode", nodeId))
+        }
+        return try {
+            ResultFactory.success(
+                subtreeHash(tree, nodeId, mutableMapOf(), mutableSetOf()).value,
+            )
+        } catch (t: Throwable) {
+            contractFailure(ContractError.InternalError("tree-sitter node hash failed", t.message))
+        }
+    }
+
+    private fun subtreeHash(
+        tree: SyntaxTree,
+        nodeId: String,
+        memo: MutableMap<String, NodeHash>,
+        visiting: MutableSet<String>,
+    ): NodeHash {
+        memo[nodeId]?.let { return it }
+        check(visiting.add(nodeId)) { "syntax tree contains a cycle at $nodeId" }
+        val node = checkNotNull(tree.getNode(nodeId)) { "syntax node $nodeId is missing" }
+        val childHashes = node.childIds.map { childId ->
+            subtreeHash(tree, childId, memo, visiting)
+        }
+        val hash = NodeHash.compute(node.kind, childHashes, ContentHash.compute(node.text))
+        visiting.remove(nodeId)
+        memo[nodeId] = hash
+        return hash
     }
 
     override fun facts(

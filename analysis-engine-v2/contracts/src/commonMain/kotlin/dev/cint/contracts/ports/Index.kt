@@ -12,6 +12,11 @@ interface Index {
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<IndexedSource>
 
+    fun fullRescan(
+        inputs: List<IndexInput>,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<RescanResult>
+
     fun invalidate(
         paths: List<String>,
         cancellation: CancellationToken = CancellationToken.NONE,
@@ -27,3 +32,12 @@ interface Index {
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<List<String>>
 }
+
+data class IndexInput(
+    val input: SourceInput,
+    val support: LanguageSupport,
+)
+
+data class RescanResult(
+    val sources: List<IndexedSource>,
+)

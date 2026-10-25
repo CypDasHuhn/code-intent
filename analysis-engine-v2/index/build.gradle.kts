@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(project(":contracts"))
+    testImplementation(kotlin("test"))
 }

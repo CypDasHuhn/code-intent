@@ -20,6 +20,12 @@ interface SyntaxEngine {
         next: SyntaxTree,
     ): ChangedRanges
 
+    /**
+     * Returns the structural hash of [nodeId]'s complete subtree.
+     *
+     * Implementations must combine the node kind, its ordered child subtree hashes, and its own
+     * content, so any descendant change changes every ancestor hash.
+     */
     fun nodeHash(tree: SyntaxTree, nodeId: String): ContractResult<String>
 
     fun facts(

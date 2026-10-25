@@ -12,7 +12,7 @@ sealed interface SourceInput {
     data class FilePath(
         val path: String,
         val languageHint: String? = null,
-        val version: Long = 0,
+        override val version: Long = 0,
     ) : SourceInput
 
     @Serializable
@@ -20,10 +20,30 @@ sealed interface SourceInput {
     data class InMemory(
         val text: String,
         val language: String,
-        val version: Long = 0,
+        override val version: Long = 0,
         val path: String? = null,
+        override val documentId: String? = null,
     ) : SourceInput
+
+    val version: Long
+        get() = when (this) {
+            is FilePath -> version
+            is InMemory -> version
+        }
+
+    val documentId: String?
+        get() = when (this) {
+            is FilePath -> path
+            is InMemory -> documentId
+        }
 }
+
+@Serializable
+data class SemanticFact(
+    val request: SemanticRequest,
+    val result: SemanticResult,
+    val providerEpoch: Long,
+)
 
 @Serializable
 data class IndexedSource(
@@ -32,4 +52,5 @@ data class IndexedSource(
     val sourceEpoch: Long,
     val completeness: Completeness,
     val contentHash: String,
+    val semanticFacts: List<SemanticFact> = emptyList(),
 )

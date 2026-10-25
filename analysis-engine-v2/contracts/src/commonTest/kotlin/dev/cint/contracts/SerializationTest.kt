@@ -369,6 +369,35 @@ class SerializationTest {
     }
 
     @Test
+    fun testIndexedSourceCarriesSemanticFacts() {
+        val request = SemanticRequest(
+            uri = "file:///test.kt",
+            version = 1,
+            offset = 0,
+            kind = SemanticRequestKind.DIAGNOSTICS_FOR,
+            deadline = Deadline.NONE,
+        )
+        val indexed = IndexedSource(
+            input = SourceInput.InMemory("fun main() {}", "kotlin", 1, "test.kt"),
+            facts = FactBatch(syntaxTree = null),
+            sourceEpoch = 7,
+            completeness = Completeness.COMPLETE,
+            contentHash = "hash123",
+            semanticFacts = listOf(
+                SemanticFact(
+                    request = request,
+                    result = SemanticResult.DiagnosticsFor(emptyList()),
+                    providerEpoch = 3,
+                ),
+            ),
+        )
+        val serialized = json.encodeToString(indexed)
+        val deserialized = json.decodeFromString<IndexedSource>(serialized)
+        assertEquals(indexed, deserialized)
+        assertEquals(3, deserialized.semanticFacts.single().providerEpoch)
+    }
+
+    @Test
     fun testLanguageDescriptorSerialization() {
         val descriptor = LanguageDescriptor(
             id = "kotlin",
