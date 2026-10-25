@@ -63,6 +63,11 @@
     ["runtime", "index"],
     ["server", "index"],
     ["server", "test-fixtures"],
-    ["server", "languages"]
+    ["server", "languages"],
+    ["mcp", "knowledge"],
+    ["mcp", "knowledge-persistence"],
+    ["mcp", "languages"],
+    ["mcp", "intent-pipeline"],
+    ["mcp", "test-fixtures"]
   ]
 }

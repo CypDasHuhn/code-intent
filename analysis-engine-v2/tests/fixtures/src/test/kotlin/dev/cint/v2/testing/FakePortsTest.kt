@@ -33,8 +33,11 @@ import dev.cint.contracts.util.UnavailableReason
 import dev.cint.contracts.ipc.ClientInfo
 import dev.cint.contracts.ipc.IpcMessage
 import dev.cint.contracts.mcp.McpNotification
-import dev.cint.contracts.mcp.McpRequest
-import dev.cint.contracts.mcp.McpResponse
+import dev.cint.contracts.mcp.McpResourceContent
+import dev.cint.contracts.mcp.McpResourceReadRequest
+import dev.cint.contracts.mcp.McpResourceReadResult
+import dev.cint.contracts.mcp.McpToolCall
+import dev.cint.contracts.mcp.McpToolResult
 import dev.cint.v2.testing.fakes.CancellationScript
 import dev.cint.v2.testing.fakes.FakeCancellation
 import dev.cint.v2.testing.fakes.FakeClock
@@ -336,14 +339,19 @@ class FakePortsTest {
         assertEquals(IpcReceive.Closed, ipc.receive().getOrThrow())
 
         val mcp = FakeMcpTransport()
-        val request = McpRequest.KnowledgeSnapshot("req-1")
-        val response = McpResponse.KnowledgeSnapshotResponse("req-1", null)
-        mcp.enqueue(response)
-        assertEquals(response, mcp.request(request).getOrThrow())
+        val request = McpToolCall("knowledge.snapshot")
+        val result = McpToolResult(content = emptyList())
+        mcp.enqueue(result)
+        assertEquals(result, mcp.call(request).getOrThrow())
+        val resourceRequest = McpResourceReadRequest("cint://knowledge/snapshot")
+        val resourceResult =
+            McpResourceReadResult(listOf(McpResourceContent("cint://knowledge/snapshot")))
+        mcp.enqueueResource(resourceResult)
+        assertEquals(resourceResult, mcp.readResource(resourceRequest).getOrThrow())
         assertTrue(mcp.notify(McpNotification.KnowledgeChanged("set", "findUser")).isSuccess)
         assertEquals(1, mcp.notifications.size)
         assertTrue(mcp.close().isSuccess)
-        assertTrue(mcp.request(request).isFailure)
+        assertTrue(mcp.call(request).isFailure)
     }
 
     @Test

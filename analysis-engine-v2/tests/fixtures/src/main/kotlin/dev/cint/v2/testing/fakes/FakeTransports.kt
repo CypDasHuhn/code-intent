@@ -2,8 +2,10 @@ package dev.cint.v2.testing.fakes
 
 import dev.cint.contracts.ipc.IpcMessage
 import dev.cint.contracts.mcp.McpNotification
-import dev.cint.contracts.mcp.McpRequest
-import dev.cint.contracts.mcp.McpResponse
+import dev.cint.contracts.mcp.McpResourceReadRequest
+import dev.cint.contracts.mcp.McpResourceReadResult
+import dev.cint.contracts.mcp.McpToolCall
+import dev.cint.contracts.mcp.McpToolResult
 import dev.cint.contracts.ports.IpcReceive
 import dev.cint.contracts.ports.IpcTransport
 import dev.cint.contracts.ports.McpTransport
@@ -51,27 +53,45 @@ class FakeIpcTransport(
 }
 
 class FakeMcpTransport(
-    val responses: MutableList<McpResponse> = mutableListOf(),
-    private val responseFactory: ((McpRequest) -> ContractResult<McpResponse>)? = null,
+    val results: MutableList<McpToolResult> = mutableListOf(),
+    val resourceResults: MutableList<McpResourceReadResult> = mutableListOf(),
+    private val callFactory: ((McpToolCall) -> ContractResult<McpToolResult>)? = null,
     val recorder: FakeRecorder = FakeRecorder(),
 ) : McpTransport {
-    val requests: MutableList<McpRequest> = mutableListOf()
+    val calls: MutableList<McpToolCall> = mutableListOf()
+    val resourceReads: MutableList<McpResourceReadRequest> = mutableListOf()
     val notifications: MutableList<McpNotification> = mutableListOf()
     var closed: Boolean = false
         private set
 
-    override fun request(request: McpRequest, cancellation: CancellationToken): ContractResult<McpResponse> {
-        recorder.record("mcp.request", request.toString().substringBefore("("))
+    override fun call(request: McpToolCall, cancellation: CancellationToken): ContractResult<McpToolResult> {
+        recorder.record("mcp.call", request.name)
         val checked = cancellation.throwIfCancelled()
         if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
         if (closed) {
             return ResultFactory.failure(ContractError.PreconditionFailed("mcp transport is closed"))
         }
-        requests.add(request)
-        responseFactory?.let { return it(request) }
-        val response = responses.removeFirstOrNull()
-            ?: return ResultFactory.failure(ContractError.NotFound("mcp-response", request.toString()))
-        return ResultFactory.success(response)
+        calls.add(request)
+        callFactory?.let { return it(request) }
+        val result = results.removeFirstOrNull()
+            ?: return ResultFactory.failure(ContractError.NotFound("mcp-result", request.name))
+        return ResultFactory.success(result)
+    }
+
+    override fun readResource(
+        request: McpResourceReadRequest,
+        cancellation: CancellationToken,
+    ): ContractResult<McpResourceReadResult> {
+        recorder.record("mcp.readResource", request.uri)
+        val checked = cancellation.throwIfCancelled()
+        if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
+        if (closed) {
+            return ResultFactory.failure(ContractError.PreconditionFailed("mcp transport is closed"))
+        }
+        resourceReads.add(request)
+        val result = resourceResults.removeFirstOrNull()
+            ?: return ResultFactory.failure(ContractError.NotFound("mcp-resource", request.uri))
+        return ResultFactory.success(result)
     }
 
     override fun notify(notification: McpNotification, cancellation: CancellationToken): ContractResult<Unit> {
@@ -91,8 +111,12 @@ class FakeMcpTransport(
         return ResultFactory.success(Unit)
     }
 
-    fun enqueue(response: McpResponse) {
-        responses.add(response)
+    fun enqueue(result: McpToolResult) {
+        results.add(result)
+    }
+
+    fun enqueueResource(result: McpResourceReadResult) {
+        resourceResults.add(result)
     }
 }
 

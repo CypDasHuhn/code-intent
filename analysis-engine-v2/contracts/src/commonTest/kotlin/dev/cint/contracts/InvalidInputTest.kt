@@ -7,7 +7,7 @@ import dev.cint.contracts.facts.IndexedSource
 import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.facts.SyntaxTree
 import dev.cint.contracts.ipc.IpcMessage
-import dev.cint.contracts.mcp.McpRequest
+import dev.cint.contracts.mcp.McpToolCall
 import dev.cint.contracts.knowledge.FunctionAnnotation
 import dev.cint.contracts.knowledge.FunctionSelector
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
@@ -148,13 +148,13 @@ class InvalidInputTest {
             )
         }
         assertFails {
-            json.decodeFromString<McpRequest>(
-                """{"type":"UnknownRequest","requestId":"r"}""",
+            json.decodeFromString<McpToolCall>(
+                """{"arguments":{}}""",
             )
         }
         assertFails {
-            json.decodeFromString<McpRequest>(
-                """{"type":"ChangesApply","requestId":"r"}""",
+            json.decodeFromString<McpToolCall>(
+                """{"name":"analysis.run","arguments":[]}""",
             )
         }
         assertFails {

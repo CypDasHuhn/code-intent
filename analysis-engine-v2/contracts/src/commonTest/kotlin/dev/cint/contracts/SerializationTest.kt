@@ -9,6 +9,9 @@ import dev.cint.contracts.ports.*
 import dev.cint.contracts.util.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlin.test.Test
@@ -598,26 +601,31 @@ class SerializationTest {
     }
 
     @Test
-    fun testMcpMessagesSerialization() {
-        val request = McpRequest.KnowledgeSnapshot(requestId = "req-1")
-        val serialized = json.encodeToString<McpRequest>(request)
-        val deserialized = json.decodeFromString<McpRequest>(serialized)
-        assertEquals(request, deserialized)
+    fun testMcpToolEnvelopeSerialization() {
+        val call =
+            McpToolCall(
+                name = "analysis.run",
+                arguments =
+                    buildJsonObject {
+                        put("targetPaths", kotlinx.serialization.json.buildJsonArray {
+                            add(JsonPrimitive("Sample.kt"))
+                        })
+                    },
+            )
+        assertEquals(call, json.decodeFromString<McpToolCall>(json.encodeToString(call)))
 
-        val ks = dev.cint.contracts.knowledge.KnowledgeSnapshot(
-            functionAnnotations = emptyList(),
-            spanOverrides = emptyList(),
-            patternHypotheses = emptyList(),
-            timestamp = 1,
-        )
-        val response = McpResponse.KnowledgeSnapshotResponse(
-            requestId = "req-1",
-            snapshotData = ks,
-            error = null,
-        )
-        val serialized2 = json.encodeToString<McpResponse>(response)
-        val deserialized2 = json.decodeFromString<McpResponse>(serialized2)
-        assertEquals(response, deserialized2)
+        val result =
+            McpToolResult(
+                content = listOf(McpToolContent(text = "ok")),
+                structuredContent = buildJsonObject { put("count", 1) },
+            )
+        assertEquals(result, json.decodeFromString<McpToolResult>(json.encodeToString(result)))
+
+        val read =
+            McpResourceReadResult(
+                contents = listOf(McpResourceContent(uri = "cint://knowledge/snapshot", text = "{}")),
+            )
+        assertEquals(read, json.decodeFromString<McpResourceReadResult>(json.encodeToString(read)))
     }
 
     @Test

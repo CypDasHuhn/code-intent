@@ -18,6 +18,7 @@ data class RuntimeConfig(
     val providerConfigs: Map<String, SemanticProviderConfig> = emptyMap(),
     val languageOptions: LanguageOptions = LanguageOptions(),
     val publishOnAnalyze: Boolean = false,
+    val materializeDefaultsOnOpen: Boolean = true,
 ) {
     companion object {
         val DEFAULT_PROVIDER_COMMANDS: Map<String, String> =

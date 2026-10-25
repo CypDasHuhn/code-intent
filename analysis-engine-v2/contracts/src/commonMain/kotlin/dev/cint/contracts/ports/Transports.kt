@@ -2,8 +2,10 @@ package dev.cint.contracts.ports
 
 import dev.cint.contracts.ipc.IpcMessage
 import dev.cint.contracts.mcp.McpNotification
-import dev.cint.contracts.mcp.McpRequest
-import dev.cint.contracts.mcp.McpResponse
+import dev.cint.contracts.mcp.McpResourceReadRequest
+import dev.cint.contracts.mcp.McpResourceReadResult
+import dev.cint.contracts.mcp.McpToolCall
+import dev.cint.contracts.mcp.McpToolResult
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractResult
 
@@ -25,10 +27,15 @@ interface IpcTransport {
 }
 
 interface McpTransport {
-    fun request(
-        request: McpRequest,
+    fun call(
+        request: McpToolCall,
         cancellation: CancellationToken = CancellationToken.NONE,
-    ): ContractResult<McpResponse>
+    ): ContractResult<McpToolResult>
+
+    fun readResource(
+        request: McpResourceReadRequest,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<McpResourceReadResult>
 
     fun notify(
         notification: McpNotification,

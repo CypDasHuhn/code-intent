@@ -206,7 +206,8 @@ class DefaultRuntime private constructor(
     override fun shutdown(): ContractResult<Unit> {
         if (closed && shutdownError == null) return ResultFactory.success(Unit)
         val supportError = shutdownSupports().errorOrNull
-        val saveError = persistentStore?.save()?.errorOrNull
+        val saveError =
+            if (knowledgeStore.isMaterialized) persistentStore?.save()?.errorOrNull else null
         closed = true
         val error = supportError ?: saveError
         shutdownError = error
@@ -406,7 +407,7 @@ private fun createKnowledgeStore(
             memory.getOrThrow()
         }
 
-    if (snapshot == null || !snapshot.materialized) {
+    if (config.materializeDefaultsOnOpen && (snapshot == null || !snapshot.materialized)) {
         val defaults =
             collectDefaults(config, language.catalog, packSource, cancellation)
         if (defaults.isFailure) return ResultFactory.failure(defaults.errorOrNull!!)
