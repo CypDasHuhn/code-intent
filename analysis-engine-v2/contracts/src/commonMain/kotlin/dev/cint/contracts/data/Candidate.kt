@@ -16,6 +16,7 @@ data class Candidate(
     val provider: String? = null,
     val model: String? = null,
     val promptVersion: String? = null,
+    val path: String? = null,
 ) {
     fun toContribution(rule: String, role: Role = Role.SOURCE_INTENT): Contribution =
         Contribution(

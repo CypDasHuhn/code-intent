@@ -130,7 +130,7 @@ intent-pipeline -> contracts, core, packs, knowledge, ai
 ai              -> contracts
 ipc             -> contracts
 
-runtime -> contracts, packs, index, knowledge, languages, intent-pipeline
+runtime -> contracts, packs, index, knowledge, knowledge-persistence, languages, intent-pipeline
 
 cli    -> runtime
 server -> runtime, ipc
@@ -157,7 +157,7 @@ boundary and may call runtime, but no library depends on `mcp`.
 | `intent-pipeline` | `contracts`, `core`, `packs`, `knowledge`, `ai` | `runtime`, `index`, parser, LSP, IPC |
 | `ai` | `contracts` | `core`, `runtime`, `packs`, `index`, `knowledge` |
 | `ipc` | `contracts` | `core`, `runtime`, adapters, apps |
-| `runtime` | `contracts`, `packs`, `index`, `knowledge`, `languages`, `intent-pipeline` | adapter classes, `ai`, `ipc`, apps |
+| `runtime` | `contracts`, `packs`, `index`, `knowledge`, `knowledge-persistence`, `languages`, `intent-pipeline` | parser/LSP adapters, `ai`, `ipc`, apps |
 | `cli` | `runtime` | `core` internals, adapters |
 | `server` | `runtime`, `ipc` | `core` internals, adapters |
 | `mcp` | `runtime`, `contracts` | `core` internals, adapters |
@@ -272,10 +272,11 @@ owns "how". It does not read files, open sockets, or know parser/LSP classes.
 
 ### `runtime`
 
-Orchestration: knowledge lifecycle, initialization/materialization, pack
-lifecycle, index lifecycle, language resolution, pipeline invocation, publish,
-and the public `analyze` entry point. It resolves `LanguageSupport` and passes it
-to the index. Fallback AI belongs to `intent-pipeline`, not runtime.
+Orchestration: knowledge lifecycle, initialization/materialization through the
+injected knowledge-repository port, pack lifecycle, index lifecycle, language
+resolution, pipeline invocation, publish, and the public `analyze` entry point.
+It resolves `LanguageSupport` and passes it to the index. Fallback AI belongs to
+`intent-pipeline`, not runtime.
 
 It is the only analysis module apps need to know. It never imports source
 adapters and never touches IPC or MCP.

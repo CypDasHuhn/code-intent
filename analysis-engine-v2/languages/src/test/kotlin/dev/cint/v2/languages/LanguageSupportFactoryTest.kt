@@ -47,7 +47,12 @@ class LanguageSupportFactoryTest {
     fun kotlinResolvesSyntaxAndProvider() {
         val root = projectRoot()
         val providers = RecordingProviderFactory()
-        val factory = LanguageSupportFactory(providerFactory = providers)
+        val factory =
+            LanguageSupportFactory(
+                providerFactory = providers,
+                rootLocator = MarkerRootLocator,
+                providerDefaults = kotlinDefaults,
+            )
 
         val support =
             factory
@@ -77,6 +82,7 @@ class LanguageSupportFactoryTest {
         val factory =
             LanguageSupportFactory(
                 providerFactory = providers,
+                rootLocator = MarkerRootLocator,
                 providerDefaults =
                     LanguageProviderDefaults { descriptor ->
                         SemanticProviderConfig(
@@ -121,7 +127,12 @@ class LanguageSupportFactoryTest {
         val root = projectRoot()
         for (mode in listOf(ProviderMode.MANAGED, ProviderMode.ATTACHED)) {
             val transport = ScriptedTransport()
-            val factory = LanguageSupportFactory(transport)
+            val factory =
+                LanguageSupportFactory(
+                    transport,
+                    rootLocator = MarkerRootLocator,
+                    providerDefaults = kotlinDefaults,
+                )
             val options =
                 if (mode == ProviderMode.MANAGED) {
                     LanguageOptions()
@@ -409,7 +420,12 @@ class LanguageSupportFactoryTest {
         val root = projectRoot()
         val file = root.resolve("src/Main.kt")
         val providers = RecordingProviderFactory()
-        val factory = LanguageSupportFactory(providerFactory = providers)
+        val factory =
+            LanguageSupportFactory(
+                providerFactory = providers,
+                rootLocator = MarkerRootLocator,
+                providerDefaults = kotlinDefaults,
+            )
 
         factory.resolveForPath(file.toString()).successValue()
 
@@ -417,7 +433,7 @@ class LanguageSupportFactoryTest {
     }
 
     @Test
-    fun defaultFacadeDiscoversCsharpRootAndResolvesEditorProvider() {
+    fun configuredRootLocatorDiscoversCsharpRootAndResolvesEditorProvider() {
         val root = Files.createTempDirectory("cint-074-csharp-default")
         temporaryRoots.add(root)
         Files.writeString(root.resolve("App.sln"), "")
@@ -431,7 +447,10 @@ class LanguageSupportFactoryTest {
                 override fun close(): ContractResult<Unit> = ResultFactory.success(Unit)
             }
 
-        val support = Languages.resolveForPath(file.toString(), LanguageOptions(hostChannel = channel)).successValue()
+        val support =
+            LanguageSupportFactory(rootLocator = MarkerRootLocator)
+                .resolveForPath(file.toString(), LanguageOptions(hostChannel = channel))
+                .successValue()
         try {
             assertEquals("csharp", support.descriptor().successValue().id)
             val provider = support.semanticProvider().successValue()
@@ -601,4 +620,52 @@ class LanguageSupportFactoryTest {
         assertTrue(isFailure, "expected failure but was $this")
         return assertNotNull(errorOrNull)
     }
+}
+
+private val kotlinDefaults =
+    LanguageProviderDefaults { descriptor ->
+        SemanticProviderConfig(
+            mode = descriptor.providerMode,
+            command = if (descriptor.id == "kotlin") "kotlin-lsp --stdio" else null,
+        )
+    }
+
+private object MarkerRootLocator : LanguageRootLocator {
+    private const val GIT_MARKER = ".git"
+
+    override fun locate(
+        path: String?,
+        markers: List<String>,
+    ): String? {
+        val file = path?.let { runCatching { Path.of(it).toAbsolutePath().normalize() }.getOrNull() } ?: return null
+        val start = if (Files.isDirectory(file)) file else file.parent ?: return null
+        val languageMarkers = markers.filterNot { it == GIT_MARKER }
+        for (marker in languageMarkers) {
+            var directory: Path? = start
+            while (directory != null) {
+                if (hasMarker(directory, marker)) return directory.toString()
+                directory = directory.parent
+            }
+        }
+        if (GIT_MARKER in markers) {
+            var directory: Path? = start
+            while (directory != null) {
+                if (hasMarker(directory, GIT_MARKER)) return directory.toString()
+                directory = directory.parent
+            }
+        }
+        return null
+    }
+
+    private fun hasMarker(
+        directory: Path,
+        marker: String,
+    ): Boolean =
+        if (marker.contains('*') || marker.contains('?')) {
+            runCatching {
+                Files.newDirectoryStream(directory, marker).use { it.iterator().hasNext() }
+            }.getOrDefault(false)
+        } else {
+            Files.exists(directory.resolve(marker))
+        }
 }

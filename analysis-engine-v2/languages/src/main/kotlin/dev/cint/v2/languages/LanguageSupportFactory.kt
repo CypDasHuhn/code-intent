@@ -46,16 +46,16 @@ class LanguageSupportFactory(
     private val catalog: LanguageCatalog = TreeSitterLanguageRegistry,
     private val syntaxFactory: LanguageSyntaxFactory = DefaultSyntaxFactory,
     private val providerFactory: LanguageProviderFactory = DefaultProviderFactory(),
-    private val rootLocator: LanguageRootLocator? = MarkerRootLocator,
-    private val providerDefaults: LanguageProviderDefaults = DefaultLanguageProviderDefaults,
+    private val rootLocator: LanguageRootLocator? = null,
+    private val providerDefaults: LanguageProviderDefaults = DescriptorModeProviderDefaults,
     private val transportProvided: Boolean = false,
 ) {
     internal constructor(
         transport: LspTransport,
         catalog: LanguageCatalog = TreeSitterLanguageRegistry,
         syntaxFactory: LanguageSyntaxFactory = DefaultSyntaxFactory,
-        rootLocator: LanguageRootLocator? = MarkerRootLocator,
-        providerDefaults: LanguageProviderDefaults = DefaultLanguageProviderDefaults,
+        rootLocator: LanguageRootLocator? = null,
+        providerDefaults: LanguageProviderDefaults = DescriptorModeProviderDefaults,
     ) : this(catalog, syntaxFactory, DefaultProviderFactory(transport), rootLocator, providerDefaults, true)
 
     fun resolve(
@@ -263,27 +263,6 @@ class LanguageSupportFactory(
                 transport = transport,
             )
     }
-}
-
-object Languages {
-    private val defaultFactory = LanguageSupportFactory()
-
-    fun resolve(
-        language: String,
-        options: LanguageOptions = LanguageOptions(),
-    ): ContractResult<LanguageSupport> = defaultFactory.resolve(language, options)
-
-    fun resolveForPath(
-        path: String,
-        options: LanguageOptions = LanguageOptions(),
-    ): ContractResult<LanguageSupport> = defaultFactory.resolveForPath(path, options)
-
-    fun resolveForInput(
-        input: SourceInput,
-        options: LanguageOptions = LanguageOptions(),
-    ): ContractResult<LanguageSupport> = defaultFactory.resolveForInput(input, options)
-
-    val descriptors: List<LanguageDescriptor> = TreeSitterLanguageRegistry.descriptors
 }
 
 private class ResolvedLanguageSupport(
