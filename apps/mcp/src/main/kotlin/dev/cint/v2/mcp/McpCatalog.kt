@@ -278,6 +278,15 @@ internal object McpCatalog {
                     schema = objectSchema(),
                 ),
             )
+            add(
+                tool(
+                    name = "repo.languages",
+                    description =
+                        "List supported languages, resolved provider modes, and provider configuration status. " +
+                            "Does not start an LSP server.",
+                    schema = objectSchema(),
+                ),
+            )
         }
 
     fun resources(): List<McpResourceDefinition> =

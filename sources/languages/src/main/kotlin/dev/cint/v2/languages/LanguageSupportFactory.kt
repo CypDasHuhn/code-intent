@@ -131,7 +131,7 @@ class LanguageSupportFactory(
         }
 
         val config = baseConfig.copy(rootPath = root?.toString())
-        val configError = validateProviderConfiguration(config, options)
+        val configError = validateProviderConfiguration(descriptor, config, options)
         if (configError != null) return failure(configError)
         val providerResult =
             try {
@@ -196,6 +196,7 @@ class LanguageSupportFactory(
     }
 
     private fun validateProviderConfiguration(
+        descriptor: LanguageDescriptor,
         config: SemanticProviderConfig,
         options: LanguageOptions,
     ): ContractError? =
@@ -205,11 +206,17 @@ class LanguageSupportFactory(
             }
 
             config.mode == ProviderMode.MANAGED && config.command.isNullOrBlank() -> {
-                ContractError.PreconditionFailed("Managed LSP mode requires a command")
+                ContractError.PreconditionFailed(
+                    "Managed LSP mode for language '${descriptor.id}' requires a command; " +
+                        "configure --provider-command ${descriptor.id}=<command> or --provider-config <path>",
+                )
             }
 
             config.mode == ProviderMode.ATTACHED && config.endpoint.isNullOrBlank() -> {
-                ContractError.PreconditionFailed("Attached LSP mode requires an endpoint")
+                ContractError.PreconditionFailed(
+                    "Attached LSP mode for language '${descriptor.id}' requires an endpoint; " +
+                        "configure --provider-endpoint ${descriptor.id}=<endpoint> or --provider-config <path>",
+                )
             }
 
             config.mode == ProviderMode.EDITOR &&
@@ -217,7 +224,8 @@ class LanguageSupportFactory(
                 options.hostChannelProvider == null &&
                 config.hostChannelConfig == null -> {
                 ContractError.PreconditionFailed(
-                    "Editor semantic mode requires hostChannelConfig or a HostSemanticChannel",
+                    "Editor semantic mode for language '${descriptor.id}' requires hostChannelConfig or a HostSemanticChannel; " +
+                        "configure a provider channel for '${descriptor.id}'",
                 )
             }
 
