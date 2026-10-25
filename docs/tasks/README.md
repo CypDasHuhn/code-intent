@@ -120,6 +120,16 @@ concurrently once their dependencies are done.
 | 093 | 12 | [V2 non-Kotlin syntax parity](093-v2-non-kotlin-parity.md) | done | 064, 065, 066, 072 | Remaining JS/TS/Vue/C#/C syntax, fact, and span parity. |
 | 094 | 12 | [V2 IPC payload parity](094-v2-ipc-payload-parity.md) | done | 065, 066, 079, 081 | Residual full IPC payload mismatches and renderer-projection coverage not owned by detection/composition tickets. |
 
+## Follow-up queue
+
+Post-cutover structural work. The engine is now the only product, and detection
+must be data/fact-driven rather than a hardcoded evaluator catalog.
+
+| id | name | status | depends-on | scope |
+|---|---|---|---|---|
+| 096 | [Engine at repository root and grouped module tree](096-engine-root-and-module-tree.md) | todo | 085 | Remove the engine wrapper, delete stale build leftovers, group modules into contracts/analysis/sources/orchestration/apps/tests. |
+| 095 | [Language-neutral default rulepacks](095-language-neutral-default-rulepacks.md) | todo | 096 | Rename packs to default-rulepacks, one directory per pack; no language/symbol knowledge in rule code; facts behind languages, symbols in defaults. |
+
 ## Resolved decisions
 
 Pinned before implementation. They refine architecture.md where it is ambiguous
