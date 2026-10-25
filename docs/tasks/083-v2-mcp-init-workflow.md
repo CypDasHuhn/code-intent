@@ -1,6 +1,6 @@
 ---
 name: V2 MCP repo init workflow
-status: todo
+status: done
 depends-on: [082]
 reviewers: [correctness, architecture]
 ---

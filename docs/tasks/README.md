@@ -105,7 +105,7 @@ concurrently once their dependencies are done.
 | 080 | 6 | [V2 CLI app](080-v2-cli.md) | done | 078 | Batch CLI over runtime. |
 | 081 | 6 | [V2 live server app](081-v2-server.md) | done | 078, 079 | Editor daemon and live document state. |
 | 082 | 6 | [V2 MCP tool server](082-v2-mcp-tool-server.md) | done | 068, 078 | MCP tools/resources for analysis and knowledge. |
-| 083 | 7 | [V2 MCP repo init workflow](083-v2-mcp-init-workflow.md) | todo | 082 | Resumable agent-driven init and pattern hypotheses. |
+| 083 | 7 | [V2 MCP repo init workflow](083-v2-mcp-init-workflow.md) | done | 082 | Resumable agent-driven init and pattern hypotheses. |
 | 084 | 8 | [V2 parity and integration suite](084-v2-parity-integration.md) | todo | 066, 080, 081, 083 | Corpus, protocol, CLI, server, and MCP parity. |
 | 085 | 9 | [V1 to V2 cutover](085-v2-cutover.md) | todo | 084 | Promote V2, drop suffixes, delete V1. |
 | 086 | 10 | [Version the external renderer protocol](086-external-protocol-versioning.md) | todo | 085 | Explicit protocol version and compatibility contract. |
