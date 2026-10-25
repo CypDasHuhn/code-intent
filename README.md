@@ -25,8 +25,9 @@ This note here is the last Human-written lines in this repository.
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`analysis-engine/`](analysis-engine) | Kotlin engine. Manifest packs, deterministic core, tree-sitter syntax adapter, mandatory semantic provider, persisted knowledge, runtime orchestration, batch CLI, live Unix-socket daemon, and MCP server. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# language support. |
 
-The Neovim client is a separate repository, `code-intent.nvim` (sibling checkout
-at `../code-intent.nvim`). This repository publishes the versioned renderer
+The Neovim client lives in
+[`code-intent.nvim`](https://github.com/CypDasHuhn/code-intent.nvim) (sibling
+checkout at `../code-intent.nvim`). This repository publishes the versioned renderer
 protocol in [`docs/ipc/PROTOCOL.md`](docs/ipc/PROTOCOL.md) and
 [`analysis-engine/ipc/protocol.schema.json`](analysis-engine/ipc/protocol.schema.json).
 It contains no Neovim code and runs no renderer tests.
@@ -85,6 +86,7 @@ just smoke
 just tags /path/to/project
 ```
 
-Renderer development and tests live in the external `code-intent.nvim`
-repository; see [`docs/ipc/PROTOCOL.md`](docs/ipc/PROTOCOL.md) for the pinned
-protocol contract.
+Renderer development and tests live in the external
+[`code-intent.nvim`](https://github.com/CypDasHuhn/code-intent.nvim) repository;
+see [`docs/ipc/PROTOCOL.md`](docs/ipc/PROTOCOL.md) for the pinned protocol
+contract.
