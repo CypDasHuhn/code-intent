@@ -61,6 +61,7 @@ data class RuleSpec(
 data class CompositionSpec(
     val derivativeUse: DerivativeUseSpec? = null,
     val scaffolds: ScaffoldSpec? = null,
+    val pureAnnotations: List<String> = emptyList(),
 )
 
 @Serializable

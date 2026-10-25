@@ -8,4 +8,8 @@ dependencies {
     implementation(project(":packs"))
     implementation(project(":knowledge"))
     implementation(project(":ai"))
+
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
+    testImplementation(project(":test-fixtures"))
 }

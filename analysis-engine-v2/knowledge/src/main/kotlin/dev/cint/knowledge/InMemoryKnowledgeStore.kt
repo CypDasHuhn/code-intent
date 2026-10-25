@@ -71,6 +71,7 @@ class InMemoryKnowledgeStore private constructor(
                     packOrigins = packOrigins.entries
                         .sortedBy { it.key }
                         .associateTo(LinkedHashMap()) { it.key to it.value },
+                    materialized = hasStore,
                     timestamp = timestamp,
                 ),
             )
@@ -258,6 +259,7 @@ class InMemoryKnowledgeStore private constructor(
             }
 
             val winners = defaults
+                .filter { KnowledgeStatusPolicy.eligible(it.status) }
                 .sortedWith(packDefaultPrecedence)
                 .distinctBy { it.selector.identityKey }
             if (winners.isEmpty()) {

@@ -56,6 +56,7 @@ class FakeKnowledgeStore(
                 spanOverrides = overrides.values.sortedBy { it.selector.identityKey },
                 patternHypotheses = hypotheses.values.sortedBy { it.selector.identityKey },
                 packOrigins = origins.toSortedMap(),
+                materialized = isMaterialized,
                 timestamp = clock.epochMillis(),
             ),
         )
@@ -172,7 +173,8 @@ class FakeKnowledgeStore(
         recorder.record("knowledge.materializeDefaults", "count=${defaults.size}")
         val checked = cancellation.throwIfCancelled()
         if (checked.isFailure) return checked
-        defaults.sortedBy { it.selector.identityKey }.forEach { default ->
+        defaults.filter { it.status != dev.cint.contracts.data.Status.REJECTED && it.status != dev.cint.contracts.data.Status.SUPPRESSED }
+            .sortedBy { it.selector.identityKey }.forEach { default ->
             val key = default.selector.identityKey
             if (key !in annotations) {
                 annotations[key] = default.toFunctionAnnotation()

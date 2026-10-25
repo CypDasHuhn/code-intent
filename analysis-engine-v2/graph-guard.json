@@ -53,6 +53,7 @@
     ["integration-tests", "cli"],
     ["integration-tests", "server"],
     ["integration-tests", "mcp"],
-    ["integration-tests", "test-fixtures"]
+    ["integration-tests", "test-fixtures"],
+    ["intent-pipeline", "test-fixtures"]
   ]
 }

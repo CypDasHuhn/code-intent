@@ -13,13 +13,19 @@ object KnowledgeLookup {
     ): Set<Intent> {
         if (overrideSelector != null) {
             val override = snapshot.spanOverrides
-                .firstOrNull { it.selector.identityKey == overrideSelector.identityKey }
+                .firstOrNull {
+                    it.selector.identityKey == overrideSelector.identityKey &&
+                        KnowledgeStatusPolicy.eligible(it.status)
+                }
             if (override != null) {
                 return override.intents.toSet()
             }
         }
         return snapshot.functionAnnotations
-            .firstOrNull { it.selector.identityKey == functionSelector.identityKey }
+            .firstOrNull {
+                it.selector.identityKey == functionSelector.identityKey &&
+                    KnowledgeStatusPolicy.eligible(it.status)
+            }
             ?.intents
             ?.toSet()
             ?: emptySet()

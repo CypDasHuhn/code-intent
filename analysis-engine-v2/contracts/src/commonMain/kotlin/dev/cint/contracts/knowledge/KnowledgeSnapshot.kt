@@ -12,6 +12,7 @@ data class KnowledgeSnapshot(
     val spanOverrides: List<SpanOverride>,
     val patternHypotheses: List<PatternHypothesis>,
     val packOrigins: Map<String, PackOrigin> = emptyMap(),
+    val materialized: Boolean = false,
     @Required
     @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val version: Int = SUPPORTED_VERSION,

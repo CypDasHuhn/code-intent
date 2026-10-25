@@ -414,6 +414,41 @@ class InMemoryKnowledgeStoreTest {
     }
 
     @Test
+    fun rejectedAndSuppressedKnowledgeCannotWinLookupOrMaterialization() {
+        val functionSelector = FunctionSelector(qualifiedName = "a")
+        val spanSelector = SpanSelector("A.kt", Span(2, 0, 2, 5), "hash")
+        val rejectedOverride = spanOverride(spanSelector).copy(status = Status.REJECTED)
+        val suppressedOverride = spanOverride(spanSelector).copy(status = Status.SUPPRESSED)
+        val accepted = annotation(functionSelector, setOf(Intents.LOOKUP))
+
+        assertEquals(
+            setOf(Intents.LOOKUP),
+            KnowledgeLookup.effectiveIntents(
+                snapshot(annotations = listOf(accepted), overrides = listOf(rejectedOverride, suppressedOverride)),
+                functionSelector,
+                spanSelector,
+            ),
+        )
+        assertEquals(
+            emptySet(),
+            KnowledgeLookup.effectiveIntents(
+                snapshot(annotations = listOf(accepted.copy(status = Status.REJECTED))),
+                functionSelector,
+            ),
+        )
+
+        val store = InMemoryKnowledgeStore.empty(clock)
+        store.materializeDefaults(
+            listOf(
+                packDefault(functionSelector, setOf(Intents.SEARCH)).copy(status = Status.REJECTED),
+                packDefault(FunctionSelector(qualifiedName = "b"), setOf(Intents.VALIDATION))
+                    .copy(status = Status.SUPPRESSED),
+            ),
+        )
+        assertTrue(store.functionAnnotations().getOrThrow().isEmpty())
+    }
+
+    @Test
     fun snapshotsAreStableAndVersioned() {
         val store = InMemoryKnowledgeStore.empty(clock)
         store.setFunctionAnnotation(annotation(FunctionSelector(qualifiedName = "b")))
