@@ -1,0 +1,73 @@
+{
+  "rules": {
+    "logging:logging": {
+      "kind": "logging",
+      "exactCalls": [
+        "println",
+        "print",
+        "writeline",
+        "write",
+        "writeerror"
+      ],
+      "receiverQualifiers": [
+        "System.out",
+        "System.err",
+        "console",
+        "Console",
+        "Console.Error",
+        "Debug",
+        "Trace"
+      ],
+      "methods": [
+        "info",
+        "debug",
+        "warn",
+        "error",
+        "trace",
+        "log",
+        "verbose",
+        "fatal",
+        "loginformation",
+        "logwarning",
+        "logerror",
+        "logdebug",
+        "logtrace"
+      ],
+      "receiverNames": [
+        "log",
+        "logger",
+        "LOG",
+        "LOGGER",
+        "Logger",
+        "_log",
+        "_logger"
+      ],
+      "guardNames": [
+        "loggingEnabled",
+        "logEnabled",
+        "debugEnabled",
+        "logging",
+        "IsEnabled"
+      ],
+      "factories": [
+        "LoggerFactory.getLogger",
+        "KotlinLogging.logger",
+        "LogManager.getLogger",
+        "Logger.getLogger",
+        "CreateLogger",
+        "GetLogger",
+        "createLogger",
+        "pino"
+      ],
+      "imports": [
+        "org.slf4j",
+        "mu.KotlinLogging",
+        "java.util.logging",
+        "Microsoft.Extensions.Logging",
+        "Serilog",
+        "NLog",
+        "log4net"
+      ]
+    }
+  }
+}

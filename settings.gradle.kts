@@ -3,7 +3,7 @@ rootProject.name = "code-intent"
 val moduleIncludes = mutableListOf(
     ":contracts",
     ":core",
-    ":packs",
+    ":default-rulepacks",
     ":index",
     ":knowledge",
     ":knowledge-persistence",
@@ -24,7 +24,7 @@ include(moduleIncludes)
 
 project(":contracts").projectDir = file("contracts")
 project(":core").projectDir = file("analysis/core")
-project(":packs").projectDir = file("analysis/packs")
+project(":default-rulepacks").projectDir = file("analysis/default-rulepacks")
 project(":index").projectDir = file("sources/index")
 project(":knowledge").projectDir = file("analysis/knowledge")
 project(":knowledge-persistence").projectDir = file("analysis/knowledge-persistence")

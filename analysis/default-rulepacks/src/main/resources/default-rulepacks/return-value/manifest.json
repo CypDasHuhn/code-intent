@@ -1,0 +1,8 @@
+{
+  "id": "return-value",
+  "name": "Return value",
+  "version": "1.0.0",
+  "description": "Returned expressions and literals",
+  "defaultEnabled": true,
+  "dependencies": []
+}

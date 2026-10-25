@@ -34,12 +34,12 @@ source / buffer
 |---|---|---|
 | `contracts` | DTOs, ports, manifests, wire messages | adapters, runtime, apps |
 | `core` | deterministic kernel, scheduler, composition | parser, LSP, filesystem, network |
-| `packs` | manifest packs, playbooks, defaults | core, knowledge, adapters |
-| `index` | change detection, fact cache | core, packs, languages, adapters |
+| `default-rulepacks` | language-neutral manifests, playbooks, typed rule data, defaults | core, knowledge, adapters |
+| `index` | change detection, fact cache | core, default-rulepacks, languages, adapters |
 | `knowledge` | materialized knowledge and mutation | core, index, adapters, apps |
 | `knowledge-persistence` | JSON/checkpoint adapters | core, runtime, apps |
 | `languages` | language descriptor to adapter binding | core, index, runtime |
-| `syntax-treesitter` | tree-sitter parsing and facts | core, packs, languages |
+| `syntax-treesitter` | tree-sitter parsing and facts | core, default-rulepacks, languages |
 | `lsp` | semantic provider implementations | core, packs, languages |
 | `intent-pipeline` | pack selection, plans, knowledge resolution | runtime, index, adapters, IPC |
 | `ai` | fallback proposals | core, packs, index, knowledge |

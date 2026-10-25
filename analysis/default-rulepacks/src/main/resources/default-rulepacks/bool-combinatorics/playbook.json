@@ -1,0 +1,9 @@
+{
+  "packId": "bool-combinatorics",
+  "rules": [
+    {
+      "id": "bool-combinatorics:bool-combinatorics",
+      "owns": "BOOL_COMBINATORICS"
+    }
+  ]
+}

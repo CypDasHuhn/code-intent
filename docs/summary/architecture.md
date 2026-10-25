@@ -1,7 +1,7 @@
 # Architecture
 
 CodeIntent is a fixed analysis hull with loadable detection and persisted
-knowledge. Core owns scheduling and composition; packs own detection data;
+knowledge. Core owns scheduling and composition; default rulepacks own detection data;
 knowledge owns project-specific function contracts.
 
 ```text
@@ -10,7 +10,7 @@ source
        -> tree-sitter syntax facts
        -> semantic provider (LSP) types
   -> index (hashes, cache, incremental facts)
-  -> intent-pipeline (packs + knowledge + core + optional fallback AI)
+  -> intent-pipeline (default rulepacks + knowledge + core + optional fallback AI)
   -> runtime
        -> CLI artifact / live protocol / MCP tools
 ```
@@ -26,7 +26,7 @@ canonical module tree; this summary does not restate it.
 |---|---|
 | `contracts` | Data model and narrow ports: intents, facts, annotations, candidates, knowledge DTOs, manifests, IPC/MCP. |
 | `core` | Scheduler, strata, fixpoint, capability view, annotation store, composition. |
-| `packs` | Manifest packs, playbooks, matchers, and seed defaults. |
+| `default-rulepacks` | Language-neutral pack manifests, playbooks, rule data, and seed defaults. |
 | `index` | File hashing, incremental fact cache, dependency tracking. |
 | `knowledge` | Function annotations, span overrides, hypotheses, pack defaults, mutation. |
 | `knowledge-persistence` | JSON snapshot and init-checkpoint adapters. |
@@ -44,8 +44,7 @@ Dependency direction: `contracts` <- `core` <- `intent-pipeline` <- `runtime` <-
 apps. `languages` is the only module that depends on `syntax-treesitter` and
 `lsp`. The graph guard enforces this.
 
-The canonical grouped tree, the 063 supersession note, and the 095
-`:packs`/`:default-rulepacks` rename plan live in
+The canonical grouped tree and the 063 supersession note live in
 [`docs/rewrite/module-graph.md`](../rewrite/module-graph.md#project-tree).
 
 ## Rule contract and scheduler

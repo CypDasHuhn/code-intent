@@ -1,0 +1,13 @@
+{
+  "packId": "data-access",
+  "rules": [
+    {
+      "id": "data-access:search",
+      "owns": "SEARCH"
+    },
+    {
+      "id": "data-access:lookup",
+      "owns": "LOOKUP"
+    }
+  ]
+}

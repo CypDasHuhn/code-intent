@@ -1,0 +1,54 @@
+{
+  "rules": {
+    "error-handling:error-handling": {
+      "kind": "error",
+      "exactCalls": [
+        "require",
+        "requirenotnull",
+        "check",
+        "checknotnull",
+        "error",
+        "todo",
+        "assert",
+        "invariant"
+      ],
+      "excludedCalls": [
+        "Error",
+        "Exception"
+      ],
+      "methods": [
+        "info",
+        "debug",
+        "warn",
+        "error",
+        "trace",
+        "log",
+        "verbose",
+        "fatal",
+        "loginformation",
+        "logwarning",
+        "logerror",
+        "logdebug",
+        "logtrace"
+      ],
+      "receiverNames": [
+        "log",
+        "logger",
+        "LOG",
+        "LOGGER",
+        "Logger",
+        "_log",
+        "_logger"
+      ],
+      "receiverQualifiers": [
+        "System.out",
+        "System.err",
+        "console",
+        "Console",
+        "Console.Error",
+        "Debug",
+        "Trace"
+      ]
+    }
+  }
+}

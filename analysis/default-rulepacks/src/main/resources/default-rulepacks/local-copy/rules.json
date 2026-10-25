@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "local-copy:local-copy": {
+      "kind": "local-copy",
+      "localCopyCalls": [
+        "copy",
+        "clone",
+        "toList",
+        "toSet",
+        "toMutableList",
+        "toMutableMap",
+        "toMutableSet",
+        "toArray",
+        "toQueue",
+        "toStack"
+      ],
+      "fieldPrefixes": [
+        "m_",
+        "s_",
+        "f_"
+      ],
+      "fieldReceiverPrefix": "this.",
+      "fieldUnderscorePrefix": "_"
+    }
+  }
+}

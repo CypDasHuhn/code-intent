@@ -1,0 +1,14 @@
+{
+  "packId": "validation",
+  "rules": [
+    {
+      "id": "validation:validation",
+      "owns": "VALIDATION",
+      "reads": [
+        "BOOKKEEPING",
+        "DATA_MODIFY",
+        "LOCAL_VALUE_MODIFY"
+      ]
+    }
+  ]
+}

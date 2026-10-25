@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "validation:validation": {
+      "kind": "validation",
+      "predicateCalls": [
+        "none",
+        "any",
+        "all",
+        "isempty",
+        "isnotempty",
+        "isblank",
+        "isnotblank",
+        "isnullorblank",
+        "isnullorempty",
+        "contains",
+        "containskey",
+        "containsvalue",
+        "startswith",
+        "endswith",
+        "matches"
+      ],
+      "predicatePrefixes": [
+        "is",
+        "has",
+        "Is",
+        "Has"
+      ],
+      "directive": "validation"
+    }
+  }
+}

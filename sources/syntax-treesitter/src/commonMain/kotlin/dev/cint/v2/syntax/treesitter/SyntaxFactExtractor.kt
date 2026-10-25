@@ -1,24 +1,34 @@
 package dev.cint.v2.syntax.treesitter
 
+import dev.cint.contracts.data.Span
 import dev.cint.contracts.facts.CallFact
+import dev.cint.contracts.facts.ClassFact
+import dev.cint.contracts.facts.CoalesceFact
 import dev.cint.contracts.facts.CommentFact
 import dev.cint.contracts.facts.CommentKind
+import dev.cint.contracts.facts.CreationFact
 import dev.cint.contracts.facts.DeclarationFact
 import dev.cint.contracts.facts.DeclarationKind
+import dev.cint.contracts.facts.ExitFact
 import dev.cint.contracts.facts.FactBatch
 import dev.cint.contracts.facts.FunctionFact
 import dev.cint.contracts.facts.GuardFact
 import dev.cint.contracts.facts.GuardKind
 import dev.cint.contracts.facts.IfFact
 import dev.cint.contracts.facts.ImportFact
+import dev.cint.contracts.facts.JumpKind
+import dev.cint.contracts.facts.ParameterFact
 import dev.cint.contracts.facts.PropertyFact
 import dev.cint.contracts.facts.ReferenceFact
 import dev.cint.contracts.facts.ReturnFact
 import dev.cint.contracts.facts.ScopeFact
 import dev.cint.contracts.facts.ScopeKind
+import dev.cint.contracts.facts.StatementKind
 import dev.cint.contracts.facts.SyntaxNode
 import dev.cint.contracts.facts.SyntaxTree
 import dev.cint.contracts.facts.TryFact
+import dev.cint.contracts.facts.ValueFact
+import dev.cint.contracts.facts.ValueKind
 import dev.cint.contracts.facts.WriteFact
 import dev.cint.contracts.facts.WriteKind
 import dev.cint.contracts.util.ContractError
@@ -388,7 +398,7 @@ private object Profiles {
             importKinds = javascript.importKinds,
         )
 
-    fun forLanguage(language: String): LanguageProfile? =
+    fun forProfile(language: String): LanguageProfile? =
         when (language) {
             "kotlin" -> kotlin
             "csharp" -> csharp
@@ -422,10 +432,328 @@ private val TYPE_CONTEXT_KINDS =
         "supertype",
     )
 
+private val REJECTION_TEXTS =
+    setOf(
+        "null",
+        "undefined",
+        "false",
+        "0",
+        "-1",
+        "\"\"",
+        "''",
+        "[]",
+        "{}",
+        "emptyList()",
+        "emptyMap()",
+        "emptySet()",
+        "listOf()",
+        "mapOf()",
+        "setOf()",
+        "arrayOf()",
+        "String.Empty",
+    )
+private val CONSTANT_COMPARISON = Regex("""^(?:true|false|-?\d+)\s*(?:==|!=)\s*(?:true|false|-?\d+)$""")
+private val BARE_LABELED_RETURN = Regex("""^return@[A-Za-z_][A-Za-z0-9_]*$""")
+private val DIRECTIVE = Regex("""cint\s*:\s*([A-Za-z0-9_-]+)""", RegexOption.IGNORE_CASE)
+private val SIMPLE_IDENTIFIER = Regex("""^[A-Za-z_$][A-Za-z0-9_$]*$""")
+private val COALESCE_TOKENS = setOf("??", "?:")
+private val PRIMARY_CONSTRUCTOR =
+    Regex(
+        """\b(?:class|record)\s+\w+(?:<[^>]*>)?(?:\s*@[A-Za-z_][\w.]*(?:\s*\([^)]*\))?)*\s*(?:(?:public|private|protected|internal)\s+)?(?:constructor\s*)?\(([^)]*)\)""",
+    )
+private val CLASS_NAME = Regex("""\b(?:class|object|interface|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)""")
+private val FUNCTION_PARAMETERS = Regex("""^[^(]*\(([^)]*)\)""")
+
+private fun annotationName(text: String): String =
+    text
+        .trim()
+        .trim('[', ']')
+        .removePrefix("@")
+        .substringBefore('(')
+        .trim()
+        .substringAfterLast('.')
+        .substringAfterLast(':')
+
+private fun tokenize(value: String): List<String> {
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+
+    fun flush() {
+        if (current.isNotEmpty()) {
+            tokens += current.toString().lowercase()
+            current.clear()
+        }
+    }
+    for (index in value.indices) {
+        val character = value[index]
+        if (!character.isLetterOrDigit()) {
+            flush()
+            continue
+        }
+        if (current.isNotEmpty()) {
+            val previous = value[index - 1]
+            val next = value.getOrNull(index + 1)
+            if ((previous.isLowerCase() || previous.isDigit()) && character.isUpperCase()) flush()
+            if (previous.isUpperCase() && character.isUpperCase() && next != null && next.isLowerCase()) flush()
+        }
+        current.append(character)
+    }
+    flush()
+    return tokens
+}
+
+private fun splitParameters(parameters: String): List<String> {
+    val result = mutableListOf<String>()
+    var angle = 0
+    var parens = 0
+    var brackets = 0
+    var braces = 0
+    var start = 0
+    for (index in parameters.indices) {
+        when (parameters[index]) {
+            '<' -> {
+                angle++
+            }
+
+            '>' -> {
+                if (angle > 0) angle--
+            }
+
+            '(' -> {
+                parens++
+            }
+
+            ')' -> {
+                if (parens > 0) parens--
+            }
+
+            '[' -> {
+                brackets++
+            }
+
+            ']' -> {
+                if (brackets > 0) brackets--
+            }
+
+            '{' -> {
+                braces++
+            }
+
+            '}' -> {
+                if (braces > 0) braces--
+            }
+
+            ',' -> {
+                if (angle == 0 && parens == 0 && brackets == 0 && braces == 0) {
+                    result += parameters.substring(start, index).trim()
+                    start = index + 1
+                }
+            }
+        }
+    }
+    result += parameters.substring(start).trim()
+    return result.filter { it.isNotEmpty() }
+}
+
+private fun parameterText(text: String): String? {
+    val open = text.indexOf('(')
+    if (open < 0) return null
+    var depth = 0
+    for (index in open until text.length) {
+        when (text[index]) {
+            '(' -> {
+                depth++
+            }
+
+            ')' -> {
+                depth--
+                if (depth == 0) return text.substring(open + 1, index)
+            }
+        }
+    }
+    return null
+}
+
+private fun trimmedDeclarationEnd(node: SyntaxNode): Int {
+    val text = node.text
+    return if (text.trimEnd().endsWith(";")) node.endByte - 1 else node.endByte
+}
+
+private fun trimmedDeclarationSpan(node: SyntaxNode): Span {
+    val end = trimmedDeclarationEnd(node)
+    return if (end == node.endByte) {
+        node.span
+    } else {
+        Span(node.startLine, node.startCol, node.endLine, (node.endCol - 1).coerceAtLeast(0))
+    }
+}
+
+private fun conditionNames(text: String): List<String> =
+    Regex("""[A-Za-z_$][A-Za-z0-9_$]*""")
+        .findAll(text)
+        .map { it.value }
+        .distinct()
+        .toList()
+
+private fun trimmedConditionStart(
+    text: String,
+    startByte: Int,
+    startCol: Int,
+): Pair<Int, Int> {
+    var value = text.trim()
+    var byte = startByte
+    var col = startCol
+    while (value.startsWith("(") && value.endsWith(")")) {
+        value = value.substring(1, value.length - 1).trim()
+        byte++
+        col++
+    }
+    return byte to col
+}
+
+private fun trimmedConditionEnd(
+    text: String,
+    endByte: Int,
+    endCol: Int,
+): Pair<Int, Int> {
+    var value = text.trim()
+    var byte = endByte
+    var col = endCol
+    while (value.startsWith("(") && value.endsWith(")")) {
+        value = value.substring(1, value.length - 1).trim()
+        byte--
+        col--
+    }
+    return byte to col
+}
+
+private fun parameterName(parameter: String): String? =
+    parameter
+        .substringBefore(':')
+        .substringBefore('=')
+        .trim()
+        .split(Regex("\\s+"))
+        .lastOrNull()
+        ?.takeIf { it.isNotBlank() }
+
+private fun parameterDefault(parameter: String): String? {
+    val assignment = parameter.indexOf('=')
+    if (assignment < 0) return null
+    return parameter.substring(assignment + 1).trim().ifEmpty { null }
+}
+
+private fun parameterType(parameter: String): String? {
+    val assignment = parameter.indexOf('=')
+    val signature = if (assignment >= 0) parameter.substring(0, assignment) else parameter
+    val colon = signature.indexOf(':')
+    if (colon >= 0) return signature.substring(colon + 1).trim().ifEmpty { null }
+    return Regex("""^(.+?)\s+[A-Za-z_][A-Za-z0-9_]*$""")
+        .find(signature.trim())
+        ?.groupValues
+        ?.get(1)
+        ?.trim()
+        ?.ifEmpty { null }
+}
+
+private fun typeNames(type: String?): List<String> {
+    if (type.isNullOrBlank()) return emptyList()
+    return Regex("""[A-Za-z_][A-Za-z0-9_.]*""").findAll(type).map { it.value }.toList()
+}
+
+private fun returnLiteral(text: String): Boolean {
+    val value = text.trim()
+    if (value == "true" || value in REJECTION_TEXTS) return true
+    if (value.startsWith("\"") || value.startsWith("'")) return true
+    if (value.startsWith("`")) return !value.contains("\${")
+    return value.toLongOrNull() != null || value.toDoubleOrNull() != null
+}
+
+private fun isFunctionTyped(
+    type: String?,
+    default: String?,
+): Boolean {
+    val declared = type.orEmpty()
+    val functionMarkers =
+        listOf(
+            "->",
+            "=>",
+            "function",
+            "Func<",
+            "Action<",
+            "Consumer<",
+            "Supplier<",
+            "Predicate<",
+            "Callable<",
+            "Runnable",
+            "BiFunction",
+            "BiConsumer",
+            "UnaryOperator",
+            "Function<",
+            "BiPredicate<",
+        )
+    if (functionMarkers.any { declared.contains(it) }) return true
+    val defaultMarkers = setOf("::", "=>", "->", "{")
+    return defaultMarkers.any { default.orEmpty().contains(it) }
+}
+
+private fun referencedPaths(value: String?): List<String> {
+    if (value.isNullOrBlank()) return emptyList()
+    return Regex("""[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)+""")
+        .findAll(value.replace("::", "."))
+        .map { it.value }
+        .toList()
+}
+
+private fun trimmedSpan(node: SyntaxNode): Span {
+    var value = node.text.trim()
+    var start = node.startByte
+    var startCol = node.startCol
+    var end = node.endByte
+    var endCol = node.endCol
+    while (value.startsWith("(") && value.endsWith(")")) {
+        value = value.substring(1, value.length - 1).trim()
+        start++
+        startCol++
+        end--
+        endCol--
+    }
+    return Span(node.startLine, startCol, node.endLine, endCol)
+}
+
+private fun isConstantCondition(text: String): Boolean {
+    val value = text.trim()
+    if (value == "true" || value == "false") return true
+    return CONSTANT_COMPARISON.matches(value)
+}
+
+private fun withinNode(
+    node: SyntaxNode,
+    container: SyntaxNode,
+): Boolean = node.startByte >= container.startByte && node.endByte <= container.endByte
+
+private fun expressionSpan(
+    statement: SyntaxNode,
+    expression: SyntaxNode,
+): Span? {
+    val statementText = statement.text
+    val expressionText = expression.text
+    val index = statementText.indexOf(expressionText)
+    if (index < 0) return null
+    val consumed = statementText.substring(0, index + expressionText.length)
+    val lines = consumed.split('\n')
+    return Span(
+        statement.startLine,
+        statement.startCol,
+        statement.startLine + lines.size - 1,
+        if (lines.size == 1) statement.startCol + consumed.length else lines.last().length,
+    )
+}
+
 internal object SyntaxFactExtractor {
     fun extract(
         tree: SyntaxTree,
         queryIds: List<String>,
+        profileId: String = tree.language,
     ): ContractResult<FactBatch> {
         val requested =
             if (queryIds.isEmpty()) {
@@ -443,7 +771,7 @@ internal object SyntaxFactExtractor {
                 parsed
             }
         val profile =
-            Profiles.forLanguage(tree.language)
+            Profiles.forProfile(profileId) ?: Profiles.forProfile(tree.language)
                 ?: return ResultFactory.failure(
                     ContractError.InvalidInput(
                         "no syntax fact profile is registered for '${tree.language}'",
@@ -583,6 +911,91 @@ internal object SyntaxFactExtractor {
         val finallyNodes = nodes.filter { it.kind in profile.finallyKinds }
         val returnNodes = nodes.filter { it.kind in profile.returnKinds }
 
+        fun jumpKind(text: String): JumpKind? {
+            val value = text.trimStart()
+            return when {
+                value.startsWith("return@") -> JumpKind.RETURN
+                value.startsWith("return") -> JumpKind.RETURN
+                value.startsWith("throw") || value.startsWith("raise") -> JumpKind.THROW
+                value.startsWith("continue") -> JumpKind.CONTINUE
+                value.startsWith("break") -> JumpKind.BREAK
+                else -> null
+            }
+        }
+
+        fun isThrowNode(node: SyntaxNode): Boolean {
+            val value = node.text.trimStart()
+            return node.kind in setOf("throw_expression", "throw_statement", "raise_statement") ||
+                value.startsWith("throw ") ||
+                value.startsWith("raise ")
+        }
+
+        val exitNodes =
+            nodes
+                .filter { node ->
+                    node.kind in profile.returnKinds ||
+                        isThrowNode(node) ||
+                        (
+                            (node.kind.contains("statement") || node.kind.contains("expression")) &&
+                                jumpKind(node.text) in setOf(JumpKind.CONTINUE, JumpKind.BREAK)
+                        )
+                }.distinctBy { it.id }
+
+        fun returnExpression(node: SyntaxNode): SyntaxNode? =
+            childrenOf(node).firstOrNull {
+                it.text.trim() != "return" &&
+                    it.text.trim() != ";" &&
+                    it.text.trim() != "throw" &&
+                    it.text.trim() != "raise" &&
+                    !it.text.trim().startsWith("return@")
+            }
+
+        fun rejectionValue(expression: SyntaxNode?): Boolean {
+            if (expression == null) return true
+            val text = expression.text.trim()
+            return text in REJECTION_TEXTS
+        }
+
+        val exits =
+            if (FactCategory.RETURNS in requested || FactCategory.GUARDS in requested) {
+                exitNodes.mapNotNull { node ->
+                    val kind =
+                        jumpKind(node.text)
+                            ?: if (node.kind in profile.returnKinds) {
+                                JumpKind.RETURN
+                            } else {
+                                null
+                                    ?: return@mapNotNull null
+                            }
+                    val expression = if (kind == JumpKind.RETURN) returnExpression(node) else null
+                    ExitFact(
+                        nodeId = node.id,
+                        kind = kind,
+                        expressionId = expression?.id,
+                        rejection =
+                            when (kind) {
+                                JumpKind.CONTINUE, JumpKind.BREAK, JumpKind.THROW -> true
+                                JumpKind.RETURN -> rejectionValue(expression)
+                            },
+                        guardIds =
+                            ancestorsOf(node)
+                                .filter { it.kind in profile.ifKinds || it.kind in profile.loopKinds }
+                                .map { it.id }
+                                .toList(),
+                        loopId = ancestorsOf(node).firstOrNull { it.kind in profile.loopKinds }?.id,
+                        handlerId = ancestorsOf(node).firstOrNull { it.kind in profile.catchKinds }?.id,
+                    )
+                }
+            } else {
+                emptyList()
+            }
+
+        fun exitsWithin(body: SyntaxNode?): List<String> =
+            body
+                ?.let { container ->
+                    exits.filter { exit -> byId[exit.nodeId]?.let { withinNode(it, container) } == true }.map { it.nodeId }
+                }.orEmpty()
+
         val scopes =
             if (FactCategory.SCOPES in requested) {
                 scopeNodes.map { node ->
@@ -604,20 +1017,85 @@ internal object SyntaxFactExtractor {
 
         fun owningScope(node: SyntaxNode): String? = ancestorsOf(node).firstOrNull { it.id in scopeIds }?.id
 
+        fun parameterNode(
+            container: SyntaxNode,
+            parameter: String,
+        ): String? {
+            val target = parameter.trim()
+            return descendantsOf(container)
+                .filter { it.text.trim() == target }
+                .minByOrNull { it.endByte - it.startByte }
+                ?.id
+                ?: container.id
+        }
+
+        fun parametersOf(
+            container: SyntaxNode,
+            parameters: String,
+        ): List<ParameterFact> =
+            splitParameters(parameters).map { parameter ->
+                val type = parameterType(parameter)
+                val default = parameterDefault(parameter)
+                ParameterFact(
+                    nodeId = parameterNode(container, parameter),
+                    name = parameterName(parameter),
+                    type = type,
+                    typeNames = typeNames(type),
+                    defaultValue = default,
+                    functionTyped = isFunctionTyped(type, default),
+                    referencedPaths = referencedPaths(default),
+                )
+            }
+
+        fun className(node: SyntaxNode): String? = CLASS_NAME.find(node.text)?.groupValues?.get(1)
+
+        fun constructorParameters(node: SyntaxNode): List<ParameterFact> {
+            val className = className(node) ?: return emptyList()
+            val name = firstIdentifier(node, skipAnnotations = true)?.text
+            val parameters =
+                if (name == className) {
+                    parameterText(node.text.removePrefix("constructor"))
+                } else {
+                    PRIMARY_CONSTRUCTOR.find(node.text)?.groupValues?.get(1)
+                } ?: return emptyList()
+            return parametersOf(node, parameters)
+        }
+
         val functions =
             if (FactCategory.FUNCTIONS in requested) {
                 functionNodes.map { node ->
                     val nameNode =
                         firstIdentifier(node, skipAnnotations = true)
                             ?.takeIf { it.startByte < (bodyOf(node)?.startByte ?: Int.MAX_VALUE) }
+                    val functionName = nameNode?.text
+                    val owner = declaringType(node)
+                    val constructor =
+                        node.kind.contains("constructor") ||
+                            (functionName != null && (functionName == owner || functionName == "constructor"))
+                    val parameters = parametersOf(node, parameterText(node.text).orEmpty())
                     FunctionFact(
                         nodeId = node.id,
-                        name = nameNode?.text,
+                        name = functionName,
                         nameNodeId = nameNode?.id,
                         bodyId = bodyOf(node)?.id,
-                        declaringType = declaringType(node),
+                        declaringType = owner,
                         signature = signature(node),
                         arity = parameterCount(node),
+                        parameters = parameters,
+                        constructor = constructor,
+                    )
+                }
+            } else {
+                emptyList()
+            }
+
+        val classes =
+            if (FactCategory.FUNCTIONS in requested || FactCategory.DECLARATIONS in requested) {
+                classNodes.map { node ->
+                    ClassFact(
+                        nodeId = node.id,
+                        name = className(node),
+                        constructorParameters = constructorParameters(node),
                     )
                 }
             } else {
@@ -647,7 +1125,13 @@ internal object SyntaxFactExtractor {
                         childrenOf(node).lastOrNull {
                             it.id != nameNode?.id && it.kind !in profile.bodyKinds && it.text != "="
                         }
-                    PropertyFact(node.id, nameNode?.text, nameNode?.id, initializer?.id)
+                    PropertyFact(
+                        node.id,
+                        nameNode?.text,
+                        nameNode?.id,
+                        initializer?.id,
+                        initializerIdentifier = initializer?.text?.trim()?.takeIf { SIMPLE_IDENTIFIER.matches(it) },
+                    )
                 }
             } else {
                 emptyList()
@@ -709,6 +1193,8 @@ internal object SyntaxFactExtractor {
                                         ?.trim()
                                         ?.substringAfterLast('.')
                                         ?.trim(),
+                                valueIdentifier = value?.text?.trim()?.takeIf { SIMPLE_IDENTIFIER.matches(it) },
+                                inLoopHeader = false,
                             )
                         }
 
@@ -724,6 +1210,10 @@ internal object SyntaxFactExtractor {
                                         ?.trim()
                                         ?.substringAfterLast('.')
                                         ?.trim(),
+                                inLoopHeader = node.parentId?.let(byId::get)?.kind in profile.loopKinds,
+                                loopIncrement =
+                                    node.parentId?.let(byId::get)?.kind in profile.loopKinds &&
+                                        node.text.contains("++"),
                             )
                         }
 
@@ -748,6 +1238,7 @@ internal object SyntaxFactExtractor {
                         nameNodeId = nameNode?.id,
                         annotations = annotationTexts,
                         annotationNodeIds = annotationIds,
+                        annotationNames = annotationTexts.map(::annotationName),
                         scopeId = owningScope(node),
                         writeIds =
                             writes
@@ -758,6 +1249,8 @@ internal object SyntaxFactExtractor {
                                     } ==
                                         true
                                 }.map { it.nodeId },
+                        trimmedEndSpan = trimmedDeclarationSpan(node),
+                        trimmedEndByte = trimmedDeclarationEnd(node),
                     )
                 }
             } else {
@@ -776,7 +1269,8 @@ internal object SyntaxFactExtractor {
                             else -> CommentKind.OTHER
                         }
                     val magic = if (text.contains("cint:")) text else null
-                    CommentFact(node.id, magic, kind)
+                    val directives = DIRECTIVE.findAll(text).map { it.groupValues[1].lowercase() }.toList()
+                    CommentFact(node.id, magic, kind, directives)
                 }
             } else {
                 emptyList()
@@ -799,14 +1293,31 @@ internal object SyntaxFactExtractor {
                     val trailingLambda =
                         callChildren.asReversed().firstOrNull { it.kind in profile.lambdaKinds }
                             ?: descendantsOf(node).lastOrNull { it.kind in profile.lambdaKinds }
+                    val calleeText = callee?.let { calleeName(it) }
+                    val receiverPath = receiver?.text?.trim()?.takeIf { it.isNotEmpty() }
+                    val receiverSegments =
+                        receiverPath
+                            ?.split('.')
+                            ?.map { it.substringBefore('(').substringBefore('[').trim() }
+                            ?.filter { it.isNotEmpty() }
+                            .orEmpty()
+                    val receiverName = receiverSegments.lastOrNull()
+                    val callPath = callee?.text.orEmpty()
                     CallFact(
                         nodeId = node.id,
                         siteId = callChildren.firstOrNull { it.kind in profile.callSuffixKinds }?.id ?: node.id,
-                        callee = callee?.let { calleeName(it) },
+                        callee = calleeText,
                         receiverId = receiver?.id,
                         path = callee?.text,
                         trailingLambdaId = trailingLambda?.id,
                         arity = argumentCount(node),
+                        calleeTokens = tokenize(calleeText.orEmpty()),
+                        receiverPath = receiverPath,
+                        receiverSegments = receiverSegments,
+                        receiverName = receiverName,
+                        receiverLeaf = receiverName?.trim('_'),
+                        pathSegments = tokenize(callPath),
+                        resolvedTarget = callPath,
                     )
                 }
             } else {
@@ -840,16 +1351,64 @@ internal object SyntaxFactExtractor {
         val guards =
             if (FactCategory.GUARDS in requested) {
                 ifNodes.map { node ->
+                    val condition = conditionOf(node)
                     GuardFact(
                         node.id,
                         GuardKind.CONDITIONAL,
-                        conditionOf(node)?.id,
+                        condition?.id,
                         bodiesOf(node).getOrNull(0)?.id,
                         bodiesOf(node).getOrNull(1)?.id,
+                        exitIds = exitsWithin(bodiesOf(node).getOrNull(0)) + exitsWithin(bodiesOf(node).getOrNull(1)),
+                        conditionSpan = condition?.let(::trimmedSpan),
+                        conditionNames = condition?.let { conditionNames(it.text) }.orEmpty(),
+                        conditionStartByte =
+                            condition?.let { trimmedConditionStart(it.text, it.startByte, it.startCol).first },
+                        conditionEndByte =
+                            condition?.let { trimmedConditionEnd(it.text, it.endByte, it.endCol).first },
+                        conditionConstant = condition?.let { isConstantCondition(it.text) } == true,
+                        conditionBoolean =
+                            condition?.text?.trim()?.let { text ->
+                                if (text ==
+                                    "true"
+                                ) {
+                                    true
+                                } else if (text == "false") {
+                                    false
+                                } else {
+                                    null
+                                }
+                            },
                     )
                 } +
                     loopNodes.map { node ->
-                        GuardFact(node.id, GuardKind.LOOP, conditionOf(node)?.id, bodiesOf(node).firstOrNull()?.id, null)
+                        val condition = conditionOf(node)
+                        GuardFact(
+                            node.id,
+                            GuardKind.LOOP,
+                            condition?.id,
+                            bodiesOf(node).firstOrNull()?.id,
+                            null,
+                            exitIds = exitsWithin(bodiesOf(node).firstOrNull()),
+                            conditionSpan = condition?.let(::trimmedSpan),
+                            conditionNames = condition?.let { conditionNames(it.text) }.orEmpty(),
+                            conditionStartByte =
+                                condition?.let { trimmedConditionStart(it.text, it.startByte, it.startCol).first },
+                            conditionEndByte =
+                                condition?.let { trimmedConditionEnd(it.text, it.endByte, it.endCol).first },
+                            conditionConstant = condition?.let { isConstantCondition(it.text) } == true,
+                            conditionBoolean =
+                                condition?.text?.trim()?.let { text ->
+                                    if (text ==
+                                        "true"
+                                    ) {
+                                        true
+                                    } else if (text == "false") {
+                                        false
+                                    } else {
+                                        null
+                                    }
+                                },
+                        )
                     }
             } else {
                 emptyList()
@@ -858,9 +1417,11 @@ internal object SyntaxFactExtractor {
         val returns =
             if (FactCategory.RETURNS in requested) {
                 returnNodes.map { node ->
+                    val kind = jumpKind(node.text) ?: JumpKind.RETURN
+                    val expression = if (kind == JumpKind.RETURN) returnExpression(node) else null
                     ReturnFact(
                         nodeId = node.id,
-                        expressionId = childrenOf(node).firstOrNull { it.text.trim() != "return" && it.text.trim() != ";" }?.id,
+                        expressionId = expression?.id,
                         guardIds =
                             ancestorsOf(
                                 node,
@@ -868,6 +1429,10 @@ internal object SyntaxFactExtractor {
                         loopId = ancestorsOf(node).firstOrNull { it.kind in profile.loopKinds }?.id,
                         handlerId = ancestorsOf(node).firstOrNull { it.kind in profile.catchKinds }?.id,
                         scopeId = owningScope(node),
+                        jumpKind = kind,
+                        rejection = rejectionValue(expression),
+                        labeled = BARE_LABELED_RETURN.matches(node.text.trim()),
+                        expressionSpan = expression?.let { expressionSpan(node, it) },
                     )
                 }
             } else {
@@ -949,7 +1514,6 @@ internal object SyntaxFactExtractor {
 
         val values =
             if (FactCategory.RETURNS in requested || FactCategory.IFS in requested || FactCategory.TRIES in requested) {
-                val rejectionTexts = setOf("null", "undefined", "false", "0", "-1", "\"\"", "''", "[]", "{}")
                 nodes.filter { it.parentId != null }.map { node ->
                     val subtree = sequenceOf(node) + descendantsOf(node)
                     val constant = subtree.none { child -> child.kind in profile.referenceKinds }
@@ -960,22 +1524,65 @@ internal object SyntaxFactExtractor {
                                 (child.kind in profile.incrementKinds && (child.text.contains("++") || child.text.contains("--")))
                         }
                     val text = node.text.trim()
-                    val literal = node.kind in profile.literalKinds || text in rejectionTexts
+                    val interpolatedTemplate = text.startsWith("`") && text.contains("\${")
+                    val literal = (!interpolatedTemplate && node.kind in profile.literalKinds) || text in REJECTION_TEXTS
                     val valueKind =
                         when {
-                            literal -> dev.cint.contracts.facts.ValueKind.LITERAL
-                            node.kind in profile.callKinds -> dev.cint.contracts.facts.ValueKind.CALL
-                            node.kind in profile.identifierKinds -> dev.cint.contracts.facts.ValueKind.IDENTIFIER
-                            else -> dev.cint.contracts.facts.ValueKind.OTHER
+                            literal -> ValueKind.LITERAL
+                            node.kind in profile.callKinds -> ValueKind.CALL
+                            node.kind in profile.identifierKinds -> ValueKind.IDENTIFIER
+                            else -> ValueKind.OTHER
                         }
-                    dev.cint.contracts.facts.ValueFact(
+                    ValueFact(
                         nodeId = node.id,
                         kind = valueKind,
                         constant = constant,
                         sideEffectFree = sideEffectFree,
-                        rejection = literal && text in rejectionTexts,
+                        rejection = literal && text in REJECTION_TEXTS,
                         booleanValue = if (literal && text in setOf("true", "false")) text == "true" else null,
+                        literalText = text.takeIf { literal },
+                        returnLiteral = returnLiteral(text),
+                        identifier =
+                            text.takeIf {
+                                valueKind == ValueKind.IDENTIFIER && SIMPLE_IDENTIFIER.matches(it)
+                            },
                     )
+                }
+            } else {
+                emptyList()
+            }
+
+        val coalesces =
+            if (FactCategory.GUARDS in requested || FactCategory.RETURNS in requested) {
+                nodes.mapNotNull { node ->
+                    val isCoalesce =
+                        node.kind == "elvis_expression" ||
+                            (
+                                node.kind == "binary_expression" &&
+                                    childrenOf(node).any { it.text.trim() in COALESCE_TOKENS }
+                            )
+                    if (!isCoalesce) return@mapNotNull null
+                    val children = childrenOf(node)
+                    val left = children.firstOrNull { it.text.trim() !in COALESCE_TOKENS }
+                    val right = children.lastOrNull { it.text.trim() !in COALESCE_TOKENS && it.id != left?.id }
+                    CoalesceFact(node.id, left?.id, right?.id)
+                }
+            } else {
+                emptyList()
+            }
+
+        val creations =
+            if (FactCategory.CALLS in requested || FactCategory.FUNCTIONS in requested) {
+                nodes.mapNotNull { node ->
+                    val text = node.text.trim()
+                    if (!text.startsWith("new ")) return@mapNotNull null
+                    val type =
+                        text
+                            .removePrefix("new ")
+                            .substringBefore('(')
+                            .substringBefore('<')
+                            .trim()
+                    type.takeIf { it.isNotEmpty() }?.let { CreationFact(node.id, it, typeNames(it)) }
                 }
             } else {
                 emptyList()
@@ -992,7 +1599,7 @@ internal object SyntaxFactExtractor {
                             .removePrefix("#include")
                             .trim()
                     val alias = text.split(Regex("\\s+as\\s+")).getOrNull(1)?.trim()
-                    ImportFact(node.id, path, alias)
+                    ImportFact(node.id, path, alias, tokenize(path))
                 }
             } else {
                 emptyList()
@@ -1027,6 +1634,10 @@ internal object SyntaxFactExtractor {
                 references = references,
                 statements = statements,
                 values = values,
+                exits = exits,
+                creations = creations,
+                classes = classes,
+                coalesces = coalesces,
             ),
         )
     }

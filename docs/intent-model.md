@@ -655,8 +655,9 @@ The current engine is the repository root. Key files:
   `KnowledgeChange`.
 - `analysis/core/src/main/kotlin/dev/cint/core/` — scheduler, strata,
   capability view, annotation store, and composition.
-- the `packs` module's bundled pack resource `packs/bundled-packs.json` —
-  manifest packs, playbooks, owned intents, and seed defaults.
+- the `default-rulepacks` module's per-pack resources under
+  `analysis/default-rulepacks/src/main/resources/default-rulepacks/<pack>/` —
+  manifests, playbooks, owned intents, typed rule data, and seed defaults.
 - `sources/index/` — hashing, incremental cache, and indexed source.
 - `analysis/knowledge/` and `analysis/knowledge-persistence/` —
   materialized knowledge semantics and JSON/checkpoint adapters.

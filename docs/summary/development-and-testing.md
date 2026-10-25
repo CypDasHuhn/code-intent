@@ -25,7 +25,7 @@ Engine:
 
 - `:contracts` — data model, serialization, ports, graph contracts.
 - `:core` — scheduler, strata, fixpoint, composition, annotation store.
-- `:packs` — manifests, defaults, pack catalog validation.
+- `:default-rulepacks` — language-neutral manifests, playbooks, rule data, defaults, and catalog validation.
 - `:index` — hashing, incremental cache, invalidation.
 - `:knowledge`, `:knowledge-persistence` — store semantics and JSON/checkpoint
   adapters.

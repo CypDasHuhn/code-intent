@@ -1,0 +1,11 @@
+{
+  "id": "validation",
+  "name": "Validation",
+  "version": "1.0.0",
+  "description": "Early-exit validation guards and validation helpers",
+  "defaultEnabled": true,
+  "dependencies": [
+    "bookkeeping",
+    "mutation"
+  ]
+}

@@ -1,0 +1,724 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "map"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "mapNotNull"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "mapValues"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "mapKeys"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "flatMap"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "filter"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "filterNot"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "filterIsInstance"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "filterNotNull"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "fold"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "reduce"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "collect"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "distinct"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "distinctBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "sorted"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "sortedBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "sortedWith"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "groupBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "groupingBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "associate"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "associateBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "associateWith"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "partition"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "take"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "drop"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "chunked"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "windowed"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "zip"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "flatten"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Select"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "SelectMany"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Where"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Aggregate"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Distinct"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "DistinctBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "OrderBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "ThenBy"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Skip"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Chunk"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "Concat"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToList"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToArray"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToDictionary"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToLookup"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "structuralPattern": "collection-transformation"
+      },
+      "intents": [
+        "DATA_TRANSFORMATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

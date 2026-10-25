@@ -1,0 +1,9 @@
+{
+  "packId": "logging",
+  "rules": [
+    {
+      "id": "logging:logging",
+      "owns": "LOGGING"
+    }
+  ]
+}

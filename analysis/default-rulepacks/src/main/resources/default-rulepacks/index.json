@@ -1,0 +1,18 @@
+{
+  "formatVersion": 1,
+  "packs": [
+    "logging",
+    "error-handling",
+    "bookkeeping",
+    "validation",
+    "data-access",
+    "normalization",
+    "data-transformation",
+    "mutation",
+    "service",
+    "return-value",
+    "chaining",
+    "local-copy",
+    "bool-combinatorics"
+  ]
+}

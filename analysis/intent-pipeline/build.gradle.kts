@@ -5,7 +5,7 @@ plugins {
 dependencies {
     implementation(project(":contracts"))
     implementation(project(":core"))
-    implementation(project(":packs"))
+    implementation(project(":default-rulepacks"))
     implementation(project(":knowledge"))
     implementation(project(":ai"))
 

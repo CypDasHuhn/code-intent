@@ -1,0 +1,20 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "structuralPattern": "local-copy"
+      },
+      "intents": [
+        "LOCAL_COPY"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

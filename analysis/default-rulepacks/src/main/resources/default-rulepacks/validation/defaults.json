@@ -1,0 +1,164 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "validate"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "validateOrThrow"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "isValid"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "isNullOrEmpty"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "isNullOrBlank"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "isNotEmpty"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "isNotBlank"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "requireValid"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "checkValid"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "structuralPattern": "early-exit-validation-guard"
+      },
+      "intents": [
+        "VALIDATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

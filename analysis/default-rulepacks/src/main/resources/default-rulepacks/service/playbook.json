@@ -1,0 +1,16 @@
+{
+  "packId": "service",
+  "rules": [
+    {
+      "id": "service:delegation",
+      "owns": "SERVICE_DELEGATION",
+      "optionalReads": [
+        "DATA_MODIFY"
+      ]
+    },
+    {
+      "id": "service:init",
+      "owns": "SERVICE_INIT"
+    }
+  ]
+}

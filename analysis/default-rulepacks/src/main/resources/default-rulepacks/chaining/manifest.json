@@ -1,0 +1,8 @@
+{
+  "id": "chaining",
+  "name": "Chaining",
+  "version": "1.0.0",
+  "description": "Receiver call chains",
+  "defaultEnabled": false,
+  "dependencies": []
+}

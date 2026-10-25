@@ -1,0 +1,750 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "findAll"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findOne"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findFirst"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findAny"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "search"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "query"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "filter"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "where"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "select"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "from"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "join"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "orderBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "groupBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "createQuery"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "createNativeQuery"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "executeQuery"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findMany"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findUnique"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findUniqueOrThrow"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findFirstOrThrow"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getResultList"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getSingleResult"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "firstOrDefault"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "singleOrDefault"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "toListAsync"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "findAsync"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "scan"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "structuralPattern": "token-prefix:findBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "structuralPattern": "token-prefix:getBy;except:getByKey"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "structuralPattern": "token-prefix:loadBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "structuralPattern": "token-prefix:searchBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "structuralPattern": "token-prefix:queryBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "structuralPattern": "token-prefix:findAllBy"
+      },
+      "intents": [
+        "SEARCH"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "getValue"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getOrDefault"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getOrElse"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "lookup"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "forKey"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getByKey"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "valueOf"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "fromCode"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "fromValue"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "fromName"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "fromString"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "fromKey"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "get",
+        "receiverType": "kotlin.collections.Map"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.3
+    },
+    {
+      "selector": {
+        "qualifiedName": "get",
+        "receiverType": "java.util.Map"
+      },
+      "intents": [
+        "LOOKUP"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.3
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "data-access",
+  "name": "Data access",
+  "version": "1.0.0",
+  "description": "Repository searches and keyed lookups",
+  "defaultEnabled": true,
+  "dependencies": []
+}

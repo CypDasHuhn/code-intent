@@ -21,10 +21,11 @@ import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import dev.cint.core.composition.CompositionPlan
 import dev.cint.core.engine.RuleEngine
+import dev.cint.rulepacks.DefaultRulePacks
 
 class DefaultIntentPipeline(
     packSource: RulePackSource,
-    private val ruleEvaluators: RuleEvaluatorRegistry = BundledRuleEvaluators.registry(),
+    private val ruleEvaluators: RuleEvaluatorRegistry = DefaultRulePacks.registry(),
     private val knowledgeInputs: KnowledgeInputResolver = PrecedenceKnowledgeInputResolver(),
     private val applyUnmaterializedDefaults: Boolean = true,
     private val enableCallChains: Boolean = true,

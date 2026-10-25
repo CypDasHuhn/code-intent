@@ -14,7 +14,8 @@ import dev.cint.contracts.ports.RuleSpec
 import dev.cint.contracts.ports.bindRulePlan
 import dev.cint.contracts.util.ContractError
 import dev.cint.core.engine.RuleEngine
-import dev.cint.packs.BundledRulePackSource
+import dev.cint.rulepacks.BundledRulePackSource
+import dev.cint.rulepacks.DefaultRulePacks
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

@@ -21,6 +21,10 @@ data class FactBatch(
     val references: List<ReferenceFact> = emptyList(),
     val statements: List<StatementFact> = emptyList(),
     val values: List<ValueFact> = emptyList(),
+    val exits: List<ExitFact> = emptyList(),
+    val creations: List<CreationFact> = emptyList(),
+    val classes: List<ClassFact> = emptyList(),
+    val coalesces: List<CoalesceFact> = emptyList(),
 ) {
     fun isEmpty(): Boolean =
         syntaxTree == null &&
@@ -28,7 +32,8 @@ data class FactBatch(
             comments.isEmpty() && scopes.isEmpty() && guards.isEmpty() &&
             returns.isEmpty() && properties.isEmpty() && functions.isEmpty() &&
             ifs.isEmpty() && tries.isEmpty() && imports.isEmpty() && references.isEmpty() &&
-            statements.isEmpty() && values.isEmpty()
+            statements.isEmpty() && values.isEmpty() && exits.isEmpty() && creations.isEmpty() &&
+            classes.isEmpty() && coalesces.isEmpty()
 }
 
 @Serializable

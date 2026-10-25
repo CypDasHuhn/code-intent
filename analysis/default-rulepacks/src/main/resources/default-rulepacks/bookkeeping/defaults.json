@@ -1,0 +1,36 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "structuralPattern": "@Bookkeeping"
+      },
+      "intents": [
+        "BOOKKEEPING"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "structuralPattern": "cint:bookkeeping"
+      },
+      "intents": [
+        "BOOKKEEPING"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    }
+  ]
+}

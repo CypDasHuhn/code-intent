@@ -1,0 +1,8 @@
+{
+  "id": "error-handling",
+  "name": "Error handling",
+  "version": "1.0.0",
+  "description": "Thrown errors and validation-style guard calls",
+  "defaultEnabled": true,
+  "dependencies": []
+}

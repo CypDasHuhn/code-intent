@@ -18,21 +18,25 @@ import org.treesitter.TSParser
 import org.treesitter.TSPoint
 import org.treesitter.TSTree
 
-actual fun createSyntaxEngine(language: String): SyntaxEngine {
+actual fun createSyntaxEngine(
+    language: String,
+    profile: String,
+): SyntaxEngine {
     val grammar =
         TreeSitterGrammars.find(language)
             ?: return UnavailableSyntaxEngine(
                 language = language,
                 reason = "no tree-sitter grammar is registered for '$language'",
             )
-    if (language == "vue") return VueSyntaxEngine()
-    return JvmTreeSitterSyntaxEngine(grammar)
+    if (language == "vue") return VueSyntaxEngine(profile)
+    return JvmTreeSitterSyntaxEngine(grammar, profile)
 }
 
 internal actual val treeSitterRuntimeVersion: String = "0.26.6"
 
 private class JvmTreeSitterSyntaxEngine(
     private val grammar: TreeSitterGrammar,
+    private val profile: String,
 ) : SyntaxEngine {
     override val language: String = grammar.id
 
@@ -143,7 +147,7 @@ private class JvmTreeSitterSyntaxEngine(
                 ),
             )
         }
-        return SyntaxFactExtractor.extract(tree, queryIds)
+        return SyntaxFactExtractor.extract(tree, queryIds, profile)
     }
 
     private fun parseWithPrevious(

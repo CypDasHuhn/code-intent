@@ -6,7 +6,8 @@ import dev.cint.contracts.data.Provenance
 import dev.cint.contracts.data.Status
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.knowledge.InMemoryKnowledgeStore
-import dev.cint.packs.BundledRulePackSource
+import dev.cint.rulepacks.BundledRulePackSource
+import dev.cint.rulepacks.DefaultRulePacks
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

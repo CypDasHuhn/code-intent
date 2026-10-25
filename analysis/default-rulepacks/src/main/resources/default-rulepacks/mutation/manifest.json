@@ -1,0 +1,11 @@
+{
+  "id": "mutation",
+  "name": "Mutation",
+  "version": "1.0.0",
+  "description": "Persistence, transport, and local value mutation",
+  "defaultEnabled": true,
+  "dependencies": [
+    "bookkeeping",
+    "local-copy"
+  ]
+}

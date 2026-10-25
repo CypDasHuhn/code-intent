@@ -1,0 +1,615 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "kotlin.io.println"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "kotlin.io.print"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.lang.System.out.println"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.lang.System.out.print"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.lang.System.err.println"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.lang.System.err.print"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.slf4j.Logger.trace"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.slf4j.Logger.debug"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.slf4j.Logger.info"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.slf4j.Logger.warn"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.slf4j.Logger.error"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.util.logging.Logger.finest"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.util.logging.Logger.finer"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.util.logging.Logger.fine"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.util.logging.Logger.info"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.util.logging.Logger.warning"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "java.util.logging.Logger.severe"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.apache.logging.log4j.Logger.trace"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.apache.logging.log4j.Logger.debug"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.apache.logging.log4j.Logger.info"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.apache.logging.log4j.Logger.warn"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.apache.logging.log4j.Logger.error"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "org.apache.logging.log4j.Logger.fatal"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "console.log"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "console.info"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "console.debug"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "console.warn"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "console.error"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "console.trace"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "pino.info"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "pino.warn"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "pino.error"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "pino.debug"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "pino.trace"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Console.WriteLine"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Console.Write"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Console.Error.WriteLine"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Console.Error.Write"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Diagnostics.Debug.WriteLine"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Diagnostics.Trace.WriteLine"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogTrace"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogDebug"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogInformation"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogWarning"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogError"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogCritical"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "info",
+        "receiverType": "org.slf4j.Logger"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "info",
+        "receiverType": "io.github.oshai.kotlinlogging.KLogger"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "structuralPattern": "logging-state"
+      },
+      "intents": [
+        "LOGGING"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

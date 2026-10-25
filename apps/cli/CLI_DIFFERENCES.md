@@ -49,10 +49,9 @@ allow-list companion to `frozen-v1-corpus/known-differences.json`.
 
 ## Provisional detection and 084 deferrals
 
-Default analysis is wired to `BundledRuleEvaluators`, a provisional fact-based
-registry in `intent-pipeline` covering every default-enabled bundled rule. It is
-intentionally not V1-equivalent. The following named deferrals belong to ticket
-084:
+Default analysis is wired to `DefaultRulePacks`, the language-neutral rule
+registry in `analysis/default-rulepacks` covering every default-enabled bundled
+rule. The following named deferrals belong to ticket 084:
 
 - `088-v2-detection-fact-parity` — full intent-fact parity and confidence values.
 - `089-v2-bookkeeping-validation-parity` — declaration bookkeeping and validation gating.

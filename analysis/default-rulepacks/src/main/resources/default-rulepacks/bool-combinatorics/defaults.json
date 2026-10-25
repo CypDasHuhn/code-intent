@@ -1,0 +1,20 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "structuralPattern": "boolean-combinatorics"
+      },
+      "intents": [
+        "BOOL_COMBINATORICS"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

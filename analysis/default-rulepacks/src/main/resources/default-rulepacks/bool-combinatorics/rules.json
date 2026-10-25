@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "bool-combinatorics:bool-combinatorics": {
+      "kind": "none"
+    }
+  }
+}

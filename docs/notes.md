@@ -137,7 +137,7 @@ not in one global file; the engine never branches on language.
 ## 5. Detection as implemented (current rulepacks)
 
 Detection is data-driven over `View` facts; rulepacks do not walk grammar node
-kinds directly. The bundled packs live in the `packs` module resource `packs/bundled-packs.json`:
+kinds directly. The bundled packs live in `analysis/default-rulepacks/src/main/resources/default-rulepacks/<pack>/`:
 
 - `logging:logging` — one `LOGGING` rule with print, logger-interaction, and
   logging-state matchers. It recognizes configured print calls/qualifiers,

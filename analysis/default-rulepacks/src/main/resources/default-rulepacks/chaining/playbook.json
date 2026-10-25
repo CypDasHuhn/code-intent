@@ -1,0 +1,9 @@
+{
+  "packId": "chaining",
+  "rules": [
+    {
+      "id": "chaining:chaining",
+      "owns": "CHAINING"
+    }
+  ]
+}

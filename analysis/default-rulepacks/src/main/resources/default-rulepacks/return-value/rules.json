@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "return-value:return-value": {
+      "kind": "return-value"
+    }
+  }
+}

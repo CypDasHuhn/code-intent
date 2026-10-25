@@ -573,11 +573,11 @@ class DefaultIntentPipelineTest {
     @Test
     fun annotatesFunctionsWithRealBundledPacksCoreAndKnowledge() {
         val catalog =
-            dev.cint.packs.PackCatalog.of(
-                dev.cint.packs.BundledPacks.all
+            dev.cint.rulepacks.PackCatalog.of(
+                dev.cint.rulepacks.BundledPacks.all
                     .filter { it.manifest.id == "logging" },
             )
-        val packSource = dev.cint.packs.BundledRulePackSource(catalog)
+        val packSource = dev.cint.rulepacks.BundledRulePackSource(catalog)
         val bundledSpec =
             packSource
                 .playbook("logging")

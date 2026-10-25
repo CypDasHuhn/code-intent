@@ -1,0 +1,8 @@
+{
+  "id": "service",
+  "name": "Service",
+  "version": "1.0.0",
+  "description": "Service delegation and initialization",
+  "defaultEnabled": true,
+  "dependencies": []
+}

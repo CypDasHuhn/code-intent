@@ -1,0 +1,9 @@
+{
+  "packId": "return-value",
+  "rules": [
+    {
+      "id": "return-value:return-value",
+      "owns": "RETURN_VALUE"
+    }
+  ]
+}

@@ -1,0 +1,452 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "delegate"
+      },
+      "intents": [
+        "SERVICE_DELEGATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "forward"
+      },
+      "intents": [
+        "SERVICE_DELEGATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "dispatch"
+      },
+      "intents": [
+        "SERVICE_DELEGATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "callThrough"
+      },
+      "intents": [
+        "SERVICE_DELEGATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "structuralPattern": "service-delegation"
+      },
+      "intents": [
+        "SERVICE_DELEGATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "init"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "initialize"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "setup"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "bootstrap"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "wire"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "configure"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "connect"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "openConnection"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getConnection"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "createConnection"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "newConnection"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "acquireConnection"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "openSession"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "createClient"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "newClient"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "buildClient"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "createService"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "newService"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "inject"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "resolve"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getInstance"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "qualifiedName": "getService"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    },
+    {
+      "selector": {
+        "structuralPattern": "service-initialization"
+      },
+      "intents": [
+        "SERVICE_INIT"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

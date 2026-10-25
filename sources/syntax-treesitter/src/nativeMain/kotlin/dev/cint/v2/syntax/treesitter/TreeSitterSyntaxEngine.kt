@@ -57,15 +57,18 @@ import platform.posix.pthread_mutex_t
 import platform.posix.pthread_mutex_unlock
 
 @OptIn(ExperimentalForeignApi::class)
-actual fun createSyntaxEngine(language: String): SyntaxEngine {
+actual fun createSyntaxEngine(
+    language: String,
+    profile: String,
+): SyntaxEngine {
     val grammar =
         TreeSitterGrammars.find(language)
             ?: return UnavailableSyntaxEngine(
                 language = language,
                 reason = "no tree-sitter grammar is registered for '$language'",
             )
-    if (language == "vue") return VueSyntaxEngine()
-    return NativeTreeSitterSyntaxEngine(grammar)
+    if (language == "vue") return VueSyntaxEngine(profile)
+    return NativeTreeSitterSyntaxEngine(grammar, profile)
 }
 
 @OptIn(ExperimentalForeignApi::class)
@@ -74,6 +77,7 @@ internal actual val treeSitterRuntimeVersion: String = "0.27.1"
 @OptIn(ExperimentalForeignApi::class)
 private class NativeTreeSitterSyntaxEngine(
     private val grammar: TreeSitterGrammar,
+    private val profile: String,
 ) : SyntaxEngine {
     override val language: String = grammar.id
 
@@ -152,7 +156,7 @@ private class NativeTreeSitterSyntaxEngine(
                 ),
             )
         }
-        return SyntaxFactExtractor.extract(tree, queryIds)
+        return SyntaxFactExtractor.extract(tree, queryIds, profile)
     }
 
     private fun parseWithPrevious(

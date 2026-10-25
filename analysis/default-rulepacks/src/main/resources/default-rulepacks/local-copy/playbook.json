@@ -1,0 +1,9 @@
+{
+  "packId": "local-copy",
+  "rules": [
+    {
+      "id": "local-copy:local-copy",
+      "owns": "LOCAL_COPY"
+    }
+  ]
+}

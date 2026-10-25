@@ -77,7 +77,7 @@ contracts/                    :contracts
 
 analysis/
   core/                       :core
-  packs/                      :packs
+  default-rulepacks/          :default-rulepacks
   intent-pipeline/            :intent-pipeline
   knowledge/                  :knowledge
   knowledge-persistence/      :knowledge-persistence
@@ -111,11 +111,8 @@ scripts/                      build, corpus, parity, smoke, and release scripts
 Support assets have one home: vendored native libraries live under
 `sources/syntax-treesitter/native/`, tools under `tools/`, parity artifacts
 under `tests/parity/`, and engine scripts merged into the root `scripts/`.
-Ticket 095 renames both the directory and the Gradle project:
-`analysis/packs/` (`:packs`) becomes `analysis/default-rulepacks/`
-(`:default-rulepacks`). Update `settings.gradle.kts`, `graph-guard.json`, this
-tree, and every dependency reference in the same change. Until 095 lands,
-`:packs` is the current canonical name.
+Ticket 095 renamed both the directory and the Gradle project:
+`analysis/default-rulepacks/` is the canonical `:default-rulepacks` module.
 
 `ai` is the former `suggest`; `ipc` is the former `protocol`; `core` is the
 former `kernel`. Names are still provisional, but the roles are not.
@@ -135,7 +132,7 @@ enough to justify it.
 ```text
 contracts
   ├── core
-  ├── packs
+  ├── default-rulepacks
   ├── index
   ├── knowledge
   ├── languages
@@ -146,7 +143,7 @@ contracts
   └── ipc
 
 core      -> contracts
-packs     -> contracts
+default-rulepacks -> contracts
 index     -> contracts
 knowledge -> contracts
 knowledge-persistence -> contracts, knowledge
@@ -155,11 +152,11 @@ syntax-treesitter -> contracts
 lsp               -> contracts
 languages         -> contracts, syntax-treesitter, lsp
 
-intent-pipeline -> contracts, core, packs, knowledge, ai
+intent-pipeline -> contracts, core, default-rulepacks, knowledge, ai
 ai              -> contracts
 ipc             -> contracts
 
-runtime -> contracts, packs, index, knowledge, knowledge-persistence, languages, intent-pipeline
+runtime -> contracts, default-rulepacks, index, knowledge, knowledge-persistence, languages, intent-pipeline
 
 cli    -> runtime
 server -> runtime, ipc
@@ -176,17 +173,17 @@ boundary and may call runtime, but no library depends on `mcp`.
 |---|---|---|
 | `contracts` | nothing | everything |
 | `core` | `contracts` | parser, LSP, filesystem, network, JVM |
-| `packs` | `contracts` | `core`, `knowledge`, parser, LSP |
-| `index` | `contracts` | `core`, `packs`, `knowledge`, `languages`, parser, LSP |
-| `knowledge` | `contracts` | `core`, `packs`, `index`, adapters, apps |
-| `knowledge-persistence` | `contracts`, `knowledge` | `core`, `packs`, `index`, runtime, apps |
+| `default-rulepacks` | `contracts` | `core`, `knowledge`, parser, LSP |
+| `index` | `contracts` | `core`, `default-rulepacks`, `knowledge`, `languages`, parser, LSP |
+| `knowledge` | `contracts` | `core`, `default-rulepacks`, `index`, adapters, apps |
+| `knowledge-persistence` | `contracts`, `knowledge` | `core`, `default-rulepacks`, `index`, runtime, apps |
 | `languages` | `contracts`, `syntax-treesitter`, `lsp` | `core`, `runtime`, `index`, `knowledge` |
-| `syntax-treesitter` | `contracts` | `core`, `runtime`, `packs`, `languages` |
-| `lsp` | `contracts` | `core`, `runtime`, `packs`, `languages` |
-| `intent-pipeline` | `contracts`, `core`, `packs`, `knowledge`, `ai` | `runtime`, `index`, parser, LSP, IPC |
-| `ai` | `contracts` | `core`, `runtime`, `packs`, `index`, `knowledge` |
+| `syntax-treesitter` | `contracts` | `core`, `runtime`, `default-rulepacks`, `languages` |
+| `lsp` | `contracts` | `core`, `runtime`, `default-rulepacks`, `languages` |
+| `intent-pipeline` | `contracts`, `core`, `default-rulepacks`, `knowledge`, `ai` | `runtime`, `index`, parser, LSP, IPC |
+| `ai` | `contracts` | `core`, `runtime`, `default-rulepacks`, `index`, `knowledge` |
 | `ipc` | `contracts` | `core`, `runtime`, adapters, apps |
-| `runtime` | `contracts`, `packs`, `index`, `knowledge`, `knowledge-persistence`, `languages`, `intent-pipeline` | parser/LSP adapters, `ai`, `ipc`, apps |
+| `runtime` | `contracts`, `default-rulepacks`, `index`, `knowledge`, `knowledge-persistence`, `languages`, `intent-pipeline` | parser/LSP adapters, `ai`, `ipc`, apps |
 | `cli` | `runtime` | `core` internals, adapters |
 | `server` | `runtime`, `ipc` | `core` internals, adapters |
 | `mcp` | `runtime`, `contracts` | `core` internals, adapters |
@@ -218,7 +215,7 @@ evaluation.
 The kernel receives facts; it does not obtain them. It never knows a language
 name, an LSP server, or a file path format.
 
-### `packs`
+### `default-rulepacks`
 
 Bundled intent content: manifests, playbooks, matchers, and seed defaults.
 Discovery is manifest-based. No `META-INF/services`, no dynamic JAR loading, no
@@ -291,7 +288,7 @@ editor proxy grows enough to justify it.
 
 ### `intent-pipeline`
 
-Turns indexed source and persisted knowledge into intents. It selects packs,
+Turns indexed source and persisted knowledge into intents. It selects default rulepacks,
 builds the execution plan, resolves function annotations and span overrides,
 invokes `core`, optionally runs fallback AI for dirty or uninitialized code, and
 shapes the result.
@@ -387,7 +384,7 @@ the IPC boundary; `mcp` exposes the agent boundary over MCP.
 
 7. **`IntentPipeline`**
    - `analyze(request, source, knowledge) -> AnalysisResult`
-   - Selects packs, resolves function annotations and span overrides, calls
+   - Selects default rulepacks, resolves function annotations and span overrides, calls
      `core`, optionally runs fallback AI, and shapes the result.
    - Function annotations propagate deterministically; AI is not consulted per
      call site.

@@ -1,0 +1,9 @@
+{
+  "packId": "error-handling",
+  "rules": [
+    {
+      "id": "error-handling:error-handling",
+      "owns": "ERROR_HANDLING"
+    }
+  ]
+}

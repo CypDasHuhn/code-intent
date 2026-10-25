@@ -1,0 +1,8 @@
+{
+  "id": "bookkeeping",
+  "name": "Bookkeeping",
+  "version": "1.0.0",
+  "description": "Annotated or comment-marked bookkeeping declarations",
+  "defaultEnabled": true,
+  "dependencies": []
+}

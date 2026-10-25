@@ -242,7 +242,7 @@ class LanguageSupportFactory(
                             "No grammar registered for parser '${descriptor.grammarName}'",
                         ),
                     )
-            return ResultFactory.success(createSyntaxEngine(grammar.id))
+            return ResultFactory.success(createSyntaxEngine(grammar.id, descriptor.profile))
         }
     }
 

@@ -1,0 +1,8 @@
+{
+  "id": "local-copy",
+  "name": "Local copy",
+  "version": "1.0.0",
+  "description": "Local assignments that copy another value",
+  "defaultEnabled": true,
+  "dependencies": []
+}

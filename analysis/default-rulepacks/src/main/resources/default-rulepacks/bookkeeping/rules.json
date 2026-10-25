@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "bookkeeping:bookkeeping": {
+      "kind": "bookkeeping",
+      "annotationNames": [
+        "Bookkeeping"
+      ],
+      "directive": "bookkeeping"
+    }
+  }
+}

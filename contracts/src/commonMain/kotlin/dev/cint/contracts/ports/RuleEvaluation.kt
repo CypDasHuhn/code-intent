@@ -6,8 +6,12 @@ import dev.cint.contracts.data.Confidence
 import dev.cint.contracts.data.Intent
 import dev.cint.contracts.data.Span
 import dev.cint.contracts.facts.CallFact
+import dev.cint.contracts.facts.ClassFact
+import dev.cint.contracts.facts.CoalesceFact
 import dev.cint.contracts.facts.CommentFact
+import dev.cint.contracts.facts.CreationFact
 import dev.cint.contracts.facts.DeclarationFact
+import dev.cint.contracts.facts.ExitFact
 import dev.cint.contracts.facts.FunctionFact
 import dev.cint.contracts.facts.GuardFact
 import dev.cint.contracts.facts.IfFact
@@ -18,6 +22,7 @@ import dev.cint.contracts.facts.ReturnFact
 import dev.cint.contracts.facts.ScopeFact
 import dev.cint.contracts.facts.SyntaxNode
 import dev.cint.contracts.facts.TryFact
+import dev.cint.contracts.facts.ValueFact
 import dev.cint.contracts.facts.WriteFact
 import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
@@ -41,6 +46,13 @@ interface RuleEvaluationView {
     val tries: List<TryFact>
     val imports: List<ImportFact>
     val references: List<ReferenceFact>
+    val exits: List<ExitFact> get() = emptyList()
+    val creations: List<CreationFact> get() = emptyList()
+    val classes: List<ClassFact> get() = emptyList()
+    val coalesces: List<CoalesceFact> get() = emptyList()
+    val values: List<ValueFact> get() = emptyList()
+
+    fun value(id: String?): ValueFact? = values.firstOrNull { it.nodeId == id }
 
     fun node(id: String?): SyntaxNode?
 

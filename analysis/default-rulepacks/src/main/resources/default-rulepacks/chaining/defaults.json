@@ -1,0 +1,20 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "structuralPattern": "call-chain"
+      },
+      "intents": [
+        "CHAINING"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

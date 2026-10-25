@@ -37,6 +37,11 @@ class RuleView internal constructor(
     override val tries get() = facts.tries
     override val imports get() = facts.imports
     override val references get() = facts.references
+    override val exits get() = facts.exits
+    override val creations get() = facts.creations
+    override val classes get() = facts.classes
+    override val coalesces get() = facts.coalesces
+    override val values get() = facts.values
 
     override fun node(id: String?): SyntaxNode? = index.node(id)
 

@@ -15,9 +15,9 @@ import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import dev.cint.knowledge.persistence.FileKnowledgeRepositoryFactory
 import dev.cint.knowledge.persistence.PersistentKnowledgeStores
-import dev.cint.packs.BundledRulePackSource
-import dev.cint.pipeline.BundledRuleEvaluators
 import dev.cint.pipeline.DefaultIntentPipeline
+import dev.cint.rulepacks.BundledRulePackSource
+import dev.cint.rulepacks.DefaultRulePacks
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -57,7 +57,7 @@ data class RuntimeComponents(
             return ResultFactory.success(factory(packSource, knowledgeStore))
         }
         pipeline?.let { return ResultFactory.success(it) }
-        val evaluators = ruleEvaluators ?: BundledRuleEvaluators.registry()
+        val evaluators = ruleEvaluators ?: DefaultRulePacks.registry()
         return ResultFactory.success(
             DefaultIntentPipeline(
                 packSource = packSource,

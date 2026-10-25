@@ -11,7 +11,9 @@ import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 
-internal class VueSyntaxEngine : SyntaxEngine {
+internal class VueSyntaxEngine(
+    private val profile: String = "vue",
+) : SyntaxEngine {
     override val language: String = "vue"
 
     private val javascript by lazy { createVueScriptEngine("javascript") }
@@ -86,7 +88,7 @@ internal class VueSyntaxEngine : SyntaxEngine {
                 ),
             )
         }
-        return SyntaxFactExtractor.extract(tree, queryIds)
+        return SyntaxFactExtractor.extract(tree, queryIds, profile)
     }
 
     private fun SyntaxNode.shifted(

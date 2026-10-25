@@ -78,7 +78,10 @@ object TreeSitterGrammars {
     fun canonical(id: String): String = find(id)?.id ?: id.trim().lowercase()
 }
 
-expect fun createSyntaxEngine(language: String): SyntaxEngine
+expect fun createSyntaxEngine(
+    language: String,
+    profile: String = language,
+): SyntaxEngine
 
 internal expect val treeSitterRuntimeVersion: String
 

@@ -1,0 +1,9 @@
+{
+  "packId": "bookkeeping",
+  "rules": [
+    {
+      "id": "bookkeeping:bookkeeping",
+      "owns": "BOOKKEEPING"
+    }
+  ]
+}

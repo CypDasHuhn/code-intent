@@ -1,0 +1,10 @@
+{
+  "id": "data-transformation",
+  "name": "Data transformation",
+  "version": "1.0.0",
+  "description": "Collection transformations and chains",
+  "defaultEnabled": true,
+  "dependencies": [
+    "data-access"
+  ]
+}

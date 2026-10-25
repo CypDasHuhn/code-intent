@@ -1,0 +1,8 @@
+{
+  "id": "logging",
+  "name": "Logging",
+  "version": "1.0.0",
+  "description": "Logging, console, and logger interaction defaults",
+  "defaultEnabled": true,
+  "dependencies": []
+}

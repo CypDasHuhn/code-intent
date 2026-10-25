@@ -127,4 +127,4 @@ legitimately co-occur on different spans in the same function or call chain.
 
 ## Registration and host coverage
 
-The pack is declared in the bundled pack resource `packs/bundled-packs.json` as the `data-access` pack. Bundled discovery and runtime binding are covered by the pack, pipeline, and frozen-corpus parity tests. Classification itself is covered by the direct pack tests and the frozen-corpus parity suite.
+The pack is declared in `analysis/default-rulepacks/src/main/resources/default-rulepacks/data-access/` as the `data-access` pack. Bundled discovery and runtime binding are covered by the pack, pipeline, and frozen-corpus parity tests. Classification itself is covered by the direct pack tests and the frozen-corpus parity suite.

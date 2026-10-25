@@ -6,7 +6,7 @@ dependencies {
     // Integration tests can depend on any module
     implementation(project(":contracts"))
     implementation(project(":core"))
-    implementation(project(":packs"))
+    implementation(project(":default-rulepacks"))
     implementation(project(":index"))
     implementation(project(":knowledge"))
     implementation(project(":languages"))

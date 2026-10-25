@@ -1,0 +1,8 @@
+{
+  "id": "bool-combinatorics",
+  "name": "Boolean combinatorics",
+  "version": "1.0.0",
+  "description": "Compound boolean predicates and quantifiers",
+  "defaultEnabled": false,
+  "dependencies": []
+}

@@ -1,0 +1,17 @@
+{
+  "packId": "mutation",
+  "rules": [
+    {
+      "id": "mutation:data-modify",
+      "owns": "DATA_MODIFY"
+    },
+    {
+      "id": "mutation:local-value-modify",
+      "owns": "LOCAL_VALUE_MODIFY",
+      "reads": [
+        "BOOKKEEPING",
+        "LOCAL_COPY"
+      ]
+    }
+  ]
+}

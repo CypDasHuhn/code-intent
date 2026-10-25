@@ -13,7 +13,7 @@ All commands below run from the repository root.
 |---|---|
 | `contracts` | Data model and narrow ports: intents, facts, annotations, candidates, knowledge DTOs, manifests, IPC/MCP messages. No JVM types. |
 | `core` | Deterministic kernel: scheduler, strata, fixpoint, capability view, annotation store, composition. |
-| `packs` | Bundled manifest packs, playbooks, matchers, and seed defaults (the module's bundled pack resource). |
+| `default-rulepacks` | Language-neutral manifest packs, playbooks, typed rule data, and seed defaults (per-pack resources). |
 | `index` | File hashing, incremental fact cache, dependency tracking, and `IndexedSource` construction. |
 | `knowledge` | Materialized function annotations, span overrides, pattern hypotheses, pack defaults, provenance, validation, and mutations. |
 | `knowledge-persistence` | JSON snapshot and init-checkpoint adapters around knowledge. |
@@ -32,7 +32,7 @@ All commands below run from the repository root.
 
 Dependency direction is enforced by `graphGuard` against `graph-guard.json`.
 `contracts` depends on nothing; `core` depends only on `contracts`; `runtime` may
-use packs, index, knowledge, languages, and the intent pipeline but never imports
+use default rulepacks, index, knowledge, languages, and the intent pipeline but never imports
 a parser or LSP class directly; apps depend on runtime (the server additionally
 uses `ipc`).
 
@@ -52,7 +52,7 @@ host coordinates. The syntax adapter performs no file IO; callers load bytes.
 
 ## Packs and detection
 
-Packs are content, not classpath code. `packs` loads `bundled-packs.json`, which
+Packs are content, not classpath code. `default-rulepacks` loads the per-pack
 declares pack ids, rule ids, owned intents, dependencies, and seed defaults.
 `intent-pipeline` selects packs and builds rule plans; `core` evaluates them.
 

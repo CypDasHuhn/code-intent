@@ -1,0 +1,178 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "require"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "requireNotNull"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "check"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "checkNotNull"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "error"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "TODO"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "assert"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "assert"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "invariant"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "javascript",
+        "typescript"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Diagnostics.Debug.Assert"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Diagnostics.Trace.Assert"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Diagnostics.Contracts.Contract.Assert"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "System.Diagnostics.Contracts.Contract.Requires"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "structuralPattern": "throw"
+      },
+      "intents": [
+        "ERROR_HANDLING"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    }
+  ]
+}

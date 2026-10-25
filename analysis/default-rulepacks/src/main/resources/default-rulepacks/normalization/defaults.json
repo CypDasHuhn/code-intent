@@ -1,0 +1,792 @@
+{
+  "defaults": [
+    {
+      "selector": {
+        "qualifiedName": "trim"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "trimStart"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "trimEnd"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "lowercase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "uppercase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toLowerCase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toUpperCase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toInt"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toLong"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toShort"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toByte"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toDouble"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toFloat"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toBigDecimal"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toBigInteger"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toPath"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toUri"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseInt"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseLong"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseDouble"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseFloat"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseBoolean"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "fromString"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "normalize"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "canonicalize"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "decodeFromString"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "kotlin"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "trim"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "trimStart"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "trimEnd"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toLowerCase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toUpperCase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toLocaleLowerCase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "toLocaleUpperCase"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "normalize"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseInt"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "parseFloat"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "encodeURI"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "encodeURIComponent"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "decodeURI"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "decodeURIComponent"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "javascript",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Trim"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "TrimStart"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "TrimEnd"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToLower"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToUpper"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToLowerInvariant"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToUpperInvariant"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Normalize"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Canonicalize"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "Parse"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ParseExact"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "GetFullPath"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "GetRelativePath"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "EscapeDataString"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "UnescapeDataString"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToInt16"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToInt32"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToInt64"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToDouble"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToDecimal"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToBoolean"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "qualifiedName": "ToDateTime"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp"
+      ],
+      "confidence": 0.7
+    },
+    {
+      "selector": {
+        "structuralPattern": "normalization-chain"
+      },
+      "intents": [
+        "NORMALIZATION"
+      ],
+      "languages": [
+        "csharp",
+        "javascript",
+        "kotlin",
+        "typescript",
+        "vue"
+      ],
+      "confidence": 0.5
+    }
+  ]
+}

@@ -40,8 +40,9 @@ import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import dev.cint.knowledge.InMemoryKnowledgeStore
 import dev.cint.knowledge.persistence.KnowledgeStoreFiles
-import dev.cint.packs.BundledRulePackSource
 import dev.cint.pipeline.RuleEvaluatorCatalog
+import dev.cint.rulepacks.BundledRulePackSource
+import dev.cint.rulepacks.DefaultRulePacks
 import dev.cint.v2.index.InMemoryIndex
 import dev.cint.v2.languages.LanguageCatalog
 import dev.cint.v2.languages.LanguageOptions

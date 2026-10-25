@@ -1,0 +1,8 @@
+{
+  "id": "normalization",
+  "name": "Normalization",
+  "version": "1.0.0",
+  "description": "Parsing, trimming, canonicalization, and formatting",
+  "defaultEnabled": true,
+  "dependencies": []
+}

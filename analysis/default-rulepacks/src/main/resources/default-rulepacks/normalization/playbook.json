@@ -1,0 +1,9 @@
+{
+  "packId": "normalization",
+  "rules": [
+    {
+      "id": "normalization:normalization",
+      "owns": "NORMALIZATION"
+    }
+  ]
+}

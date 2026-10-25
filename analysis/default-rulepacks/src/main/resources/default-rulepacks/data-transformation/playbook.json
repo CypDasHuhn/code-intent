@@ -1,0 +1,12 @@
+{
+  "packId": "data-transformation",
+  "rules": [
+    {
+      "id": "data-transformation:data-transformation",
+      "owns": "DATA_TRANSFORMATION",
+      "reads": [
+        "SEARCH"
+      ]
+    }
+  ]
+}
