@@ -583,8 +583,8 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - `just test-lsp` is opt-in via `CINT_LSP_ROOT`. The renderer suite runs in the
   external `code-intent.nvim` repository.
 - `just lint`/`lint-fix` run ktlint over Kotlin sources only.
-- CI runs build, engine tests, lint, graph guard, parity, smoke, and syntax
-  provenance with `CINT_TESTING_GROUNDS` set explicitly.
+- CI runs build, engine tests, lint, graph guard, and smoke with
+  `CINT_TESTING_GROUNDS` set explicitly.
 
 ### Known gaps / next
 
@@ -594,7 +594,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - No independent purity engine; no incremental analysis.
 - `tests/integration-tests/.../CompositionTestSupport.kt` still constructs Kotlin
   parser/syntax directly rather than through `Frontends`.
-- `test-fixtures` rebuilds the bundled pack selection; a parity check against
+- `test-fixtures` rebuilds the bundled pack selection; comparing it with
   `BundledRulePackSelection` would remove drift.
 - Next candidates: switch/when facts; real Volar oracle; dogfood on a real
   project; switch/polarity tests; CFG performance.

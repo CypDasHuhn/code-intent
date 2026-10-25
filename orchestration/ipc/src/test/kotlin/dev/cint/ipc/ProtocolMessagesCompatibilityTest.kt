@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 class ProtocolMessagesCompatibilityTest {
     @Test
-    fun initializeResultRetainsFrozenV1FieldsAndAddsV2Extras() {
+    fun initializeResultRetainsV1FieldsAndAddsV2Extras() {
         val encoded =
             IpcJson
                 .encode(

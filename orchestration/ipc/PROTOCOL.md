@@ -19,7 +19,7 @@ runtime, index, parser, or server classes.
 
 `initialize` is the first message. The current protocol is 5 and requires
 `InitializeParams.fingerprint` to equal `ProtocolFingerprint.CURRENT`.
-Protocols 3-4 are accepted without a fingerprint so frozen V1 clients can
+Protocols 3-4 are accepted without a fingerprint so legacy V1 clients can
 connect; protocols 1-2 are rejected. `initialize` must include `protocol`
 explicitly and omission fails with `data.kind = "missing-protocol"`. A fingerprint mismatch fails with `-32000` and
 `data.kind = "fingerprint-mismatch"`; a version outside
@@ -39,10 +39,9 @@ internals.
 
 ## V2 shapes and intentional V1 differences
 
-The method names remain the renderer-facing V1 names. The frozen V1 transcript
-envelopes, method ordering, and request ids are accepted unchanged. The decided
-differences from `frozen-v1-corpus/known-differences.json` are represented by
-the V2 DTOs:
+The method names remain the renderer-facing V1 names. V1 transcript envelopes,
+method ordering, and request ids are accepted unchanged. The decided V1-to-V2
+differences are represented by the V2 DTOs:
 
 - `PublishTagsParams`: `configRevision` + `analysisVersion` + `diagnostics`
   (V1 `revision` + `analysisRevision` + no diagnostics).
@@ -113,11 +112,8 @@ legacy pack field descriptors are recorded in `known-differences-v2.json`.
 ## V2-owned difference registry
 
 `ipc/known-differences-v2.json` is the machine-readable V2-owned registry for
-renderer differences that cannot modify or rehash the frozen V1 corpus. It is
-validated by the `ipc` tests and is distinct from
-`frozen-v1-corpus/known-differences.json`, which remains read-only V1-era
-comparison data and must not be edited or rehashed. The V2 registry
-registers the initialize additions (`fingerprint`, `server`, object-valued
+renderer differences from V1. It is validated by the `ipc` tests. The V2
+registry registers the initialize additions (`fingerprint`, `server`, object-valued
 `capabilities`), the legacy protocol range, operation fields, and
 `cint/candidates/decide`, alongside the publish, annotation, candidate,
 suggest, config, restrictions, status, error, and fingerprint differences.

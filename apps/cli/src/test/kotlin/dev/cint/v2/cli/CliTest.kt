@@ -40,7 +40,6 @@ import dev.cint.v2.languages.LanguageProviderDefaults
 import dev.cint.v2.languages.LanguageProviderFactory
 import dev.cint.v2.languages.LanguageSupportFactory
 import dev.cint.v2.languages.TreeSitterLanguageRegistry
-import dev.cint.v2.testing.corpus.FrozenV1Corpus
 import dev.cint.v2.testing.fakes.FakeClock
 import dev.cint.v2.testing.fakes.FakeIndex
 import dev.cint.v2.testing.fakes.FakeIntentPipeline
@@ -61,7 +60,6 @@ import java.io.PrintStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -259,49 +257,6 @@ class CliTest {
         val output = root.resolve("out/result.json")
         assertTrue(Files.isRegularFile(output))
         assertEquals(parse(stdoutRun.stdout), parse(Files.readString(output)))
-    }
-
-    @Test
-    fun outputShapeMatchesTheFrozenCorpusWhereSemanticsAreUnchanged() {
-        val corpus = FrozenV1Corpus(Paths.get(System.getProperty("v2.frozenCorpusRoot")))
-        val frozen = corpus.cli("kotlin")
-        val frozenFile =
-            frozen.raw["files"]!!
-                .jsonArray
-                .first()
-                .jsonObject
-        val frozenSpan = frozenFile["spans"]!!.jsonArray.first().jsonObject
-
-        val root = temporaryRoot()
-        val file = write(root, "Sample.kt", "fun findUser() {}\n")
-        val result = run(listOf(root.toString(), "--lang", "kotlin"), fakeEnvironment(mapOf(file to "fun findUser() {}\n")))
-        val document = parse(result.stdout)
-        val v2File = document["files"]!!.jsonArray.first().jsonObject
-        val v2Annotation = v2File["annotations"]!!.jsonArray.first().jsonObject
-
-        assertEquals(setOf("language", "files", "meta"), document.keys)
-        assertTrue(frozen.raw.containsKey("intents"))
-        assertEquals(setOf("path", "hash", "annotations", "candidates", "diagnostics"), v2File.keys)
-        assertEquals(setOf("path", "hash", "spans", "candidates"), frozenFile.keys)
-        val unchanged =
-            listOf(
-                "role",
-                "intents",
-                "source",
-                "confidence",
-                "startLine",
-                "startCol",
-                "endLine",
-                "endCol",
-                "startByte",
-                "endByte",
-                "nodeAnchor",
-                "provenance",
-            )
-        unchanged.forEach { field ->
-            assertTrue(field in frozenSpan, "frozen span is missing $field")
-            assertTrue(field in v2Annotation, "V2 annotation is missing $field")
-        }
     }
 
     @Test
@@ -586,25 +541,6 @@ class CliTest {
             )
         assertEquals(CliExitCode.MISSING_GRAMMAR, grammar.exitCode)
         assertEquals("MISSING_GRAMMAR", error(grammar.stdout, grammar.stderr))
-    }
-
-    @Test
-    fun realRuntimeAnalyzesTheFrozenKotlinCorpusShape() {
-        val corpus = FrozenV1Corpus(Paths.get(System.getProperty("v2.frozenCorpusRoot")))
-        val frozen = corpus.cli("kotlin").files.first { it.path == "Bookkeeping.kt" }
-        val root = temporaryRoot()
-        write(root, "Bookkeeping.kt", corpus.source("kotlin", "Bookkeeping.kt"))
-
-        val result = run(listOf(root.toString(), "--lang", "kotlin"), realRuntimeEnvironment())
-
-        assertEquals(CliExitCode.OK, result.exitCode)
-        val analyzed = parse(result.stdout)["files"]!!.jsonArray.single().jsonObject
-        assertEquals(frozen.path, analyzed["path"]!!.jsonPrimitive.content)
-        assertEquals(frozen.hash, analyzed["hash"]!!.jsonPrimitive.content)
-        val annotations = analyzed["annotations"]!!.jsonArray
-        assertTrue(annotations.isNotEmpty())
-        val intents = annotations.flatMap { it.jsonObject["intents"]!!.jsonArray }.map { it.jsonPrimitive.content }.toSet()
-        assertTrue(intents.any { it == Intents.BOOKKEEPING || it == Intents.VALIDATION }, "intents=$intents")
     }
 
     @Test

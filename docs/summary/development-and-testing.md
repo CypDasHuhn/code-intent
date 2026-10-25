@@ -8,16 +8,14 @@
 | `just test-engine` | all deterministic engine tests plus the graph guard |
 | `just test-lsp` | focused LSP provider tests |
 | `just lint` / `just lint-fix` | ktlint check/autocorrect over Kotlin sources |
-| `just graph-guard` | module graph guard and self-test |
-| `just parity` | frozen CLI/IPC parity suites and committed report check |
+| `just graph-guard` | module graph guard |
 | `just smoke` | smoke-test built `cint`, `cint-server`, and `cint-mcp` |
-| `just syntax-provenance` | verify the V1 Kotlin syntax snapshot against the pinned commit |
 | `just install` | build CLI, live-server, and MCP distributions |
 | `just cli` / `just server` / `just live` / `just tags` | run hosts/artifact |
 
-CI runs build, engine tests, lint, graph guard, parity, install, smoke, and
-syntax provenance with an explicit testing-grounds path. Renderer tests run in
-the external `code-intent.nvim` repository against the installed engine.
+CI runs build, engine tests, lint, graph guard, install, and smoke with an
+explicit testing-grounds path. Renderer tests run in the external
+`code-intent.nvim` repository against the installed engine.
 
 ## Test topology
 
@@ -35,8 +33,8 @@ Engine:
 - `:runtime` — orchestration and lifecycle.
 - `:ai`, `:ipc` — fallback proposals and protocol DTO/framing.
 - `:cli`, `:server`, `:mcp` — app behavior.
-- `:test-fixtures`, `:integration-tests` — shared fakes plus pack, surface, and
-  frozen-corpus parity tests.
+- `:test-fixtures`, `:integration-tests` — shared fakes plus pack and
+  end-to-end integration tests.
 
 Renderer specs and cross-repo compatibility checks are listed in
 [renderer-and-protocol.md](renderer-and-protocol.md#renderer-tests).

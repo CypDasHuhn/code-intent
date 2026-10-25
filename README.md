@@ -28,9 +28,8 @@ This note here is the last Human-written lines in this repository.
 | [`sources/`](sources) | Index, language facade, tree-sitter adapter with vendored native grammars, and LSP providers. |
 | [`orchestration/`](orchestration) | Runtime composition, fallback AI, and renderer IPC. |
 | [`apps/`](apps) | Batch CLI, live Unix-socket daemon, and MCP server. |
-| [`tests/`](tests) | Shared fakes, integration/parity tests, and committed parity reports. |
-| [`tools/`](tools) | V1 syntax capture tooling. |
-| [`scripts/`](scripts) | Build, corpus, parity, smoke, and release scripts. |
+| [`tests/`](tests) | Shared fakes and integration tests. |
+| [`scripts/`](scripts) | Build, smoke, and release scripts. |
 
 The Neovim client lives in
 [`code-intent.nvim`](https://github.com/CypDasHuhn/code-intent.nvim) (sibling
@@ -87,8 +86,8 @@ just --list
 just build
 just test-engine
 just lint
+just graph-guard
 just install
-just parity
 just smoke
 just tags /path/to/project
 ```

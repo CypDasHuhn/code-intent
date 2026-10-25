@@ -96,7 +96,3 @@ val copyNativeTestGrammars = tasks.register<Copy>("copyNativeTestGrammars") {
 tasks.matching { it.name == "linuxX64Test" }.configureEach {
     dependsOn(copyNativeTestGrammars)
 }
-
-tasks.withType<Test>().configureEach {
-    systemProperty("cint.repo.root", rootProject.projectDir.absolutePath)
-}

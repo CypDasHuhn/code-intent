@@ -12,10 +12,6 @@ dependencies {
 }
 
 tasks.test {
-    systemProperty(
-        "v2.frozenCorpusRoot",
-        rootProject.projectDir.resolve("frozen-v1-corpus").absolutePath,
-    )
     systemProperty("v2.ipcDir", layout.projectDirectory.asFile.absolutePath)
 }
 

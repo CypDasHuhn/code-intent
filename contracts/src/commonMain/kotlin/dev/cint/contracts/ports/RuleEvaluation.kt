@@ -88,7 +88,7 @@ data class RulePlan(
 /**
  * Evaluator ownership is deferred to ticket 075: intent-pipeline constructs this
  * registry, selects evaluator implementations, and binds ticket 069 playbooks
- * through [bindRulePlan]. Ticket 084 asserts corpus parity of the bound plans.
+ * through [bindRulePlan]. Integration tests cover the bound plans.
  */
 interface RuleEvaluatorRegistry {
     fun resolve(spec: RuleSpec): RuleEvaluator?

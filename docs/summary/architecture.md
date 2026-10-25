@@ -38,7 +38,7 @@ canonical module tree; this summary does not restate it.
 | `runtime` | Orchestration and the public `analyze` surface. |
 | `ipc` | NDJSON framing and renderer wire DTOs. |
 | `apps/cli`, `apps/server`, `apps/mcp` | Batch CLI, live daemon, agent server. |
-| `tests/fixtures`, `tests/integration` (`:test-fixtures`, `:integration-tests`) | Shared fakes and parity/integration tests. |
+| `tests/fixtures`, `tests/integration` (`:test-fixtures`, `:integration-tests`) | Shared fakes and integration tests. |
 
 Dependency direction: `contracts` <- `core` <- `intent-pipeline` <- `runtime` <-
 apps. `languages` is the only module that depends on `syntax-treesitter` and
@@ -54,7 +54,7 @@ The canonical grouped tree and the 063 supersession note live in
 - `reads` declares required intent dependencies; `optionalReads` adds an edge
   only when the owner is present.
 - The scheduler resolves intents to owning rules, rejects missing owners and
-  cycles, and topologically sorts strata. A stratum runs once against frozen
+  cycles, and topologically sorts strata. A stratum runs once against its
   earlier output; a self-reading rule may run an internal monotone fixpoint.
 - Core composition is the terminal node. It produces scaffold and
   derivative-use annotations and consumes all source intents.

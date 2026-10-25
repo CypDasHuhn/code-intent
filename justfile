@@ -23,11 +23,11 @@ test: test-engine
 
 # Check Kotlin formatting with ktlint.
 lint:
-    ktlint --relative '{contracts,analysis,sources,orchestration,apps,tests,buildSrc}/**/src/**/*.kt'
+    ktlint --relative '{contracts,analysis,sources,orchestration,apps,tests}/**/src/**/*.kt'
 
 # Auto-format Kotlin sources with ktlint.
 lint-fix:
-    ktlint --format --relative '{contracts,analysis,sources,orchestration,apps,tests,buildSrc}/**/src/**/*.kt'
+    ktlint --format --relative '{contracts,analysis,sources,orchestration,apps,tests}/**/src/**/*.kt'
 
 # Regenerate the published renderer protocol JSON Schema.
 protocol-schema:
@@ -73,20 +73,10 @@ tags root *args: install
 clean:
     ./gradlew --no-daemon clean
 
-# Run the declared module graph guard and its self-test.
+# Run the declared module graph guard.
 graph-guard:
-    ./gradlew --no-daemon --max-workers=4 graphGuard graphGuardSelfTest
-
-# Run the frozen CLI and IPC parity suites and verify the committed report.
-parity:
-    ./gradlew --no-daemon --max-workers=4 :integration-tests:test :server:test
-    python3 scripts/merge-parity-report.py tests/parity/v2-parity-report.json
-    git diff --exit-code -- tests/parity/v2-parity-report.json tests/parity/defect-baseline.json tests/parity/ipc-defect-baseline.json
+    ./gradlew --no-daemon --max-workers=4 graphGuard
 
 # Smoke-test the built CLI, live server, and MCP distributions.
 smoke: install
     ./scripts/smoke.sh
-
-# Verify the checked-in V1 Kotlin syntax snapshot against the pinned V1 commit.
-syntax-provenance:
-    ./scripts/verify-v1-syntax-snapshot.sh

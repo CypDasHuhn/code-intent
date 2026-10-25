@@ -11,7 +11,7 @@
 | **rulepack** | Manifest content bundling playbook rules plus seed defaults. |
 | **playbook** | Pack rule plan consumed by `intent-pipeline` and evaluated by `core`. |
 | **reads / optionalReads** | Required / additive intent dependencies resolved to owning rules. |
-| **stratum** | Scheduler layer of rules evaluated once against frozen earlier output. |
+| **stratum** | Scheduler layer of rules evaluated once against the stratum's earlier output. |
 | **fixpoint** | Internal iteration for a rule that reads its own output; monotone over a finite lattice. |
 | **scaffold** | Composition annotation covering an enclosing region with its intents. |
 | **derivative use** | Composition annotation marking a value/assignment that carries another span's intent through read-only flow. |

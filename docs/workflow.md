@@ -43,7 +43,7 @@ demands it — never all by default. The dimensions in use:
 - `correctness` — logic, state, data, contracts, error paths. The default.
 - `api-fidelity` — the frozen `api` surface and the annotation/artifact contract
   consumed by the renderer.
-- `detection-fidelity` — rule behavior parity against the current engine and the
+- `detection-fidelity` — rule behavior against the current engine and the
   golden fixtures.
 - `architecture` — module boundaries, the core/rulepack line, and that no
   detection logic leaks back into `core`.
@@ -65,11 +65,10 @@ running tests; `test-engine` covers every deterministic module suite,
 runs the focused LSP provider tests.
 
 Lint scope is Kotlin only: `just lint`/`just lint-fix` run ktlint over
-`{contracts,analysis,sources,orchestration,apps,tests,buildSrc}/**/src/**/*.kt`. The Neovim renderer lives in the external
+`{contracts,analysis,sources,orchestration,apps,tests}/**/src/**/*.kt`. The Neovim renderer lives in the external
 `code-intent.nvim` repository and is tested there. CI runs `just build`,
-`just test-engine`, `just lint`, `just graph-guard`, `just parity`,
-`just smoke`, and `just syntax-provenance` with an explicit
-`CINT_TESTING_GROUNDS`.
+`just test-engine`, `just lint`, `just graph-guard`, and `just smoke` with an
+explicit `CINT_TESTING_GROUNDS`.
 
 ## Ticket format
 
@@ -97,7 +96,7 @@ reply carries a one-paragraph summary so the implementor does not re-read files.
 ## Manual gate
 
 Acceptance criteria that cannot be automated (live daemon cutover, renderer
-parity under the live socket, golden-fixture spot checks) go in
+compatibility under the live socket, golden-fixture spot checks) go in
 [manual-test.md](manual-test.md) with status and, when unverified, a reason. A
 ticket may be `done` while an entry is unverified, but the entry must exist and
 name the ticket.

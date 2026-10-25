@@ -2,7 +2,6 @@
   "formatVersion": 1,
   "protocolVersion": 5,
   "owner": "079-v2-ipc-protocol",
-  "frozenBaseline": "frozen-v1-corpus (read-only; not rehashed by this contract)",
   "differences": [
     {
       "id": "protocol.version",
@@ -22,7 +21,7 @@
     {
       "id": "legacy.protocol-range",
       "status": "decided",
-      "v1": "protocol 3/4 initialize accepted by frozen server",
+      "v1": "protocol 3/4 initialize accepted by the legacy server",
       "v2": "protocols 3-4 accepted without fingerprint and reported via negotiatedProtocol/isLegacy; protocols 1-2 and versions outside 3-5 are rejected; protocol 5 requires the current fingerprint",
       "ticket": "079-v2-ipc-protocol"
     },
@@ -64,7 +63,7 @@
     {
       "id": "candidates.decide",
       "status": "decided",
-      "v1": "not in frozen renderer corpus",
+      "v1": "not in the legacy renderer surface",
       "v2": "cint/candidates/decide request with candidateId, decision, optional uri/reason",
       "ticket": "079-v2-ipc-protocol"
     },

@@ -19,10 +19,3 @@ dependencies {
     testImplementation(project(":test-fixtures"))
     testImplementation(project(":languages"))
 }
-
-tasks.test {
-    systemProperty(
-        "v2.frozenCorpusRoot",
-        rootProject.projectDir.resolve("frozen-v1-corpus").absolutePath,
-    )
-}

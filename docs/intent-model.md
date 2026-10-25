@@ -681,8 +681,6 @@ Fixtures:
 
 - `testing-grounds/` — Kotlin, C, JavaScript, TypeScript, Vue, and C# source
   fixtures for detection and composition.
-- `frozen-v1-corpus/` — read-only V1 outputs and transcripts used by parity
-  tests.
 
 Tests and tooling:
 
@@ -691,5 +689,5 @@ Tests and tooling:
   graph guard.
 - `just test-lsp` — focused LSP provider tests.
 - `just lint` — ktlint over Kotlin sources.
-- `just parity`, `just smoke`, and `just syntax-provenance` — frozen-corpus,
-  distribution, and pinned-snapshot verification.
+- `just graph-guard` and `just smoke` — module-graph validation and
+  distribution verification.

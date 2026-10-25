@@ -15,7 +15,7 @@ the engine protocol version and schema fingerprint, installs the engine with
 
 ## Versions
 
-The current protocol is **5**. Protocols 3-4 are legacy replay versions; 1-2 are rejected. The
+The current protocol is **5**. Protocols 3-4 are legacy V1-compatible versions; 1-2 are rejected. The
 engine publishes `ProtocolCompatibility.matrix` and
 `orchestration/ipc/protocol.schema.json`; the fingerprint is derived from all
 wire DTOs. Protocol 5 clients must send the exact current fingerprint during

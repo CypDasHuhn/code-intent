@@ -47,5 +47,5 @@ override fun run(view: View): List<Emit> =
 - No detection logic in core.
 - No grammar node kinds in rulepacks.
 - No duplicated serializers, config loaders, or test fixtures.
-- Keep behavior parity tests; widen only deliberately.
+- Preserve existing behavior; widen only deliberately.
 - API additions are additive and versioned.

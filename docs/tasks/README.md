@@ -10,7 +10,7 @@ The V2 rewrite is queued below as 063–087; its design lives in
 [`rewrite/knowledge-model.md`](../rewrite/knowledge-model.md). Ticket 085
 completed the V2 cutover; the single engine is the repository root with modules
 grouped under `analysis/`, `sources/`, `orchestration/`, `apps/`, and `tests/`
-(096), and V1 remains available only in git history and the frozen corpus.
+(096), and V1 remains available only in git history.
 
 | id | name | status | depends-on | scope |
 |---|---|---|---|---|
@@ -81,8 +81,8 @@ grouped under `analysis/`, `sources/`, `orchestration/`, `apps/`, and `tests/`
 ## V2 rewrite queue
 
 Tickets 063–087 built the V2 tree that became the primary engine at cutover and
-now lives at the repository root. V1 remains frozen in git history and the
-corpus as the behavioral reference. Wave numbers are parallelization hints; the
+now lives at the repository root. V1 remains frozen in git history as the
+behavioral reference. Wave numbers are parallelization hints; the
 frontmatter `depends-on` is authoritative. Same-wave tickets can run
 concurrently once their dependencies are done.
 

@@ -4,8 +4,8 @@ The engine is the repository root. Every project, dependency, and interaction
 contract is declared before feature code and enforced by `graphGuard`.
 
 V1 proved the intent model, the rule/fact split, and the renderer protocol. It
-remains the behavioral reference in git history and the frozen corpus. It is not
-the architectural template.
+remains the behavioral reference in git history. It is not the architectural
+template.
 
 The semantic knowledge, function-contract, and MCP-first AI model is in
 [knowledge-model.md](knowledge-model.md). The implementation queue is
@@ -59,7 +59,7 @@ that fails the build when an edge is added outside the graph.
    read analysis and write knowledge through the same mutation API. In-house AI
    is fallback for uninitialized repos, dirty code, CI, and offline use.
 10. **IPC is versioned and negotiated.** Clients name an explicit protocol
-    version; versions 3-4 are legacy replay and version 5 is current. The current
+    version; versions 3-4 are legacy V1-compatible and version 5 is current. The current
     version also requires the published schema fingerprint. Unsupported versions
     and missing versions fail explicitly.
 11. **V2 starts as a walking skeleton.** Empty projects, then contracts, then
@@ -102,15 +102,13 @@ apps/
 tests/
   fixtures/                   :test-fixtures
   integration/                :integration-tests
-  parity/                     parity reports and defect baselines
 
-tools/                        V1 syntax capture tooling
-scripts/                      build, corpus, parity, smoke, and release scripts
+scripts/                      build, smoke, and release scripts
 ```
 
 Support assets have one home: vendored native libraries live under
-`sources/syntax-treesitter/native/`, tools under `tools/`, parity artifacts
-under `tests/parity/`, and engine scripts merged into the root `scripts/`.
+`sources/syntax-treesitter/native/` and engine scripts live under the root
+`scripts/`.
 Ticket 095 renamed both the directory and the Gradle project:
 `analysis/default-rulepacks/` is the canonical `:default-rulepacks` module.
 
@@ -323,7 +321,7 @@ knowledge like a user.
 ### `ipc`
 
 NDJSON message DTOs and framing shared with external renderers. Protocol
-versions 3-4 are legacy replay and 5 is current, with an explicit compatibility
+versions 3-4 are legacy V1-compatible and 5 is current, with an explicit compatibility
 matrix; protocol 5 additionally requires the published schema fingerprint. The
 `server` app binds it to a socket; `runtime` does not know it exists.
 
@@ -444,7 +442,7 @@ the actual intent packs.
 - Do not optimize per-file CPU before the index removes redundant work.
 - Do not let apps import core internals; expose a runtime facade.
 - Do not let `index` resolve languages or import adapters.
-- Preserve V1's golden corpus and observable behavior before deleting it.
+- Preserve observable behavior when replacing V1 implementation details.
 
 ## Open questions
 
@@ -473,5 +471,4 @@ the actual intent packs.
 - [x] Add the architecture guard to CI.
 - [x] Define contracts and fake implementations.
 - [x] Prove the CLI and server walking skeleton.
-- [x] Freeze the V1 corpus and IPC transcripts.
 - [x] Start the index and tree-sitter adapter.

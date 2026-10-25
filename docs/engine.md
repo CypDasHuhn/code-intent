@@ -28,7 +28,7 @@ All commands below run from the repository root.
 | `apps/server` | Live Unix-socket `cint-server` daemon (and protocol compatibility). |
 | `apps/mcp` | `cint-mcp` agent server for analysis and knowledge tools. |
 | `tests/fixtures` (`:test-fixtures`) | Shared fakes and fixture loaders. |
-| `tests/integration` (`:integration-tests`) | Pack/knowledge integration and frozen-corpus parity tests. |
+| `tests/integration` (`:integration-tests`) | Pack, knowledge, and end-to-end integration tests. |
 
 Dependency direction is enforced by `graphGuard` against `graph-guard.json`.
 `contracts` depends on nothing; `core` depends only on `contracts`; `runtime` may
@@ -129,10 +129,8 @@ just test-engine          # all deterministic tests plus graph guard
 just test-lsp             # focused LSP provider tests
 just lint                 # ktlint over Kotlin sources
 just install              # cint, cint-server, cint-mcp distributions
-just graph-guard          # module graph guard and self-test
-just parity               # frozen CLI/IPC parity suites and report check
+just graph-guard          # module graph guard
 just smoke                # built distribution smoke test
-just syntax-provenance    # pinned V1 syntax snapshot verification
 just protocol-schema      # regenerate the renderer protocol JSON Schema
 ```
 

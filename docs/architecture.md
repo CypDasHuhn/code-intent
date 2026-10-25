@@ -56,7 +56,7 @@ The full allowed-edge set is in `graph-guard.json` and
 - `reads` declares required dependencies; `optionalReads` adds an edge only when
   the owner is present. Missing required owners and cycles are load errors.
 - The scheduler topologically sorts rules into strata. Each stratum runs once
-  against frozen earlier output; a self-reading rule may run an internal
+  against the stratum's earlier output; a self-reading rule may run an internal
   monotone fixpoint.
 - Core composition is the terminal node. It consumes source intents and emits
   `DERIVATIVE_USE` and `SCAFFOLD` annotations without naming a pack or rule.

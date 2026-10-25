@@ -17,7 +17,8 @@ CodeIntent is a Kotlin analysis engine plus an external Neovim client.
   and materialized defaults) is persisted under `<root>/.cint/` and edited
   through one mutation API used by users, MCP agents, and fallback AI.
 - The client speaks NDJSON JSON-RPC to a per-project `cint-server` daemon. The
-  current protocol is 5; protocols 3-4 are supported for legacy replay.
+  current protocol is 5; protocols 3-4 remain supported for V1-compatible
+  clients.
 - The batch `cint` CLI and `cint-mcp` agent server share `runtime` with the live
   server.
 
@@ -26,11 +27,8 @@ CodeIntent is a Kotlin analysis engine plus an external Neovim client.
 | ticket | result |
 |---|---|
 | 085 | Cut over to V2: removed V1, promoted the V2 tree to `analysis-engine/` (later moved to the repository root by 096), dropped temporary `-v2` executable names, unified just/CI/scripts/docs, and updated the renderer server path. |
-| 084 | Frozen corpus, protocol, CLI, server, and MCP parity suite, with committed parity reports and defect baselines. |
-| 088-094 | Detection, bookkeeping/validation, composition, candidate, service-init, non-Kotlin syntax, and IPC payload parity. |
-
-The frozen V1 corpus under `frozen-v1-corpus/` remains read-only and is used by
-the parity and syntax-provenance tests.
+| 084 | Historical: protocol, CLI, server, and MCP integration coverage. |
+| 088-094 | Detection, bookkeeping/validation, composition, candidate, service-init, non-Kotlin syntax, and IPC payload work. |
 
 ## Current behavior worth knowing
 
@@ -80,9 +78,7 @@ just test-engine
 just lint
 # renderer tests: cd ../code-intent.nvim && ./tests/run.sh
 just graph-guard
-just parity
 just smoke
-just syntax-provenance
 just size
 just dir-size
 ```

@@ -4,8 +4,8 @@ Index of the written contract for CodeIntent.
 
 ## Current
 
-These documents describe the implemented V2 engine. The V1 corpus remains a
-read-only parity reference.
+These documents describe the implemented V2 engine. It has no V1 runtime or
+reference-corpus dependency.
 
 - [architecture.md](architecture.md) — implemented module boundaries, index and
   pipeline flow, knowledge model, runtime, and hosts.

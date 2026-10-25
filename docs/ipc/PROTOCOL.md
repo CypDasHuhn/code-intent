@@ -16,8 +16,8 @@ in the schema (see below).
 
 | version | status | fingerprint required | initialize shape | behavior |
 |---|---|---|---|---|
-| 3 | legacy | no | V1 | frozen replay; V2-only initialize fields are removed and handlers emit V1 shapes |
-| 4 | legacy | no | V1 | frozen replay; same V1 shapes plus legacy restrictions/cache capability flags |
+| 3 | legacy | no | V1 | legacy V1 shapes; V2-only initialize fields are removed and handlers emit V1 shapes |
+| 4 | legacy | no | V1 | legacy V1 shapes plus legacy restrictions/cache capability flags |
 | 5 | current | yes | V2 | full V2 shapes; fingerprint must equal the published schema fingerprint |
 
 Rules:
@@ -34,7 +34,7 @@ Rules:
 - Adding, removing, or changing a wire field, enum value, method, or default
   rotates the fingerprint. That is a protocol change and requires a new version
   or an explicit compatibility decision.
-- Legacy versions exist only for frozen V1 replay. New editor work targets the
+- Legacy versions serve V1-compatible clients. New editor work targets the
   current version.
 
 ## Handshake

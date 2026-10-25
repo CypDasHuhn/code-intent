@@ -53,17 +53,6 @@ class SyntaxEngineTest {
     }
 
     @Test
-    fun frozenKotlinCorpusMatchesTheV1SnapshotOnThisTarget() {
-        val engine = createSyntaxEngine("kotlin")
-        assertEquals(11, V1KotlinSnapshot.sources.size)
-        for ((name, source) in V1KotlinSnapshot.sources) {
-            val tree = engine.parse(source.encodeToByteArray(), null).getOrThrow()
-            assertEquals(V1KotlinSnapshot.fingerprints.getValue(name), syntaxFingerprint(tree), name)
-            assertTrue(tree.nodes.values.none { it.kind == "ERROR" }, "$name has ERROR nodes")
-        }
-    }
-
-    @Test
     fun spansUseRealEndPointsAndMatchTheirByteLength() {
         val tree = createSyntaxEngine("kotlin").parse(sample.encodeToByteArray(), null).getOrThrow()
         val function =

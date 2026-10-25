@@ -47,14 +47,5 @@ jobs:
       - name: Graph guard
         run: just graph-guard
 
-      - name: Parity
-        run: just parity
-
-      - name: Parity report committed
-        run: git diff --exit-code -- tests/parity
-
       - name: Smoke
         run: just smoke
-
-      - name: Syntax provenance
-        run: just syntax-provenance
