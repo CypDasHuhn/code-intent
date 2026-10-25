@@ -14,6 +14,7 @@ import dev.cint.contracts.ports.KnowledgeStore
 import dev.cint.contracts.ports.LanguageSupport
 import dev.cint.contracts.ports.RulePackSource
 import dev.cint.contracts.ports.Runtime
+import dev.cint.contracts.ports.RuntimeLanguage
 import dev.cint.contracts.ports.RuntimePack
 import dev.cint.contracts.ports.RuntimeStatus
 import dev.cint.contracts.util.CancellationToken
@@ -240,6 +241,16 @@ class DefaultRuntime private constructor(
                 knowledgeMaterialized = knowledge.materialized,
                 isRuntimeOpen = !closed,
             ),
+        )
+    }
+
+    override fun languages(cancellation: CancellationToken): ContractResult<List<RuntimeLanguage>> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        return ResultFactory.success(
+            language.catalog.descriptors.map { descriptor ->
+                config.languageStatus(descriptor, config.languageOptions)
+            },
         )
     }
 

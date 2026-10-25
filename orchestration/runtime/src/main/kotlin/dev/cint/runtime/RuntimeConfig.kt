@@ -1,5 +1,6 @@
 package dev.cint.runtime
 
+import dev.cint.contracts.facts.LanguageDescriptor
 import dev.cint.contracts.ports.ProviderMode
 import dev.cint.contracts.ports.SemanticProviderConfig
 import dev.cint.v2.index.IndexPlan
@@ -16,7 +17,7 @@ data class RuntimeConfig(
     val semanticTimeoutMs: Long = 5_000,
     val providerCommands: Map<String, String> = DEFAULT_PROVIDER_COMMANDS,
     val providerConfigs: Map<String, SemanticProviderConfig> = emptyMap(),
-    val languageOptions: LanguageOptions = LanguageOptions(),
+    val languageOptions: LanguageOptions = LanguageOptions(rootPath = rootPath),
     val publishOnAnalyze: Boolean = false,
     val materializeDefaultsOnOpen: Boolean = true,
     val applyUnmaterializedDefaults: Boolean = true,
@@ -36,13 +37,21 @@ data class RuntimeConfig(
 }
 
 internal fun RuntimeConfig.providerDefaults(): LanguageProviderDefaults =
-    LanguageProviderDefaults { descriptor ->
-        providerConfigs[descriptor.id]
-            ?: run {
-                val command = providerCommands[descriptor.id]
-                SemanticProviderConfig(
-                    mode = if (command != null) ProviderMode.MANAGED else descriptor.providerMode,
-                    command = command,
-                )
-            }
+    LanguageProviderDefaults { descriptor -> providerConfigFor(descriptor) }
+
+internal fun RuntimeConfig.providerConfigFor(descriptor: LanguageDescriptor): SemanticProviderConfig {
+    val configured = providerConfigs[descriptor.id]
+    val commandOverride = providerCommands[descriptor.id]
+    val base =
+        configured
+            ?: SemanticProviderConfig(
+                mode = if (commandOverride != null) ProviderMode.MANAGED else descriptor.providerMode,
+                command = commandOverride,
+            )
+    val command = base.command ?: commandOverride
+    return if (base.mode == ProviderMode.MANAGED && !command.isNullOrBlank()) {
+        base.copy(command = command)
+    } else {
+        base
     }
+}

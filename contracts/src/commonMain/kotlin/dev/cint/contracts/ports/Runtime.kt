@@ -70,6 +70,9 @@ interface Runtime {
 
     fun status(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<RuntimeStatus>
 
+    fun languages(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<List<RuntimeLanguage>> =
+        ResultFactory.success(emptyList())
+
     fun shutdown(): ContractResult<Unit>
 }
 
@@ -89,4 +92,19 @@ data class RuntimeStatus(
     val indexedPaths: List<String> = emptyList(),
     val knowledgeMaterialized: Boolean = false,
     val isRuntimeOpen: Boolean = true,
+)
+
+@Serializable
+data class RuntimeLanguage(
+    val language: String,
+    val name: String,
+    val extensions: List<String>,
+    val aliases: List<String> = emptyList(),
+    val providerMode: ProviderMode,
+    val providerConfigured: Boolean,
+    val providerAvailable: Boolean,
+    val command: String? = null,
+    val endpoint: String? = null,
+    val hostChannelType: String? = null,
+    val missingConfiguration: List<String> = emptyList(),
 )

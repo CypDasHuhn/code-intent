@@ -110,9 +110,74 @@ implementation notes.
 ### MCP
 
 `cint-mcp` exposes `analysis.run`, `repo.status`, `repo.index`,
-`knowledge.snapshot`, `knowledge.suggestDefaults`,
+`repo.languages`, `knowledge.snapshot`, `knowledge.suggestDefaults`,
 `knowledge.materializeDefaults`, and the function/span/pattern knowledge tools.
 It is the primary agent workflow; fallback AI is separate and optional.
+
+```sh
+./apps/mcp/build/install/cint-mcp/bin/cint-mcp --root /path/to/project \
+  --provider-config /path/to/providers.json
+```
+
+Providers can also be configured per language without a file. The flags are
+repeatable and override matching file entries:
+
+```sh
+cint-mcp --root /path/to/project \
+  --provider-command typescript="typescript-language-server --stdio" \
+  --provider-mode javascript=attached \
+  --provider-endpoint javascript=unix:/tmp/cint-javascript.sock
+```
+
+`--provider-mode` accepts `managed`, `attached`, or `editor`. Kotlin keeps its
+managed `kotlin-lsp --stdio` default; `--provider-command kotlin=...` overrides
+it. Managed mode requires a command, attached mode requires an endpoint, and
+editor mode requires a host channel configuration. `cint-mcp` does not yet
+provide an editor `HostSemanticChannelProvider`, so editor entries are
+representable and reported but not executable by this app; prefer managed or
+attached providers. `repo.languages` reports each
+language's resolved mode, whether its configuration is complete, and the
+configured command or endpoint. It does not start an LSP process, so
+`providerAvailable` means "configuration is complete", not "the server was
+probed". `analysis.run` on a missing provider fails with a precondition error
+that names the language and points at `--provider-config`/`--provider-command`.
+
+Provider config file shape:
+
+```json
+{
+  "providers": {
+    "kotlin": {
+      "mode": "managed",
+      "command": "kotlin-lsp --stdio"
+    },
+    "typescript": {
+      "mode": "managed",
+      "command": "typescript-language-server --stdio",
+      "timeoutMs": 5000,
+      "initTimeoutMs": 30000
+    },
+    "javascript": {
+      "mode": "attached",
+      "endpoint": "unix:/tmp/cint-javascript.sock"
+    },
+    "vue": {
+      "mode": "editor",
+      "hostChannelConfig": {
+        "type": "editor",
+        "config": {"socket": "/tmp/cint-editor.sock"}
+      }
+    }
+  }
+}
+```
+
+Each entry may set `mode`, `command`, `endpoint`, `rootPath`, `timeoutMs`,
+`initTimeoutMs`, `languageOverrides`, and `hostChannelConfig`. If `mode` is
+omitted, `command`, `endpoint`, or `hostChannelConfig` select managed, attached,
+or editor respectively. Language keys are case-insensitive; use the canonical
+ids from `repo.languages` (`kotlin`, `c`, `javascript`, `typescript`, `vue`,
+`csharp`).
 
 ## Config
 

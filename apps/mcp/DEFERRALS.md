@@ -22,3 +22,12 @@ through `runtime`, keeping MCP free of adapter imports.
 Limitation: an MCP invocation without `--root` or `--checkpoint` uses the
 in-memory checkpoint store, so init state does not survive process restarts.
 Pass `--root` (or an explicit `--checkpoint` path) for durable init.
+
+## Ticket 099: editor provider channels
+
+`--provider-config` can describe an editor provider with `hostChannelConfig`,
+and `repo.languages` reports whether that configuration is complete. The MCP app
+does not yet inject a `HostSemanticChannelProvider`, so editor mode is not
+executable through `cint-mcp`; managed and attached providers are the supported
+startup modes. `repo.languages` marks editor entries unavailable and names the
+missing host channel provider rather than probing or starting an LSP.

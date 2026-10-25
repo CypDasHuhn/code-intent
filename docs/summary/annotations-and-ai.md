@@ -48,10 +48,16 @@ derivation path and is not the primary AI workflow.
 
 The primary AI workflow is an external MCP agent. `cint-mcp` exposes:
 
-- `analysis.run`, `repo.status`, `repo.index`
+- `analysis.run`, `repo.status`, `repo.index`, `repo.languages`
 - `knowledge.snapshot`, `knowledge.suggestDefaults`,
   `knowledge.materializeDefaults`
 - function annotation, span override, and pattern tools
+
+Configure non-Kotlin providers with `--provider-config PATH` or repeatable
+`--provider-command LANGUAGE=COMMAND` flags; `--provider-mode` and
+`--provider-endpoint` cover attached and editor modes. Kotlin keeps its managed
+default. `repo.languages` lists resolved modes and configuration status without
+starting an LSP, and `analysis.run` fails explicitly when a provider is missing.
 
 MCP handlers call `runtime`; tool DTOs live in `contracts`. MCP is not the
 renderer IPC protocol.

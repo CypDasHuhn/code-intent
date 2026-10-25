@@ -348,6 +348,8 @@ class LanguageSupportFactoryTest {
                 ).requireFailure()
         assertIs<ContractError.PreconditionFailed>(managed)
         assertTrue(managed.message.contains("command"))
+        assertTrue(managed.message.contains("kotlin"))
+        assertTrue(managed.message.contains("--provider-command kotlin="))
 
         val editor =
             factory
@@ -360,6 +362,29 @@ class LanguageSupportFactoryTest {
                 ).requireFailure()
         assertIs<ContractError.PreconditionFailed>(editor)
         assertTrue(editor.message.contains("HostSemanticChannel"))
+        assertTrue(editor.message.contains("kotlin"))
+        assertTrue(providers.modes.isEmpty())
+    }
+
+    @Test
+    fun missingCommandNamesANonKotlinLanguageAndConfiguration() {
+        val root = projectRoot()
+        val providers = RecordingProviderFactory()
+        val factory = LanguageSupportFactory(providerFactory = providers)
+
+        val error =
+            factory
+                .resolve(
+                    "javascript",
+                    LanguageOptions(
+                        providerConfig = SemanticProviderConfig(mode = ProviderMode.MANAGED),
+                        rootPath = root.toString(),
+                    ),
+                ).requireFailure()
+
+        assertIs<ContractError.PreconditionFailed>(error)
+        assertTrue(error.message.contains("javascript"), error.message)
+        assertTrue(error.message.contains("--provider-command javascript="), error.message)
         assertTrue(providers.modes.isEmpty())
     }
 
@@ -378,6 +403,8 @@ class LanguageSupportFactoryTest {
                     ),
                 ).requireFailure()
         assertIs<ContractError.PreconditionFailed>(attached)
+        assertTrue(attached.message.contains("kotlin"))
+        assertTrue(attached.message.contains("--provider-endpoint kotlin="))
 
         val started =
             factory

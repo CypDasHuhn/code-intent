@@ -88,6 +88,8 @@ internal class McpRuntimeTools(
 
                 "repo.index" -> repoIndex(args, cancellation)
 
+                "repo.languages" -> repoLanguagesReport(runtime, cancellation)
+
                 else -> throw McpProtocolException(
                     -32602,
                     "Unknown tool: $name",
@@ -338,7 +340,10 @@ internal class McpRuntimeTools(
                 forceFullAnalysis = force,
             )
         val result = runtime.analyze(request, cancellation)
-        if (result.isFailure) return toolFailure(result.errorOrNull!!)
+        if (result.isFailure) {
+            val error = result.errorOrNull!!
+            return toolFailure(error, providerConfigurationHint(error))
+        }
         val progress =
             recordProgress(
                 workflowId = workflowId,
