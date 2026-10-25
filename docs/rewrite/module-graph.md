@@ -74,6 +74,7 @@ analysis-engine/
   packs/              :packs
   index/              :index
   knowledge/          :knowledge
+  knowledge-persistence/ :knowledge-persistence
   languages/          :languages
   syntax-treesitter/  :syntax-treesitter
   lsp/                :lsp
@@ -92,8 +93,9 @@ analysis-engine/
 former `kernel`. Names are still provisional, but the roles are not.
 
 `knowledge` is the materialized semantic store: function annotations, span
-overrides, pattern hypotheses, and provenance. `mcp` is the external-agent
-boundary; it is an app, not a library.
+overrides, pattern hypotheses, and provenance. `knowledge-persistence` is the
+filesystem adapter for the knowledge JSON document; it owns `Path` and file IO.
+`mcp` is the external-agent boundary; it is an app, not a library.
 
 Possible later splits: `ai` may become a sidecar or move to the host, and
 `lsp` may split into `lsp-client` and `lsp-editor` if the editor proxy grows
@@ -118,6 +120,7 @@ core      -> contracts
 packs     -> contracts
 index     -> contracts
 knowledge -> contracts
+knowledge-persistence -> contracts, knowledge
 
 syntax-treesitter -> contracts
 lsp               -> contracts
@@ -147,6 +150,7 @@ boundary and may call runtime, but no library depends on `mcp`.
 | `packs` | `contracts` | `core`, `knowledge`, parser, LSP |
 | `index` | `contracts` | `core`, `packs`, `knowledge`, `languages`, parser, LSP |
 | `knowledge` | `contracts` | `core`, `packs`, `index`, adapters, apps |
+| `knowledge-persistence` | `contracts`, `knowledge` | `core`, `packs`, `index`, runtime, apps |
 | `languages` | `contracts`, `syntax-treesitter`, `lsp` | `core`, `runtime`, `index`, `knowledge` |
 | `syntax-treesitter` | `contracts` | `core`, `runtime`, `packs`, `languages` |
 | `lsp` | `contracts` | `core`, `runtime`, `packs`, `languages` |
@@ -219,8 +223,12 @@ The materialized semantic store: function annotations, span overrides, pattern
 hypotheses, materialized pack defaults, and provenance.
 
 It owns validation, selector identity, versioning, and mutation. It does not own
-analysis, rule evaluation, parsing, or provider access. Users, MCP agents, and
-fallback AI all write through its mutation API; AI gets no separate store.
+analysis, rule evaluation, parsing, filesystem access, or provider access. Users,
+MCP agents, and fallback AI all write through its mutation API; AI gets no
+separate store.
+
+`knowledge-persistence` owns the JSON file adapter around the knowledge snapshot
+codec. It does not own store semantics.
 
 ### `languages`
 

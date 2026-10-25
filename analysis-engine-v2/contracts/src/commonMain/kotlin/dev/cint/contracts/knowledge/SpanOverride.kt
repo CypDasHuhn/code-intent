@@ -3,9 +3,7 @@ package dev.cint.contracts.knowledge
 import dev.cint.contracts.data.Confidence
 import dev.cint.contracts.data.Intent
 import dev.cint.contracts.data.Provenance
-import dev.cint.contracts.data.Span
 import dev.cint.contracts.data.Status
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
@@ -20,11 +18,11 @@ data class SpanOverride(
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {
-    fun withStatus(newStatus: Status): SpanOverride =
-        copy(status = newStatus, updatedAt = Clock.System.now())
+    fun withStatus(newStatus: Status, updatedAt: Instant): SpanOverride =
+        copy(status = newStatus, updatedAt = updatedAt)
 
-    fun withIntents(newIntents: Set<Intent>): SpanOverride =
-        copy(intents = newIntents, updatedAt = Clock.System.now())
+    fun withIntents(newIntents: Set<Intent>, updatedAt: Instant): SpanOverride =
+        copy(intents = newIntents.toSet(), updatedAt = updatedAt)
 
     companion object {
         fun create(
@@ -34,15 +32,17 @@ data class SpanOverride(
             confidence: Confidence = Confidence.HIGH,
             status: Status = Status.SUGGESTED,
             rationale: String = "",
+            createdAt: Instant,
+            updatedAt: Instant = createdAt,
         ): SpanOverride = SpanOverride(
             selector = selector,
-            intents = intents,
+            intents = intents.toSet(),
             provenance = provenance,
             confidence = confidence,
             status = status,
             rationale = rationale,
-            createdAt = Clock.System.now(),
-            updatedAt = Clock.System.now(),
+            createdAt = createdAt,
+            updatedAt = updatedAt,
         )
     }
 }

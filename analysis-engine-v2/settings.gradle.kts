@@ -9,6 +9,7 @@ val moduleIncludes = mutableListOf(
     ":packs",
     ":index",
     ":knowledge",
+    ":knowledge-persistence",
     ":languages",
     ":syntax-treesitter",
     ":lsp",
@@ -32,6 +33,7 @@ project(":core").projectDir = file("core")
 project(":packs").projectDir = file("packs")
 project(":index").projectDir = file("index")
 project(":knowledge").projectDir = file("knowledge")
+project(":knowledge-persistence").projectDir = file("knowledge-persistence")
 project(":languages").projectDir = file("languages")
 project(":syntax-treesitter").projectDir = file("syntax-treesitter")
 project(":lsp").projectDir = file("lsp")

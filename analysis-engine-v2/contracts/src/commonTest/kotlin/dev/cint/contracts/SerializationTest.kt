@@ -7,6 +7,7 @@ import dev.cint.contracts.ipc.*
 import dev.cint.contracts.mcp.*
 import dev.cint.contracts.ports.*
 import dev.cint.contracts.util.*
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -16,11 +17,12 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class SerializationTest {
-    private val json = Json { 
-        prettyPrint = true; 
-        ignoreUnknownKeys = false 
+    private val json = Json {
+        prettyPrint = true
+        ignoreUnknownKeys = false
         classDiscriminator = "type"
     }
+    private val timestamp = Instant.parse("2025-01-01T00:00:00Z")
 
     @Test
     fun testIntentSerialization() {
@@ -180,6 +182,7 @@ class SerializationTest {
             provenance = Provenance.USER,
             confidence = Confidence.HIGH,
             status = Status.ACCEPTED,
+            createdAt = timestamp,
         )
         val serialized = json.encodeToString(annotation)
         val deserialized = json.decodeFromString<FunctionAnnotation>(serialized)
@@ -196,6 +199,7 @@ class SerializationTest {
             ),
             intents = setOf(Intents.VALIDATION),
             rationale = "Explicit validation guard",
+            createdAt = timestamp,
         )
         val serialized = json.encodeToString(override)
         val deserialized = json.decodeFromString<SpanOverride>(serialized)
@@ -209,6 +213,7 @@ class SerializationTest {
             intents = setOf(Intents.LOGGING),
             packId = "logging",
             packVersion = "1.0.0",
+            createdAt = timestamp,
         )
         val serialized = json.encodeToString(default)
         val deserialized = json.decodeFromString<PackDefault>(serialized)
@@ -218,12 +223,13 @@ class SerializationTest {
     @Test
     fun testPatternHypothesisSerialization() {
         val hypothesis = PatternHypothesis.create(
-            id = "hypothesis-1",
+            selector = PatternSelector(pattern = "hypothesis-1"),
             scope = AnnotationScope.GLOBAL,
             evidence = listOf("pattern observed in 10 files"),
             examples = listOf("logger.info(...)"),
             counterexamples = listOf("logger.debug(...)"),
             proposedIntents = setOf(Intents.LOGGING),
+            createdAt = timestamp,
         )
         val serialized = json.encodeToString(hypothesis)
         val deserialized = json.decodeFromString<PatternHypothesis>(serialized)
@@ -237,24 +243,28 @@ class SerializationTest {
                 FunctionAnnotation.create(
                     selector = FunctionSelector(qualifiedName = "com.example.A"),
                     intents = setOf(Intents.LOOKUP),
+                    createdAt = timestamp,
                 )
             ),
             spanOverrides = listOf(
                 SpanOverride.create(
                     selector = SpanSelector(path = "A.kt", span = Span(1,0,1,10), contentHash = "h1"),
                     intents = setOf(Intents.VALIDATION),
+                    createdAt = timestamp,
                 )
             ),
             patternHypotheses = listOf(
                 PatternHypothesis.create(
-                    id = "h1",
+                    selector = PatternSelector(pattern = "h1"),
                     scope = AnnotationScope.GLOBAL,
                     evidence = listOf("e1"),
                     examples = listOf("ex1"),
                     counterexamples = listOf(),
                     proposedIntents = setOf(Intents.SEARCH),
+                    createdAt = timestamp,
                 )
             ),
+            timestamp = 1,
         )
         val serialized = json.encodeToString(snapshot)
         val deserialized = json.decodeFromString<KnowledgeSnapshot>(serialized)
@@ -555,6 +565,7 @@ class SerializationTest {
             functionAnnotations = emptyList(),
             spanOverrides = emptyList(),
             patternHypotheses = emptyList(),
+            timestamp = 1,
         )
         val response = McpResponse.KnowledgeSnapshotResponse(
             requestId = "req-1",

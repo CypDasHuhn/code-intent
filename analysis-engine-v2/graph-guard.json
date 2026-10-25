@@ -4,6 +4,8 @@
     ["packs", "contracts"],
     ["index", "contracts"],
     ["knowledge", "contracts"],
+    ["knowledge-persistence", "contracts"],
+    ["knowledge-persistence", "knowledge"],
     ["syntax-treesitter", "contracts"],
     ["lsp", "contracts"],
     ["languages", "contracts"],

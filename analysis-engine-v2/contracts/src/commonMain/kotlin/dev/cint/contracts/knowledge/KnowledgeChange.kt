@@ -30,14 +30,26 @@ sealed interface KnowledgeChange {
     ) : KnowledgeChange
 
     @Serializable
+    @SerialName("SetPatternHypothesis")
+    data class SetPatternHypothesis(
+        val hypothesis: PatternHypothesis,
+    ) : KnowledgeChange
+
+    @Serializable
+    @SerialName("RemovePatternHypothesis")
+    data class RemovePatternHypothesis(
+        val selector: PatternSelector,
+    ) : KnowledgeChange
+
+    @Serializable
     @SerialName("MaterializeDefaults")
     data class MaterializeDefaults(
         val defaults: List<PackDefault>,
     ) : KnowledgeChange
 
     @Serializable
-    @SerialName("ProposeChange")
-    data class ProposeChange(
+    @SerialName("Batch")
+    data class Batch(
         val description: String,
         val changes: List<KnowledgeChange>,
     ) : KnowledgeChange

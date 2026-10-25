@@ -1,15 +1,21 @@
 package dev.cint.contracts.ports
 
 import dev.cint.contracts.knowledge.FunctionAnnotation
+import dev.cint.contracts.knowledge.FunctionSelector
 import dev.cint.contracts.knowledge.KnowledgeChange
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.contracts.knowledge.PackDefault
+import dev.cint.contracts.knowledge.PackOrigin
 import dev.cint.contracts.knowledge.PatternHypothesis
+import dev.cint.contracts.knowledge.PatternSelector
 import dev.cint.contracts.knowledge.SpanOverride
+import dev.cint.contracts.knowledge.SpanSelector
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractResult
 
 interface KnowledgeStore {
+    val isMaterialized: Boolean
+
     fun snapshot(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<KnowledgeSnapshot>
 
     fun functionAnnotations(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<List<FunctionAnnotation>>
@@ -20,7 +26,7 @@ interface KnowledgeStore {
     ): ContractResult<FunctionAnnotation>
 
     fun removeFunctionAnnotation(
-        selector: dev.cint.contracts.knowledge.FunctionSelector,
+        selector: FunctionSelector,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<Unit>
 
@@ -32,7 +38,7 @@ interface KnowledgeStore {
     ): ContractResult<SpanOverride>
 
     fun removeSpanOverride(
-        selector: dev.cint.contracts.knowledge.SpanSelector,
+        selector: SpanSelector,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<Unit>
 
@@ -44,14 +50,25 @@ interface KnowledgeStore {
     ): ContractResult<PatternHypothesis>
 
     fun removePatternHypothesis(
-        id: String,
+        selector: PatternSelector,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<Unit>
+
+    fun packOrigin(
+        selector: FunctionSelector,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<PackOrigin?>
 
     fun materializeDefaults(
         defaults: List<PackDefault>,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<Unit>
+
+    fun pruneStale(
+        validFunctionSelectors: Set<FunctionSelector>,
+        validSpanSelectors: Set<SpanSelector>,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<Int>
 
     fun proposeChange(
         change: KnowledgeChange,

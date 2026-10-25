@@ -4,7 +4,6 @@ import dev.cint.contracts.data.Confidence
 import dev.cint.contracts.data.Intent
 import dev.cint.contracts.data.Provenance
 import dev.cint.contracts.data.Status
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
@@ -19,14 +18,14 @@ data class FunctionAnnotation(
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {
-    fun withStatus(newStatus: Status): FunctionAnnotation =
-        copy(status = newStatus, updatedAt = Clock.System.now())
+    fun withStatus(newStatus: Status, updatedAt: Instant): FunctionAnnotation =
+        copy(status = newStatus, updatedAt = updatedAt)
 
-    fun withIntents(newIntents: Set<Intent>): FunctionAnnotation =
-        copy(intents = newIntents, updatedAt = Clock.System.now())
+    fun withIntents(newIntents: Set<Intent>, updatedAt: Instant): FunctionAnnotation =
+        copy(intents = newIntents.toSet(), updatedAt = updatedAt)
 
-    fun withConfidence(newConfidence: Confidence): FunctionAnnotation =
-        copy(confidence = newConfidence, updatedAt = Clock.System.now())
+    fun withConfidence(newConfidence: Confidence, updatedAt: Instant): FunctionAnnotation =
+        copy(confidence = newConfidence, updatedAt = updatedAt)
 
     companion object {
         fun create(
@@ -36,15 +35,17 @@ data class FunctionAnnotation(
             provenance: Provenance = Provenance.USER,
             confidence: Confidence = Confidence.HIGH,
             status: Status = Status.SUGGESTED,
+            createdAt: Instant,
+            updatedAt: Instant = createdAt,
         ): FunctionAnnotation = FunctionAnnotation(
             selector = selector,
-            intents = intents,
+            intents = intents.toSet(),
             scope = scope,
             provenance = provenance,
             confidence = confidence,
             status = status,
-            createdAt = Clock.System.now(),
-            updatedAt = Clock.System.now(),
+            createdAt = createdAt,
+            updatedAt = updatedAt,
         )
     }
 }

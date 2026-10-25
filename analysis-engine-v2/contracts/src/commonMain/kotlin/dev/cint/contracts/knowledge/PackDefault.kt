@@ -4,7 +4,6 @@ import dev.cint.contracts.data.Confidence
 import dev.cint.contracts.data.Intent
 import dev.cint.contracts.data.Provenance
 import dev.cint.contracts.data.Status
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
@@ -17,7 +16,7 @@ data class PackDefault(
     val provenance: Provenance = Provenance.PACK_DEFAULT,
     val confidence: Confidence = Confidence.MEDIUM,
     val status: Status = Status.SUGGESTED,
-    val createdAt: Instant = Clock.System.now(),
+    val createdAt: Instant,
 ) {
     fun toFunctionAnnotation(): FunctionAnnotation =
         FunctionAnnotation.create(
@@ -26,5 +25,7 @@ data class PackDefault(
             provenance = provenance,
             confidence = confidence,
             status = status,
+            createdAt = createdAt,
+            updatedAt = createdAt,
         )
 }
