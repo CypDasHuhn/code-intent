@@ -294,6 +294,13 @@ class CorpusParityTest {
         assertTrue(defects.all { it.getValue("reason").jsonPrimitive.content.isNotBlank() })
         val registered = DEFERRALS.keys
         assertEquals(emptySet(), defects.map { it.getValue("ticket").jsonPrimitive.content }.toSet() - registered)
+        val bookkeepingValidationDefects =
+            defects.filter { it.getValue("ticket").jsonPrimitive.content == "089-v2-bookkeeping-validation-parity" }
+        assertEquals(
+            emptyList(),
+            bookkeepingValidationDefects,
+            "bookkeeping/validation parity defects remain",
+        )
         val signatures = defects.map(::defectSignature).groupingBy { it }.eachCount().toSortedMap()
         val baselinePath = Path.of(System.getProperty("v2.v2Root"), "parity", "defect-baseline.json")
         assertTrue(Files.isRegularFile(baselinePath), "missing defect baseline $baselinePath")

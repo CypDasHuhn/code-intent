@@ -1052,7 +1052,7 @@
             "compared": true,
             "differenceCount": 2,
             "differences": [
-              "status.liveStatus expected=<missing> actual={\"status\":\"ok\",\"version\":\"0.1.0\",\"uptimeMs\":3,\"activeDocuments\":0,\"suggestionQueue\":0}",
+              "status.liveStatus expected=<missing> actual={\"status\":\"ok\",\"version\":\"0.1.0\",\"uptimeMs\":<UPTIME>,\"activeDocuments\":0,\"suggestionQueue\":0}",
               "status.liveStatusError expected={\"code\":-32000,\"message\":\"unknown method: cint/status\"} actual=<missing>"
             ],
             "intentionalDifferenceIds": [

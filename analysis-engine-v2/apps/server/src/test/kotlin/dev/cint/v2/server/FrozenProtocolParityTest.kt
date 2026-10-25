@@ -713,7 +713,8 @@ class FrozenProtocolParityTest {
                     JsonPrimitive(
                         element.content
                             .replace(Regex("""/tmp/[^\s\"\]]*"""), "<TMP>")
-                            .replace(Regex("""/var/folders/[^\s\"\]]*"""), "<TMP>"),
+                            .replace(Regex("""/var/folders/[^\s\"\]]*"""), "<TMP>")
+                            .replace(Regex(""""uptimeMs":\d+"""), """"uptimeMs":<UPTIME>"""),
                     )
                 } else {
                     element
