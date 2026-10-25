@@ -493,10 +493,24 @@ class SerializationTest {
             version = "1.0.0",
             languages = listOf("kotlin", "java"),
             providesIntents = listOf(Intents.LOGGING),
+            defaultEnabled = false,
         )
         val serialized = json.encodeToString(manifest)
         val deserialized = json.decodeFromString<PackManifest>(serialized)
         assertEquals(manifest, deserialized)
+    }
+
+    @Test
+    fun testPackDiagnosticSerialization() {
+        val diagnostic = PackDiagnostic(
+            packId = "logging",
+            code = "MISSING_DEPENDENCY",
+            message = "missing dependency",
+            error = ContractError.DependencyUnavailable("pack:core", "missing"),
+        )
+        val serialized = json.encodeToString(diagnostic)
+        val deserialized = json.decodeFromString<PackDiagnostic>(serialized)
+        assertEquals(diagnostic, deserialized)
     }
 
     @Test

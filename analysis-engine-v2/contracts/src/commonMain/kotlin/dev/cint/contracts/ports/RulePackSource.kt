@@ -2,6 +2,7 @@ package dev.cint.contracts.ports
 
 import dev.cint.contracts.knowledge.PackDefault
 import dev.cint.contracts.util.CancellationToken
+import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
 import kotlinx.serialization.Serializable
 
@@ -17,6 +18,8 @@ interface RulePackSource {
         language: String,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<List<PackDefault>>
+
+    fun diagnostics(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<List<PackDiagnostic>>
 }
 
 @Serializable
@@ -28,6 +31,15 @@ data class PackManifest(
     val description: String = "",
     val dependencies: List<String> = emptyList(),
     val providesIntents: List<String> = emptyList(),
+    val defaultEnabled: Boolean = true,
+)
+
+@Serializable
+data class PackDiagnostic(
+    val packId: String,
+    val code: String,
+    val message: String,
+    val error: ContractError? = null,
 )
 
 @Serializable
@@ -43,7 +55,6 @@ data class RuleSpec(
     val owns: String,
     val reads: List<String> = emptyList(),
     val optionalReads: List<String> = emptyList(),
-    val config: Map<String, String> = emptyMap(),
 )
 
 @Serializable

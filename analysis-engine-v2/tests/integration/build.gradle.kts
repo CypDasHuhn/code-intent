@@ -20,4 +20,7 @@ dependencies {
     implementation(project(":server"))
     implementation(project(":mcp"))
     implementation(project(":test-fixtures"))
+
+    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
 }

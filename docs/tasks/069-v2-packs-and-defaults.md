@@ -31,3 +31,4 @@ Implement manifest-based packs that supply playbooks and seed FunctionAnnotation
 
 - Packs suggest; the project materializes.
 - Use the frozen V1 pack behavior as the parity source.
+- Deliberate contract change owned by 069: remove the untyped `RuleSpec.config` map from the 065 port. It was a per-pack user-configuration surface; 075 will replace it with typed plan/binding data.

@@ -1,0 +1,5940 @@
+{
+    "formatVersion": 1,
+    "packs": [
+        {
+            "id": "logging",
+            "name": "Logging",
+            "version": "1.0.0",
+            "description": "Logging, console, and logger interaction defaults",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "logging:logging",
+                    "owns": "LOGGING"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "kotlin.io.println"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "kotlin.io.print"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.lang.System.out.println"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.lang.System.out.print"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.lang.System.err.println"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.lang.System.err.print"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.slf4j.Logger.trace"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.slf4j.Logger.debug"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.slf4j.Logger.info"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.slf4j.Logger.warn"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.slf4j.Logger.error"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.util.logging.Logger.finest"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.util.logging.Logger.finer"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.util.logging.Logger.fine"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.util.logging.Logger.info"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.util.logging.Logger.warning"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.util.logging.Logger.severe"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.apache.logging.log4j.Logger.trace"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.apache.logging.log4j.Logger.debug"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.apache.logging.log4j.Logger.info"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.apache.logging.log4j.Logger.warn"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.apache.logging.log4j.Logger.error"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "org.apache.logging.log4j.Logger.fatal"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "console.log"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "console.info"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "console.debug"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "console.warn"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "console.error"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "console.trace"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "pino.info"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "pino.warn"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "pino.error"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "pino.debug"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "pino.trace"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Console.WriteLine"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Console.Write"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Console.Error.WriteLine"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Console.Error.Write"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Diagnostics.Debug.WriteLine"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Diagnostics.Trace.WriteLine"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogTrace"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogDebug"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogInformation"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogWarning"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogError"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Microsoft.Extensions.Logging.LoggerExtensions.LogCritical"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "info",
+                        "receiverType": "org.slf4j.Logger"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "info",
+                        "receiverType": "io.github.oshai.kotlinlogging.KLogger"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "logging-state"
+                    },
+                    "intents": [
+                        "LOGGING"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "error-handling",
+            "name": "Error handling",
+            "version": "1.0.0",
+            "description": "Thrown errors and validation-style guard calls",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "error-handling:error-handling",
+                    "owns": "ERROR_HANDLING"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "require"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "requireNotNull"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "check"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "checkNotNull"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "error"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "TODO"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "assert"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "assert"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "invariant"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Diagnostics.Debug.Assert"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Diagnostics.Trace.Assert"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Diagnostics.Contracts.Contract.Assert"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.Diagnostics.Contracts.Contract.Requires"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "throw"
+                    },
+                    "intents": [
+                        "ERROR_HANDLING"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                }
+            ]
+        },
+        {
+            "id": "bookkeeping",
+            "name": "Bookkeeping",
+            "version": "1.0.0",
+            "description": "Annotated or comment-marked bookkeeping declarations",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "bookkeeping:bookkeeping",
+                    "owns": "BOOKKEEPING"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "structuralPattern": "@Bookkeeping"
+                    },
+                    "intents": [
+                        "BOOKKEEPING"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "cint:bookkeeping"
+                    },
+                    "intents": [
+                        "BOOKKEEPING"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                }
+            ]
+        },
+        {
+            "id": "validation",
+            "name": "Validation",
+            "version": "1.0.0",
+            "description": "Early-exit validation guards and validation helpers",
+            "defaultEnabled": true,
+            "dependencies": [
+                "bookkeeping",
+                "mutation"
+            ],
+            "rules": [
+                {
+                    "id": "validation:validation",
+                    "owns": "VALIDATION",
+                    "reads": [
+                        "BOOKKEEPING",
+                        "DATA_MODIFY",
+                        "LOCAL_VALUE_MODIFY"
+                    ]
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "validate"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "validateOrThrow"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "isValid"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "isNullOrEmpty"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "isNullOrBlank"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "isNotEmpty"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "isNotBlank"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "requireValid"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "checkValid"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "early-exit-validation-guard"
+                    },
+                    "intents": [
+                        "VALIDATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "data-access",
+            "name": "Data access",
+            "version": "1.0.0",
+            "description": "Repository searches and keyed lookups",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "data-access:search",
+                    "owns": "SEARCH"
+                },
+                {
+                    "id": "data-access:lookup",
+                    "owns": "LOOKUP"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "findAll"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findOne"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findFirst"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findAny"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "search"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "query"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "filter"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "where"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "select"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "from"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "join"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "orderBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "groupBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "createQuery"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "createNativeQuery"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "executeQuery"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findMany"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findUnique"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findUniqueOrThrow"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findFirstOrThrow"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getResultList"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getSingleResult"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "firstOrDefault"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "singleOrDefault"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toListAsync"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "findAsync"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "scan"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "token-prefix:findBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "token-prefix:getBy;except:getByKey"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "token-prefix:loadBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "token-prefix:searchBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "token-prefix:queryBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "token-prefix:findAllBy"
+                    },
+                    "intents": [
+                        "SEARCH"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getValue"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getOrDefault"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getOrElse"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "lookup"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "forKey"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getByKey"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "valueOf"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fromCode"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fromValue"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fromName"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fromString"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fromKey"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "get",
+                        "receiverType": "kotlin.collections.Map"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "get",
+                        "receiverType": "java.util.Map"
+                    },
+                    "intents": [
+                        "LOOKUP"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.3
+                }
+            ]
+        },
+        {
+            "id": "normalization",
+            "name": "Normalization",
+            "version": "1.0.0",
+            "description": "Parsing, trimming, canonicalization, and formatting",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "normalization:normalization",
+                    "owns": "NORMALIZATION"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "trim"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "trimStart"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "trimEnd"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "lowercase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "uppercase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toLowerCase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toUpperCase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toInt"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toLong"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toShort"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toByte"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toDouble"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toFloat"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toBigDecimal"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toBigInteger"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toPath"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toUri"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseInt"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseLong"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseDouble"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseFloat"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseBoolean"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fromString"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "normalize"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "canonicalize"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "decodeFromString"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "kotlin"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "trim"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "trimStart"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "trimEnd"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toLowerCase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toUpperCase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toLocaleLowerCase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "toLocaleUpperCase"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "normalize"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseInt"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "parseFloat"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "encodeURI"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "encodeURIComponent"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "decodeURI"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "decodeURIComponent"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "javascript",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Trim"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "TrimStart"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "TrimEnd"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToLower"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToUpper"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToLowerInvariant"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToUpperInvariant"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Normalize"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Canonicalize"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Parse"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ParseExact"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "GetFullPath"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "GetRelativePath"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "EscapeDataString"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "UnescapeDataString"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToInt16"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToInt32"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToInt64"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToDouble"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToDecimal"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToBoolean"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToDateTime"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "normalization-chain"
+                    },
+                    "intents": [
+                        "NORMALIZATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "data-transformation",
+            "name": "Data transformation",
+            "version": "1.0.0",
+            "description": "Collection transformations and chains",
+            "defaultEnabled": true,
+            "dependencies": [
+                "data-access"
+            ],
+            "rules": [
+                {
+                    "id": "data-transformation:data-transformation",
+                    "owns": "DATA_TRANSFORMATION",
+                    "reads": [
+                        "SEARCH"
+                    ]
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "map"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "mapNotNull"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "mapValues"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "mapKeys"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "flatMap"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "filter"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "filterNot"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "filterIsInstance"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "filterNotNull"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fold"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "reduce"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "collect"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "distinct"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "distinctBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "sorted"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "sortedBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "sortedWith"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "groupBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "groupingBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "associate"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "associateBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "associateWith"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "partition"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "take"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "drop"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "chunked"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "windowed"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "zip"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "flatten"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Select"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "SelectMany"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Where"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Aggregate"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Distinct"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "DistinctBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "OrderBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ThenBy"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Skip"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Chunk"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Concat"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToList"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToArray"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToDictionary"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "ToLookup"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "collection-transformation"
+                    },
+                    "intents": [
+                        "DATA_TRANSFORMATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "mutation",
+            "name": "Mutation",
+            "version": "1.0.0",
+            "description": "Persistence, transport, and local value mutation",
+            "defaultEnabled": true,
+            "dependencies": [
+                "bookkeeping",
+                "local-copy"
+            ],
+            "rules": [
+                {
+                    "id": "mutation:data-modify",
+                    "owns": "DATA_MODIFY"
+                },
+                {
+                    "id": "mutation:local-value-modify",
+                    "owns": "LOCAL_VALUE_MODIFY",
+                    "reads": [
+                        "BOOKKEEPING",
+                        "LOCAL_COPY"
+                    ]
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "save"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "saveAll"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "saveAndFlush"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "persist"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "merge"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "flush"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "commit"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "update"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "updateAll"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "updateOne"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "updateMany"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "updateById"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "upsert"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "put"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "putObject"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "putItem"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "upload"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "uploadObject"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "copyObject"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "writeObject"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "insert"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "insertOne"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "insertMany"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "insertAll"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "delete"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteAll"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteById"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteOne"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteMany"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteAllById"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "remove"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "removeById"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "publish"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "publishEvent"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "publishAll"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "emit"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "send"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "sendAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "sendMessage"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "sendMessageAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "convertAndSend"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "write"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "writeText"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "writeBytes"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "writeString"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "writeFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "writeFileSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "appendFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "appendFileSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "appendText"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "appendBytes"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "createNewFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteIfExists"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "deleteRecursively"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "unlink"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "unlinkSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "SaveChanges"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "SaveChangesAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "WriteAllText"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "WriteAllTextAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "WriteAllBytes"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "WriteAllBytesAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "WriteAllLines"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "WriteAllLinesAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "AppendAllText"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "AppendAllTextAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "AppendAllLines"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "AppendAllLinesAsync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Delete"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Move"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "Copy"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "CreateDirectory"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.nio.file.Files.write"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.nio.file.Files.writeString"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.nio.file.Files.delete"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.nio.file.Files.deleteIfExists"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.nio.file.Files.copy"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "java.nio.file.Files.move"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.writeFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.writeFileSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.appendFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.appendFileSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.unlink"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.unlinkSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.rm"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.rmSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.promises.writeFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.promises.appendFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.promises.unlink"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.promises.rm"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.promises.rename"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.promises.copyFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.rename"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.renameSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.copyFile"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "fs.copyFileSync"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.IO.File.WriteAllText"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.IO.File.WriteAllBytes"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.IO.File.AppendAllText"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.IO.File.Delete"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.IO.File.Move"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "System.IO.File.Copy"
+                    },
+                    "intents": [
+                        "DATA_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "add"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "addAll"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "remove"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "removeAt"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "removeAll"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "removeIf"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "clear"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "put"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "putAll"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "set"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "increment"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "decrement"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "mutate"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "modify"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "applyChanges"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "applyPatch"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "changeState"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "edit"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.3
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "local-mutation"
+                    },
+                    "intents": [
+                        "LOCAL_VALUE_MODIFY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "service",
+            "name": "Service",
+            "version": "1.0.0",
+            "description": "Service delegation and initialization",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "service:delegation",
+                    "owns": "SERVICE_DELEGATION",
+                    "optionalReads": [
+                        "DATA_MODIFY"
+                    ]
+                },
+                {
+                    "id": "service:init",
+                    "owns": "SERVICE_INIT"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "qualifiedName": "delegate"
+                    },
+                    "intents": [
+                        "SERVICE_DELEGATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "forward"
+                    },
+                    "intents": [
+                        "SERVICE_DELEGATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "dispatch"
+                    },
+                    "intents": [
+                        "SERVICE_DELEGATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "callThrough"
+                    },
+                    "intents": [
+                        "SERVICE_DELEGATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "service-delegation"
+                    },
+                    "intents": [
+                        "SERVICE_DELEGATION"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "init"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "initialize"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "setup"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "bootstrap"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "wire"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "configure"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "connect"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "openConnection"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getConnection"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "createConnection"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "newConnection"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "acquireConnection"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "openSession"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "createClient"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "newClient"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "buildClient"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "createService"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "newService"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "inject"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "resolve"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getInstance"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "qualifiedName": "getService"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                },
+                {
+                    "selector": {
+                        "structuralPattern": "service-initialization"
+                    },
+                    "intents": [
+                        "SERVICE_INIT"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "return-value",
+            "name": "Return value",
+            "version": "1.0.0",
+            "description": "Returned expressions and literals",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "return-value:return-value",
+                    "owns": "RETURN_VALUE"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "structuralPattern": "return-value"
+                    },
+                    "intents": [
+                        "RETURN_VALUE"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.7
+                }
+            ]
+        },
+        {
+            "id": "chaining",
+            "name": "Chaining",
+            "version": "1.0.0",
+            "description": "Receiver call chains",
+            "defaultEnabled": false,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "chaining:chaining",
+                    "owns": "CHAINING"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "structuralPattern": "call-chain"
+                    },
+                    "intents": [
+                        "CHAINING"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "local-copy",
+            "name": "Local copy",
+            "version": "1.0.0",
+            "description": "Local assignments that copy another value",
+            "defaultEnabled": true,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "local-copy:local-copy",
+                    "owns": "LOCAL_COPY"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "structuralPattern": "local-copy"
+                    },
+                    "intents": [
+                        "LOCAL_COPY"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        },
+        {
+            "id": "bool-combinatorics",
+            "name": "Boolean combinatorics",
+            "version": "1.0.0",
+            "description": "Compound boolean predicates and quantifiers",
+            "defaultEnabled": false,
+            "dependencies": [],
+            "rules": [
+                {
+                    "id": "bool-combinatorics:bool-combinatorics",
+                    "owns": "BOOL_COMBINATORICS"
+                }
+            ],
+            "composition": null,
+            "defaults": [
+                {
+                    "selector": {
+                        "structuralPattern": "boolean-combinatorics"
+                    },
+                    "intents": [
+                        "BOOL_COMBINATORICS"
+                    ],
+                    "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript",
+                        "vue"
+                    ],
+                    "confidence": 0.5
+                }
+            ]
+        }
+    ]
+}
