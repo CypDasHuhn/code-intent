@@ -6,8 +6,8 @@ import dev.cint.contracts.data.Confidence
 import dev.cint.contracts.data.Span
 import dev.cint.contracts.util.Deadline
 import dev.cint.contracts.util.Unavailable
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class SemanticRequest(
@@ -16,7 +16,14 @@ data class SemanticRequest(
     val offset: Int,
     val kind: SemanticRequestKind,
     val deadline: Deadline,
+    val offsetUnit: OffsetUnit = OffsetUnit.UTF8_BYTE,
 )
+
+@Serializable
+enum class OffsetUnit {
+    UTF8_BYTE,
+    UTF16_CODE_UNIT,
+}
 
 @Serializable
 enum class SemanticRequestKind {
@@ -110,7 +117,7 @@ data class Diagnostic(
     val message: String,
     val severity: DiagnosticSeverity,
     val code: String? = null,
-    val source: String = "lsp",
+    val source: String = "semantic",
 )
 
 @Serializable
