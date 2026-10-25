@@ -54,7 +54,7 @@ the parity and syntax-provenance tests.
 - **086 (implemented): version the external renderer protocol.** Define the explicit
   protocol version and compatibility contract.
 - **087 (implemented): extract the Neovim renderer** into the sibling
-  `code-intent-nvim` repository.
+  `code-intent.nvim` repository.
 - **062 (todo): split host record ownership for legacy records.** The V2
   knowledge model owns this materialized data; the ticket remains in the queue.
 - **017 (blocked): fixpoint metadata convergence.**
@@ -78,7 +78,7 @@ the parity and syntax-provenance tests.
 just build
 just test-engine
 just lint
-# renderer tests: cd ../code-intent-nvim && ./tests/run.sh
+# renderer tests: cd ../code-intent.nvim && ./tests/run.sh
 just graph-guard
 just parity
 just smoke

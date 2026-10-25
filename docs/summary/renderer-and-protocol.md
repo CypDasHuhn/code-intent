@@ -2,7 +2,7 @@
 
 ## Repository boundary
 
-The Neovim client lives in the external sibling repository `code-intent-nvim`.
+The Neovim client lives in the external sibling repository `code-intent.nvim`.
 This engine repository contains no Neovim code and runs no renderer tests. The
 canonical external contract is [`../ipc/PROTOCOL.md`](../ipc/PROTOCOL.md); the
 engine-side implementation notes are
@@ -43,7 +43,7 @@ V1/V2 differences in `analysis-engine/ipc/known-differences-v2.json`.
 
 ## Renderer tests
 
-Renderer tests run in `code-intent-nvim`:
+Renderer tests run in `code-intent.nvim`:
 
 - `tests/run.sh` runs the headless suite.
 - `tests/protocol_spec.lua` pins version/fingerprint compatibility.

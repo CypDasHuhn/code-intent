@@ -38,14 +38,14 @@ source repo -> analysis-engine
               tree-sitter -> syntax facts -> CFG
               LSP (optional) -> type facts
               rules -> annotations -> JSON-RPC over Unix socket
-            -> code-intent-nvim (external) -> extmarks
+            -> code-intent.nvim (external) -> extmarks
 
 ```
 
 Components:
 
 - `analysis-engine/` — Kotlin/JVM Gradle app. Parses, builds facts/CFG, tags.
-- `code-intent-nvim` (sibling repository) — Lua Neovim plugin. Socket-only;
+- `code-intent.nvim` (sibling repository) — Lua Neovim plugin. Socket-only;
   renders published tags.
 
 The engine is editor-agnostic. The renderer is the only editor-specific part.
@@ -191,7 +191,7 @@ inference.
   `:CintAnalyze` force a run.
 - Commands include `:CintRender|Clear|Toggle|Refresh|Info|Profile|Shard|Analyze|`
   `LiveTags|ServerStatus|ServerDisconnect|ServerStop|ServerRestart`. Headless
-  tests: `code-intent-nvim/tests/run.sh`.
+  tests: `code-intent.nvim/tests/run.sh`.
 
 Important: for THIS tool, stale data is worse than for a linter — a stale linter
 shows wrong squiggles; a stale painter **hides the wrong lines**.
@@ -549,7 +549,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
   Confirming an alternative resolves the whole anchor group, so siblings vanish
   with the republished candidate list. Candidate commands are gated on a
   returned protocol >= 3 with `suggestions.enabled ~= false`.
-- Tests: `code-intent-nvim/tests/live_spec.lua` drives an in-process fake daemon;
+- Tests: `code-intent.nvim/tests/live_spec.lua` drives an in-process fake daemon;
   `candidates_spec.lua` covers candidate publish/revision gating, suggest,
   review, decisions, and the protocol-2 fallback; `render_spec.lua` covers
   extmarks, profiles, and language mapping.
@@ -581,7 +581,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - `just test-engine` runs deterministic tests including host, server,
   rulepacks-tests, test-fixtures, and integration-tests.
 - `just test-lsp` is opt-in via `CINT_LSP_ROOT`. The renderer suite runs in the
-  external `code-intent-nvim` repository.
+  external `code-intent.nvim` repository.
 - `just lint`/`lint-fix` run ktlint over Kotlin sources only.
 - CI runs build, engine tests, lint, graph guard, parity, smoke, and syntax
   provenance with `CINT_TESTING_GROUNDS` set explicitly.

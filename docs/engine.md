@@ -139,7 +139,7 @@ just protocol-schema      # regenerate the renderer protocol JSON Schema
 ```
 
 Lint scope is Kotlin only. Neovim renderer tests live in the external
-`code-intent-nvim` repository.
+`code-intent.nvim` repository.
 
 ## Testing grounds
 

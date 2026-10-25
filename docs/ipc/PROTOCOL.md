@@ -1,7 +1,7 @@
 # CodeIntent Renderer IPC Protocol
 
 This is the external contract between the CodeIntent engine and editor clients
-such as the sibling `code-intent-nvim` repository. The engine implementation
+such as the sibling `code-intent.nvim` repository. The engine implementation
 notes are in
 [`analysis-engine/ipc/PROTOCOL.md`](../../analysis-engine/ipc/PROTOCOL.md).
 

@@ -100,7 +100,7 @@ analysis module apps need to import.
 ## Renderer boundary
 
 The editor client is external: the Neovim renderer lives in the sibling
-`code-intent-nvim` repository. It consumes published annotations, candidates,
+`code-intent.nvim` repository. It consumes published annotations, candidates,
 and review state, owns visual meanings, highlights, profiles/shards, hover, and
 review UX, and never runs detection. The engine publishes the versioned
 contract in [`docs/ipc/PROTOCOL.md`](ipc/PROTOCOL.md).

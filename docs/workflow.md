@@ -66,7 +66,7 @@ runs the focused LSP provider tests.
 
 Lint scope is Kotlin only: `just lint`/`just lint-fix` run ktlint over
 `analysis-engine/**/src/**/*.kt`. The Neovim renderer lives in the external
-`code-intent-nvim` repository and is tested there. CI runs `just build`,
+`code-intent.nvim` repository and is tested there. CI runs `just build`,
 `just test-engine`, `just lint`, `just graph-guard`, `just parity`,
 `just smoke`, and `just syntax-provenance` with an explicit
 `CINT_TESTING_GROUNDS`.

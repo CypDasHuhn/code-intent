@@ -33,7 +33,7 @@ just build && just test-engine && just lint
 
 - Engine: `analysis-engine/` (Gradle, Kotlin, tree-sitter, LSP, CLI, live
   server, MCP).
-- Client: external `code-intent-nvim` repository (Lua, headless Neovim tests).
+- Client: external `code-intent.nvim` repository (Lua, headless Neovim tests).
 - Frozen V1 corpus: `frozen-v1-corpus/` (read-only parity reference).
 - Task queue: `docs/tasks/README.md`.
 - Current product surface: manifest packs, persisted function knowledge,

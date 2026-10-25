@@ -62,5 +62,5 @@ read-only parity reference.
   compatibility matrix, handshake, and published schema.
 - [../analysis-engine/ipc/PROTOCOL.md](../analysis-engine/ipc/PROTOCOL.md) —
   engine-side protocol implementation notes.
-- `code-intent-nvim` (sibling repository) — Neovim client setup, commands,
+- `code-intent.nvim` (sibling repository) — Neovim client setup, commands,
   profiles, shards, handlers, and tests.

@@ -11,7 +11,7 @@ Move the Neovim renderer into its own repository against the versioned external 
 
 ## Scope
 
-- Create the code-intent-nvim repository.
+- Create the code-intent.nvim repository.
 - Move nvim-renderer code, tests, and docs.
 - Pin the engine protocol version and test against a released engine binary.
 - Update install and development instructions.

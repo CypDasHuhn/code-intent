@@ -673,7 +673,7 @@ The current engine is the V2 tree under `analysis-engine/`. Key files:
 Key client files:
 
 The Neovim client, including its live pipeline, render layer, daemon transport,
-and commands, lives in the external `code-intent-nvim` repository. The engine
+and commands, lives in the external `code-intent.nvim` repository. The engine
 publishes the wire contract in [`ipc/PROTOCOL.md`](ipc/PROTOCOL.md).
 
 Fixtures:

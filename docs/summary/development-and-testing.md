@@ -17,7 +17,7 @@
 
 CI runs build, engine tests, lint, graph guard, parity, install, smoke, and
 syntax provenance with an explicit testing-grounds path. Renderer tests run in
-the external `code-intent-nvim` repository against the installed engine.
+the external `code-intent.nvim` repository against the installed engine.
 
 ## Test topology
 
