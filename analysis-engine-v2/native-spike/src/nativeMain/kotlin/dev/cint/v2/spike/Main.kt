@@ -1,150 +1,154 @@
 package dev.cint.v2.spike
 
-import dev.cint.v2.syntax.treesitter.createTreeSitterParser
-import dev.cint.v2.syntax.treesitter.ParseResult
+import dev.cint.v2.syntax.treesitter.createSyntaxEngine
+import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.readBytes
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
+import platform.posix.F_OK
+import platform.posix.SEEK_END
+import platform.posix.SEEK_SET
+import platform.posix.access
+import platform.posix.fclose
+import platform.posix.fopen
+import platform.posix.fread
+import platform.posix.fseek
+import platform.posix.ftell
+import platform.posix.getpid
+import kotlin.system.exitProcess
 
-fun main() {
-    println("=== Kotlin/Native Spike Demo ===")
-    println()
+fun main(args: Array<String>) {
+    println("=== Kotlin/Native Platform Spike ===")
+    var failures = 0
 
-    // Test 1: Tree-sitter parsing
-    println("--- Test 1: Tree-sitter Kotlin Parsing ---")
-    testTreeSitter()
-
-    println()
-
-    // Test 2: JSON encode/decode
-    println("--- Test 2: JSON Round-trip ---")
-    testJson()
-
-    println()
-
-    // Test 3: Process spawn
-    println("--- Test 3: Child Process Spawn ---")
-    testProcessSpawn()
-
-    println()
-
-    // Test 4: HTTP/TLS
-    println("--- Test 4: HTTP/TLS Client ---")
-    testHttpClient()
-
-    println()
-
-    // Test 5: Unix domain socket
-    println("--- Test 5: Unix Domain Socket ---")
-    testUnixSocket()
-
-    println()
-    println("=== Spike Complete ===")
-}
-
-fun testTreeSitter() {
-    val parser = createTreeSitterParser()
-    val sourceCode = """
-        package dev.cint.test
-
-        fun main() {
-            println("Hello, World!")
+    fun check(name: String, condition: Boolean, detail: String = "") {
+        if (condition) {
+            println("PASS: $name")
+        } else {
+            failures += 1
+            println("FAIL: $name${if (detail.isEmpty()) "" else " ($detail)"}")
         }
-
-        class DataClass(val name: String, val value: Int)
-    """.trimIndent()
-
-    val result: ParseResult = parser.parse("kotlin", sourceCode)
-
-    println("Language: ${result.language}")
-    println("Node count: ${result.nodeCount}")
-    println("Parse time: ${result.parseTimeMs}ms")
-    println("Tree JSON (first 500 chars): ${result.treeJson.take(500)}...")
-    println("SUCCESS: Tree-sitter C interop works!")
-}
-
-fun testJson() {
-    val codec = createJsonCodec()
-
-    val testJson = """
-        {
-            "name": "test",
-            "value": 42,
-            "nested": {
-                "array": [1, 2, 3],
-                "bool": true
-            }
-        }
-    """.trimIndent()
-
-    val result = codec.roundTrip(testJson)
-    println("Original: ${result.original}")
-    println("Encoded: ${result.encoded}")
-    println("Decoded: ${result.decoded}")
-    println("Success: ${result.success}")
-    if (result.error != null) {
-        println("Error: ${result.error}")
-    }
-    println("SUCCESS: JSON encode/decode works!")
-}
-
-fun testProcessSpawn() {
-    val spawner = createProcessSpawner()
-    val result = spawner.spawn(listOf("echo", "hello from child process"))
-    println("Command: ${result.command.joinToString(" ")}")
-    println("Exit code: ${result.exitCode}")
-    println("Stdout: ${result.stdout}")
-    println("Stderr: ${result.stderr}")
-    println("Success: ${result.success}")
-    if (result.error != null) {
-        println("Error: ${result.error}")
-    }
-    println("SUCCESS: Child process spawn works!")
-}
-
-fun testHttpClient() {
-    val client = createHttpClient()
-
-    // Test HTTP (non-TLS)
-    println("Testing HTTP GET to httpbin.org...")
-    val httpResult = client.get("http://httpbin.org/get")
-    println("URL: ${httpResult.url}")
-    println("Method: ${httpResult.method}")
-    println("Status: ${httpResult.statusCode}")
-    println("TLS used: ${httpResult.tlsUsed}")
-    println("Success: ${httpResult.success}")
-    if (httpResult.error != null) {
-        println("Error: ${httpResult.error}")
     }
 
-    // Test HTTPS (TLS)
+    val fixture = resolveFixture(args)
+    if (fixture == null) {
+        println("FAIL: C fixture not found; pass its path as the first argument")
+        exitProcess(2)
+    }
+
     println()
-    println("Testing HTTPS GET to httpbin.org...")
-    val httpsResult = client.get("https://httpbin.org/get")
-    println("URL: ${httpsResult.url}")
-    println("Method: ${httpsResult.method}")
-    println("Status: ${httpsResult.statusCode}")
-    println("TLS used: ${httpsResult.tlsUsed}")
-    println("Success: ${httpsResult.success}")
-    if (httpsResult.error != null) {
-        println("Error: ${httpsResult.error}")
+    println("--- tree-sitter (tree-sitter-c, SyntaxEngine) ---")
+    try {
+        val result = createSyntaxEngine().parse(readFixture(fixture), previous = null)
+        if (!result.isSuccess) {
+            error("parse failed: ${result.errorOrNull}")
+        }
+        val tree = result.getOrThrow()
+        val root = tree.getNode(tree.rootId)
+        val nodeCount = tree.nodes.size
+        val errorNodes = tree.nodes.values.count { it.kind == "ERROR" }
+        println("fixture=$fixture")
+        println("language=${tree.language} root=${root?.kind} nodes=$nodeCount errorNodes=$errorNodes")
+        println("hash=${tree.contentHash.take(16)} version=${tree.version}")
+        check(
+            "tree-sitter parses C fixture",
+            root?.kind == "translation_unit" && nodeCount > 10 && errorNodes == 0,
+            "root=${root?.kind} nodes=$nodeCount errorNodes=$errorNodes"
+        )
+    } catch (t: Throwable) {
+        check("tree-sitter parses C fixture", false, t.message ?: t.toString())
     }
 
-    println("SUCCESS: HTTP/TLS client works!")
+    println()
+    println("--- JSON round trip ---")
+    try {
+        val sample = """{"name":"spike","value":42,"nested":{"array":[1,2,3],"ok":true}}"""
+        val roundTrip = createJsonCodec().roundTrip(sample)
+        val equivalent = roundTrip.success && runCatching {
+            Json.parseToJsonElement(roundTrip.decoded) == Json.parseToJsonElement(sample)
+        }.getOrDefault(false)
+        println("encoded=${roundTrip.encoded}")
+        println("decoded=${roundTrip.decoded}")
+        check("JSON round trip preserves document", equivalent, roundTrip.error ?: "decoded document differs")
+    } catch (t: Throwable) {
+        check("JSON round trip preserves document", false, t.message ?: t.toString())
+    }
+
+    println()
+    println("--- child process spawn ---")
+    try {
+        val spawner = createProcessSpawner()
+        val child = spawner.spawn(listOf("/bin/sh", "-c", "printf child-ok"))
+        println("exit=${child.exitCode} stdout='${child.stdout}' stderr='${child.stderr}'")
+        check(
+            "spawn captures real stdout and exit code",
+            child.exitCode == 0 && child.stdout == "child-ok",
+            child.error ?: "stdout='${child.stdout}'"
+        )
+        val nonzero = spawner.spawn(listOf("/bin/sh", "-c", "exit 7"))
+        println("nonzero exit=${nonzero.exitCode}")
+        check("spawn reports non-zero exit code", nonzero.exitCode == 7, "exit=${nonzero.exitCode}")
+    } catch (t: Throwable) {
+        check("spawn captures real stdout and exit code", false, t.message ?: t.toString())
+    }
+
+    println()
+    println("--- Unix domain socket round trip ---")
+    try {
+        val socketPath = "/tmp/cint-native-spike-${getpid()}.sock"
+        val roundTrip = createUnixSocketClient().roundTrip(socketPath, "hello-native-socket")
+        println("path=$socketPath sent='${roundTrip.messageSent}' received='${roundTrip.messageReceived}'")
+        check(
+            "Unix socket listener/client round trip",
+            roundTrip.success && roundTrip.messageReceived == "pong",
+            roundTrip.error ?: "unexpected reply"
+        )
+    } catch (t: Throwable) {
+        check("Unix socket listener/client round trip", false, t.message ?: t.toString())
+    }
+
+    println()
+    println("--- HTTP/TLS ---")
+    val http = createHttpClient().get("https://example.com")
+    println("native result: status=${http.statusCode} error=${http.error}")
+    println("SKIP: native HTTP/TLS is out of scope for this spike; see analysis-engine-v2/docs/rewrite/native-spike.md")
+
+    println()
+    if (failures == 0) {
+        println("SPIKE PASSED")
+    } else {
+        println("SPIKE FAILED: $failures required check(s)")
+        exitProcess(1)
+    }
 }
 
-fun testUnixSocket() {
-    val client = createUnixSocketClient()
-    val socketPath = "/tmp/kotlin-spike-test.sock"
-    val message = "Hello from Kotlin/Native!"
-
-    println("Testing Unix domain socket...")
-    val result = client.roundTrip(socketPath, message)
-    println("Socket path: ${result.socketPath}")
-    println("Message sent: ${result.messageSent}")
-    println("Message received: ${result.messageReceived}")
-    println("Success: ${result.success}")
-    if (result.error != null) {
-        println("Error: ${result.error}")
+private fun resolveFixture(args: Array<String>): String? {
+    val candidates = buildList {
+        args.firstOrNull()?.let(::add)
+        add("native-spike/fixtures/sample.c")
+        add("analysis-engine-v2/native-spike/fixtures/sample.c")
+        add("../native-spike/fixtures/sample.c")
+        add("fixtures/sample.c")
     }
-    println("NOTE: Unix socket API works, but requires a listening server")
+    return candidates.firstOrNull { access(it, F_OK) == 0 }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun readFixture(path: String): ByteArray {
+    val file = fopen(path, "rb") ?: error("cannot open fixture '$path'")
+    try {
+        check(fseek(file, 0L, SEEK_END) == 0) { "cannot seek fixture '$path'" }
+        val size = ftell(file)
+        check(size >= 0) { "cannot size fixture '$path'" }
+        check(fseek(file, 0L, SEEK_SET) == 0) { "cannot rewind fixture '$path'" }
+        return memScoped {
+            val buffer = allocArray<ByteVar>(size.toInt().coerceAtLeast(1))
+            val count = fread(buffer, 1uL, size.toULong(), file)
+            buffer.readBytes(count.toInt())
+        }
+    } finally {
+        fclose(file)
+    }
 }

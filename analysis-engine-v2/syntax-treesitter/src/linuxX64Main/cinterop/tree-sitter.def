@@ -1,7 +1,0 @@
-headers = tree_sitter/api.h
-headerFilter = tree_sitter/api.h
-package = dev.cint.v2.syntax.treesitter.cinterop
-compilerOpts.linux = -I/home/cyp/repos/code-intent/analysis-engine-v2/native-libs/tree-sitter/include
-compilerOpts.macos = -I/opt/homebrew/include -I/usr/local/include
-linkerOpts.linux = -L/home/cyp/repos/code-intent/analysis-engine-v2/native-libs/tree-sitter/lib -ltree-sitter
-linkerOpts.macos = -ltree-sitter

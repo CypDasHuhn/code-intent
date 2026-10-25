@@ -25,8 +25,10 @@ allprojects {
 }
 
 subprojects {
-    // contracts uses kotlin("multiplatform") instead
-    if (project.name != "contracts") {
+    val multiplatformProjects = setOf("contracts", "syntax-treesitter", "native-spike")
+    val isMultiplatform = project.name in multiplatformProjects
+
+    if (!isMultiplatform) {
         apply(plugin = "org.jetbrains.kotlin.jvm")
     }
 
@@ -36,7 +38,7 @@ subprojects {
         }
     }
 
-    if (project.name != "contracts") {
+    if (!isMultiplatform) {
         extensions.configure<JavaPluginExtension> {
             sourceCompatibility = JavaVersion.VERSION_21
             targetCompatibility = JavaVersion.VERSION_21
@@ -86,7 +88,14 @@ open class GraphGuardTask : DefaultTask() {
     fun validateGraph() {
         val config = GraphGuardValidator.loadConfig(project.file("graph-guard.json").readText())
         val graph = ProjectGraphCollector.collect(project.rootProject)
-        val result = GraphGuardValidator.validate(config, graph)
+        val effectiveConfig = if ("native-spike" in graph.modules) {
+            config
+        } else {
+            config.copy(
+                allowedEdges = config.allowedEdges.filterNot { edge -> edge.firstOrNull() == "native-spike" }
+            )
+        }
+        val result = GraphGuardValidator.validate(effectiveConfig, graph)
 
         if (!result.passed) {
             logger.error("GRAPH GUARD FAILED:")

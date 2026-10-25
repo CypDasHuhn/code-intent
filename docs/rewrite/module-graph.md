@@ -435,3 +435,11 @@ the actual intent packs.
 - [ ] Prove the CLI and server walking skeleton.
 - [ ] Freeze the V1 corpus and IPC transcripts.
 - [ ] Start the index and tree-sitter adapter.
+
+## Spike exception: native-spike
+
+`native-spike` is an opt-in, throwaway spike, not a production module. It is included only with
+`-PnativeSpike` (or when a `native-spike` task is named) and is excluded from default `just
+v2-build` and CI. It has a single edge, `native-spike -> syntax-treesitter`; it does not depend on
+`contracts` directly, and no production module may depend on it. The cinterop and link
+configuration live in `syntax-treesitter`, not in the spike.

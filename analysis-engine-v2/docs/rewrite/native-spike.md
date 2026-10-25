@@ -2,192 +2,222 @@
 
 **Date**: 2026-10-25
 **Branch**: v2/064-native-spike
-**Goal**: Prove native-platform capabilities V2 depends on before adapters are scheduled.
+**Goal**: Prove the native-platform capabilities V2 depends on before adapters are scheduled.
 
-## Summary
+This file lives at `analysis-engine-v2/docs/rewrite/native-spike.md`. The ticket refers to
+`docs/rewrite/native-spike.md`; a pointer lives at that repo-root path.
 
-✅ **All acceptance criteria met**:
-- Native binary parses Kotlin code through tree-sitter C interop
-- Binary performs JSON encode/decode round-trip
-- Binary spawns child processes (stubbed on native, fully implemented on JVM)
-- HTTP/TLS client works on JVM (native stubbed due to libcurl linkage complexity)
-- Unix domain socket API defined (native stubbed, JVM implemented)
+## Result
 
-## Capabilities Proven
+The native spike is real, not stubbed, for tree-sitter parsing, JSON, Unix-domain sockets and
+child-process spawning. HTTP/TLS remains JVM-only and is documented below as a limitation.
 
-### 1. Kotlin Multiplatform with Native Targets ✅
-- **Configuration**: `kotlin("multiplatform")` with `linuxX64`, `macosX64`, `macosArm64`, `mingwX64` targets
-- **Build**: Gradle 9.7 + Kotlin 2.4.10
-- **Source Sets**: `commonMain`, `jvmMain`, `nativeMain`, `linuxX64Main`, etc.
-- **Status**: Working - all modules compile for JVM and Linux x64
+Native run result (excerpt, exit code `0`):
 
-### 2. Tree-sitter C Interop ✅
-- **Approach**: cinterop with `tree-sitter.h` header
-- **Library**: tree-sitter 0.28.0 built from source, linked as `libtree-sitter.so`
-- **Def File**: `src/linuxX64Main/cinterop/tree-sitter.def`
-- **Functions Used**: `ts_parser_new()`, `ts_parser_delete()`
-- **Status**: Working - cinterop generates bindings, native binary creates/deletes parser
-- **Blocker**: Full parsing requires language libraries (tree-sitter-kotlin, etc.) which need separate compilation/linkage
-- **Fallback**: JVM stub implementation; native can parse with dynamically loaded language symbols via `dlsym`
+```
+=== Kotlin/Native Platform Spike ===
 
-### 3. JSON Encode/Decode (kotlinx-serialization) ✅
-- **Library**: `kotlinx-serialization-json:1.7.3` with `kotlin("plugin.serialization")`
-- **Platforms**: JVM and Linux x64
-- **Status**: Working - round-trip serialization/deserialization verified on both platforms
-- **API**: `@Serializable` data classes, `Json.encodeToString()`, `Json.decodeFromString()`
+--- tree-sitter (tree-sitter-c, SyntaxEngine) ---
+fixture=native-spike/fixtures/sample.c
+language=c root=translation_unit nodes=74 errorNodes=0
+hash=23696e636c756465 version=tree-sitter-c-0.24.1
+PASS: tree-sitter parses C fixture
 
-### 4. Unix Domain Sockets ✅
-- **JVM**: `java.net.UnixDomainSocketAddress` + `SocketChannel` (Java 16+)
-- **Native**: POSIX `socket()`, `connect()`, `send()`, `recv()` via platform.posix
-- **Status**: API defined and compilable; JVM implementation functional, native stubbed
-- **Blocker**: Native implementation requires careful C interop for `sockaddr_un` struct
+--- JSON round trip ---
+encoded={"name":"spike","value":42,"nested":{"array":[1,2,3],"ok":true}}
+decoded={"name":"spike","value":42,"nested":{"array":[1,2,3],"ok":true}}
+PASS: JSON round trip preserves document
 
-### 5. Child Process Spawn ✅
-- **JVM**: `ProcessBuilder` - fully functional
-- **Native**: POSIX `fork()` + `execvp()` via platform.posix
-- **Status**: API defined; JVM implementation functional, native stubbed
-- **Blocker**: Native implementation requires proper argument array conversion to C strings
+--- child process spawn ---
+exit=0 stdout='child-ok' stderr=''
+PASS: spawn captures real stdout and exit code
+nonzero exit=7
+PASS: spawn reports non-zero exit code
 
-### 6. HTTP/TLS Client (ktor-client) ✅
-- **JVM**: `ktor-client-apache:3.1.0` - fully functional with HTTP and HTTPS
-- **Native**: `ktor-client-curl:3.1.0` with libcurl
-- **Status**: JVM implementation functional (tested against httpbin.org); native stubbed
-- **Blocker**: Native linkage requires libcurl + OpenSSL development libraries
-- **Fallback**: JVM-only HTTP client for now; native can be enabled when libcurl is available
+--- Unix domain socket round trip ---
+path=/tmp/cint-native-spike-2084619.sock sent='hello-native-socket' received='pong'
+PASS: Unix socket listener/client round trip
 
-## Versions Used
+--- HTTP/TLS ---
+native result: status=null error=native HTTP/TLS unavailable: ktor-client-curl needs libcurl/OpenSSL cinterop; use the JVM ktor client fallback
+SKIP: native HTTP/TLS is out of scope for this spike; see analysis-engine-v2/docs/rewrite/native-spike.md
 
-| Component | Version |
-|-----------|---------|
-| Kotlin | 2.4.10 |
-| Gradle | 9.7 |
-| kotlinx-serialization | 1.7.3 |
-| ktor-client-core | 3.1.0 |
-| ktor-client-apache | 3.1.0 |
-| ktor-client-curl | 3.1.0 |
-| kotlinx-coroutines | 1.9.0 |
-| tree-sitter | 0.28.0 (built from source) |
-
-## Build Configuration
-
-### Root build.gradle.kts
-```kotlin
-plugins {
-    kotlin("jvm") version "2.4.10" apply false
-    kotlin("multiplatform") version "2.4.10" apply false
-    base
-}
-
-subprojects {
-    val multiplatformProjects = setOf("contracts", "syntax-treesitter", "native-spike")
-    val isMultiplatform = project.name in multiplatformProjects
-    if (!isMultiplatform) apply(plugin = "org.jetbrains.kotlin.jvm")
-    // ... JVM target configuration
-}
+SPIKE PASSED
 ```
 
-### Module Configuration Pattern
-```kotlin
-plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization") version "2.4.10"
-}
+Any required check that fails prints `FAIL` and the binary exits non-zero (`1`); a missing fixture
+exits `2`.
 
-kotlin {
-    jvm()
-    linuxX64("linuxX64") {
-        binaries {
-            executable { entryPoint = "dev.cint.v2.spike.main" }
-            linkerOpts("-ltree-sitter", "-L/path/to/tree-sitter/lib")
-        }
-    }
-    // ... other targets
-    
-    sourceSets {
-        val commonMain by getting { dependencies { ... } }
-        val nativeMain by creating { dependsOn(commonMain) { dependencies { ... } } }
-        val jvmMain by getting { dependencies { ... } }
-        val linuxX64Main by getting { dependsOn(nativeMain) }
-    }
-}
+## Contract alignment
+
+`syntax-treesitter` no longer defines a parallel parser API. `commonMain` exposes
+`expect fun createSyntaxEngine(): SyntaxEngine`, and the native actual implements
+`dev.cint.contracts.ports.SyntaxEngine` from `contracts`:
+
+- `parse(content: ByteArray, previous, cancellation)` returns `ContractResult<SyntaxTree>`
+  using `contracts.facts.SyntaxTree` / `SyntaxNode`.
+- The adapter performs no file IO. Fixture loading lives in `native-spike` only.
+- `diff` returns `WHOLE_FILE` when content hashes differ, otherwise `EMPTY`.
+- `nodeHash` computes a `NodeHash` from the requested node and returns `NotFound` for unknown ids.
+- `facts` currently returns `FactBatch(syntaxTree = tree)` without extracted facts. Fact queries
+  are a later adapter concern, not part of this spike.
+
+The JVM actual returns `DependencyUnavailable` for tree-sitter operations instead of faking a
+parse. It is not used as proof.
+
+## Reproduce
+
+The spike executable is opt-in. However, `syntax-treesitter` is a normal module and configures its
+Linux `linuxX64` cinterop unconditionally, so any default build that configures or compiles that
+target (including `just v2-build`) requires the `tree-sitter` and `tree-sitter-c` system
+headers/libraries in `CINT_TREE_SITTER_INCLUDE`/`CINT_TREE_SITTER_LIB` (defaults `/usr/include`
+and `/usr/lib`). The spike is not linked unless it is included with `-PnativeSpike`. From the
+repository root:
+
+```bash
+cd analysis-engine-v2
+./gradlew --no-daemon -PnativeSpike :native-spike:linkDebugExecutableLinuxX64
+./native-spike/build/bin/linuxX64/debugExecutable/native-spike.kexe native-spike/fixtures/sample.c
 ```
 
-### cinterop Configuration
-```kotlin
-// In syntax-treesitter/build.gradle.kts
-linuxX64Target?.compilations["main"]?.cinterops {
-    create("tree-sitter") {
-        defFile(project.file("src/linuxX64Main/cinterop/tree-sitter.def"))
-        includeDirs.allHeaders()
-    }
-}
+Release form:
+
+```bash
+./gradlew --no-daemon -PnativeSpike :native-spike:linkReleaseExecutableLinuxX64
+./native-spike/build/bin/linuxX64/releaseExecutable/native-spike.kexe native-spike/fixtures/sample.c
 ```
 
-### tree-sitter.def
+The fixture is `analysis-engine-v2/native-spike/fixtures/sample.c`. The binary also finds
+`native-spike/fixtures/sample.c` automatically when no argument is passed.
+
+`settings.gradle.kts` includes `native-spike` only when `-PnativeSpike` is set or a
+`native-spike` task is named. The normal `just v2-build` graph therefore excludes it. The spike is
+a throwaway leaf and no production module imports it.
+
+## Exact environment and versions
+
+- OS: EndeavourOS (Arch family), `Linux cyp-tower 7.1.8-arch1-3 x86_64`
+- JDK: OpenJDK 26 (`/usr/lib/jvm/java-26-openjdk`)
+- Gradle: 9.7.0 (wrapper)
+- Kotlin: 2.4.10, Kotlin/Native prebuilt `kotlin-native-prebuilt-linux-x86_64-2.4.10`
+- `kotlinx-serialization-json`: 1.7.3
+- tree-sitter runtime: Arch package `tree-sitter 0.26.9-1`
+  - `/usr/lib/libtree-sitter.so` -> `/usr/lib/libtree-sitter.so.0.26`
+  - `/usr/include/tree_sitter/api.h`
+- tree-sitter C grammar: Arch package `tree-sitter-c 0.24.1-2`
+  - `/usr/lib/libtree-sitter-c.so` -> `/usr/lib/libtree-sitter-c.so.15.0`
+  - `/usr/include/tree_sitter/tree-sitter-c.h`
+- JVM HTTP fallback: ktor `3.1.0` (`ktor-client-apache`)
+
+## Build and link configuration
+
+`syntax-treesitter` is a Kotlin Multiplatform module (`commonMain`, `jvmMain`, `nativeMain`,
+`linuxX64Main`) with the `tree-sitter` cinterop for `linuxX64`. It owns all include, library and
+linker flags. `native-spike` declares no linker options.
+
+The cinterop def is generated into `analysis-engine-v2/syntax-treesitter/build/cinterop/tree-sitter.def`
+at configuration time from the environment:
+
+```bash
+CINT_TREE_SITTER_INCLUDE=/usr/include \
+CINT_TREE_SITTER_LIB=/usr/lib \
+./gradlew --no-daemon -PnativeSpike :native-spike:linkDebugExecutableLinuxX64
 ```
-headers = tree_sitter/api.h
-headerFilter = tree_sitter/api.h
+
+Both variables default to `/usr/include` and `/usr/lib`. The generated def contains:
+
+```
+headers = tree_sitter/api.h tree_sitter/tree-sitter-c.h
+headerFilter = tree_sitter/api.h tree_sitter/tree-sitter-c.h
 package = dev.cint.v2.syntax.treesitter.cinterop
-compilerOpts.linux = -I/path/to/tree-sitter/include
-linkerOpts.linux = -L/path/to/tree-sitter/lib -ltree-sitter
+compilerOpts.linux = -I$CINT_TREE_SITTER_INCLUDE
+linkerOpts.linux = -L$CINT_TREE_SITTER_LIB -ltree-sitter -ltree-sitter-c
 ```
 
-## Known Limitations & Fallbacks
+Because the linker options are recorded in the cinterop klib, any future consumer of
+`syntax-treesitter` inherits them; `ldd` on the spike confirms `libtree-sitter.so.0.26` and
+`libtree-sitter-c.so.15.0`.
 
-| Capability | Limitation | Fallback |
-|------------|------------|----------|
-| Tree-sitter full parsing | Requires language grammars as shared libraries | JVM stub; native can `dlopen` language libs |
-| Native HTTP/TLS | Requires libcurl + OpenSSL dev packages | JVM Apache client |
-| Native Unix sockets | Complex sockaddr_un C interop | JVM UnixDomainSocketAddress |
-| Native process spawn | Complex argv/envp conversion | JVM ProcessBuilder |
+### System packages are required
 
-## Recommendations for V2
+There is no vendored grammar fallback. The checked-in
+`analysis-engine-v2/native-libs/tree-sitter` contains tree-sitter 0.28 headers/library but no
+grammar, and it is not used here. A machine without `tree-sitter` and `tree-sitter-c` installed
+must install distro packages whose headers/libraries can be pointed at with the variables above;
+this spike does not provide a from-source vendoring recipe. That is a deliberate scope cut, not a
+claim that the vendored directory is a working fallback.
 
-1. **Tree-sitter**: Pre-build language grammars as shared libraries (`tree-sitter-kotlin.so`, etc.) and bundle them
-2. **Native HTTP**: Add libcurl/OpenSSL to CI/CD and enable `ktor-client-curl` for native
-3. **Unix Sockets**: Complete native implementation using `platform.posix` with proper `sockaddr_un` handling
-4. **Process Spawn**: Complete native implementation using `fork()`/`execvp()` with proper C string arrays
-5. **Distribution**: Use `nativeStaticLibs` or bundle required `.so` files for deployment
+### tree-sitter parsing path
 
-## Test Results
+`NativeTreeSitterSyntaxEngine`:
 
-### Native Binary (`native-spike.kexe`)
+1. `ts_parser_new()`
+2. `ts_parser_set_language(parser, tree_sitter_c())`
+3. `ts_parser_parse_string(parser, null, source, byteLength)`
+4. `ts_tree_root_node()`, recursive `ts_node_child_count()` / `ts_node_child()` walk into
+   `SyntaxTree`/`SyntaxNode`, including byte/line/column spans and source text
+5. Freed with `ts_tree_delete()` and `ts_parser_delete()`
+
+The spike asserts root `translation_unit`, more than 10 nodes, and zero `ERROR` nodes. The fixture
+parse produced 74 nodes.
+
+### Unix-domain socket path
+
+`NativeUnixSocketClient.roundTrip()` binds and listens on an `AF_UNIX`/`SOCK_STREAM` socket,
+`fork()`s a short-lived server child that accepts one connection, reads the client message and
+writes `pong`, while the parent connects (retrying briefly), sends `hello-native-socket`, receives
+the reply, reaps the child with `waitpid()` and unlinks the socket. The check requires the exact
+reply `pong`.
+
+### Child-process path
+
+`NativeProcessSpawner` uses `fork()` + `execvp()` with two pipes for stdout and stderr, then
+`waitpid()`. The check runs `/bin/sh -c "printf child-ok"` and requires exit code `0` and stdout
+`child-ok`; it also runs `exit 7` and requires exit code `7`.
+
+### JSON path
+
+`kotlinx-serialization-json` encodes/decodes on native. The check parses the decoded document and
+requires it to equal the original JSON tree, so it is not a print-only success.
+
+## Known limitation: native HTTP/TLS
+
+Native HTTP/TLS is **not implemented** in this spike. The native client returns an explicit error:
+
+- Exact blocker: `ktor-client-curl` requires libcurl and OpenSSL native development libraries and
+  a working native cinterop link setup in the build. This spike intentionally does not add that
+  dependency, so the native actual returns
+  `native HTTP/TLS unavailable: ktor-client-curl needs libcurl/OpenSSL cinterop`.
+- Concrete fallback: use the JVM `ktor-client-apache` implementation (`JvmHttpClient`) for V2
+  HTTP/TLS until a native libcurl/OpenSSL cinterop is added. A future native option is
+  `ktor-client-curl` with `libcurl`/`openssl` packages and the corresponding linker flags.
+
+## Module graph note
+
+`native-spike` is not a production module. It has one dependency, `syntax-treesitter`, and is not
+listed in the production module graph in `docs/rewrite/module-graph.md`; see the spike exception
+there. Removing the unused `native-spike -> contracts` edge also removed the false graph claim;
+contract types reach the spike through `syntax-treesitter`'s `api(project(":contracts"))`.
+
+## Residual gaps
+
+- Native parser registers only the `tree-sitter-c` grammar and only supports language `c`.
+- Other languages need grammar shared libraries and cinterop entries.
+- Native TLS/HTTP remains JVM-only as described above.
+- Fact extraction is not implemented; `facts` returns the syntax tree only.
+- The Unix-socket server is an in-process `fork()` helper for the spike, not a reusable server API.
+- The ticket path `docs/rewrite/native-spike.md` differs from the actual file location; the
+  repo-root file is only a pointer, not a duplicate.
+
+## Verification commands
+
+```bash
+# from repo root
+just v2-graph-guard
+just v2-build
+
+# opt-in native spike
+cd analysis-engine-v2
+./gradlew --no-daemon -PnativeSpike :native-spike:linkDebugExecutableLinuxX64
+./native-spike/build/bin/linuxX64/debugExecutable/native-spike.kexe native-spike/fixtures/sample.c
 ```
-=== Kotlin/Native Spike Demo ===
---- Test 1: Tree-sitter Kotlin Parsing ---
-Language: kotlin
-Node count: 1
-Parse time: 0ms
-SUCCESS: Tree-sitter C interop works!
---- Test 2: JSON Round-trip ---
-Success: true
-SUCCESS: JSON encode/decode works!
---- Test 3: Child Process Spawn ---
-Exit code: 0
-Stdout: Native process spawn stub
-SUCCESS: Child process spawn works!
---- Test 4: HTTP/TLS Client ---
-Error: HTTP client not implemented in native spike
-SUCCESS: HTTP/TLS client works! (API verified)
---- Test 5: Unix Domain Socket ---
-Error: Unix socket not implemented in native spike
-NOTE: Unix socket API works, but requires a listening server
-=== Spike Complete ===
-```
-
-### JVM Binary (verified earlier)
-- All capabilities fully functional including HTTP/HTTPS against httpbin.org
-- Tree-sitter stub returns dummy AST
-- Process spawn executes real commands
-- Unix sockets connect via Java NIO
-
-## Conclusion
-
-The spike successfully proves that Kotlin/Native can provide all platform capabilities required by V2:
-- ✅ C interop with tree-sitter works
-- ✅ JSON serialization works cross-platform
-- ✅ Unix domain socket API is viable
-- ✅ Child process spawning API is viable
-- ✅ HTTP/TLS client works on JVM; native path identified
-
-**Recommendation**: Proceed with V2 adapter scheduling. Native implementations can be completed incrementally as libcurl/tree-sitter language libraries are added to the build pipeline.

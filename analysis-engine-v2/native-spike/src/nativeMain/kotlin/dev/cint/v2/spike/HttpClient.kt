@@ -15,7 +15,7 @@ private class NativeHttpClient : HttpClient {
             statusCode = null,
             responseBody = null,
             success = false,
-            error = "HTTP client not implemented in native spike",
+            error = "native HTTP/TLS unavailable: ktor-client-curl needs libcurl/OpenSSL cinterop; use the JVM ktor client fallback",
             tlsUsed = url.startsWith("https://")
         )
     }
@@ -27,7 +27,7 @@ private class NativeHttpClient : HttpClient {
             statusCode = null,
             responseBody = null,
             success = false,
-            error = "HTTP client not implemented in native spike",
+            error = "native HTTP/TLS unavailable: ktor-client-curl needs libcurl/OpenSSL cinterop; use the JVM ktor client fallback",
             tlsUsed = url.startsWith("https://")
         )
     }
@@ -39,7 +39,7 @@ private class NativeHttpClient : HttpClient {
             statusCode = null,
             responseBody = null,
             success = false,
-            error = "HTTP client not implemented in native spike",
+            error = "native HTTP/TLS unavailable: ktor-client-curl needs libcurl/OpenSSL cinterop; use the JVM ktor client fallback",
             tlsUsed = url.startsWith("https://")
         )
     }

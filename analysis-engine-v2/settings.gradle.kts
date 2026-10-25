@@ -1,6 +1,9 @@
 rootProject.name = "code-intent-v2"
 
-include(
+val nativeSpikeEnabled = providers.gradleProperty("nativeSpike").orNull == "true" ||
+    gradle.startParameter.taskNames.any { it.contains("native-spike") }
+
+val moduleIncludes = mutableListOf(
     ":contracts",
     ":core",
     ":packs",
@@ -19,6 +22,10 @@ include(
     ":test-fixtures",
     ":integration-tests"
 )
+if (nativeSpikeEnabled) {
+    moduleIncludes += ":native-spike"
+}
+include(moduleIncludes)
 
 project(":contracts").projectDir = file("contracts")
 project(":core").projectDir = file("core")
@@ -37,3 +44,6 @@ project(":server").projectDir = file("apps/server")
 project(":mcp").projectDir = file("apps/mcp")
 project(":test-fixtures").projectDir = file("tests/fixtures")
 project(":integration-tests").projectDir = file("tests/integration")
+if (nativeSpikeEnabled) {
+    project(":native-spike").projectDir = file("native-spike")
+}
