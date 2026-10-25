@@ -24,3 +24,10 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
 }
+
+tasks.test {
+    systemProperty(
+        "v2.frozenCorpusRoot",
+        rootProject.projectDir.parentFile.resolve("frozen-v1-corpus").absolutePath,
+    )
+}

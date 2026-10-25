@@ -1,4 +1,8 @@
 {
+  "testEdgePolicy": {
+    "description": "Test-only modules and test source sets may depend on the modules they exercise. Those edges belong in allowedTestEdges; a test-only module's main dependencies also use allowedTestEdges. Production main dependencies must use allowedEdges only and may never depend on a test-only module. Declaring an allowedTestEdge never permits the same edge from production main code.",
+    "testOnlyModules": ["test-fixtures", "integration-tests"]
+  },
   "allowedEdges": [
     ["core", "contracts"],
     ["packs", "contracts"],
@@ -29,11 +33,16 @@
     ["server", "ipc"],
     ["mcp", "runtime"],
     ["mcp", "contracts"],
+    ["native-spike", "syntax-treesitter"]
+  ],
+  "allowedTestEdges": [
+    ["test-fixtures", "contracts"],
     ["integration-tests", "contracts"],
     ["integration-tests", "core"],
     ["integration-tests", "packs"],
     ["integration-tests", "index"],
     ["integration-tests", "knowledge"],
+    ["integration-tests", "knowledge-persistence"],
     ["integration-tests", "languages"],
     ["integration-tests", "syntax-treesitter"],
     ["integration-tests", "lsp"],
@@ -44,7 +53,6 @@
     ["integration-tests", "cli"],
     ["integration-tests", "server"],
     ["integration-tests", "mcp"],
-    ["integration-tests", "test-fixtures"],
-    ["native-spike", "syntax-treesitter"]
+    ["integration-tests", "test-fixtures"]
   ]
 }

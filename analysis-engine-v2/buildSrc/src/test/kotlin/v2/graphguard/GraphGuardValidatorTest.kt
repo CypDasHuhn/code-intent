@@ -9,8 +9,9 @@ class GraphGuardValidatorTest {
         modules: Set<String>,
         dependencies: Map<String, Set<String>> = modules.associateWith { emptySet() },
         rootDependencies: Set<String> = emptySet(),
-        missingBuildFiles: Set<String> = emptySet()
-    ) = ProjectGraph(modules, dependencies, rootDependencies, missingBuildFiles)
+        missingBuildFiles: Set<String> = emptySet(),
+        testDependencies: Map<String, Set<String>> = emptyMap(),
+    ) = ProjectGraph(modules, dependencies, rootDependencies, missingBuildFiles, testDependencies)
 
     private fun config(vararg edges: Pair<String, String>) =
         GraphGuardConfig(edges.map { listOf(it.first, it.second) })
@@ -120,5 +121,162 @@ class GraphGuardValidatorTest {
 
         assertFalse(result.passed)
         assertTrue(result.errors.any { it.contains("no dependency data") })
+    }
+
+    private fun testConfig(
+        testOnly: List<String>,
+        production: List<Pair<String, String>> = emptyList(),
+        test: List<Pair<String, String>> = emptyList(),
+    ) = GraphGuardConfig(
+        allowedEdges = production.map { listOf(it.first, it.second) },
+        allowedTestEdges = test.map { listOf(it.first, it.second) },
+        testEdgePolicy = TestEdgePolicy(description = "test modules may exercise modules", testOnlyModules = testOnly),
+    )
+
+    @Test
+    fun testOnlyModulesMayDependOnExercisedModules() {
+        val result = GraphGuardValidator.validate(
+            testConfig(
+                testOnly = listOf("integration-tests", "test-fixtures"),
+                production = listOf("core" to "contracts"),
+                test = listOf(
+                    "integration-tests" to "core",
+                    "integration-tests" to "test-fixtures",
+                    "test-fixtures" to "contracts",
+                ),
+            ),
+            graph(
+                setOf("contracts", "core", "integration-tests", "test-fixtures"),
+                mapOf(
+                    "contracts" to emptySet(),
+                    "core" to setOf("contracts"),
+                    "integration-tests" to setOf("core", "test-fixtures"),
+                    "test-fixtures" to setOf("contracts"),
+                ),
+            ),
+        )
+
+        assertTrue(result.errors.toString(), result.passed)
+    }
+
+    @Test
+    fun productionModuleMayNotDependOnTestOnlyModule() {
+        val result = GraphGuardValidator.validate(
+            testConfig(
+                testOnly = listOf("test-fixtures"),
+                production = listOf("core" to "contracts"),
+                test = listOf("test-fixtures" to "contracts"),
+            ),
+            graph(
+                setOf("contracts", "core", "test-fixtures"),
+                mapOf(
+                    "contracts" to emptySet(),
+                    "core" to setOf("contracts", "test-fixtures"),
+                    "test-fixtures" to setOf("contracts"),
+                ),
+            ),
+        )
+
+        assertFalse(result.passed)
+        assertTrue(result.errors.any { it.contains("must not depend on test-only module 'test-fixtures'") })
+    }
+
+    @Test
+    fun productionTestSourceSetMayDependOnTestFixtures() {
+        val result = GraphGuardValidator.validate(
+            testConfig(
+                testOnly = listOf("test-fixtures"),
+                production = listOf("core" to "contracts"),
+                test = listOf("test-fixtures" to "contracts", "core" to "test-fixtures"),
+            ),
+            graph(
+                setOf("contracts", "core", "test-fixtures"),
+                mapOf(
+                    "contracts" to emptySet(),
+                    "core" to setOf("contracts"),
+                    "test-fixtures" to setOf("contracts"),
+                ),
+                testDependencies = mapOf("core" to setOf("test-fixtures")),
+            ),
+        )
+
+        assertTrue(result.errors.toString(), result.passed)
+    }
+
+    @Test
+    fun productionTestDependencyMustBeDeclaredAsTestEdge() {
+        val result = GraphGuardValidator.validate(
+            testConfig(
+                testOnly = listOf("test-fixtures"),
+                production = listOf("core" to "contracts"),
+                test = listOf("test-fixtures" to "contracts"),
+            ),
+            graph(
+                setOf("contracts", "core", "test-fixtures"),
+                mapOf(
+                    "contracts" to emptySet(),
+                    "core" to setOf("contracts"),
+                    "test-fixtures" to setOf("contracts"),
+                ),
+                testDependencies = mapOf("core" to setOf("test-fixtures")),
+            ),
+        )
+
+        assertFalse(result.passed)
+        assertTrue(result.errors.any { it.contains("test source set") && it.contains("not in allowedTestEdges") })
+    }
+
+    @Test
+    fun testEdgeAllowanceDoesNotOpenProductionMainEdge() {
+        val result = GraphGuardValidator.validate(
+            testConfig(
+                testOnly = listOf("test-fixtures"),
+                production = listOf("core" to "contracts"),
+                test = listOf("test-fixtures" to "contracts", "core" to "test-fixtures"),
+            ),
+            graph(
+                setOf("contracts", "core", "test-fixtures"),
+                mapOf(
+                    "contracts" to emptySet(),
+                    "core" to setOf("contracts", "test-fixtures"),
+                    "test-fixtures" to setOf("contracts"),
+                ),
+            ),
+        )
+
+        assertFalse(result.passed)
+        assertTrue(result.errors.any { it.contains("must not depend on test-only module 'test-fixtures'") })
+    }
+
+    @Test
+    fun testOnlyDependencyMustUseAllowedTestEdges() {
+        val result = GraphGuardValidator.validate(
+            testConfig(
+                testOnly = listOf("integration-tests"),
+                production = listOf("core" to "contracts"),
+            ),
+            graph(
+                setOf("contracts", "core", "integration-tests"),
+                mapOf(
+                    "contracts" to emptySet(),
+                    "core" to setOf("contracts"),
+                    "integration-tests" to setOf("core"),
+                ),
+            ),
+        )
+
+        assertFalse(result.passed)
+        assertTrue(result.errors.any { it.contains("not in allowedTestEdges") })
+    }
+
+    @Test
+    fun testEdgePolicyRejectsUnknownTestOnlyModule() {
+        val result = GraphGuardValidator.validate(
+            testConfig(testOnly = listOf("ghost")),
+            graph(setOf("core"))
+        )
+
+        assertFalse(result.passed)
+        assertTrue(result.errors.any { it.contains("unknown test-only module 'ghost'") })
     }
 }

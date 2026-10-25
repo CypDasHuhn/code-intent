@@ -56,30 +56,38 @@ object ProjectGraphCollector {
     fun collect(root: Project): ProjectGraph {
         val modules = linkedSetOf<String>()
         val dependencies = linkedMapOf<String, Set<String>>()
+        val testDependencies = linkedMapOf<String, Set<String>>()
         val rootDependencies = linkedSetOf<String>()
         val missingBuildFiles = linkedSetOf<String>()
 
         for (candidate in root.allprojects) {
-            val declaredDependencies = candidate.configurations.flatMap { configuration ->
-                configuration.dependencies.mapNotNull { dependency ->
+            val production = linkedSetOf<String>()
+            val test = linkedSetOf<String>()
+            for (configuration in candidate.configurations) {
+                val target = if (configuration.name.contains("test", ignoreCase = true)) test else production
+                configuration.dependencies.mapNotNullTo(target) { dependency ->
                     (dependency as? ProjectDependency)?.path
                 }
-            }.map { path -> path.removePrefix(":") }.toSet()
+            }
+            val productionModules = production.map { it.removePrefix(":") }.toSet()
+            val testModules = test.map { it.removePrefix(":") }.toSet()
 
             if (candidate.path == ":") {
-                rootDependencies.addAll(declaredDependencies)
+                rootDependencies.addAll(productionModules)
+                rootDependencies.addAll(testModules)
                 continue
             }
 
             val module = candidate.path.removePrefix(":")
             modules.add(module)
-            dependencies[module] = declaredDependencies
+            dependencies[module] = productionModules
+            testDependencies[module] = testModules
             if (!candidate.buildFile.isFile) {
                 missingBuildFiles.add(module)
             }
         }
 
-        return ProjectGraph(modules, dependencies, rootDependencies, missingBuildFiles)
+        return ProjectGraph(modules, dependencies, rootDependencies, missingBuildFiles, testDependencies)
     }
 }
 
@@ -92,7 +100,10 @@ open class GraphGuardTask : DefaultTask() {
             config
         } else {
             config.copy(
-                allowedEdges = config.allowedEdges.filterNot { edge -> edge.firstOrNull() == "native-spike" }
+                allowedEdges = config.allowedEdges.filterNot { edge -> edge.firstOrNull() == "native-spike" },
+                allowedTestEdges = config.allowedTestEdges.filterNot {
+                    edge -> edge.firstOrNull() == "native-spike"
+                },
             )
         }
         val result = GraphGuardValidator.validate(effectiveConfig, graph)
