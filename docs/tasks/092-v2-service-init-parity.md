@@ -1,6 +1,6 @@
 ---
 name: V2 service init parity
-status: todo
+status: done
 depends-on: [065, 069, 070, 075]
 reviewers: [detection-fidelity]
 ---

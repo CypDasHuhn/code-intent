@@ -106,17 +106,17 @@ concurrently once their dependencies are done.
 | 081 | 6 | [V2 live server app](081-v2-server.md) | done | 078, 079 | Editor daemon and live document state. |
 | 082 | 6 | [V2 MCP tool server](082-v2-mcp-tool-server.md) | done | 068, 078 | MCP tools/resources for analysis and knowledge. |
 | 083 | 7 | [V2 MCP repo init workflow](083-v2-mcp-init-workflow.md) | done | 082 | Resumable agent-driven init and pattern hypotheses. |
-| 084 | 8 | [V2 parity and integration suite](084-v2-parity-integration.md) | blocked | 066, 080, 081, 082, 083, 088, 089, 090, 091, 092, 093, 094 | Corpus, protocol, CLI, server, and MCP parity. |
+| 084 | 8 | [V2 parity and integration suite](084-v2-parity-integration.md) | done | 066, 080, 081, 082, 083, 088, 089, 090, 091, 092, 093, 094 | Corpus, protocol, CLI, server, and MCP parity. |
 | 085 | 9 | [V1 to V2 cutover](085-v2-cutover.md) | todo | 084, 088, 089, 090, 091, 092, 093, 094 | Promote V2, drop suffixes, delete V1. |
 | 086 | 10 | [Version the external renderer protocol](086-external-protocol-versioning.md) | todo | 085 | Explicit protocol version and compatibility contract. |
 | 087 | 11 | [Extract the Neovim renderer](087-extract-nvim-renderer.md) | todo | 086 | Move the renderer to its own repository. |
-| 088 | 12 | [V2 detection fact parity](088-v2-detection-fact-parity.md) | todo | 065, 066, 072 | Remaining logging, validation, data-access, return, local-copy, and span/confidence parity. |
-| 089 | 12 | [V2 bookkeeping and validation parity](089-v2-bookkeeping-validation-parity.md) | todo | 065, 068, 069, 070, 075 | Declaration/intent semantics for bookkeeping and validation gating. |
-| 090 | 12 | [V2 composition parity](090-v2-composition-parity.md) | todo | 065, 068, 070, 075, 076 | Scaffold, derivative-use, return-category, and function-scaffold parity. |
-| 091 | 12 | [V2 candidate parity](091-v2-candidate-parity.md) | todo | 065, 070, 075 | Candidate identity, grouping, spans, and mutation/service emission. |
-| 092 | 12 | [V2 service init parity](092-v2-service-init-parity.md) | todo | 065, 069, 070, 075 | Constructor injection and service-init lifecycle parity. |
-| 093 | 12 | [V2 non-Kotlin syntax parity](093-v2-non-kotlin-parity.md) | todo | 064, 065, 066, 072 | Remaining JS/TS/Vue/C#/C syntax, fact, and span parity. |
-| 094 | 12 | [V2 IPC payload parity](094-v2-ipc-payload-parity.md) | todo | 065, 066, 079, 081 | Residual full IPC payload mismatches and renderer-projection coverage not owned by detection/composition tickets. |
+| 088 | 12 | [V2 detection fact parity](088-v2-detection-fact-parity.md) | done | 065, 066, 072 | Remaining logging, validation, data-access, return, local-copy, and span/confidence parity. |
+| 089 | 12 | [V2 bookkeeping and validation parity](089-v2-bookkeeping-validation-parity.md) | done | 065, 068, 069, 070, 075 | Declaration/intent semantics for bookkeeping and validation gating. |
+| 090 | 12 | [V2 composition parity](090-v2-composition-parity.md) | done | 065, 068, 070, 075, 076 | Scaffold, derivative-use, return-category, and function-scaffold parity. |
+| 091 | 12 | [V2 candidate parity](091-v2-candidate-parity.md) | done | 065, 070, 075 | Candidate identity, grouping, spans, and mutation/service emission. |
+| 092 | 12 | [V2 service init parity](092-v2-service-init-parity.md) | done | 065, 069, 070, 075 | Constructor injection and service-init lifecycle parity. |
+| 093 | 12 | [V2 non-Kotlin syntax parity](093-v2-non-kotlin-parity.md) | done | 064, 065, 066, 072 | Remaining JS/TS/Vue/C#/C syntax, fact, and span parity. |
+| 094 | 12 | [V2 IPC payload parity](094-v2-ipc-payload-parity.md) | done | 065, 066, 079, 081 | Residual full IPC payload mismatches and renderer-projection coverage not owned by detection/composition tickets. |
 
 ## Resolved decisions
 

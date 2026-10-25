@@ -1,6 +1,6 @@
 ---
 name: V2 parity and integration suite
-status: blocked
+status: done
 depends-on: [066, 080, 081, 082, 083, 088, 089, 090, 091, 092, 093, 094]
 reviewers: [correctness, detection-fidelity]
 ---

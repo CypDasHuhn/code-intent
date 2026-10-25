@@ -1,6 +1,6 @@
 ---
 name: V2 candidate parity
-status: todo
+status: done
 depends-on: [065, 070, 075]
 reviewers: [detection-fidelity]
 ---

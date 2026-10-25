@@ -1,6 +1,6 @@
 ---
 name: V2 non-Kotlin syntax parity
-status: todo
+status: done
 depends-on: [064, 065, 066, 072]
 reviewers: [detection-fidelity, correctness]
 ---

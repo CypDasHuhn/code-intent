@@ -1,6 +1,6 @@
 ---
 name: V2 bookkeeping and validation parity
-status: todo
+status: done
 depends-on: [065, 068, 069, 070, 075]
 reviewers: [detection-fidelity]
 ---

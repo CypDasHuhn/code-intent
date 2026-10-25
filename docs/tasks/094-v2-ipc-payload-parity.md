@@ -1,6 +1,6 @@
 ---
 name: V2 IPC payload parity
-status: todo
+status: done
 depends-on: [065, 066, 079, 081]
 reviewers: [correctness, detection-fidelity]
 ---

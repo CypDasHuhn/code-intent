@@ -1,6 +1,6 @@
 ---
 name: V2 composition parity
-status: todo
+status: done
 depends-on: [065, 068, 070, 075, 076]
 reviewers: [detection-fidelity, correctness]
 ---

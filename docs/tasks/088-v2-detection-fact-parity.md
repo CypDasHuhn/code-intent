@@ -1,6 +1,6 @@
 ---
 name: V2 detection fact parity
-status: todo
+status: done
 depends-on: [065, 066, 072]
 reviewers: [detection-fidelity, correctness]
 ---
