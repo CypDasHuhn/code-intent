@@ -792,7 +792,11 @@ class FrozenProtocolParityTest {
                 ),
             )
         return RuntimeFactory.create(
-            RuntimeConfig(rootPath = sources.toString()),
+            RuntimeConfig(
+                rootPath = sources.toString(),
+                materializeDefaultsOnOpen = false,
+                applyUnmaterializedDefaults = false,
+            ),
             RuntimeComponents(languageComposition = composition),
         ).getOrThrow()
     }

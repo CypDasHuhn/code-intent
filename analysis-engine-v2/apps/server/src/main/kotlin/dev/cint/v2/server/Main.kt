@@ -67,7 +67,14 @@ internal fun parseArguments(argv: Array<String>): ServerOptions? {
 }
 
 internal fun createRuntime(root: Path): Runtime? {
-    val created = RuntimeFactory.create(RuntimeConfig(rootPath = root.toString()))
+    val created =
+        RuntimeFactory.create(
+            RuntimeConfig(
+                rootPath = root.toString(),
+                materializeDefaultsOnOpen = false,
+                applyUnmaterializedDefaults = false,
+            ),
+        )
     if (created.isFailure) {
         System.err.println("unable to create runtime: ${created.errorOrNull}")
         return null

@@ -1,10 +1,6 @@
 {
   "formatVersion": 1,
-  "signatures": {
-    "265e1ed7b4c9f5dcf80d194ee36ae0d27404b51f95ec20087b8c761f916c28af": 1,
-    "3447f958110fbfaf0d0d0f2a950285f59c29437f6e16fade7cfe67c4c35d25e6": 1,
-    "e7a2921de215cd4ba1a3a59a9f47484362c325abf1f37ecd443b66387b97a6e6": 1
-  },
+  "signatures": {},
   "ticket": "084-v2-parity-integration",
-  "total": 3
+  "total": 0
 }

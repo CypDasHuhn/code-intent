@@ -180,50 +180,13 @@
     ],
     "scenarios": []
   },
-  "closable": false,
+  "closable": true,
   "corpus": {
     "manifestHashMismatches": [],
     "protocolVersion": "4",
     "v1Commit": "3ccea9e9cdb5a4e652182136866b24929bbed0b3"
   },
-  "defects": [
-    {
-      "context": {
-        "differences": "params.annotations.size expected=8 actual=9 | params.annotations[0].confidence expected=0.55 actual=0.5 | params.annotations[0].endByte expected=219 actual=520 | params.annotations[0].endCol expected=55 actual=5 | params.annotations[0].endLine expected=6 actual=13 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.5 | params.annotations[0].provenance[0].endByte expected=219 actual=520 | params.annotations[0].provenance[0].endCol expected=55 actual=5 | params.annotations[0].provenance[0].endLine expected=6 actual=13 | params.annotations[0].provenance[0].role expected=\"derivative-use\" actual=\"source-intent\" | params.annotations[0].provenance[0].rule expected=\"core:derivative-use\" actual=\"knowledge:function-annotation\" | params.annotations[0].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[0].provenance[0].startByte expected=172 actual=26 | params.annotations[0].provenance[0].startCol expected=8 actual=4 | params.annotations[0].provenance[0].startLine expected=6 actual=1 | params.annotations[0].role expected=\"derivative-use\" actual=\"source-intent\" | params.annotations[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[0].startByte expected=172 actual=26 | params.annotations[0].startCol expected=8 actual=4 | params.annotations[0].startLine expected=6 actual=1 | params.annotations[1].endByte expected=275 actual=219 | params.annotations[1].endLine expected=7 actual=6 | params.annotations[1].provenance[0].endByte expected=275 actual=219 | params.annotations[1].provenance[0].endLine expected=7 actual=6 | params.annotations[1].provenance[0].startByte expected=228 actual=172 | params.annotations[1].provenance[0].startLine expected=7 actual=6 | params.annotations[1].startByte expected=228 actual=172 | params.annotations[1].startLine expected=7 actual=6 | params.annotations[2].confidence expected=0.8 actual=0.55 | params.annotations[2].endByte expected=319 actual=275 | params.annotations[2].endCol expected=43 actual=55 | params.annotations[2].endLine expected=8 actual=7 | params.annotations[2].intents[0] expected=\"LOCAL_VALUE_MODIFY\" actual=\"DATA_MODIFY\" | params.annotations[2].provenance[0].confidence expected=0.8 actual=0.55 | params.annotations[2].provenance[0].endByte expected=319 actual=275 | params.annotations[2].provenance[0].endCol expected=43 actual=55 | params.annotations[2].provenance[0].endLine expected=8 actual=7 | params.annotations[2].provenance[0].intents[0] expected=\"LOCAL_VALUE_MODIFY\" actual=\"DATA_MODIFY\" | params.annotations[2].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[2].provenance[0].rule expected=\"mutation:local-value-modify\" actual=\"core:derivative-use\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-suggest-flow",
-        "step": "1"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "090-v2-composition-parity"
-    },
-    {
-      "context": {
-        "differences": "params.annotations[8].provenance.size expected=1 actual=2 | params.annotations[8].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[8].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[8].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[14].provenance.size expected=1 actual=2 | params.annotations[14].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[14].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[14].provenance[0].source expected=\"treesitter\" actual=\"annotation\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-typescript-analyze",
-        "step": "1"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
-        "differences": "params.annotations[8].provenance.size expected=1 actual=2 | params.annotations[8].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[8].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[8].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[14].provenance.size expected=1 actual=2 | params.annotations[14].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[14].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[14].provenance[0].source expected=\"treesitter\" actual=\"annotation\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-typescript-analyze",
-        "step": "2"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    }
-  ],
+  "defects": [],
   "deferrals": [
     {
       "reason": "Port V1 logging, validation, data-access, return, local-copy, and span/confidence semantics.",
@@ -250,10 +213,7 @@
       "ticket": "093-v2-non-kotlin-parity"
     }
   ],
-  "followUpTickets": [
-    "090-v2-composition-parity",
-    "094-v2-ipc-payload-parity"
-  ],
+  "followUpTickets": [],
   "formatVersion": 1,
   "intentionalDifferences": [
     {
@@ -1815,9 +1775,9 @@
     "candidatesMatched": 45,
     "cliFilesCompared": 16,
     "cliFilesMatched": 16,
-    "defects": 3,
+    "defects": 0,
     "intentionalDifferences": 58,
-    "ipcDefects": 3,
+    "ipcDefects": 0,
     "ipcScenarios": 9,
     "rendererChecksPassed": true,
     "rendererDerivationVerified": true,
