@@ -117,20 +117,44 @@ internal class VueSyntaxEngine : SyntaxEngine {
 
     private fun scriptRegion(text: String): ScriptRegion? {
         val opening = SCRIPT_OPEN.find(text) ?: return null
-        val afterTag = opening.range.last + 1
-        val closing = text.indexOf("</script", afterTag).let { if (it < 0) text.length else it }
+        val tagEnd = tagEnd(text, opening.range.first) ?: return null
+        val afterTag = tagEnd + 1
+        val closing = SCRIPT_CLOSE.find(text, afterTag)?.range?.first ?: text.length
         return ScriptRegion(
             start = afterTag,
             text = text.substring(afterTag, closing),
-            typescript = opening.groupValues[1].contains("ts", ignoreCase = true),
+            typescript = isTypeScript(text.substring(opening.range.first, tagEnd)),
         )
+    }
+
+    private fun tagEnd(
+        text: String,
+        start: Int,
+    ): Int? {
+        var quote: Char? = null
+        for (index in start until text.length) {
+            val character = text[index]
+            when {
+                quote != null && character == quote -> quote = null
+                quote == null && (character == '"' || character == '\'') -> quote = character
+                quote == null && character == '>' -> return index
+            }
+        }
+        return null
+    }
+
+    private fun isTypeScript(attributes: String): Boolean {
+        val language = SCRIPT_LANG.find(attributes)?.groupValues?.get(1)?.lowercase()
+        return language == "ts" || language == "tsx" || language == "typescript"
     }
 
     private fun lineAt(text: String, offset: Int): Int =
         text.take(offset.coerceIn(0, text.length)).count { it == '\n' }
 
     private companion object {
-        val SCRIPT_OPEN = Regex("<script([^>]*)>", RegexOption.IGNORE_CASE)
+        val SCRIPT_OPEN = Regex("<script\\b", RegexOption.IGNORE_CASE)
+        val SCRIPT_CLOSE = Regex("</script\\s*>", RegexOption.IGNORE_CASE)
+        val SCRIPT_LANG = Regex("""\blang\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
     }
 }
 

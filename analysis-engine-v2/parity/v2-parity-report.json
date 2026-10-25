@@ -123,13 +123,13 @@
         "path": "ServiceIntents.kt"
       },
       {
-        "actualAnnotations": 16,
+        "actualAnnotations": 20,
         "actualCandidates": 1,
         "expectedAnnotations": 17,
         "expectedCandidates": 1,
         "hashMatches": true,
         "language": "typescript",
-        "matchedAnnotations": 13,
+        "matchedAnnotations": 15,
         "matchedCandidates": 1,
         "path": "Sample.ts"
       },
@@ -145,24 +145,24 @@
         "path": "ServiceIntents.ts"
       },
       {
-        "actualAnnotations": 23,
+        "actualAnnotations": 24,
         "actualCandidates": 1,
         "expectedAnnotations": 22,
         "expectedCandidates": 2,
         "hashMatches": true,
         "language": "javascript",
-        "matchedAnnotations": 17,
+        "matchedAnnotations": 20,
         "matchedCandidates": 1,
         "path": "Sample.js"
       },
       {
-        "actualAnnotations": 15,
+        "actualAnnotations": 18,
         "actualCandidates": 1,
         "expectedAnnotations": 19,
         "expectedCandidates": 1,
         "hashMatches": true,
         "language": "csharp",
-        "matchedAnnotations": 11,
+        "matchedAnnotations": 17,
         "matchedCandidates": 0,
         "path": "Sample.cs"
       },
@@ -211,17 +211,6 @@
     },
     {
       "context": {
-        "annotation": "{\"confidence\":0.55,\"endByte\":47,\"endCol\":21,\"endLine\":2,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":47,\\\"endCol\\\":21,\\\"endLine\\\":2,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":32,\\\"startCol\\\":6,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":32,\"startCol\":6,\"startLine\":2}",
-        "language": "javascript",
-        "path": "Sample.js"
-      },
-      "id": "cli.annotation.composition-extra",
-      "reason": "V2 emitted an annotation absent from the frozen corpus",
-      "surface": "cli",
-      "ticket": "090-v2-composition-parity"
-    },
-    {
-      "context": {
         "annotation": "{\"confidence\":0.55,\"endByte\":480,\"endCol\":31,\"endLine\":23,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":480,\\\"endCol\\\":31,\\\"endLine\\\":23,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":457,\\\"startCol\\\":8,\\\"startLine\\\":23}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":457,\"startCol\":8,\"startLine\":23}",
         "language": "csharp",
         "path": "Sample.cs"
@@ -236,6 +225,17 @@
         "annotation": "{\"confidence\":0.6,\"endByte\":284,\"endCol\":38,\"endLine\":5,\"intents\":[\"LOGGING\",\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.6,\\\"endByte\\\":284,\\\"endCol\\\":38,\\\"endLine\\\":5,\\\"intents\\\":[\\\"LOGGING\\\",\\\"VALIDATION\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":254,\\\"startCol\\\":8,\\\"startLine\\\":5}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":254,\"startCol\":8,\"startLine\":5}",
         "language": "kotlin",
         "path": "Composition.kt"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":139,\"endCol\":21,\"endLine\":10,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":139,\\\"endCol\\\":21,\\\"endLine\\\":10,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":105,\\\"startCol\\\":2,\\\"startLine\\\":9}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":105,\"startCol\":2,\"startLine\":9}",
+        "language": "typescript",
+        "path": "Sample.ts"
       },
       "id": "cli.annotation.composition-extra",
       "reason": "V2 emitted an annotation absent from the frozen corpus",
@@ -277,6 +277,17 @@
     },
     {
       "context": {
+        "annotation": "{\"confidence\":0.7,\"endByte\":423,\"endCol\":18,\"endLine\":25,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":423,\\\"endCol\\\":18,\\\"endLine\\\":25,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":409,\\\"startCol\\\":4,\\\"startLine\\\":25}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":409,\"startCol\":4,\"startLine\":25}",
+        "language": "typescript",
+        "path": "Sample.ts"
+      },
+      "id": "cli.annotation.composition-extra",
+      "reason": "V2 emitted an annotation absent from the frozen corpus",
+      "surface": "cli",
+      "ticket": "090-v2-composition-parity"
+    },
+    {
+      "context": {
         "annotation": "{\"confidence\":0.7,\"endByte\":460,\"endCol\":28,\"endLine\":29,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":460,\\\"endCol\\\":28,\\\"endLine\\\":29,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":432,\\\"startCol\\\":0,\\\"startLine\\\":29}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":432,\"startCol\":0,\"startLine\":29}",
         "language": "typescript",
         "path": "Sample.ts"
@@ -299,7 +310,7 @@
     },
     {
       "context": {
-        "annotation": "{\"confidence\":0.7,\"endByte\":48,\"endCol\":22,\"endLine\":2,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":48,\\\"endCol\\\":22,\\\"endLine\\\":2,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":26,\\\"startCol\\\":0,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":26,\"startCol\":0,\"startLine\":2}",
+        "annotation": "{\"confidence\":0.7,\"endByte\":48,\"endCol\":22,\"endLine\":2,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.7,\\\"endByte\\\":48,\\\"endCol\\\":22,\\\"endLine\\\":2,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":26,\\\"startCol\\\":0,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":26,\"startCol\":0,\"startLine\":2}",
         "language": "javascript",
         "path": "Sample.js"
       },
@@ -409,17 +420,6 @@
     },
     {
       "context": {
-        "annotation": "{\"confidence\":0.9,\"endByte\":631,\"endCol\":9,\"endLine\":28,\"intents\":[\"ERROR_HANDLING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":631,\\\"endCol\\\":9,\\\"endLine\\\":28,\\\"intents\\\":[\\\"ERROR_HANDLING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":490,\\\"startCol\\\":8,\\\"startLine\\\":24}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":490,\"startCol\":8,\"startLine\":24}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.composition-extra",
-      "reason": "V2 emitted an annotation absent from the frozen corpus",
-      "surface": "cli",
-      "ticket": "090-v2-composition-parity"
-    },
-    {
-      "context": {
         "annotation": "{\"confidence\":0.9,\"endByte\":692,\"endCol\":5,\"endLine\":39,\"intents\":[\"LOGGING\",\"UNTAGGED\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":692,\\\"endCol\\\":5,\\\"endLine\\\":39,\\\"intents\\\":[\\\"LOGGING\\\",\\\"UNTAGGED\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":622,\\\"startCol\\\":6,\\\"startLine\\\":37}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":622,\"startCol\":6,\"startLine\":37}",
         "language": "kotlin",
         "path": "Catches.kt"
@@ -511,17 +511,6 @@
         "annotation": "{\"confidence\":0.55,\"endByte\":284,\"endCol\":38,\"endLine\":5,\"intents\":[\"LOGGING\",\"VALIDATION\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":284,\\\"endCol\\\":38,\\\"endLine\\\":5,\\\"intents\\\":[\\\"LOGGING\\\",\\\"VALIDATION\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":254,\\\"startCol\\\":8,\\\"startLine\\\":5}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":254,\"startCol\":8,\"startLine\":5}",
         "language": "kotlin",
         "path": "Composition.kt"
-      },
-      "id": "cli.annotation.composition-missing",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "090-v2-composition-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.55,\"endByte\":47,\"endCol\":21,\"endLine\":2,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.55,\\\"endByte\\\":47,\\\"endCol\\\":21,\\\"endLine\\\":2,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"derivative-use\\\",\\\"rule\\\":\\\"core:derivative-use\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":32,\\\"startCol\\\":6,\\\"startLine\\\":2}\"],\"role\":\"derivative-use\",\"source\":\"treesitter\",\"startByte\":32,\"startCol\":6,\"startLine\":2}",
-        "language": "javascript",
-        "path": "Sample.js"
       },
       "id": "cli.annotation.composition-missing",
       "reason": "Frozen annotation is missing or differs in V2 output",
@@ -816,17 +805,6 @@
     },
     {
       "context": {
-        "annotation": "{\"confidence\":0.9,\"endByte\":631,\"endCol\":9,\"endLine\":28,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":631,\\\"endCol\\\":9,\\\"endLine\\\":28,\\\"intents\\\":[\\\"ERROR_HANDLING\\\",\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":490,\\\"startCol\\\":8,\\\"startLine\\\":24}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":490,\"startCol\":8,\"startLine\":24}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.composition-missing",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "090-v2-composition-parity"
-    },
-    {
-      "context": {
         "annotation": "{\"confidence\":0.9,\"endByte\":692,\"endCol\":5,\"endLine\":39,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":692,\\\"endCol\\\":5,\\\"endLine\\\":39,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"scaffold\\\",\\\"rule\\\":\\\"core:scaffold\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":582,\\\"startCol\\\":4,\\\"startLine\\\":35}\"],\"role\":\"scaffold\",\"source\":\"treesitter\",\"startByte\":582,\"startCol\":4,\"startLine\":35}",
         "language": "kotlin",
         "path": "Catches.kt"
@@ -871,72 +849,6 @@
     },
     {
       "context": {
-        "annotation": "{\"confidence\":1.0,\"endByte\":199,\"endCol\":23,\"endLine\":9,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":199,\\\"endCol\\\":23,\\\"endLine\\\":9,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"bookkeeping:bookkeeping\\\",\\\"source\\\":\\\"comment\\\",\\\"startByte\\\":152,\\\"startCol\\\":4,\\\"startLine\\\":8}\"],\"role\":\"source-intent\",\"source\":\"comment\",\"startByte\":152,\"startCol\":4,\"startLine\":8}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.extra",
-      "reason": "V2 emitted an annotation absent from the frozen corpus",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":1.0,\"endByte\":238,\"endCol\":34,\"endLine\":12,\"intents\":[\"ERROR_HANDLING\",\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":238,\\\"endCol\\\":34,\\\"endLine\\\":12,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":210,\\\"startCol\\\":6,\\\"startLine\\\":12}\",\"{\\\"confidence\\\":1.0,\\\"endByte\\\":238,\\\"endCol\\\":34,\\\"endLine\\\":12,\\\"intents\\\":[\\\"ERROR_HANDLING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"error-handling:error-handling\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":210,\\\"startCol\\\":6,\\\"startLine\\\":12}\"],\"role\":\"source-intent\",\"source\":\"mixed\",\"startByte\":210,\"startCol\":6,\"startLine\":12}",
-        "language": "javascript",
-        "path": "Sample.js"
-      },
-      "id": "cli.annotation.extra",
-      "reason": "V2 emitted an annotation absent from the frozen corpus",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":1.0,\"endByte\":564,\"endCol\":49,\"endLine\":26,\"intents\":[\"ERROR_HANDLING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":564,\\\"endCol\\\":49,\\\"endLine\\\":26,\\\"intents\\\":[\\\"ERROR_HANDLING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"error-handling:error-handling\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":527,\\\"startCol\\\":12,\\\"startLine\\\":26}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":527,\"startCol\":12,\"startLine\":26}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.extra",
-      "reason": "V2 emitted an annotation absent from the frozen corpus",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.6,\"endByte\":367,\"endCol\":46,\"endLine\":18,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.6,\\\"endByte\\\":367,\\\"endCol\\\":46,\\\"endLine\\\":18,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":329,\\\"startCol\\\":8,\\\"startLine\\\":18}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":329,\"startCol\":8,\"startLine\":18}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.6,\"endByte\":564,\"endCol\":49,\"endLine\":26,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.6,\\\"endByte\\\":564,\\\"endCol\\\":49,\\\"endLine\\\":26,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":527,\\\"startCol\\\":12,\\\"startLine\\\":26}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":527,\"startCol\":12,\"startLine\":26}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.8,\"endByte\":238,\"endCol\":34,\"endLine\":12,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":238,\\\"endCol\\\":34,\\\"endLine\\\":12,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":210,\\\"startCol\\\":6,\\\"startLine\\\":12}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":210,\"startCol\":6,\"startLine\":12}",
-        "language": "javascript",
-        "path": "Sample.js"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
         "annotation": "{\"confidence\":0.8,\"endByte\":244,\"endCol\":42,\"endLine\":11,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":244,\\\"endCol\\\":42,\\\"endLine\\\":11,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":221,\\\"startCol\\\":19,\\\"startLine\\\":11}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":221,\"startCol\":19,\"startLine\":11}",
         "language": "csharp",
         "path": "Sample.cs"
@@ -945,17 +857,6 @@
       "reason": "Frozen annotation is missing or differs in V2 output",
       "surface": "cli",
       "ticket": "092-v2-service-init-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.8,\"endByte\":276,\"endCol\":24,\"endLine\":13,\"intents\":[\"LOCAL_COPY\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":276,\\\"endCol\\\":24,\\\"endLine\\\":13,\\\"intents\\\":[\\\"LOCAL_COPY\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"local-copy:local-copy\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":260,\\\"startCol\\\":8,\\\"startLine\\\":13}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":260,\"startCol\":8,\"startLine\":13}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
     },
     {
       "context": {
@@ -989,61 +890,6 @@
       "reason": "Frozen annotation is missing or differs in V2 output",
       "surface": "cli",
       "ticket": "092-v2-service-init-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.9,\"endByte\":550,\"endCol\":25,\"endLine\":33,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":550,\\\"endCol\\\":25,\\\"endLine\\\":33,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"return-value:return-value\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":527,\\\"startCol\\\":2,\\\"startLine\\\":33}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":527,\"startCol\":2,\"startLine\":33}",
-        "language": "typescript",
-        "path": "Sample.ts"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.9,\"endByte\":551,\"endCol\":19,\"endLine\":31,\"intents\":[\"RETURN_VALUE\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.9,\\\"endByte\\\":551,\\\"endCol\\\":19,\\\"endLine\\\":31,\\\"intents\\\":[\\\"RETURN_VALUE\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"return-value:return-value\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":534,\\\"startCol\\\":2,\\\"startLine\\\":31}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":534,\"startCol\":2,\"startLine\":31}",
-        "language": "javascript",
-        "path": "Sample.js"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":1.0,\"endByte\":199,\"endCol\":27,\"endLine\":9,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":199,\\\"endCol\\\":27,\\\"endLine\\\":9,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"bookkeeping:bookkeeping\\\",\\\"source\\\":\\\"comment\\\",\\\"startByte\\\":152,\\\"startCol\\\":4,\\\"startLine\\\":8}\"],\"role\":\"source-intent\",\"source\":\"comment\",\"startByte\":152,\"startCol\":4,\"startLine\":8}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":1.0,\"endByte\":423,\"endCol\":18,\"endLine\":25,\"intents\":[\"BOOKKEEPING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":423,\\\"endCol\\\":18,\\\"endLine\\\":25,\\\"intents\\\":[\\\"BOOKKEEPING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"bookkeeping:bookkeeping\\\",\\\"source\\\":\\\"annotation\\\",\\\"startByte\\\":409,\\\"startCol\\\":4,\\\"startLine\\\":25}\"],\"role\":\"source-intent\",\"source\":\"annotation\",\"startByte\":409,\"startCol\":4,\"startLine\":25}",
-        "language": "typescript",
-        "path": "Sample.ts"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":1.0,\"endByte\":676,\"endCol\":44,\"endLine\":29,\"intents\":[\"LOGGING\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":1.0,\\\"endByte\\\":676,\\\"endCol\\\":44,\\\"endLine\\\":29,\\\"intents\\\":[\\\"LOGGING\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"logging:logging\\\",\\\"source\\\":\\\"treesitter\\\",\\\"startByte\\\":640,\\\"startCol\\\":8,\\\"startLine\\\":29}\"],\"role\":\"source-intent\",\"source\":\"treesitter\",\"startByte\":640,\"startCol\":8,\"startLine\":29}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "093-v2-non-kotlin-parity"
     },
     {
       "context": {
@@ -1159,7 +1005,7 @@
     },
     {
       "context": {
-        "differences": "params.annotations.size expected=17 actual=16 | params.annotations[0].confidence expected=0.55 actual=0.7 | params.annotations[0].endByte expected=47 actual=48 | params.annotations[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.7 | params.annotations[0].provenance[0].endByte expected=47 actual=48 | params.annotations[0].provenance[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].startByte expected=32 actual=26 | params.annotations[0].provenance[0].startCol expected=6 actual=0 | params.annotations[0].startByte expected=32 actual=26 | params.annotations[0].startCol expected=6 actual=0 | params.annotations[1].confidence expected=1.0 actual=0.55 | params.annotations[1].endByte expected=139 actual=47 | params.annotations[1].endLine expected=10 actual=2 | params.annotations[1].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].confidence expected=1.0 actual=0.55 | params.annotations[1].provenance[0].endByte expected=139 actual=47 | params.annotations[1].provenance[0].endLine expected=10 actual=2 | params.annotations[1].provenance[0].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].provenance[0].rule expected=\"bookkeeping:bookkeeping\" actual=\"core:derivative-use\" | params.annotations[1].provenance[0].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].provenance[0].startByte expected=105 actual=32 | params.annotations[1].provenance[0].startCol expected=2 actual=6 | params.annotations[1].provenance[0].startLine expected=9 actual=2 | params.annotations[1].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].startByte expected=105 actual=32 | params.annotations[1].startCol expected=2 actual=6 | params.annotations[1].startLine expected=9 actual=2 | params.annotations[2].confidence expected=0.9 actual=1.0 | params.annotations[2].endByte expected=220 actual=139 | params.annotations[2].endCol expected=5 actual=21 | params.annotations[2].endLine expected=15 actual=10 | params.annotations[2].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\" | params.annotations[2].provenance[0].confidence expected=0.9 actual=1.0 | params.annotations[2].provenance[0].endByte expected=220 actual=139 | params.annotations[2].provenance[0].endCol expected=5 actual=21 | params.annotations[2].provenance[0].endLine expected=15 actual=10 | params.annotations[2].provenance[0].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\"",
+        "differences": "params.annotations.size expected=17 actual=20 | params.annotations[0].confidence expected=0.55 actual=0.7 | params.annotations[0].endByte expected=47 actual=48 | params.annotations[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.7 | params.annotations[0].provenance[0].endByte expected=47 actual=48 | params.annotations[0].provenance[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].startByte expected=32 actual=26 | params.annotations[0].provenance[0].startCol expected=6 actual=0 | params.annotations[0].startByte expected=32 actual=26 | params.annotations[0].startCol expected=6 actual=0 | params.annotations[1].confidence expected=1.0 actual=0.55 | params.annotations[1].endByte expected=139 actual=47 | params.annotations[1].endLine expected=10 actual=2 | params.annotations[1].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].confidence expected=1.0 actual=0.55 | params.annotations[1].provenance[0].endByte expected=139 actual=47 | params.annotations[1].provenance[0].endLine expected=10 actual=2 | params.annotations[1].provenance[0].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].provenance[0].rule expected=\"bookkeeping:bookkeeping\" actual=\"core:derivative-use\" | params.annotations[1].provenance[0].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].provenance[0].startByte expected=105 actual=32 | params.annotations[1].provenance[0].startCol expected=2 actual=6 | params.annotations[1].provenance[0].startLine expected=9 actual=2 | params.annotations[1].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].startByte expected=105 actual=32 | params.annotations[1].startCol expected=2 actual=6 | params.annotations[1].startLine expected=9 actual=2 | params.annotations[2].confidence expected=0.9 actual=1.0 | params.annotations[2].endByte expected=220 actual=139 | params.annotations[2].endCol expected=5 actual=21 | params.annotations[2].endLine expected=15 actual=10 | params.annotations[2].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\" | params.annotations[2].provenance[0].confidence expected=0.9 actual=1.0 | params.annotations[2].provenance[0].endByte expected=220 actual=139 | params.annotations[2].provenance[0].endCol expected=5 actual=21 | params.annotations[2].provenance[0].endLine expected=15 actual=10 | params.annotations[2].provenance[0].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\"",
         "method": "cint/publishTags",
         "scenario": "protocol-typescript-analyze",
         "step": "1"
@@ -1171,7 +1017,7 @@
     },
     {
       "context": {
-        "differences": "params.annotations.size expected=17 actual=16 | params.annotations[0].confidence expected=0.55 actual=0.7 | params.annotations[0].endByte expected=47 actual=48 | params.annotations[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.7 | params.annotations[0].provenance[0].endByte expected=47 actual=48 | params.annotations[0].provenance[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].startByte expected=32 actual=26 | params.annotations[0].provenance[0].startCol expected=6 actual=0 | params.annotations[0].startByte expected=32 actual=26 | params.annotations[0].startCol expected=6 actual=0 | params.annotations[1].confidence expected=1.0 actual=0.55 | params.annotations[1].endByte expected=139 actual=47 | params.annotations[1].endLine expected=10 actual=2 | params.annotations[1].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].confidence expected=1.0 actual=0.55 | params.annotations[1].provenance[0].endByte expected=139 actual=47 | params.annotations[1].provenance[0].endLine expected=10 actual=2 | params.annotations[1].provenance[0].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].provenance[0].rule expected=\"bookkeeping:bookkeeping\" actual=\"core:derivative-use\" | params.annotations[1].provenance[0].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].provenance[0].startByte expected=105 actual=32 | params.annotations[1].provenance[0].startCol expected=2 actual=6 | params.annotations[1].provenance[0].startLine expected=9 actual=2 | params.annotations[1].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].startByte expected=105 actual=32 | params.annotations[1].startCol expected=2 actual=6 | params.annotations[1].startLine expected=9 actual=2 | params.annotations[2].confidence expected=0.9 actual=1.0 | params.annotations[2].endByte expected=220 actual=139 | params.annotations[2].endCol expected=5 actual=21 | params.annotations[2].endLine expected=15 actual=10 | params.annotations[2].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\" | params.annotations[2].provenance[0].confidence expected=0.9 actual=1.0 | params.annotations[2].provenance[0].endByte expected=220 actual=139 | params.annotations[2].provenance[0].endCol expected=5 actual=21 | params.annotations[2].provenance[0].endLine expected=15 actual=10 | params.annotations[2].provenance[0].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\"",
+        "differences": "params.annotations.size expected=17 actual=20 | params.annotations[0].confidence expected=0.55 actual=0.7 | params.annotations[0].endByte expected=47 actual=48 | params.annotations[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.7 | params.annotations[0].provenance[0].endByte expected=47 actual=48 | params.annotations[0].provenance[0].endCol expected=21 actual=22 | params.annotations[0].provenance[0].startByte expected=32 actual=26 | params.annotations[0].provenance[0].startCol expected=6 actual=0 | params.annotations[0].startByte expected=32 actual=26 | params.annotations[0].startCol expected=6 actual=0 | params.annotations[1].confidence expected=1.0 actual=0.55 | params.annotations[1].endByte expected=139 actual=47 | params.annotations[1].endLine expected=10 actual=2 | params.annotations[1].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].confidence expected=1.0 actual=0.55 | params.annotations[1].provenance[0].endByte expected=139 actual=47 | params.annotations[1].provenance[0].endLine expected=10 actual=2 | params.annotations[1].provenance[0].intents[0] expected=\"BOOKKEEPING\" actual=\"LOGGING\" | params.annotations[1].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].provenance[0].rule expected=\"bookkeeping:bookkeeping\" actual=\"core:derivative-use\" | params.annotations[1].provenance[0].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].provenance[0].startByte expected=105 actual=32 | params.annotations[1].provenance[0].startCol expected=2 actual=6 | params.annotations[1].provenance[0].startLine expected=9 actual=2 | params.annotations[1].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[1].source expected=\"annotation\" actual=\"treesitter\" | params.annotations[1].startByte expected=105 actual=32 | params.annotations[1].startCol expected=2 actual=6 | params.annotations[1].startLine expected=9 actual=2 | params.annotations[2].confidence expected=0.9 actual=1.0 | params.annotations[2].endByte expected=220 actual=139 | params.annotations[2].endCol expected=5 actual=21 | params.annotations[2].endLine expected=15 actual=10 | params.annotations[2].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\" | params.annotations[2].provenance[0].confidence expected=0.9 actual=1.0 | params.annotations[2].provenance[0].endByte expected=220 actual=139 | params.annotations[2].provenance[0].endCol expected=5 actual=21 | params.annotations[2].provenance[0].endLine expected=15 actual=10 | params.annotations[2].provenance[0].intents[0] expected=\"VALIDATION\" actual=\"BOOKKEEPING\"",
         "method": "cint/publishTags",
         "scenario": "protocol-typescript-analyze",
         "step": "2"
@@ -1329,7 +1175,6 @@
     "090-v2-composition-parity",
     "091-v2-candidate-parity",
     "092-v2-service-init-parity",
-    "093-v2-non-kotlin-parity",
     "094-v2-ipc-payload-parity"
   ],
   "formatVersion": 1,
@@ -2682,12 +2527,12 @@
   },
   "summary": {
     "annotationsCompared": 211,
-    "annotationsMatched": 165,
+    "annotationsMatched": 176,
     "candidatesCompared": 45,
     "candidatesMatched": 42,
     "cliFilesCompared": 16,
     "cliFilesMatched": 16,
-    "defects": 100,
+    "defects": 86,
     "intentionalDifferences": 56,
     "ipcDefects": 14,
     "ipcScenarios": 9,
@@ -2701,6 +2546,7 @@
       "comments": 1,
       "constructCoverage": true,
       "files": 11,
+      "fingerprint": "eab6b0f8cfcb3681a69f3a22ec2b0f1943d3ba0aa58193d65d907efe29e63c62",
       "functions": 50,
       "guards": 13,
       "language": "kotlin",
@@ -2714,6 +2560,7 @@
       "comments": 0,
       "constructCoverage": true,
       "files": 2,
+      "fingerprint": "78d1ff49a2b73cde4286de6a5c96cbe352f3482cf3578cb1b5dd9468e84a3047",
       "functions": 6,
       "guards": 2,
       "language": "typescript",
@@ -2727,12 +2574,13 @@
       "comments": 1,
       "constructCoverage": true,
       "files": 1,
+      "fingerprint": "226b7d545f5d854ea30c5f055e5af7b8d563f9e34db55c99ccc6cf43222488b0",
       "functions": 4,
       "guards": 2,
       "language": "javascript",
       "parseFailures": 0,
       "properties": 8,
-      "returns": 3,
+      "returns": 4,
       "unstableFingerprints": 0
     },
     {
@@ -2740,6 +2588,7 @@
       "comments": 1,
       "constructCoverage": true,
       "files": 1,
+      "fingerprint": "3f61783abfe23de5a0f4eef7ca29f62296338e009c59e7dc1e7a29015efffea6",
       "functions": 3,
       "guards": 2,
       "language": "csharp",
@@ -2753,12 +2602,27 @@
       "comments": 0,
       "constructCoverage": true,
       "files": 1,
+      "fingerprint": "72ac9e9428c4d165cb144a8101e7749d8fd25856d8a71ab8e6f7ca3389bb4b5a",
       "functions": 2,
       "guards": 1,
       "language": "vue",
       "parseFailures": 0,
       "properties": 4,
-      "returns": 0,
+      "returns": 1,
+      "unstableFingerprints": 0
+    },
+    {
+      "calls": 1,
+      "comments": 1,
+      "constructCoverage": true,
+      "files": 1,
+      "fingerprint": "98665fe69c6d39085cd8383570f02da41ca1a76e0f8d22393891cabfa1d82250",
+      "functions": 2,
+      "guards": 1,
+      "language": "c",
+      "parseFailures": 0,
+      "properties": 4,
+      "returns": 3,
       "unstableFingerprints": 0
     }
   ],

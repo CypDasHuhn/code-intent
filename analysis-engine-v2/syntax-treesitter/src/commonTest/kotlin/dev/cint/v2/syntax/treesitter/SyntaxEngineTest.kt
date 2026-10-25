@@ -152,6 +152,30 @@ class SyntaxEngineTest {
     }
 
     @Test
+    fun vueScriptRegionKeepsSourceOffsetsAndDetectsTypescript() {
+        val source = """
+            <template><div>{{ message }}</div></template>
+            <script lang="ts">
+            export function run(id: string) {
+              if (!id) {
+                return;
+              }
+              return id;
+            }
+            </SCRIPT>
+        """.trimIndent()
+        val tree = createSyntaxEngine("vue").parse(source.encodeToByteArray(), null).getOrThrow()
+
+        assertTrue(tree.version.startsWith("vue-script/tree-sitter-typescript"), tree.version)
+        assertTrue(tree.nodes.values.none { it.kind == "ERROR" })
+        val function = tree.nodes.values.first { it.kind == "function_declaration" }
+        assertEquals(source.indexOf("function run"), function.startByte)
+        assertEquals(2, function.startLine)
+        assertEquals(7, function.startCol)
+        assertTrue(function.text.contains("return id;"))
+    }
+
+    @Test
     fun extractsBatchFactsBehindTheContract() {
         val engine = createSyntaxEngine("kotlin")
         val tree = engine.parse(sample.encodeToByteArray(), previous = null).getOrThrow()

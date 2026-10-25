@@ -178,11 +178,17 @@ class CorpusParityTest {
                     }
                 }
 
-                syntaxReports += syntaxReport(language, frozen, defects)
+                syntaxReports +=
+                    syntaxReport(
+                        language,
+                        frozen.files.map { file -> file.path to corpus.source(language, file.path) },
+                        defects,
+                    )
             } finally {
                 root.toFile().deleteRecursively()
             }
         }
+        syntaxReports += syntaxReport("c", listOf(C_SYNTAX_PATH to C_SYNTAX_SOURCE), defects)
 
         val frozenContract = corpus.knownDifferences()
         val v2Contract = json.parseToJsonElement(Files.readString(Paths.get(System.getProperty("v2.ipcKnownDifferences")))).jsonObject
@@ -300,7 +306,7 @@ class CorpusParityTest {
 
     private fun syntaxReport(
         language: String,
-        frozen: dev.cint.v2.testing.corpus.FrozenCliCorpus,
+        sources: List<Pair<String, String>>,
         defects: MutableList<JsonObject>,
     ): JsonObject {
         val engine = createSyntaxEngine(language)
@@ -312,9 +318,10 @@ class CorpusParityTest {
         var properties = 0
         var parseFailures = 0
         var unstableFingerprints = 0
-        for (file in frozen.files) {
-            val text = corpus.source(language, file.path)
-            val parsed = engine.parse(text.toByteArray(StandardCharsets.UTF_8), null, CancellationToken.NONE)
+        val fingerprints = sortedMapOf<String, String>()
+        for ((path, text) in sources) {
+            val bytes = text.toByteArray(StandardCharsets.UTF_8)
+            val parsed = engine.parse(bytes, null, CancellationToken.NONE)
             val tree = (parsed as? dev.cint.contracts.util.Success)?.contents
             if (tree == null || tree.nodes.values.any { it.kind == "ERROR" }) {
                 parseFailures++
@@ -322,25 +329,26 @@ class CorpusParityTest {
                     "syntax.parse",
                     "093-v2-non-kotlin-parity",
                     "Frozen source did not parse cleanly in the V2 syntax engine",
-                    mapOf("language" to language, "path" to file.path),
+                    mapOf("language" to language, "path" to path),
                 )
                 continue
             }
             val firstFingerprint = syntaxFingerprint(tree)
-            val reparsed = engine.parse(text.toByteArray(StandardCharsets.UTF_8), null, CancellationToken.NONE).getOrThrow()
+            fingerprints[path] = firstFingerprint
+            val reparsed = engine.parse(bytes, null, CancellationToken.NONE).getOrThrow()
             if (syntaxFingerprint(reparsed) != firstFingerprint) {
                 unstableFingerprints++
                 defects += defect(
                     "syntax.fingerprint",
                     "093-v2-non-kotlin-parity",
                     "Repeated parses produced different syntax fingerprints",
-                    mapOf("language" to language, "path" to file.path),
+                    mapOf("language" to language, "path" to path),
                 )
             }
             val facts = engine.facts(tree, emptyList(), CancellationToken.NONE).getOrThrow()
             functions += facts.functions.size
             calls += facts.calls.size
-            returns += facts.returns.count { it.expressionId != null }
+            returns += facts.returns.size
             guards += facts.guards.size
             comments += facts.comments.size
             properties += facts.properties.size
@@ -349,14 +357,11 @@ class CorpusParityTest {
                     "syntax.function-facts",
                     "093-v2-non-kotlin-parity",
                     "Syntax facts contained no functions for a frozen source",
-                    mapOf("language" to language, "path" to file.path),
+                    mapOf("language" to language, "path" to path),
                 )
             }
         }
-        val constructCoverage =
-            functions > 0 && calls > 0 && properties > 0 &&
-                (language == "vue" || returns > 0) &&
-                (language == "csharp" || guards > 0)
+        val constructCoverage = functions > 0 && calls > 0 && returns > 0 && guards > 0 && properties > 0
         if (!constructCoverage) {
             defects += defect(
                 "syntax.construct-coverage",
@@ -372,12 +377,14 @@ class CorpusParityTest {
                 ),
             )
         }
+        val fingerprint = digest(fingerprints.entries.joinToString("\n") { "${it.key}:${it.value}" })
         return buildJsonObject {
             put("language", language)
-            put("files", frozen.files.size)
+            put("files", sources.size)
             put("parseFailures", parseFailures)
             put("unstableFingerprints", unstableFingerprints)
             put("constructCoverage", constructCoverage)
+            put("fingerprint", fingerprint)
             put("functions", functions)
             put("calls", calls)
             put("returns", returns)
@@ -387,12 +394,15 @@ class CorpusParityTest {
         }
     }
 
+    private fun digest(value: String): String =
+        MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
+
     private fun syntaxFingerprint(tree: dev.cint.contracts.facts.SyntaxTree): String {
         val canonical =
             tree.nodes.values.sortedBy { it.id }.joinToString("\n") { node ->
                 "${node.id}|${node.kind}|${node.startByte}|${node.endByte}|${node.startLine}|${node.startCol}|${node.endLine}|${node.endCol}|${node.isNamed}"
             }
-        return MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray()).joinToString("") { "%02x".format(it) }
+        return digest(canonical)
     }
 
     private fun runCli(args: List<String>): CliRun {
@@ -552,6 +562,28 @@ class CorpusParityTest {
                 "cli.format-selector" to "The V2 CLI supports json and ndjson output formats.",
                 "cli.include-all" to "--all includes files with no annotations, candidates, or diagnostics.",
             )
+
+        const val C_SYNTAX_PATH: String = "native-spike/fixtures/CConstructs.c"
+        val C_SYNTAX_SOURCE: String =
+            """
+            struct Counter {
+                int total;
+            };
+
+            // cint:bookkeeping
+            static int add(int a, int b) {
+                if (a < 0) {
+                    return 0;
+                }
+                return a + b;
+            }
+
+            int main(void) {
+                struct Counter counter;
+                counter.total = add(1, 2);
+                return counter.total;
+            }
+            """.trimIndent()
 
         val DEFERRALS =
             linkedMapOf(

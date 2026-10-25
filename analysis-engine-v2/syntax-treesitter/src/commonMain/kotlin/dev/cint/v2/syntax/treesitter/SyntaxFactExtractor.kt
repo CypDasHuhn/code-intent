@@ -79,6 +79,7 @@ private data class LanguageProfile(
     val callSuffixKinds: Set<String>,
     val navigationKinds: Set<String>,
     val memberKinds: Set<String>,
+    val receiverIsFirstChild: Boolean = false,
 )
 
 private object Profiles {
@@ -178,6 +179,7 @@ private object Profiles {
         callSuffixKinds = setOf("argument_list", "type_argument_list"),
         navigationKinds = setOf("member_access_expression", "element_access_expression"),
         memberKinds = setOf("identifier"),
+        receiverIsFirstChild = true,
     )
 
     private val c = LanguageProfile(
@@ -229,6 +231,9 @@ private object Profiles {
         else -> null
     }
 }
+
+private val ASSIGNMENT_OPERATORS =
+    setOf("=", "+=", "-=", "*=", "/=", "%=", "**=", "&=", "|=", "^=", "<<=", ">>=", ">>>=", "??=", "?:=")
 
 internal object SyntaxFactExtractor {
     fun extract(tree: SyntaxTree, queryIds: List<String>): ContractResult<FactBatch> {
@@ -408,8 +413,10 @@ internal object SyntaxFactExtractor {
 
         fun declarationNameNode(node: SyntaxNode): SyntaxNode? =
             if (node.kind in profile.propertyKinds) {
-                descendantsOf(node).firstOrNull { it.kind in profile.variableKinds }?.let { firstIdentifier(it) }
-                    ?: firstIdentifier(node)
+                descendantsOf(node).firstOrNull { candidate ->
+                    candidate.kind in profile.identifierKinds &&
+                        ancestorsOf(candidate).none { it.kind in profile.annotationKinds }
+                } ?: firstIdentifier(node)
             } else {
                 firstIdentifier(node)
             }
@@ -459,10 +466,15 @@ internal object SyntaxFactExtractor {
                 when {
                     node.kind in profile.assignmentKinds -> {
                         val target = childrenOf(node).firstOrNull()
+                        val value =
+                            childrenOf(node).lastOrNull { child ->
+                                child.id != target?.id && child.text.trim() !in ASSIGNMENT_OPERATORS
+                            }
                         WriteFact(
                             node.id,
                             WriteKind.ASSIGNMENT,
                             target?.id,
+                            valueId = value?.id,
                             targetName = target?.text?.substringBefore('=')?.substringBefore('+')?.substringBefore('-')?.trim()?.substringAfterLast('.')?.trim(),
                         )
                     }
@@ -522,7 +534,11 @@ internal object SyntaxFactExtractor {
                 val callChildren = childrenOf(node)
                 val callee = callChildren.firstOrNull { it.kind !in profile.callSuffixKinds } ?: callChildren.firstOrNull()
                 val receiver = callee?.takeIf { it.kind in profile.navigationKinds }?.let { navigation ->
-                    childrenOf(navigation).firstOrNull { it.kind !in profile.memberKinds } ?: childrenOf(navigation).firstOrNull()
+                    if (profile.receiverIsFirstChild) {
+                        childrenOf(navigation).firstOrNull()
+                    } else {
+                        childrenOf(navigation).firstOrNull { it.kind !in profile.memberKinds } ?: childrenOf(navigation).firstOrNull()
+                    }
                 }
                 val trailingLambda = callChildren.asReversed().firstOrNull { it.kind in profile.lambdaKinds }
                     ?: descendantsOf(node).lastOrNull { it.kind in profile.lambdaKinds }

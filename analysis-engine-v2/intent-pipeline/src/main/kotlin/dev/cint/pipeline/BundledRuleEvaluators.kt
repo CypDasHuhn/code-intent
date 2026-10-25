@@ -112,7 +112,8 @@ private class LoggingEvaluator : V1Evaluator(RuleSpec("logging:logging", Intents
             val receiver = call.receiverText(view)
             val receiverName = receiver.substringAfterLast('.')
             when {
-                PRINT_QUALIFIERS.any { receiver == it || receiver.endsWith(".$it") } ->
+                PRINT_QUALIFIERS.any { receiver == it || receiver.endsWith(".$it") } &&
+                    tokens.any { it in PRINT_CALLS || it in LOGGING_METHODS } ->
                     view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
                 tokens.any { it in PRINT_CALLS } && receiver.isEmpty() ->
                     view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
@@ -156,6 +157,15 @@ private class ErrorHandlingEvaluator : V1Evaluator(RuleSpec("error-handling:erro
         for (call in view.calls) {
             val callee = call.callee.orEmpty()
             if (callee == "Error" || callee == "Exception") continue
+            val receiver = call.receiverText(view)
+            val receiverName = receiver.substringAfterLast('.')
+            val loggingCall =
+                callee.lowercase() in LOGGING_METHODS &&
+                    (
+                        LOGGING_RECEIVER_NAMES.any { it.equals(receiverName, ignoreCase = true) } ||
+                            PRINT_QUALIFIERS.any { receiver == it || receiver.endsWith(".$it") }
+                    )
+            if (loggingCall) continue
             if (call.calleeSegments().any { it in ERROR_CALLS }) {
                 view.emitNode(view.node(call.nodeId), 1.0, "treesitter")?.let(result::add)
             }
@@ -918,15 +928,8 @@ private fun assignmentIndex(text: String): Int {
 }
 
 private fun SyntaxNode.trimmedEnd(): SyntaxNode {
-    val value = text.trimEnd()
-    if (!value.endsWith(";")) return this
-    val trimmed = value.dropLast(1)
-    val lines = trimmed.split('\n')
-    return copy(
-        endByte = endByte - 1,
-        endLine = startLine + lines.size - 1,
-        endCol = lines.last().length,
-    )
+    if (!text.trimEnd().endsWith(";")) return this
+    return copy(endByte = endByte - 1, endCol = (endCol - 1).coerceAtLeast(0))
 }
 
 private fun within(node: SyntaxNode, container: SyntaxNode): Boolean =
@@ -951,7 +954,8 @@ private fun isAmbiguous(callee: String): Boolean =
 private fun isLiteral(text: String): Boolean {
     val value = text.trim()
     if (value == "true" || value in REJECTION_VALUES) return true
-    if (value.startsWith("\"") || value.startsWith("'") || value.startsWith("`")) return true
+    if (value.startsWith("\"") || value.startsWith("'")) return true
+    if (value.startsWith("`")) return !value.contains("\${")
     return value.toLongOrNull() != null || value.toDoubleOrNull() != null
 }
 
