@@ -200,6 +200,38 @@ class FakePortsTest {
     }
 
     @Test
+    fun fakeKnowledgeStoreKeepsFileVariantsPathAware() {
+        val store = FakeKnowledgeStore(clock = clock)
+        val selector = FunctionSelector(qualifiedName = "findUser")
+        fun file(path: String) =
+            FunctionAnnotation.create(
+                selector = selector,
+                intents = setOf(Intents.SEARCH),
+                scope = AnnotationScope.FILE,
+                provenance = Provenance.USER,
+                confidence = Confidence.HIGH,
+                status = Status.ACCEPTED,
+                createdAt = clock.now,
+                path = path,
+            )
+
+        assertTrue(store.setFunctionAnnotation(file("A.kt")).isSuccess)
+        assertTrue(store.setFunctionAnnotation(file("B.kt")).isSuccess)
+        assertTrue(store.removeFunctionAnnotation(selector, path = "A.kt").isSuccess)
+        assertEquals(listOf("B.kt"), store.functionAnnotations().getOrThrow().mapNotNull { it.path })
+
+        assertEquals(
+            1,
+            store.pruneStale(
+                setOf(selector),
+                emptySet(),
+                validFilePaths = mapOf(selector to setOf("Other.kt")),
+            ).getOrThrow(),
+        )
+        assertTrue(store.functionAnnotations().getOrThrow().isEmpty())
+    }
+
+    @Test
     fun rulePackSourceReadsScriptedData() {
         val manifest = PackManifest("lookup", "Lookup", "1.0.0", listOf("fake"))
         val playbook = Playbook("lookup", listOf(RuleSpec("lookup-rule", Intents.LOOKUP)))

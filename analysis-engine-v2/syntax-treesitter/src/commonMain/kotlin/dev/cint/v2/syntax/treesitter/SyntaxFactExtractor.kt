@@ -281,6 +281,72 @@ internal object SyntaxFactExtractor {
             childrenOf(node).firstOrNull { it.kind in profile.bodyKinds }
                 ?: descendantsOf(node).firstOrNull { it.kind in profile.bodyKinds && it.kind !in profile.lambdaKinds }
 
+        fun calleeName(node: SyntaxNode): String? =
+            if (node.kind in profile.navigationKinds) {
+                descendantsOf(node)
+                    .filter { it.kind in profile.identifierKinds }
+                    .maxByOrNull { it.startByte }
+                    ?.text
+            } else {
+                firstIdentifier(node)?.text ?: node.text.substringAfterLast('.').substringBefore('(').trim()
+            }
+
+        fun parameterCount(node: SyntaxNode): Int? {
+            val bodyStart = bodyOf(node)?.startByte ?: node.endByte
+            val count =
+                descendantsOf(node).count {
+                    it.startByte < bodyStart &&
+                        it.kind.contains("parameter") &&
+                        !it.kind.contains("type_parameter") &&
+                        !it.kind.endsWith("_parameters")
+                }
+            return count.takeIf { it > 0 }
+        }
+
+        fun suffixArguments(suffix: SyntaxNode): Int {
+            val explicitList =
+                childrenOf(suffix).firstOrNull {
+                    it.kind in setOf("value_arguments", "arguments", "argument_list")
+                }
+            val list = explicitList ?: suffix
+            val arguments =
+                childrenOf(list).count { child ->
+                    val text = child.text.trim()
+                    text != "(" && text != ")" && text != "," &&
+                        child.kind !in setOf("type_argument_list", "type_arguments", "comment")
+                }
+            val trailingLambdas =
+                if (explicitList != null) {
+                    childrenOf(suffix).count { it.kind in profile.lambdaKinds }
+                } else {
+                    0
+                }
+            return arguments + trailingLambdas
+        }
+
+        fun argumentCount(call: SyntaxNode): Int? {
+            val direct = childrenOf(call).filter { it.kind in profile.callSuffixKinds }.sumOf(::suffixArguments)
+            val nestedCallee = childrenOf(call).firstOrNull { it.kind in profile.callKinds }
+            val nested = nestedCallee?.let { argumentCount(it) } ?: 0
+            return direct + nested
+        }
+
+        fun declaringType(node: SyntaxNode): String? =
+            ancestorsOf(node)
+                .firstOrNull { it.kind in profile.classKinds }
+                ?.let { classNode ->
+                    childrenOf(classNode).firstOrNull { it.kind in profile.identifierKinds }?.text
+                        ?: firstIdentifier(classNode)?.text
+                        ?: classNode.text.substringBefore('{').trim()
+                }
+                ?.takeIf { it.isNotBlank() }
+
+        fun signature(node: SyntaxNode): String? {
+            val body = bodyOf(node)?.text?.takeIf { it.isNotBlank() } ?: return node.text
+            val index = node.text.indexOf(body)
+            return if (index > 0) node.text.substring(0, index).trimEnd() else node.text
+        }
+
         val functionNodes = nodes.filter { it.kind in profile.functionKinds }
         val propertyNodes = nodes.filter { it.kind in profile.propertyKinds }
         val variableNodes = nodes.filter { it.kind in profile.variableKinds }
@@ -320,7 +386,15 @@ internal object SyntaxFactExtractor {
         val functions = if (FactCategory.FUNCTIONS in requested) {
             functionNodes.map { node ->
                 val nameNode = firstIdentifier(node)?.takeIf { it.startByte < (bodyOf(node)?.startByte ?: Int.MAX_VALUE) }
-                FunctionFact(node.id, nameNode?.text, nameNode?.id, bodyOf(node)?.id)
+                FunctionFact(
+                    nodeId = node.id,
+                    name = nameNode?.text,
+                    nameNodeId = nameNode?.id,
+                    bodyId = bodyOf(node)?.id,
+                    declaringType = declaringType(node),
+                    signature = signature(node),
+                    arity = parameterCount(node),
+                )
             }
         } else {
             emptyList()
@@ -414,10 +488,11 @@ internal object SyntaxFactExtractor {
                 CallFact(
                     nodeId = node.id,
                     siteId = callChildren.firstOrNull { it.kind in profile.callSuffixKinds }?.id ?: node.id,
-                    callee = callee?.text,
+                    callee = callee?.let { calleeName(it) },
                     receiverId = receiver?.id,
-                    path = null,
+                    path = callee?.text,
                     trailingLambdaId = trailingLambda?.id,
+                    arity = argumentCount(node),
                 )
             }
         } else {

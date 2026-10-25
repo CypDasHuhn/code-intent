@@ -18,6 +18,7 @@ private const val COMPOSITION_KEY_PREFIX = "\u0000composition:"
 private const val RETURN_KEY = "${COMPOSITION_KEY_PREFIX}return"
 private const val DERIVATIVE_KEY = "${COMPOSITION_KEY_PREFIX}derivative"
 private const val SCAFFOLD_KEY = "${COMPOSITION_KEY_PREFIX}scaffold"
+private const val CALL_CHAIN_KEY = "${COMPOSITION_KEY_PREFIX}call-chain"
 private const val SOURCE_KEY_PREFIX = "${COMPOSITION_KEY_PREFIX}source:"
 
 private const val RETURN_RULE = CoreContributors.RETURN_CATEGORY
@@ -63,6 +64,7 @@ class Composition {
         }
         val context = CompositionContext(facts, store, config)
 
+        val callChains = callChainContributions(context)
         val returns = returnContributions(context)
         store.replaceRule(RETURN_KEY, returns)
         val limit = compositionLimit(facts)
@@ -84,6 +86,7 @@ class Composition {
             RETURN_KEY to returns,
             DERIVATIVE_KEY to derivatives,
             SCAFFOLD_KEY to scaffolds,
+            CALL_CHAIN_KEY to callChains,
         ).forEach { (key, contributions) ->
             if (contributions.isNotEmpty()) {
                 output.replaceRule(key, contributions)

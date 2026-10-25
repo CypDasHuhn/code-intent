@@ -291,7 +291,7 @@ class KnowledgePrecedenceTest {
             CancellationToken.NONE,
         ).getOrThrow()
         assertEquals(emptyList(), importPathResult.contributions)
-        assertEquals(listOf("KNOWLEDGE_SELECTOR_UNSUPPORTED"), importPathResult.errors.map { it.code })
+        assertEquals(emptyList(), importPathResult.errors)
 
         val annotated = sourceWithFunctions("record")
         val annotatedSource = annotated.copy(

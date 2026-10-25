@@ -17,7 +17,17 @@ internal fun cancellationError(cancellation: CancellationToken): ContractError? 
 
 internal fun validateFunctionAnnotation(annotation: FunctionAnnotation): ContractError? =
     validateIntents(annotation.intents)
+        ?: validateScopePath(annotation)
         ?: validateTimestamps(annotation.createdAt, annotation.updatedAt)
+
+private fun validateScopePath(annotation: FunctionAnnotation): ContractError? =
+    if (annotation.scope == dev.cint.contracts.knowledge.AnnotationScope.FILE &&
+        annotation.path.isNullOrBlank()
+    ) {
+        ContractError.ValidationError("FILE-scoped annotations require a path", "path")
+    } else {
+        null
+    }
 
 internal fun validateSpanOverride(override: SpanOverride): ContractError? =
     validateIntents(override.intents)
@@ -42,7 +52,7 @@ internal fun validateSnapshot(snapshot: KnowledgeSnapshot): ContractError? {
         validateFunctionAnnotation(annotation)?.let { return it }
     }
     val duplicateFunctions = snapshot.functionAnnotations
-        .groupingBy { it.selector.identityKey }
+        .groupingBy { it.identityKey }
         .eachCount()
         .filterValues { it > 1 }
     if (duplicateFunctions.isNotEmpty()) {
@@ -78,16 +88,18 @@ internal fun validateSnapshot(snapshot: KnowledgeSnapshot): ContractError? {
         )
     }
 
-    val annotationsByKey = snapshot.functionAnnotations.associateBy { it.selector.identityKey }
     snapshot.packOrigins.forEach { (selectorKey, _) ->
-        val annotation = annotationsByKey[selectorKey]
-            ?: return ContractError.ValidationError(
-                "Pack origin references an unknown selector: $selectorKey",
-                "packOrigins",
-            )
-        if (annotation.provenance != Provenance.PACK_DEFAULT) {
+        val annotation =
+            snapshot.functionAnnotations.firstOrNull {
+                it.selector.identityKey == selectorKey && it.provenance == Provenance.PACK_DEFAULT
+            }
+                ?: return ContractError.ValidationError(
+                    "Pack origin references an unknown pack-default selector: $selectorKey",
+                    "packOrigins",
+                )
+        if (annotation.scope == dev.cint.contracts.knowledge.AnnotationScope.FILE) {
             return ContractError.ValidationError(
-                "Pack origin requires PACK_DEFAULT provenance: $selectorKey",
+                "Pack origin cannot reference a FILE-scoped annotation: $selectorKey",
                 "packOrigins",
             )
         }

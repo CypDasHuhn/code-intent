@@ -35,13 +35,17 @@ class InMemoryKnowledgeStoreTest {
         intents: Set<String> = setOf(Intents.LOOKUP),
         status: Status = Status.ACCEPTED,
         createdAt: Instant = fixedNow,
+        scope: AnnotationScope = AnnotationScope.GLOBAL,
+        path: String? = null,
     ): FunctionAnnotation = FunctionAnnotation.create(
         selector = selector,
         intents = intents,
+        scope = scope,
         provenance = Provenance.USER,
         confidence = Confidence.HIGH,
         status = status,
         createdAt = createdAt,
+        path = path,
     )
 
     private fun spanOverride(
@@ -446,6 +450,58 @@ class InMemoryKnowledgeStoreTest {
             ),
         )
         assertTrue(store.functionAnnotations().getOrThrow().isEmpty())
+    }
+
+    @Test
+    fun fileScopedAnnotationsWithOneSelectorCoexistAcrossPaths() {
+        val selector = FunctionSelector(qualifiedName = "findUser")
+        val first = annotation(selector, scope = AnnotationScope.FILE, path = "A.kt")
+        val second = annotation(selector, scope = AnnotationScope.FILE, path = "B.kt")
+        assertTrue(first.identityKey != second.identityKey)
+
+        val store = InMemoryKnowledgeStore.empty(clock)
+        assertTrue(store.setFunctionAnnotation(first).isSuccess)
+        assertTrue(store.setFunctionAnnotation(second).isSuccess)
+
+        val annotations = store.functionAnnotations().getOrThrow()
+        assertEquals(setOf("A.kt", "B.kt"), annotations.mapNotNull { it.path }.toSet())
+        assertEquals(setOf(first.identityKey, second.identityKey), annotations.map { it.identityKey }.toSet())
+        assertTrue(InMemoryKnowledgeStore.fromSnapshot(snapshot(annotations = listOf(first, second))).isSuccess)
+
+        assertTrue(store.removeFunctionAnnotation(selector, path = "A.kt").isSuccess)
+        assertEquals(listOf("B.kt"), store.functionAnnotations().getOrThrow().mapNotNull { it.path })
+
+        assertTrue(store.removeFunctionAnnotation(selector).isSuccess)
+        assertTrue(store.functionAnnotations().getOrThrow().isEmpty())
+    }
+
+    @Test
+    fun pruneAndLookupArePathAware() {
+        val selector = FunctionSelector(qualifiedName = "findUser")
+        val first = annotation(selector, setOf(Intents.SEARCH), scope = AnnotationScope.FILE, path = "A.kt")
+        val second = annotation(selector, setOf(Intents.LOOKUP), scope = AnnotationScope.FILE, path = "B.kt")
+        val knowledge = snapshot(annotations = listOf(first, second))
+
+        assertEquals(
+            setOf(Intents.SEARCH),
+            KnowledgeLookup.effectiveIntents(knowledge, selector, path = "A.kt"),
+        )
+        assertEquals(
+            setOf(Intents.LOOKUP),
+            KnowledgeLookup.effectiveIntents(knowledge, selector, path = "B.kt"),
+        )
+        assertEquals(emptySet(), KnowledgeLookup.effectiveIntents(knowledge, selector))
+
+        val store = InMemoryKnowledgeStore.fromSnapshot(knowledge).getOrThrow()
+        assertEquals(
+            1,
+            store.pruneStale(
+                setOf(selector),
+                emptySet(),
+                validFilePaths = mapOf(selector to setOf("A.kt")),
+            ).getOrThrow(),
+        )
+        assertEquals(listOf("A.kt"), store.functionAnnotations().getOrThrow().mapNotNull { it.path })
     }
 
     @Test

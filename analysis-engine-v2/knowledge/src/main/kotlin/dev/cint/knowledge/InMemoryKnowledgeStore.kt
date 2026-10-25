@@ -39,7 +39,7 @@ class InMemoryKnowledgeStore private constructor(
 
     init {
         initialFunctionAnnotations.forEach {
-            annotations[it.selector.identityKey] = it.defensiveCopy()
+            annotations[it.identityKey] = it.defensiveCopy()
         }
         initialSpanOverrides.forEach {
             overrides[it.selector.identityKey] = it.defensiveCopy()
@@ -60,7 +60,7 @@ class InMemoryKnowledgeStore private constructor(
             ResultFactory.success(
                 KnowledgeSnapshot(
                     functionAnnotations = annotations.values
-                        .sortedBy { it.selector.identityKey }
+                        .sortedBy { it.identityKey }
                         .map { it.defensiveCopy() },
                     spanOverrides = overrides.values
                         .sortedBy { it.selector.identityKey }
@@ -85,7 +85,7 @@ class InMemoryKnowledgeStore private constructor(
         return synchronized(lock) {
             ResultFactory.success(
                 annotations.values
-                    .sortedBy { it.selector.identityKey }
+                    .sortedBy { it.identityKey }
                     .map { it.defensiveCopy() },
             )
         }
@@ -99,7 +99,7 @@ class InMemoryKnowledgeStore private constructor(
         validateFunctionAnnotation(annotation)?.let { return ResultFactory.failure(it) }
         return synchronized(lock) {
             cancellationError(cancellation)?.let { return@synchronized ResultFactory.failure(it) }
-            val key = annotation.selector.identityKey
+            val key = annotation.identityKey
             val existing = annotations[key]
             if (existing != null && annotation.updatedAt < existing.updatedAt) {
                 return@synchronized ResultFactory.failure(staleWrite("function annotation"))
@@ -121,12 +121,23 @@ class InMemoryKnowledgeStore private constructor(
     override fun removeFunctionAnnotation(
         selector: FunctionSelector,
         cancellation: CancellationToken,
+        path: String?,
     ): ContractResult<Unit> {
         cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
         return synchronized(lock) {
-            val key = selector.identityKey
-            val removed = annotations.remove(key) != null
-            packOrigins.remove(key)
+            val removed =
+                if (path == null) {
+                    annotations.entries.removeAll { it.value.selector == selector }
+                } else {
+                    annotations.entries.removeAll {
+                        it.value.selector == selector &&
+                            it.value.scope == AnnotationScope.FILE &&
+                            it.value.path == path
+                    }
+                }
+            if (path == null) {
+                packOrigins.remove(selector.identityKey)
+            }
             if (removed) {
                 touch()
             }
@@ -272,16 +283,18 @@ class InMemoryKnowledgeStore private constructor(
                 if (annotations.containsKey(key)) {
                     continue
                 }
-                annotations[key] = FunctionAnnotation(
-                    selector = default.selector,
-                    intents = default.intents.toSet(),
-                    scope = AnnotationScope.GLOBAL,
-                    provenance = Provenance.PACK_DEFAULT,
-                    confidence = default.confidence,
-                    status = default.status,
-                    createdAt = materializedAt,
-                    updatedAt = materializedAt,
-                )
+                val annotation =
+                    FunctionAnnotation(
+                        selector = default.selector,
+                        intents = default.intents.toSet(),
+                        scope = AnnotationScope.GLOBAL,
+                        provenance = Provenance.PACK_DEFAULT,
+                        confidence = default.confidence,
+                        status = default.status,
+                        createdAt = materializedAt,
+                        updatedAt = materializedAt,
+                    )
+                annotations[annotation.identityKey] = annotation
                 packOrigins[key] = PackOrigin(default.packId, default.packVersion)
             }
             hasStore = true
@@ -294,12 +307,24 @@ class InMemoryKnowledgeStore private constructor(
         validFunctionSelectors: Set<FunctionSelector>,
         validSpanSelectors: Set<SpanSelector>,
         cancellation: CancellationToken,
+        validFilePaths: Map<FunctionSelector, Set<String>>,
     ): ContractResult<Int> {
         cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
         return synchronized(lock) {
             val functionKeys = validFunctionSelectors.mapTo(HashSet()) { it.identityKey }
+            val filePaths =
+                validFilePaths.mapKeys { it.key.identityKey }.mapValues { (_, paths) -> paths.toSet() }
             val spanKeys = validSpanSelectors.mapTo(HashSet()) { it.identityKey }
-            val staleFunctions = annotations.keys.filterNot { it in functionKeys }
+            val staleFunctions =
+                annotations.entries.filter { (_, annotation) ->
+                    if (annotation.selector.identityKey !in functionKeys) {
+                        true
+                    } else if (annotation.scope == AnnotationScope.FILE) {
+                        annotation.path !in filePaths[annotation.selector.identityKey].orEmpty()
+                    } else {
+                        false
+                    }
+                }.map { it.key }
             val staleSpans = overrides.keys.filterNot { it in spanKeys }
             staleFunctions.forEach {
                 annotations.remove(it)

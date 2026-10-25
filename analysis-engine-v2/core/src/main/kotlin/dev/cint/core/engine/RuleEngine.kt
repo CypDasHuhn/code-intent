@@ -113,7 +113,7 @@ class RuleEngine(
             store.replaceRule(id, contributions)
         }
         val annotations =
-            (store.annotations() + composed).sortedWith(
+            mergeAnnotations(store.annotations() + composed).sortedWith(
                 compareBy<Annotation>(
                     { it.span.startLine },
                     { it.span.startCol },
@@ -232,4 +232,13 @@ class RuleEngine(
         val established: List<Emit>,
         val candidates: List<Candidate>,
     )
+}
+
+private fun mergeAnnotations(annotations: List<Annotation>): List<Annotation> {
+    val byRule = annotations.flatMap { it.provenance }.groupBy { it.rule }
+    val store = AnnotationStore()
+    for ((rule, contributions) in byRule) {
+        store.replaceRule(rule, contributions)
+    }
+    return store.annotations()
 }

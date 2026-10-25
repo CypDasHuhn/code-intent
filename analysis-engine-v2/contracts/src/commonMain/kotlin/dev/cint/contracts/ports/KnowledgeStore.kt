@@ -28,6 +28,7 @@ interface KnowledgeStore {
     fun removeFunctionAnnotation(
         selector: FunctionSelector,
         cancellation: CancellationToken = CancellationToken.NONE,
+        path: String? = null,
     ): ContractResult<Unit>
 
     fun spanOverrides(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<List<SpanOverride>>
@@ -68,6 +69,7 @@ interface KnowledgeStore {
         validFunctionSelectors: Set<FunctionSelector>,
         validSpanSelectors: Set<SpanSelector>,
         cancellation: CancellationToken = CancellationToken.NONE,
+        validFilePaths: Map<FunctionSelector, Set<String>> = emptyMap(),
     ): ContractResult<Int>
 
     fun proposeChange(

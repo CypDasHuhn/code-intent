@@ -5,4 +5,5 @@ object CoreContributors {
     const val RETURN_CATEGORY: String = "${PREFIX}return-category"
     const val DERIVATIVE_USE: String = "${PREFIX}derivative-use"
     const val SCAFFOLD: String = "${PREFIX}scaffold"
+    const val CALL_CHAIN: String = "${PREFIX}call-chain"
 }

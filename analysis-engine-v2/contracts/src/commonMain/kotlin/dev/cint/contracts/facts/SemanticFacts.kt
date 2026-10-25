@@ -19,6 +19,7 @@ data class CallFact(
     val receiverId: String?,
     val path: String?,
     val trailingLambdaId: String? = null,
+    val arity: Int? = null,
 )
 
 @Serializable
@@ -172,6 +173,9 @@ data class FunctionFact(
     val name: String?,
     val nameNodeId: String?,
     val bodyId: String?,
+    val declaringType: String? = null,
+    val signature: String? = null,
+    val arity: Int? = null,
 )
 
 @Serializable

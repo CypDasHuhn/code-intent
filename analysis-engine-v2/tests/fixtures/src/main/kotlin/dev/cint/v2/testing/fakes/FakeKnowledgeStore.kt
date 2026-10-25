@@ -34,8 +34,8 @@ class FakeKnowledgeStore(
         private set
 
     init {
-        functionAnnotations.sortedBy { it.selector.identityKey }.forEach {
-            annotations[it.selector.identityKey] = it
+        functionAnnotations.sortedBy { it.identityKey }.forEach {
+            annotations[it.identityKey] = it
         }
         spanOverrides.sortedBy { it.selector.identityKey }.forEach {
             overrides[it.selector.identityKey] = it
@@ -52,7 +52,7 @@ class FakeKnowledgeStore(
         if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
         return ResultFactory.success(
             KnowledgeSnapshot(
-                functionAnnotations = annotations.values.sortedBy { it.selector.identityKey },
+                functionAnnotations = annotations.values.sortedBy { it.identityKey },
                 spanOverrides = overrides.values.sortedBy { it.selector.identityKey },
                 patternHypotheses = hypotheses.values.sortedBy { it.selector.identityKey },
                 packOrigins = origins.toSortedMap(),
@@ -66,7 +66,7 @@ class FakeKnowledgeStore(
         recorder.record("knowledge.functionAnnotations")
         val checked = cancellation.throwIfCancelled()
         if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
-        return ResultFactory.success(annotations.values.sortedBy { it.selector.identityKey })
+        return ResultFactory.success(annotations.values.sortedBy { it.identityKey })
     }
 
     override fun setFunctionAnnotation(
@@ -76,21 +76,34 @@ class FakeKnowledgeStore(
         recorder.record("knowledge.setFunctionAnnotation", annotation.selector.identityKey)
         val checked = cancellation.throwIfCancelled()
         if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
-        annotations[annotation.selector.identityKey] = annotation
+        annotations[annotation.identityKey] = annotation
         return ResultFactory.success(annotation)
     }
 
     override fun removeFunctionAnnotation(
         selector: FunctionSelector,
         cancellation: CancellationToken,
+        path: String?,
     ): ContractResult<Unit> {
         recorder.record("knowledge.removeFunctionAnnotation", selector.identityKey)
         val checked = cancellation.throwIfCancelled()
         if (checked.isFailure) return checked
-        if (annotations.remove(selector.identityKey) == null) {
+        val removed =
+            if (path == null) {
+                annotations.entries.removeAll { it.value.selector == selector }
+            } else {
+                annotations.entries.removeAll {
+                    it.value.selector == selector &&
+                        it.value.scope == dev.cint.contracts.knowledge.AnnotationScope.FILE &&
+                        it.value.path == path
+                }
+            }
+        if (!removed) {
             return ResultFactory.failure(ContractError.NotFound("function-annotation", selector.identityKey))
         }
-        origins.remove(selector.identityKey)
+        if (path == null) {
+            origins.remove(selector.identityKey)
+        }
         return ResultFactory.success(Unit)
     }
 
@@ -176,8 +189,8 @@ class FakeKnowledgeStore(
         defaults.filter { it.status != dev.cint.contracts.data.Status.REJECTED && it.status != dev.cint.contracts.data.Status.SUPPRESSED }
             .sortedBy { it.selector.identityKey }.forEach { default ->
             val key = default.selector.identityKey
-            if (key !in annotations) {
-                annotations[key] = default.toFunctionAnnotation()
+            if (annotations.values.none { it.selector == default.selector && it.scope != dev.cint.contracts.knowledge.AnnotationScope.FILE }) {
+                annotations[default.toFunctionAnnotation().identityKey] = default.toFunctionAnnotation()
                 origins[key] = PackOrigin(default.packId, default.packVersion)
                 isMaterialized = true
             }
@@ -189,13 +202,24 @@ class FakeKnowledgeStore(
         validFunctionSelectors: Set<FunctionSelector>,
         validSpanSelectors: Set<SpanSelector>,
         cancellation: CancellationToken,
+        validFilePaths: Map<FunctionSelector, Set<String>>,
     ): ContractResult<Int> {
         recorder.record("knowledge.pruneStale")
         val checked = cancellation.throwIfCancelled()
         if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
         val validFunctions = validFunctionSelectors.map { it.identityKey }.toSet()
+        val filePaths = validFilePaths.mapKeys { it.key.identityKey }.mapValues { (_, paths) -> paths.toSet() }
         val validSpans = validSpanSelectors.map { it.identityKey }.toSet()
-        val staleFunctions = annotations.keys.filter { it !in validFunctions }
+        val staleFunctions =
+            annotations.entries.filter { (_, annotation) ->
+                if (annotation.selector.identityKey !in validFunctions) {
+                    true
+                } else if (annotation.scope == dev.cint.contracts.knowledge.AnnotationScope.FILE) {
+                    annotation.path !in filePaths[annotation.selector.identityKey].orEmpty()
+                } else {
+                    false
+                }
+            }.map { it.key }
         val staleSpans = overrides.keys.filter { it !in validSpans }
         staleFunctions.forEach {
             annotations.remove(it)

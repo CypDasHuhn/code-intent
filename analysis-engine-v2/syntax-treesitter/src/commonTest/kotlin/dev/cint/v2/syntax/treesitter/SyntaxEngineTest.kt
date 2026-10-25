@@ -174,6 +174,34 @@ class SyntaxEngineTest {
     }
 
     @Test
+    fun chainedCallsExposeFinalCalleeNamesAndReceiverLinks() {
+        val engine = createSyntaxEngine("kotlin")
+        val text = "fun f(repository: Repository) = repository.findAll().map { it.name }"
+        val tree = engine.parse(text.encodeToByteArray(), null).getOrThrow()
+        val facts = engine.facts(tree, listOf("calls"), CancellationToken.NONE).getOrThrow()
+
+        val findAll = facts.calls.single { it.callee == "findAll" }
+        val map = facts.calls.single { it.callee == "map" }
+        assertEquals(findAll.nodeId, map.receiverId)
+        assertEquals("repository.findAll().map", map.path)
+        assertEquals(1, map.arity)
+    }
+
+    @Test
+    fun trailingLambdaCountsTowardCallArity() {
+        val engine = createSyntaxEngine("kotlin")
+        val text = "fun f() { foo(1) { it } }"
+        val tree = engine.parse(text.encodeToByteArray(), null).getOrThrow()
+        val facts = engine.facts(tree, listOf("calls"), CancellationToken.NONE).getOrThrow()
+
+        val outer =
+            facts.calls
+                .filter { it.callee == "foo" }
+                .maxByOrNull { call -> tree.getNode(call.nodeId)!!.let { it.endByte - it.startByte } }!!
+        assertEquals(2, outer.arity)
+    }
+
+    @Test
     fun filtersFactsByQueryIdAndRejectsUnknownQueries() {
         val engine = createSyntaxEngine("kotlin")
         val tree = engine.parse(sample.encodeToByteArray(), previous = null).getOrThrow()

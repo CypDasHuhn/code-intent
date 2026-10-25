@@ -17,7 +17,16 @@ data class FunctionAnnotation(
     val status: Status,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val path: String? = null,
 ) {
+    val identityKey: String
+        get() =
+            if (scope == AnnotationScope.FILE) {
+                "${selector.identityKey}|FILE|${path.orEmpty()}"
+            } else {
+                selector.identityKey
+            }
+
     fun withStatus(newStatus: Status, updatedAt: Instant): FunctionAnnotation =
         copy(status = newStatus, updatedAt = updatedAt)
 
@@ -37,6 +46,7 @@ data class FunctionAnnotation(
             status: Status = Status.SUGGESTED,
             createdAt: Instant,
             updatedAt: Instant = createdAt,
+            path: String? = null,
         ): FunctionAnnotation = FunctionAnnotation(
             selector = selector,
             intents = intents.toSet(),
@@ -46,6 +56,7 @@ data class FunctionAnnotation(
             status = status,
             createdAt = createdAt,
             updatedAt = updatedAt,
+            path = path,
         )
     }
 }
