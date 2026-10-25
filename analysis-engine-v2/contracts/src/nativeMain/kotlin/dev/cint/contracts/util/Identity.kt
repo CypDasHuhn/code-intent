@@ -29,7 +29,7 @@ actual fun sha256(data: ByteArray): ByteArray {
     val bitLength = length.toLong() * 8
     val paddedLength = ((length + 9 + 63) / 64) * 64
     val padded = ByteArray(paddedLength)
-    data.copyInto(padded, 0, length)
+    data.copyInto(padded, 0, 0, length)
     padded[length] = 0x80.toByte()
     for (i in 0 until 8) {
         padded[paddedLength - 8 + i] = (bitLength.ushr(56 - i * 8) and 0xFF).toByte()
@@ -45,8 +45,8 @@ actual fun sha256(data: ByteArray): ByteArray {
                    (padded[offset + i * 4 + 3].toInt() and 0xFF)
         }
         for (i in 16 until 64) {
-            val s0 = (w[i - 15] ushr 7) xor (w[i - 15] ushr 18) xor (w[i - 15] shr 3)
-            val s1 = (w[i - 2] ushr 17) xor (w[i - 2] ushr 19) xor (w[i - 2] shr 10)
+            val s0 = w[i - 15].rotateRight(7) xor w[i - 15].rotateRight(18) xor (w[i - 15] ushr 3)
+            val s1 = w[i - 2].rotateRight(17) xor w[i - 2].rotateRight(19) xor (w[i - 2] ushr 10)
             w[i] = w[i - 16] + s0 + w[i - 7] + s1
         }
 
@@ -60,10 +60,10 @@ actual fun sha256(data: ByteArray): ByteArray {
         var hVar = h[7]
 
         for (i in 0 until 64) {
-            val s1 = (e ushr 6) xor (e ushr 11) xor (e ushr 25)
+            val s1 = e.rotateRight(6) xor e.rotateRight(11) xor e.rotateRight(25)
             val ch = (e and f) xor ((e.inv()) and g)
             val temp1 = hVar + s1 + ch + k[i] + w[i]
-            val s0 = (a ushr 2) xor (a ushr 13) xor (a ushr 22)
+            val s0 = a.rotateRight(2) xor a.rotateRight(13) xor a.rotateRight(22)
             val maj = (a and b) xor (a and c) xor (b and c)
             val temp2 = s0 + maj
 
@@ -97,3 +97,5 @@ actual fun sha256(data: ByteArray): ByteArray {
     }
     return result
 }
+
+private fun Int.rotateRight(bits: Int): Int = (this ushr bits) or (this shl (32 - bits))

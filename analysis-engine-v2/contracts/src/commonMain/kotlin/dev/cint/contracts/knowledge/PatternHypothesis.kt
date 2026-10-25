@@ -25,19 +25,6 @@ data class PatternHypothesis(
     fun withStatus(newStatus: Status): PatternHypothesis =
         copy(status = newStatus, updatedAt = Clock.System.now())
 
-    fun materialize(): List<FunctionAnnotation> =
-        proposedIntents.map { intent ->
-            FunctionAnnotation.create(
-                selector = FunctionSelector(qualifiedName = id),
-                intents = setOf(intent),
-                scope = scope,
-                provenance = Provenance.DERIVED,
-                confidence = confidence,
-                status = Status.ACCEPTED,
-                rationale = "Materialized from pattern hypothesis $id",
-            )
-        }
-
     companion object {
         fun create(
             id: String,

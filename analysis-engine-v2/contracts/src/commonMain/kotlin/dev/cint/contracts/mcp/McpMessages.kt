@@ -1,4 +1,4 @@
-package dev.cint.contracts.ipc
+package dev.cint.contracts.mcp
 
 import dev.cint.contracts.data.AnalysisResult
 import dev.cint.contracts.knowledge.FunctionAnnotation

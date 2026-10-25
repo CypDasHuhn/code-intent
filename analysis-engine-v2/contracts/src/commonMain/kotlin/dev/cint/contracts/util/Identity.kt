@@ -1,16 +1,19 @@
 package dev.cint.contracts.util
 
+import dev.cint.contracts.knowledge.FunctionSelector
+import dev.cint.contracts.knowledge.PatternSelector
+import dev.cint.contracts.knowledge.Selector
+import dev.cint.contracts.knowledge.SpanSelector
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ContentHash(val value: String) {
     companion object {
-        fun compute(data: ByteArray): ContentHash =
-            ContentHash(bytesToHex(data))
+        fun compute(data: ByteArray): ContentHash = ContentHash(sha256(data).toHex())
 
-        fun compute(data: String): ContentHash = compute(stringToByteArray(data))
+        fun compute(data: String): ContentHash = compute(data.encodeToByteArray())
 
-        val EMPTY: ContentHash = ContentHash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+        val EMPTY: ContentHash = compute(ByteArray(0))
     }
 
     override fun toString(): String = value
@@ -21,21 +24,26 @@ data class NodeHash(val value: String) {
     companion object {
         fun compute(nodeType: String, children: List<NodeHash>, content: ContentHash): NodeHash {
             val combined = buildString {
+                append(nodeType.length)
+                append(':')
                 append(nodeType)
-                append(":")
-                children.forEach { append(it.value) }
-                append(":")
+                children.forEach {
+                    append(it.value.length)
+                    append(':')
+                    append(it.value)
+                }
+                append(content.value.length)
+                append(':')
                 append(content.value)
             }
-            return compute(stringToByteArray(combined))
+            return compute(combined.encodeToByteArray())
         }
 
-        fun compute(data: ByteArray): NodeHash =
-            NodeHash(bytesToHex(data))
+        fun compute(data: ByteArray): NodeHash = NodeHash(sha256(data).toHex())
 
-        fun compute(data: String): NodeHash = compute(stringToByteArray(data))
+        fun compute(data: String): NodeHash = compute(data.encodeToByteArray())
 
-        val EMPTY: NodeHash = NodeHash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+        val EMPTY: NodeHash = compute(ByteArray(0))
     }
 
     override fun toString(): String = value
@@ -50,10 +58,10 @@ data class SelectorIdentity(
     override fun toString(): String = "$kind:$key:${contentHash.value.take(16)}"
 
     companion object {
-        fun function(selector: dev.cint.contracts.knowledge.FunctionSelector, contentHash: ContentHash): SelectorIdentity =
+        fun function(selector: FunctionSelector, contentHash: ContentHash): SelectorIdentity =
             SelectorIdentity(SelectorKind.FUNCTION, selector.identityKey, contentHash)
 
-        fun span(selector: dev.cint.contracts.knowledge.SpanSelector, contentHash: ContentHash): SelectorIdentity =
+        fun span(selector: SpanSelector, contentHash: ContentHash): SelectorIdentity =
             SelectorIdentity(SelectorKind.SPAN, selector.identityKey, contentHash)
     }
 }
@@ -65,27 +73,42 @@ enum class SelectorKind {
     PATTERN,
 }
 
-fun computeSelectorHash(selector: Any, contentHash: ContentHash): ContentHash =
-    ContentHash.compute("${selector.hashCode()}:${contentHash.value}")
+fun computeSelectorHash(selector: Selector, contentHash: ContentHash): ContentHash {
+    val kind = when (selector) {
+        is FunctionSelector -> SelectorKind.FUNCTION
+        is SpanSelector -> SelectorKind.SPAN
+        is PatternSelector -> SelectorKind.PATTERN
+    }
+    return computeSelectorHash(SelectorIdentity(kind, selector.identityKey, contentHash))
+}
 
-private fun bytesToHex(bytes: ByteArray): String {
-    val hex = StringBuilder(bytes.size * 2)
-    for (b in bytes) {
-        val bInt = b.toInt()
+fun computeSelectorHash(identity: SelectorIdentity): ContentHash {
+    val combined = buildString {
+        appendField(identity.kind.name)
+        appendField(identity.key)
+        appendField(identity.contentHash.value)
+    }
+    return ContentHash.compute(combined)
+}
+
+private fun StringBuilder.appendField(value: String) {
+    append(value.length)
+    append(':')
+    append(value)
+}
+
+private fun ByteArray.toHex(): String {
+    val hex = StringBuilder(size * 2)
+    for (b in this) {
+        val bInt = b.toInt() and 0xFF
         val hi = (bInt ushr 4) and 0xF
         val lo = bInt and 0xF
-        hex.append(if (hi < 10) ('0' + hi) else ('a' + hi - 10))
-        hex.append(if (lo < 10) ('0' + lo) else ('a' + lo - 10))
+        hex.append(HEX_DIGITS[hi])
+        hex.append(HEX_DIGITS[lo])
     }
     return hex.toString()
 }
 
-private fun stringToByteArray(str: String): ByteArray {
-    val result = ByteArray(str.length)
-    for (i in str.indices) {
-        result[i] = str[i].code.toByte()
-    }
-    return result
-}
+private const val HEX_DIGITS = "0123456789abcdef"
 
 expect fun sha256(data: ByteArray): ByteArray

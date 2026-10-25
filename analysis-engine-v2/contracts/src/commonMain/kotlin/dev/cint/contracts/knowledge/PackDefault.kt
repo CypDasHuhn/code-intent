@@ -26,7 +26,5 @@ data class PackDefault(
             provenance = provenance,
             confidence = confidence,
             status = status,
-            packId = packId,
-            packVersion = packVersion,
         )
 }

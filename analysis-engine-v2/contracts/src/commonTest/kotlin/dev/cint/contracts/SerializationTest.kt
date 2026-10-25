@@ -4,6 +4,7 @@ import dev.cint.contracts.data.*
 import dev.cint.contracts.facts.*
 import dev.cint.contracts.knowledge.*
 import dev.cint.contracts.ipc.*
+import dev.cint.contracts.mcp.*
 import dev.cint.contracts.ports.*
 import dev.cint.contracts.util.*
 import kotlinx.serialization.json.Json
@@ -244,14 +245,6 @@ class SerializationTest {
                     intents = setOf(Intents.VALIDATION),
                 )
             ),
-            packDefaults = listOf(
-                PackDefault(
-                    selector = FunctionSelector(qualifiedName = "com.example.B"),
-                    intents = setOf(Intents.LOGGING),
-                    packId = "pack1",
-                    packVersion = "1.0",
-                )
-            ),
             patternHypotheses = listOf(
                 PatternHypothesis.create(
                     id = "h1",
@@ -341,12 +334,12 @@ class SerializationTest {
     @Test
     fun testSourceInputSerialization() {
         val fileInput = SourceInput.FilePath("/path/to/file.kt", "kotlin", 1)
-        val serialized = json.encodeToString(fileInput)
+        val serialized = json.encodeToString<SourceInput>(fileInput)
         val deserialized = json.decodeFromString<SourceInput>(serialized)
         assertEquals(fileInput, deserialized)
 
         val memoryInput = SourceInput.InMemory("fun foo() {}", "kotlin", 1, "test.kt")
-        val serialized2 = json.encodeToString(memoryInput)
+        val serialized2 = json.encodeToString<SourceInput>(memoryInput)
         val deserialized2 = json.decodeFromString<SourceInput>(serialized2)
         assertEquals(memoryInput, deserialized2)
     }
@@ -423,12 +416,12 @@ class SerializationTest {
     @Test
     fun testCancellationTokenSerialization() {
         val token = CancellationToken.NONE
-        val serialized = json.encodeToString(token)
+        val serialized = json.encodeToString<CancellationToken>(token)
         val deserialized = json.decodeFromString<CancellationToken>(serialized)
         assertEquals(token.isCancelled, deserialized.isCancelled)
 
         val cancelled = CancelledToken
-        val serialized2 = json.encodeToString(cancelled)
+        val serialized2 = json.encodeToString<CancellationToken>(cancelled)
         val deserialized2 = json.decodeFromString<CancellationToken>(serialized2)
         assertEquals(cancelled.isCancelled, deserialized2.isCancelled)
     }
@@ -436,7 +429,7 @@ class SerializationTest {
     @Test
     fun testContractErrorSerialization() {
         val error = ContractError.SerializationError("Failed to serialize")
-        val serialized = json.encodeToString(error)
+        val serialized = json.encodeToString<ContractError>(error)
         val deserialized = json.decodeFromString<ContractError>(serialized)
         assertEquals(error, deserialized)
     }
@@ -444,12 +437,12 @@ class SerializationTest {
     @Test
     fun testResultSerialization() {
         val success: Result<String> = ResultFactory.success("value")
-        val serialized = json.encodeToString(success)
+        val serialized = json.encodeToString<Result<String>>(success)
         val deserialized = json.decodeFromString<Result<String>>(serialized)
         assertEquals(success, deserialized)
 
-        val failure: Result<String> = ResultFactory.failure(ContractError.ValidationError("Invalid")) as Result<String>
-        val serialized2 = json.encodeToString(failure)
+        val failure: Result<String> = ResultFactory.failure(ContractError.ValidationError("Invalid"))
+        val serialized2 = json.encodeToString<Result<String>>(failure)
         val deserialized2 = json.decodeFromString<Result<String>>(serialized2)
         assertEquals(failure, deserialized2)
     }
@@ -546,7 +539,7 @@ class SerializationTest {
             fingerprint = "fp123",
             clientInfo = ClientInfo("test-client", "1.0"),
         )
-        val serialized = json.encodeToString(handshake)
+        val serialized = json.encodeToString<IpcMessage>(handshake)
         val deserialized = json.decodeFromString<IpcMessage>(serialized)
         assertEquals(handshake, deserialized)
     }
@@ -554,14 +547,13 @@ class SerializationTest {
     @Test
     fun testMcpMessagesSerialization() {
         val request = McpRequest.KnowledgeSnapshot(requestId = "req-1")
-        val serialized = json.encodeToString(request)
+        val serialized = json.encodeToString<McpRequest>(request)
         val deserialized = json.decodeFromString<McpRequest>(serialized)
         assertEquals(request, deserialized)
 
         val ks = dev.cint.contracts.knowledge.KnowledgeSnapshot(
             functionAnnotations = emptyList(),
             spanOverrides = emptyList(),
-            packDefaults = emptyList(),
             patternHypotheses = emptyList(),
         )
         val response = McpResponse.KnowledgeSnapshotResponse(
@@ -569,7 +561,7 @@ class SerializationTest {
             snapshotData = ks,
             error = null,
         )
-        val serialized2 = json.encodeToString(response)
+        val serialized2 = json.encodeToString<McpResponse>(response)
         val deserialized2 = json.decodeFromString<McpResponse>(serialized2)
         assertEquals(response, deserialized2)
     }

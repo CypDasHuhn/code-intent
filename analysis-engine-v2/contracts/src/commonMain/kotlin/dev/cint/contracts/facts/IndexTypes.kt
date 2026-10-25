@@ -2,16 +2,21 @@ package dev.cint.contracts.facts
 
 import dev.cint.contracts.data.Span
 import dev.cint.contracts.data.Completeness
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface SourceInput {
+    @Serializable
+    @SerialName("FilePath")
     data class FilePath(
         val path: String,
         val languageHint: String? = null,
         val version: Long = 0,
     ) : SourceInput
 
+    @Serializable
+    @SerialName("InMemory")
     data class InMemory(
         val text: String,
         val language: String,

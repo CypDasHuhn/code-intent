@@ -1,11 +1,7 @@
 package dev.cint.contracts.util
 
-import kotlinx.serialization.Contextual
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.SerialKind
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface ContractError {
@@ -41,34 +37,35 @@ sealed interface ContractError {
     data class Cancelled(val operation: String) : ContractError
 }
 
-interface Result<T> {
-    val isSuccess: Boolean
-    val isFailure: Boolean
-    fun getValue(): Any?
-    val errorOrNull: ContractError?
-    fun getOrThrow(): T
-    fun getOrElse(default: T): T
-    fun <R> map(transform: (T) -> R): Result<R>
-    fun <R> flatMap(transform: (T) -> Result<R>): Result<R>
-    fun onSuccess(action: (T) -> Unit): Result<T>
-    fun onFailure(action: (ContractError) -> Unit): Result<T>
+@Serializable
+sealed class Result<out T> {
+    abstract val isSuccess: Boolean
+    abstract val isFailure: Boolean
+    abstract fun getValue(): Any?
+    abstract val errorOrNull: ContractError?
+    abstract fun getOrThrow(): T
+    @Suppress("UNCHECKED_CAST")
+    fun getOrElse(default: @UnsafeVariance T): T =
+        if (isSuccess) getValue() as T else default
+    abstract fun <R> map(transform: (T) -> R): Result<R>
+    abstract fun <R> flatMap(transform: (T) -> Result<R>): Result<R>
+    abstract fun onSuccess(action: (T) -> Unit): Result<T>
+    abstract fun onFailure(action: (ContractError) -> Unit): Result<T>
 }
 
 @Serializable
-class Success<T> private constructor(
-    private val _value: T,
-) : Result<T> {
-    override val isSuccess: Boolean = true
-    override val isFailure: Boolean = false
-    override fun getValue(): Any? = _value
-    override val errorOrNull: ContractError? = null
-    override fun getOrThrow(): T = _value
-    override fun getOrElse(default: T): T = _value
-    override fun <R> map(transform: (T) -> R): Result<R> = Success(transform(_value))
-    override fun <R> flatMap(transform: (T) -> Result<R>): Result<R> = transform(_value)
-    override fun onSuccess(action: (T) -> Unit): Result<T> = also { action(_value) }
+@SerialName("Success")
+data class Success<out T>(@SerialName("value") val contents: T) : Result<T>() {
+    override val isSuccess: Boolean get() = true
+    override val isFailure: Boolean get() = false
+    override fun getValue(): Any? = contents
+    override val errorOrNull: ContractError? get() = null
+    override fun getOrThrow(): T = contents
+    override fun <R> map(transform: (T) -> R): Result<R> = Success(transform(contents))
+    override fun <R> flatMap(transform: (T) -> Result<R>): Result<R> = transform(contents)
+    override fun onSuccess(action: (T) -> Unit): Result<T> = also { action(contents) }
     override fun onFailure(action: (ContractError) -> Unit): Result<T> = this
-    override fun toString(): String = "Success($_value)"
+    override fun toString(): String = "Success($contents)"
 
     companion object {
         fun <T> create(value: T): Success<T> = Success(value)
@@ -76,23 +73,23 @@ class Success<T> private constructor(
 }
 
 @Serializable
-class Failure(val error: ContractError) : Result<Nothing> {
-    override val isSuccess: Boolean = false
-    override val isFailure: Boolean = true
+@SerialName("Failure")
+data class Failure(val error: ContractError) : Result<Nothing>() {
+    override val isSuccess: Boolean get() = false
+    override val isFailure: Boolean get() = true
     override fun getValue(): Any? = null
-    override val errorOrNull: ContractError? = error
+    override val errorOrNull: ContractError get() = error
     override fun getOrThrow(): Nothing = throw IllegalStateException("Result is failure: $error")
-    override fun getOrElse(default: Nothing): Nothing = throw IllegalStateException("Result is failure: $error")
-    override fun <R> map(transform: (Nothing) -> R): Result<R> = Failure(error) as Result<R>
-    override fun <R> flatMap(transform: (Nothing) -> Result<R>): Result<R> = Failure(error) as Result<R>
+    override fun <R> map(transform: (Nothing) -> R): Result<R> = this
+    override fun <R> flatMap(transform: (Nothing) -> Result<R>): Result<R> = this
     override fun onSuccess(action: (Nothing) -> Unit): Result<Nothing> = this
     override fun onFailure(action: (ContractError) -> Unit): Result<Nothing> = also { action(error) }
     override fun toString(): String = "Failure($error)"
 }
 
 object ResultFactory {
-    fun <T> success(value: T): Result<T> = Success.create(value)
-    fun failure(error: ContractError): Result<Nothing> = Failure(error)
+    fun <T> success(value: T): Result<T> = Success(value)
+    fun <T> failure(error: ContractError): Result<T> = Failure(error)
 }
 
 typealias ContractResult<T> = Result<T>

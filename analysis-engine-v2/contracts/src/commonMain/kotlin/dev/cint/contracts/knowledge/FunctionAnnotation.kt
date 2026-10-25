@@ -18,9 +18,6 @@ data class FunctionAnnotation(
     val status: Status,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val packId: String? = null,
-    val packVersion: String? = null,
-    val rationale: String? = null,
 ) {
     fun withStatus(newStatus: Status): FunctionAnnotation =
         copy(status = newStatus, updatedAt = Clock.System.now())
@@ -39,9 +36,6 @@ data class FunctionAnnotation(
             provenance: Provenance = Provenance.USER,
             confidence: Confidence = Confidence.HIGH,
             status: Status = Status.SUGGESTED,
-            packId: String? = null,
-            packVersion: String? = null,
-            rationale: String? = null,
         ): FunctionAnnotation = FunctionAnnotation(
             selector = selector,
             intents = intents,
@@ -51,9 +45,6 @@ data class FunctionAnnotation(
             status = status,
             createdAt = Clock.System.now(),
             updatedAt = Clock.System.now(),
-            packId = packId,
-            packVersion = packVersion,
-            rationale = rationale,
         )
     }
 }

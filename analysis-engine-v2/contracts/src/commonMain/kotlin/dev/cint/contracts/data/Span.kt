@@ -9,10 +9,19 @@ data class Span(
     val endLine: Int,
     val endCol: Int,
 ) {
-    val startOffset: Int
-        get() = startLine * 10000 + startCol
-    val endOffset: Int
-        get() = endLine * 10000 + endCol
+    init {
+        require(startLine >= 0 && startCol >= 0 && endLine >= 0 && endCol >= 0) {
+            "Span coordinates must not be negative: $this"
+        }
+        require(endLine > startLine || (endLine == startLine && endCol >= startCol)) {
+            "Span end must not precede its start: $this"
+        }
+    }
+
+    val startOffset: Long
+        get() = packPosition(startLine, startCol)
+    val endOffset: Long
+        get() = packPosition(endLine, endCol)
 
     fun contains(other: Span): Boolean =
         this.startOffset <= other.startOffset && this.endOffset >= other.endOffset
@@ -32,3 +41,8 @@ data class Span(
         val ZERO = Span(0, 0, 0, 0)
     }
 }
+
+private const val COLUMN_MASK = 0xFFFF_FFFFL
+
+private fun packPosition(line: Int, column: Int): Long =
+    (line.toLong() shl 32) or (column.toLong() and COLUMN_MASK)
