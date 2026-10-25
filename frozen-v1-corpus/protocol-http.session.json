@@ -1,0 +1,414 @@
+{
+  "formatVersion": 1,
+  "portMode": "ephemeral-retry",
+  "protocol": 4,
+  "scenario": "http",
+  "steps": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/health"
+      },
+      "response": {
+        "status": "ok"
+      }
+    },
+    {
+      "request": {
+        "body": {
+          "language": "kotlin",
+          "path": "Bookkeeping.kt",
+          "root": "<CORPUS_ROOT>/fixtures/sources/kotlin"
+        },
+        "method": "POST",
+        "path": "/analyze"
+      },
+      "response": {
+        "files": [
+          {
+            "candidates": [],
+            "hash": "7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96",
+            "path": "Bookkeeping.kt",
+            "spans": [
+              {
+                "confidence": 1.0,
+                "endByte": 87,
+                "endCol": 19,
+                "endLine": 4,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 87,
+                    "endCol": 19,
+                    "endLine": 4,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 55,
+                    "startCol": 4,
+                    "startLine": 3
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 55,
+                "startCol": 4,
+                "startLine": 3
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 133,
+                "endCol": 20,
+                "endLine": 7,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 133,
+                    "endCol": 20,
+                    "endLine": 7,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 93,
+                    "startCol": 4,
+                    "startLine": 6
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 93,
+                "startCol": 4,
+                "startLine": 6
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 254,
+                "endCol": 9,
+                "endLine": 13,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 254,
+                    "endCol": 9,
+                    "endLine": 13,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 181,
+                    "startCol": 8,
+                    "startLine": 10
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 181,
+                "startCol": 8,
+                "startLine": 10
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 194,
+                "endCol": 21,
+                "endLine": 10,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 194,
+                    "endCol": 21,
+                    "endLine": 10,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 185,
+                    "startCol": 12,
+                    "startLine": 10
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 185,
+                "startCol": 12,
+                "startLine": 10
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 219,
+                "endCol": 21,
+                "endLine": 11,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 219,
+                    "endCol": 21,
+                    "endLine": 11,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 210,
+                    "startCol": 12,
+                    "startLine": 11
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 210,
+                "startCol": 12,
+                "startLine": 11
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 244,
+                "endCol": 24,
+                "endLine": 12,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 244,
+                    "endCol": 24,
+                    "endLine": 12,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 232,
+                    "startCol": 12,
+                    "startLine": 12
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 232,
+                "startCol": 12,
+                "startLine": 12
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 341,
+                "endCol": 9,
+                "endLine": 17,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 341,
+                    "endCol": 9,
+                    "endLine": 17,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 263,
+                    "startCol": 8,
+                    "startLine": 14
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 263,
+                "startCol": 8,
+                "startLine": 14
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 277,
+                "endCol": 22,
+                "endLine": 14,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 277,
+                    "endCol": 22,
+                    "endLine": 14,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 267,
+                    "startCol": 12,
+                    "startLine": 14
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 267,
+                "startCol": 12,
+                "startLine": 14
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 306,
+                "endCol": 25,
+                "endLine": 15,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 306,
+                    "endCol": 25,
+                    "endLine": 15,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 293,
+                    "startCol": 12,
+                    "startLine": 15
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 293,
+                "startCol": 12,
+                "startLine": 15
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 331,
+                "endCol": 24,
+                "endLine": 16,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 331,
+                    "endCol": 24,
+                    "endLine": 16,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 319,
+                    "startCol": 12,
+                    "startLine": 16
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 319,
+                "startCol": 12,
+                "startLine": 16
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 361,
+                "endCol": 19,
+                "endLine": 18,
+                "intents": [
+                  "UNTAGGED"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 361,
+                    "endCol": 19,
+                    "endLine": 18,
+                    "intents": [
+                      "UNTAGGED"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 350,
+                    "startCol": 8,
+                    "startLine": 18
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 350,
+                "startCol": 8,
+                "startLine": 18
+              }
+            ]
+          }
+        ],
+        "intents": [
+          "BOOKKEEPING",
+          "DATA_MODIFY",
+          "DATA_TRANSFORMATION",
+          "ERROR_HANDLING",
+          "LOCAL_COPY",
+          "LOCAL_VALUE_MODIFY",
+          "LOGGING",
+          "LOOKUP",
+          "NORMALIZATION",
+          "RETURN_VALUE",
+          "SEARCH",
+          "SERVICE_DELEGATION",
+          "SERVICE_INIT",
+          "UNTAGGED",
+          "VALIDATION"
+        ],
+        "language": "kotlin"
+      }
+    }
+  ],
+  "transport": "http"
+}

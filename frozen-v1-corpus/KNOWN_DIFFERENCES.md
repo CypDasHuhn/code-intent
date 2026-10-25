@@ -2,20 +2,22 @@
 
 This document lists intentional deviations in V2 behavior from the frozen V1 corpus. These are not bugs — they are deliberate design changes. V2 tests should expect these differences.
 
+The machine-readable contract is `known-differences.json`. It defines one comparison rule per surface (`ordered-exact` for protocol transcripts, `semantic-json` for CLI output, `exact-json` for the renderer projection) and marks every entry `decided` or `tentative` with the owning ticket. This document is the human-readable companion; if the two disagree, the JSON contract wins.
+
 ## Protocol Version
 - **V1**: Protocol version 4 (LIVE_PROTOCOL_VERSION = 4)
 - **V2**: Will use protocol version 5+ with breaking changes
 
 ## JSON-RPC Transport
 - **V1**: NDJSON over Unix domain sockets (primary) and HTTP/JSON (secondary)
-- **V2**: TBD — may use different transport (e.g., stdio, WebSocket, or improved Unix socket framing)
+- **V2**: Tentative — owned by ticket 079; may add transports beyond NDJSON/Unix sockets
 
 ## Initialize Response
 ### V1 (frozen)
 ```json
 {
   "protocol": 4,
-  "root": "/path/to/root",
+  "root": "<CORPUS_ROOT>/fixtures/sources/kotlin",
   "languages": ["kotlin", "javascript", "typescript", "vue", "csharp"],
   "config": { "packs": [...], "overlay": {} },
   "suggestions": { "enabled": false, "trigger": "manual", "provider": null, "model": null, "knownIntents": [...], "discovery": false, "restrictions": true, "cache": true, "maxUnitsPerRequest": 24 }
@@ -39,14 +41,14 @@ This document lists intentional deviations in V2 behavior from the frozen V1 cor
     "hash": "...",
     "revision": 0,
     "analysisRevision": 1,
-    "annotations": [RawValue(...)]
+    "annotations": [{ "role": "...", "intents": [...], "startLine": 1, "startCol": 2, "endLine": 1, "endCol": 10, "startByte": 0, "endByte": 10, "provenance": [...] }]
   }
 }
 ```
 ### V2 Changes
 - `revision` → `configRevision` (explicit naming)
 - `analysisRevision` → `analysisVersion` (monotonic per-document)
-- `annotations` array contains inline objects, not RawValue-wrapped strings
+- `annotations` array remains inline objects; V2 adds the fields below
 - New field: `diagnostics` for parse/type errors
 - Annotations include `nodeAnchor` when available (V1 always null)
 
@@ -74,9 +76,11 @@ This document lists intentional deviations in V2 behavior from the frozen V1 cor
 
 ## Config Protocol
 ### V1
-- `cint/config/read` returns `{ packs: [...], overlay: {...}, error?: string }`
-- `cint/config/append` and `cint/config/remove` mutate overlay file
-- Overlay stored as YAML at `.cint/overlays.yaml`
+- `cint/config/read` returns `{ packs: [...], overlay: {...} }`
+- An invalid overlay makes `cint/config/read` return a JSON-RPC error; `initialize` reports `config.overlayError` instead
+- `cint/config/append` and `cint/config/remove` mutate the overlay file, reload packs, republish open documents, and return the resulting overlay
+- Overlay stored as YAML at `.cint/config.overlay.yml`
+- Only `STRINGS` and `STRING_LIST` fields accept append/remove values
 
 ### V2 Changes
 - Config stored as JSON (`.cint/config.json`) for better tooling support
@@ -102,13 +106,14 @@ Response: `{ "language": "...", "intents": [...], "files": [{ "path": "...", "ha
 
 ## Suggest Protocol
 ### V1
-- `cint/suggest` with `anchorId` (opaque string)
-- `cint/suggest/cancel` by URI
-- `cint/suggest/log` for debugging
-- Progress via `cint/suggest/progress` notifications
+- `cint/suggest` takes `{ uri, version, requestId? }`; `requestId` is used for cancellation
+- `cint/suggest/cancel` takes `{ uri, requestId? }`
+- `cint/suggest/log` takes `{ uri }` and requires protocol 4
+- Progress (when emitted by a provider) via `cint/suggest/progress` notifications
+- The deterministic `fake` provider emits no progress notifications
 
 ### V2 Changes
-- `cint/suggest` takes `selection` (span) instead of `anchorId`
+- `cint/suggest` takes `selection` (span) instead of `uri` + `version`
 - New: `cint/suggest/stream` for streaming responses (Server-Sent Events or NDJSON)
 - New: `cint/suggest/history` to retrieve past suggestions
 - Cancellation via request ID (JSON-RPC standard) not custom method
@@ -128,7 +133,8 @@ Response: `{ "language": "...", "intents": [...], "files": [{ "path": "...", "ha
 ## Status/Health
 ### V1
 - HTTP: `GET /health` → `{ "status": "ok" }`
-- Live: No status method
+- Live: No status method; `cint/status` returns error `unknown method: cint/status` with code `-32000`
+- The only V1 status surface is HTTP `/health`, captured in `protocol-http-health.ndjson`
 
 ### V2
 - HTTP: `GET /health` → `{ "status": "ok", "version": "...", "uptimeMs": 1234, "activeDocuments": 5, "suggestionQueue": 0 }`
@@ -143,9 +149,14 @@ Response: `{ "language": "...", "intents": [...], "files": [{ "path": "...", "ha
   "intents": ["LOGGING"],
   "source": "treesitter",
   "confidence": 0.8,
-  "span": { "startLine": 1, "startCol": 2, "endLine": 1, "endCol": 10 },
+  "startLine": 1,
+  "startCol": 2,
+  "endLine": 1,
+  "endCol": 10,
+  "startByte": 0,
+  "endByte": 10,
   "nodeAnchor": null,
-  "provenance": [{ "rule": "logging:logging", "role": "source-intent", "intents": ["LOGGING"], "source": "treesitter", "confidence": 0.8, "span": {...}, "startByte": 0, "endByte": 10 }]
+  "provenance": [{ "rule": "logging:logging", "role": "source-intent", "intents": ["LOGGING"], "source": "treesitter", "confidence": 0.8, "startLine": 1, "startCol": 2, "endLine": 1, "endCol": 10, "startByte": 0, "endByte": 10 }]
 }
 ```
 
@@ -166,7 +177,10 @@ Response: `{ "language": "...", "intents": [...], "files": [{ "path": "...", "ha
   "intents": ["LOOKUP"],
   "source": "rule:data-access:lookup",
   "confidence": 0.4,
-  "span": {...},
+  "startLine": 1,
+  "startCol": 2,
+  "endLine": 1,
+  "endCol": 10,
   "startByte": 0,
   "endByte": 10,
   "reason": "PACK_DOMAIN",
@@ -205,11 +219,12 @@ Response: `{ "language": "...", "intents": [...], "files": [{ "path": "...", "ha
 
 ## Configuration Files
 ### V1
-- `.cint.yaml` (project config)
-- `.cint/overlays.yaml` (runtime mutations)
-- `.cint/user-annotations.yaml` (user confirmations)
-- `.cint/ai-restrictions.yaml` (AI restrictions)
-- `.cint/suggestions.db` (SQLite verdict cache)
+- `.cint/config.overlay.yml` (runtime config mutations)
+- `.cint/user-annotations.json` (user confirmations)
+- `.cint/ai-restrictions.json` (AI restrictions)
+- `.cint/suggestions.yml` (suggestion settings, read-only)
+- `.cint/suggestions.json` (suggestion decisions)
+- `.cint/cache/ai-verdicts.json` (verdict cache)
 
 ### V2
 - `.cint/config.json` (merged project + overlay)
@@ -246,6 +261,18 @@ These affect what the Neovim renderer displays:
 6. **Restrictions**: V2 shows restriction conditions and scope
 7. **Progress**: V2 shows streaming suggestion progress with partial results
 
+## Captured V1 Errors
+These real V1 errors are frozen in the corpus and must be either preserved or intentionally replaced by V2:
+
+| Transcript | Trigger | V1 error message |
+|------------|---------|------------------|
+| `protocol-status-flow.ndjson` | `cint/status` | `unknown method: cint/status` |
+| `protocol-error-flow.ndjson` | `cint/restrictions/list` after protocol 3 initialize | `cint/restrictions/list requires protocol 4` |
+| `protocol-error-flow.ndjson` | append `validation.magicComment` | `rulepack 'validation' field 'magicComment' is not a string list field` |
+| `protocol-error-flow.ndjson` | append to unknown pack | `unknown rulepack: fixture-missing` |
+
+Harness failures are not part of the corpus: `capture.py` exits non-zero and prints server stderr if the server dies, returns an unexpected error, times out, or leaves response ids out of sequence.
+
 ## Error Handling
 ### V1
 - Errors returned as JSON-RPC error responses with code -32000
@@ -266,7 +293,7 @@ These affect what the Neovim renderer displays:
 ## Testing Notes for V2
 When writing V2 tests against the frozen corpus:
 
-1. **Protocol transcripts**: Compare V2 NDJSON output line-by-line with frozen `.ndjson` files, allowing for the field changes documented above
-2. **CLI outputs**: Compare V2 JSON output with frozen `.json` files using semantic equivalence (ignore field order, allow new optional fields)
-3. **Renderer behavior**: Snapshot tests should capture V2's new UI elements (operations, confidence %, provenance details)
-4. **Known differences**: Use this document as the allow-list for test assertions
+1. **Protocol transcripts**: Replay `protocol-*.session.json` requests and compare the concatenated server messages to the frozen `.ndjson` files in exact order. Every field is exact unless `known-differences.json` allow-lists it.
+2. **CLI outputs**: Compare parsed JSON semantically, ignoring object key order but not file or array order. Apply only the `scope: "cli"` allow-list entries.
+3. **Renderer behavior**: Compare `renderer-visible-v1.json` exactly against the projection derived from the frozen transcripts; apply only `scope: "renderer"` entries.
+4. **Known differences**: Use `known-differences.json` as the executable allow-list. Entries marked `tentative` are not decisions yet and must not be copied into V2 tests without the named ticket.

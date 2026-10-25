@@ -1,0 +1,267 @@
+{
+  "formatVersion": 1,
+  "protocolVersion": 4,
+  "corpusFormatVersion": 3,
+  "comparison": {
+    "protocol": {
+      "mode": "ordered-exact",
+      "default": "Replay request steps from protocol-*.session.json and compare the concatenated server messages to protocol-*.ndjson in order, with every field exact unless matched by an allow-list entry with scope protocol.",
+      "allowList": "differences[scope=protocol]"
+    },
+    "cli": {
+      "mode": "semantic-json",
+      "default": "Compare parsed JSON, ignoring object key order. Array order and file sets are exact unless matched by an allow-list entry with scope cli.",
+      "allowList": "differences[scope=cli]"
+    },
+    "renderer": {
+      "mode": "exact-json",
+      "default": "Compare renderer-visible-v1.json exactly against its derivation from the frozen transcripts.",
+      "allowList": "differences[scope=renderer]"
+    }
+  },
+  "statusValues": ["decided", "tentative"],
+  "differences": [
+    {
+      "id": "protocol.version",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "initialize.result.protocol",
+      "transcripts": ["*"],
+      "v1": 4,
+      "v2": ">=5",
+      "ticket": "086-external-protocol-versioning",
+      "reason": "The V2 wire contract will be versioned independently; V1 protocol 4 is the comparison baseline."
+    },
+    {
+      "id": "transport.framing",
+      "status": "tentative",
+      "scope": "protocol",
+      "field": "transport",
+      "transcripts": ["*"],
+      "v1": "NDJSON over one persistent Unix domain socket per session",
+      "v2": null,
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "Transport framing remains tentative until ticket 079 decides whether additional transports are supported."
+    },
+    {
+      "id": "initialize.suggestions",
+      "status": "tentative",
+      "scope": "protocol",
+      "field": "initialize.result.suggestions",
+      "transcripts": [
+        "protocol-kotlin-analyze.ndjson",
+        "protocol-typescript-analyze.ndjson",
+        "protocol-config-flow.ndjson"
+      ],
+      "v1": {
+        "enabled": false,
+        "trigger": "manual",
+        "discovery": false,
+        "restrictions": true,
+        "cache": true
+      },
+      "v2": null,
+      "ticket": "081-v2-server",
+      "reason": "V2 suggestion capability defaults are owned by the V2 server ticket."
+    },
+    {
+      "id": "config.protocol",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "cint/config/read|cint/config/append|cint/config/remove",
+      "transcripts": [
+        "protocol-config-flow.ndjson",
+        "protocol-kotlin-analyze.ndjson"
+      ],
+      "v1": "{packs, overlay} with YAML .cint/config.overlay.yml",
+      "v2": "{config, sources} plus config/write and config/schema",
+      "ticket": "069-v2-packs-and-defaults",
+      "reason": "V2 config is JSON-first and owned by the packs/defaults contract."
+    },
+    {
+      "id": "analyze.http.shape",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "POST /analyze request and response",
+      "transcripts": [
+        "protocol-http-analyze.ndjson",
+        "protocol-http.session.json"
+      ],
+      "v1": "request types/config accepted; response files[].spans and root intents",
+      "v2": "types removed; options added; files[].annotations and diagnostics; root intents removed",
+      "ticket": "081-v2-server",
+      "reason": "The HTTP facade follows the V2 server contract."
+    },
+    {
+      "id": "publishTags.fields",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "cint/publishTags.params",
+      "transcripts": [
+        "protocol-kotlin-analyze.ndjson",
+        "protocol-typescript-analyze.ndjson",
+        "protocol-suggest-flow.ndjson",
+        "protocol-restrictions-flow.ndjson",
+        "protocol-document-lifecycle.ndjson"
+      ],
+      "v1": "revision + analysisRevision + flat annotations",
+      "v2": "configRevision + analysisVersion + diagnostics + populated nodeAnchor",
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "Publication field names and additions are part of the V2 IPC contract."
+    },
+    {
+      "id": "publishCandidates.fields",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "cint/publishCandidates.params",
+      "transcripts": [
+        "protocol-suggest-flow.ndjson",
+        "protocol-restrictions-flow.ndjson",
+        "protocol-document-lifecycle.ndjson"
+      ],
+      "v1": "groups + candidates + analysisRevision + suggestionRevision; flat candidate fields",
+      "v2": "proposals + analysisRevision + proposalRevision; origin/category/fingerprints/operations",
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "Candidate publication is replaced by the unified V2 proposal shape."
+    },
+    {
+      "id": "annotation.shape",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "annotations[] and provenance[]",
+      "transcripts": ["*"],
+      "v1": "flat startLine/startCol/endLine/endCol/startByte/endByte; provenance.rule",
+      "v2": "same flat span plus diagnostics, provenance.ruleId, provenance.packId, optional evidence",
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "V2 adds rule identity and diagnostics without replacing the flat span shape."
+    },
+    {
+      "id": "candidate.shape",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "candidates[]",
+      "transcripts": ["*"],
+      "v1": "source + reason + aiEligible with flat span fields",
+      "v2": "origin + category + fingerprints + operations + flat span fields",
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "The V2 proposal contract replaces rule/string provenance on candidates."
+    },
+    {
+      "id": "suggest.protocol",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "cint/suggest|cint/suggest/cancel|cint/suggest/log|cint/suggest/progress",
+      "transcripts": [
+        "protocol-suggest-flow.ndjson",
+        "protocol-suggest-disabled-flow.ndjson"
+      ],
+      "v1": "uri + version + optional requestId; cancel/log by uri/requestId; progress notifications",
+      "v2": "selection span; stream and history methods; JSON-RPC cancellation; progress in stream",
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "Suggestions move to streaming and span-based selection in V2."
+    },
+    {
+      "id": "restrictions.protocol",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "cint/restrictions/list|cint/restrictions/remove",
+      "transcripts": ["protocol-restrictions-flow.ndjson", "protocol-error-flow.ndjson"],
+      "v1": "list/remove by id; protocol 4 gate",
+      "v2": "cint/restrictions GET-style plus upsert; scope and condition fields",
+      "ticket": "059-ai-restriction-proposals",
+      "reason": "V2 extends restrictions with scope and conditional application."
+    },
+    {
+      "id": "status.protocol",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "HTTP /health and cint/status",
+      "transcripts": [
+        "protocol-http-health.ndjson",
+        "protocol-status-flow.ndjson",
+        "protocol-http.session.json"
+      ],
+      "v1": "HTTP health only; live cint/status is an unknown-method error",
+      "v2": "HTTP health adds version/uptime/activeDocuments/suggestionQueue; live cint/status and cint/metrics",
+      "ticket": "081-v2-server",
+      "reason": "Status and metrics are added by the V2 server contract."
+    },
+    {
+      "id": "config.files",
+      "status": "decided",
+      "scope": "files",
+      "field": ".cint/*",
+      "transcripts": ["*"],
+      "v1": "config.overlay.yml, ai-restrictions.json, suggestions.yml, suggestions.json, cache/ai-verdicts.json",
+      "v2": "config.json, ai-restrictions.json, verdict-cache.sqlite, schema.json",
+      "ticket": "069-v2-packs-and-defaults",
+      "reason": "V2 file layout is owned by the packs/defaults ticket."
+    },
+    {
+      "id": "cli.output",
+      "status": "decided",
+      "scope": "cli",
+      "field": "cli-*.json",
+      "transcripts": ["cli-*.json"],
+      "v1": "language + intents + files[].spans",
+      "v2": "per-file annotations and diagnostics; root intents removed; meta added; format selector",
+      "ticket": "080-v2-cli",
+      "reason": "The CLI output contract is owned by the V2 CLI ticket."
+    },
+    {
+      "id": "renderer.projection",
+      "status": "decided",
+      "scope": "renderer",
+      "field": "renderer-visible-v1.json",
+      "transcripts": ["*"],
+      "v1": "wire projection of tags, candidates, lifecycle, suggest, restrictions, config and status",
+      "v2": "operations, confidence percentage, provenance details, restriction scope and streaming progress",
+      "ticket": "087-extract-nvim-renderer",
+      "reason": "Renderer extraction owns the V2 display projection."
+    },
+    {
+      "id": "error.handling",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "JSON-RPC error objects",
+      "transcripts": ["protocol-status-flow.ndjson", "protocol-error-flow.ndjson"],
+      "v1": "{code, message} with code -32000",
+      "v2": "standard JSON-RPC codes plus structured data.kind/data.details",
+      "ticket": "079-v2-ipc-protocol",
+      "reason": "Structured errors are part of the V2 IPC contract."
+    },
+    {
+      "id": "language.support",
+      "status": "decided",
+      "scope": "protocol",
+      "field": "initialize.result.languages and CLI --lang",
+      "transcripts": ["*"],
+      "v1": "kotlin, javascript, typescript, vue, csharp",
+      "v2": "same launch set plus planned python, go, rust",
+      "ticket": "074-v2-languages-facade",
+      "reason": "Language facade ownership is defined by the V2 languages ticket."
+    },
+    {
+      "id": "lsp.integration",
+      "status": "decided",
+      "scope": "all",
+      "field": "LSP availability and diagnostics",
+      "transcripts": ["*"],
+      "v1": "optional LSP, silent heuristic fallback, corpus captured with --no-lsp",
+      "v2": "required for type-dependent intents, explicit diagnostics, cached type facts",
+      "ticket": "073-v2-lsp-provider",
+      "reason": "LSP behavior is owned by the V2 LSP provider ticket."
+    },
+    {
+      "id": "performance.targets",
+      "status": "tentative",
+      "scope": "all",
+      "field": "non-functional performance",
+      "transcripts": ["*"],
+      "v1": "full re-analyze on change; sequential suggestions",
+      "v2": "incremental analysis and parallel suggestion targets",
+      "ticket": "084-v2-parity-integration",
+      "reason": "Performance targets are validated by the V2 parity integration ticket."
+    }
+  ]
+}

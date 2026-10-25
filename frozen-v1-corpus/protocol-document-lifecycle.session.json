@@ -1,0 +1,2448 @@
+{
+  "formatVersion": 1,
+  "protocol": 4,
+  "scenario": "document-lifecycle",
+  "sourceFixture": "fixtures/sources/kotlin",
+  "steps": [
+    {
+      "messages": [
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "config": {
+              "overlay": {},
+              "packs": [
+                {
+                  "fields": [
+                    {
+                      "key": "annotation",
+                      "kind": "STRING",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "magicComment",
+                      "kind": "STRING",
+                      "languages": [],
+                      "scope": "PACK"
+                    }
+                  ],
+                  "languages": [
+                    "csharp",
+                    "javascript",
+                    "kotlin",
+                    "typescript"
+                  ],
+                  "packId": "bookkeeping",
+                  "rules": [
+                    {
+                      "id": "bookkeeping:bookkeeping",
+                      "owns": "BOOKKEEPING",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "searchCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "searchPrefixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "searchQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "searchTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "lookupCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "lookupQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "lookupTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "enumCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "enumTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "enumTypeSuffixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "enumExclusions",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "knownMaps",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "knownMapSuffixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "ambiguousCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "ambiguousPrefixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "compoundMutationCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "boundaryPrefixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "indexKinds",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "data-access",
+                  "rules": [
+                    {
+                      "id": "data-access:search",
+                      "owns": "SEARCH",
+                      "reads": []
+                    },
+                    {
+                      "id": "data-access:lookup",
+                      "owns": "LOOKUP",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "calls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "candidateCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "candidatePrefixes",
+                      "kind": "STRING_LIST",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "qualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "types",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "data-transformation",
+                  "rules": [
+                    {
+                      "id": "data-transformation:data-transformation",
+                      "owns": "DATA_TRANSFORMATION",
+                      "reads": [
+                        "SEARCH",
+                        "DATA_TRANSFORMATION"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "calls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "qualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "throws",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "detectThrows",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "error-handling",
+                  "rules": [
+                    {
+                      "id": "error-handling:error-handling",
+                      "owns": "ERROR_HANDLING",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "prefixes",
+                      "kind": "STRING_LIST",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "namePrefixes",
+                      "kind": "STRING_LIST",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "candidates",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "includeCandidates",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "local-copy",
+                  "rules": [
+                    {
+                      "id": "local-copy:local-copy",
+                      "owns": "LOCAL_COPY",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "printCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "printQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "methods",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "types",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "factories",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "receiverNames",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "qualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "guardNames",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "imports",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "logging",
+                  "rules": [
+                    {
+                      "id": "logging:logging",
+                      "owns": "LOGGING",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "persistenceCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "persistencePaths",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "persistenceQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "persistenceTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "persistencePrefixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "mutableOperations",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "mutableTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "mutableReceiverNames",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "assignmentPatterns",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "ignoreLoopCounters",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "ignoreBookkeeping",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "ignorePureCopies",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "mutableLocalDeclarations",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "mutation",
+                  "rules": [
+                    {
+                      "id": "mutation:data-modify",
+                      "owns": "DATA_MODIFY",
+                      "reads": []
+                    },
+                    {
+                      "id": "mutation:local-value-modify",
+                      "owns": "LOCAL_VALUE_MODIFY",
+                      "reads": [
+                        "BOOKKEEPING",
+                        "LOCAL_COPY"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "calls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "instanceCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "qualifiedCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "prefixes",
+                      "kind": "STRING_LIST",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "qualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "types",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "candidateCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "candidatePrefixes",
+                      "kind": "STRING_LIST",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "chainCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "normalization",
+                  "rules": [
+                    {
+                      "id": "normalization:normalization",
+                      "owns": "NORMALIZATION",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "includeLiterals",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "allowLiterals",
+                      "kind": "BOOLEAN",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "return-value",
+                  "rules": [
+                    {
+                      "id": "return-value:return-value",
+                      "owns": "RETURN_VALUE",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "delegationCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "delegationQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "serviceNames",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "serviceTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "serviceSuffixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "controllerSuffixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "facadeSuffixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "initCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "initQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "initTypes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "initSuffixes",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "initMethods",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "connectionCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "connectionQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "diAnnotations",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "diCalls",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    },
+                    {
+                      "key": "diQualifiers",
+                      "kind": "STRINGS",
+                      "languages": [
+                        "csharp",
+                        "javascript",
+                        "kotlin",
+                        "typescript"
+                      ],
+                      "scope": "LANGUAGE"
+                    }
+                  ],
+                  "languages": [
+                    "kotlin",
+                    "javascript",
+                    "typescript",
+                    "csharp"
+                  ],
+                  "packId": "service",
+                  "rules": [
+                    {
+                      "id": "service:delegation",
+                      "owns": "SERVICE_DELEGATION",
+                      "reads": []
+                    },
+                    {
+                      "id": "service:init",
+                      "owns": "SERVICE_INIT",
+                      "reads": []
+                    }
+                  ]
+                },
+                {
+                  "fields": [
+                    {
+                      "key": "predicates",
+                      "kind": "STRINGS",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "predicatePrefixes",
+                      "kind": "STRING_LIST",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "magicComment",
+                      "kind": "STRING",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "commentKinds",
+                      "kind": "STRINGS",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "elvisKinds",
+                      "kind": "STRINGS",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "coalesceOperators",
+                      "kind": "STRINGS",
+                      "languages": [],
+                      "scope": "PACK"
+                    },
+                    {
+                      "key": "rejectionValues",
+                      "kind": "STRINGS",
+                      "languages": [],
+                      "scope": "PACK"
+                    }
+                  ],
+                  "languages": [
+                    "csharp",
+                    "javascript",
+                    "kotlin",
+                    "typescript"
+                  ],
+                  "packId": "validation",
+                  "rules": [
+                    {
+                      "id": "validation:validation",
+                      "owns": "VALIDATION",
+                      "reads": [
+                        "DATA_MODIFY",
+                        "LOCAL_VALUE_MODIFY",
+                        "BOOKKEEPING"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "languages": [
+              "kotlin",
+              "javascript",
+              "typescript",
+              "vue",
+              "csharp"
+            ],
+            "protocol": 4,
+            "root": "<CORPUS_ROOT>/fixtures/sources/kotlin",
+            "suggestions": {
+              "cache": true,
+              "discovery": false,
+              "enabled": false,
+              "knownIntents": [
+                "BOOKKEEPING",
+                "DATA_MODIFY",
+                "DATA_TRANSFORMATION",
+                "ERROR_HANDLING",
+                "LOCAL_COPY",
+                "LOCAL_VALUE_MODIFY",
+                "LOGGING",
+                "LOOKUP",
+                "NORMALIZATION",
+                "RETURN_VALUE",
+                "SEARCH",
+                "SERVICE_DELEGATION",
+                "SERVICE_INIT",
+                "UNTAGGED",
+                "VALIDATION"
+              ],
+              "maxUnitsPerRequest": 24,
+              "model": null,
+              "provider": null,
+              "restrictions": true,
+              "trigger": "manual"
+            }
+          }
+        }
+      ],
+      "request": {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "initialize",
+        "params": {
+          "protocol": 4
+        }
+      }
+    },
+    {
+      "messages": [
+        {
+          "jsonrpc": "2.0",
+          "method": "cint/publishTags",
+          "params": {
+            "analysisRevision": 1,
+            "annotations": [
+              {
+                "confidence": 1.0,
+                "endByte": 87,
+                "endCol": 19,
+                "endLine": 4,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 87,
+                    "endCol": 19,
+                    "endLine": 4,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 55,
+                    "startCol": 4,
+                    "startLine": 3
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 55,
+                "startCol": 4,
+                "startLine": 3
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 133,
+                "endCol": 20,
+                "endLine": 7,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 133,
+                    "endCol": 20,
+                    "endLine": 7,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 93,
+                    "startCol": 4,
+                    "startLine": 6
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 93,
+                "startCol": 4,
+                "startLine": 6
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 254,
+                "endCol": 9,
+                "endLine": 13,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 254,
+                    "endCol": 9,
+                    "endLine": 13,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 181,
+                    "startCol": 8,
+                    "startLine": 10
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 181,
+                "startCol": 8,
+                "startLine": 10
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 194,
+                "endCol": 21,
+                "endLine": 10,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 194,
+                    "endCol": 21,
+                    "endLine": 10,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 185,
+                    "startCol": 12,
+                    "startLine": 10
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 185,
+                "startCol": 12,
+                "startLine": 10
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 219,
+                "endCol": 21,
+                "endLine": 11,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 219,
+                    "endCol": 21,
+                    "endLine": 11,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 210,
+                    "startCol": 12,
+                    "startLine": 11
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 210,
+                "startCol": 12,
+                "startLine": 11
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 244,
+                "endCol": 24,
+                "endLine": 12,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 244,
+                    "endCol": 24,
+                    "endLine": 12,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 232,
+                    "startCol": 12,
+                    "startLine": 12
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 232,
+                "startCol": 12,
+                "startLine": 12
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 341,
+                "endCol": 9,
+                "endLine": 17,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 341,
+                    "endCol": 9,
+                    "endLine": 17,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 263,
+                    "startCol": 8,
+                    "startLine": 14
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 263,
+                "startCol": 8,
+                "startLine": 14
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 277,
+                "endCol": 22,
+                "endLine": 14,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 277,
+                    "endCol": 22,
+                    "endLine": 14,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 267,
+                    "startCol": 12,
+                    "startLine": 14
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 267,
+                "startCol": 12,
+                "startLine": 14
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 306,
+                "endCol": 25,
+                "endLine": 15,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 306,
+                    "endCol": 25,
+                    "endLine": 15,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 293,
+                    "startCol": 12,
+                    "startLine": 15
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 293,
+                "startCol": 12,
+                "startLine": 15
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 331,
+                "endCol": 24,
+                "endLine": 16,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 331,
+                    "endCol": 24,
+                    "endLine": 16,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 319,
+                    "startCol": 12,
+                    "startLine": 16
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 319,
+                "startCol": 12,
+                "startLine": 16
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 361,
+                "endCol": 19,
+                "endLine": 18,
+                "intents": [
+                  "UNTAGGED"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 361,
+                    "endCol": 19,
+                    "endLine": 18,
+                    "intents": [
+                      "UNTAGGED"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 350,
+                    "startCol": 8,
+                    "startLine": 18
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 350,
+                "startCol": 8,
+                "startLine": 18
+              }
+            ],
+            "hash": "7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96",
+            "revision": 0,
+            "uri": "file:///test/Bookkeeping.kt",
+            "version": 1
+          }
+        },
+        {
+          "jsonrpc": "2.0",
+          "method": "cint/publishCandidates",
+          "params": {
+            "analysisRevision": 1,
+            "candidates": [],
+            "groups": [],
+            "suggestionRevision": 1,
+            "uri": "file:///test/Bookkeeping.kt",
+            "version": 1
+          }
+        }
+      ],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+          "languageId": "kotlin",
+          "text": "package testinggrounds\n\nclass BookkeepingExample {\n    @Bookkeeping\n    var skipped = 0\n\n    // cint:bookkeeping\n    var rejected = 0\n\n    fun record(value: Int): Boolean {\n        if (value < 0) {\n            skipped++\n            return false\n        }\n        if (value == 0) {\n            rejected += 1\n            return false\n        }\n        return true\n    }\n\n    fun total(): Int = skipped + rejected\n}\n",
+          "uri": "file:///test/Bookkeeping.kt",
+          "version": 1
+        }
+      }
+    },
+    {
+      "messages": [
+        {
+          "jsonrpc": "2.0",
+          "method": "cint/publishTags",
+          "params": {
+            "analysisRevision": 2,
+            "annotations": [
+              {
+                "confidence": 1.0,
+                "endByte": 87,
+                "endCol": 19,
+                "endLine": 4,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 87,
+                    "endCol": 19,
+                    "endLine": 4,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 55,
+                    "startCol": 4,
+                    "startLine": 3
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 55,
+                "startCol": 4,
+                "startLine": 3
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 133,
+                "endCol": 20,
+                "endLine": 7,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 133,
+                    "endCol": 20,
+                    "endLine": 7,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 93,
+                    "startCol": 4,
+                    "startLine": 6
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 93,
+                "startCol": 4,
+                "startLine": 6
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 254,
+                "endCol": 9,
+                "endLine": 13,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 254,
+                    "endCol": 9,
+                    "endLine": 13,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 181,
+                    "startCol": 8,
+                    "startLine": 10
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 181,
+                "startCol": 8,
+                "startLine": 10
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 194,
+                "endCol": 21,
+                "endLine": 10,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 194,
+                    "endCol": 21,
+                    "endLine": 10,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 185,
+                    "startCol": 12,
+                    "startLine": 10
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 185,
+                "startCol": 12,
+                "startLine": 10
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 219,
+                "endCol": 21,
+                "endLine": 11,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 219,
+                    "endCol": 21,
+                    "endLine": 11,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 210,
+                    "startCol": 12,
+                    "startLine": 11
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 210,
+                "startCol": 12,
+                "startLine": 11
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 244,
+                "endCol": 24,
+                "endLine": 12,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 244,
+                    "endCol": 24,
+                    "endLine": 12,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 232,
+                    "startCol": 12,
+                    "startLine": 12
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 232,
+                "startCol": 12,
+                "startLine": 12
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 341,
+                "endCol": 9,
+                "endLine": 17,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 341,
+                    "endCol": 9,
+                    "endLine": 17,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 263,
+                    "startCol": 8,
+                    "startLine": 14
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 263,
+                "startCol": 8,
+                "startLine": 14
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 277,
+                "endCol": 22,
+                "endLine": 14,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 277,
+                    "endCol": 22,
+                    "endLine": 14,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 267,
+                    "startCol": 12,
+                    "startLine": 14
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 267,
+                "startCol": 12,
+                "startLine": 14
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 306,
+                "endCol": 25,
+                "endLine": 15,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 306,
+                    "endCol": 25,
+                    "endLine": 15,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 293,
+                    "startCol": 12,
+                    "startLine": 15
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 293,
+                "startCol": 12,
+                "startLine": 15
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 331,
+                "endCol": 24,
+                "endLine": 16,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 331,
+                    "endCol": 24,
+                    "endLine": 16,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 319,
+                    "startCol": 12,
+                    "startLine": 16
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 319,
+                "startCol": 12,
+                "startLine": 16
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 361,
+                "endCol": 19,
+                "endLine": 18,
+                "intents": [
+                  "UNTAGGED"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 361,
+                    "endCol": 19,
+                    "endLine": 18,
+                    "intents": [
+                      "UNTAGGED"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 350,
+                    "startCol": 8,
+                    "startLine": 18
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 350,
+                "startCol": 8,
+                "startLine": 18
+              }
+            ],
+            "hash": "f5fc948010bc339ff6c27ab0529df5768b8b59ae0753e8377d9d181a1b0bc4fd",
+            "revision": 0,
+            "uri": "file:///test/Bookkeeping.kt",
+            "version": 2
+          }
+        },
+        {
+          "jsonrpc": "2.0",
+          "method": "cint/publishCandidates",
+          "params": {
+            "analysisRevision": 2,
+            "candidates": [],
+            "groups": [],
+            "suggestionRevision": 2,
+            "uri": "file:///test/Bookkeeping.kt",
+            "version": 2
+          }
+        }
+      ],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+          "languageId": "kotlin",
+          "text": "package testinggrounds\n\nclass BookkeepingExample {\n    @Bookkeeping\n    var skipped = 0\n\n    // cint:bookkeeping\n    var rejected = 0\n\n    fun record(value: Int): Boolean {\n        if (value < 0) {\n            skipped++\n            return false\n        }\n        if (value == 0) {\n            rejected += 1\n            return false\n        }\n        return true\n    }\n\n    fun total(): Int = skipped + rejected\n}\n\n// changed",
+          "uri": "file:///test/Bookkeeping.kt",
+          "version": 2
+        }
+      }
+    },
+    {
+      "messages": [
+        {
+          "jsonrpc": "2.0",
+          "method": "cint/publishTags",
+          "params": {
+            "analysisRevision": 3,
+            "annotations": [
+              {
+                "confidence": 1.0,
+                "endByte": 87,
+                "endCol": 19,
+                "endLine": 4,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 87,
+                    "endCol": 19,
+                    "endLine": 4,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 55,
+                    "startCol": 4,
+                    "startLine": 3
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 55,
+                "startCol": 4,
+                "startLine": 3
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 133,
+                "endCol": 20,
+                "endLine": 7,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 133,
+                    "endCol": 20,
+                    "endLine": 7,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 93,
+                    "startCol": 4,
+                    "startLine": 6
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 93,
+                "startCol": 4,
+                "startLine": 6
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 254,
+                "endCol": 9,
+                "endLine": 13,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 254,
+                    "endCol": 9,
+                    "endLine": 13,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 181,
+                    "startCol": 8,
+                    "startLine": 10
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 181,
+                "startCol": 8,
+                "startLine": 10
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 194,
+                "endCol": 21,
+                "endLine": 10,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 194,
+                    "endCol": 21,
+                    "endLine": 10,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 185,
+                    "startCol": 12,
+                    "startLine": 10
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 185,
+                "startCol": 12,
+                "startLine": 10
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 219,
+                "endCol": 21,
+                "endLine": 11,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 219,
+                    "endCol": 21,
+                    "endLine": 11,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "annotation",
+                    "startByte": 210,
+                    "startCol": 12,
+                    "startLine": 11
+                  }
+                ],
+                "role": "source-intent",
+                "source": "annotation",
+                "startByte": 210,
+                "startCol": 12,
+                "startLine": 11
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 244,
+                "endCol": 24,
+                "endLine": 12,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 244,
+                    "endCol": 24,
+                    "endLine": 12,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 232,
+                    "startCol": 12,
+                    "startLine": 12
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 232,
+                "startCol": 12,
+                "startLine": 12
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 341,
+                "endCol": 9,
+                "endLine": 17,
+                "intents": [
+                  "BOOKKEEPING",
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 341,
+                    "endCol": 9,
+                    "endLine": 17,
+                    "intents": [
+                      "BOOKKEEPING",
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:scaffold",
+                    "source": "treesitter",
+                    "startByte": 263,
+                    "startCol": 8,
+                    "startLine": 14
+                  }
+                ],
+                "role": "scaffold",
+                "source": "treesitter",
+                "startByte": 263,
+                "startCol": 8,
+                "startLine": 14
+              },
+              {
+                "confidence": 0.9,
+                "endByte": 277,
+                "endCol": 22,
+                "endLine": 14,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.9,
+                    "endByte": 277,
+                    "endCol": 22,
+                    "endLine": 14,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "source-intent",
+                    "rule": "validation:validation",
+                    "source": "treesitter",
+                    "startByte": 267,
+                    "startCol": 12,
+                    "startLine": 14
+                  }
+                ],
+                "role": "source-intent",
+                "source": "treesitter",
+                "startByte": 267,
+                "startCol": 12,
+                "startLine": 14
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 306,
+                "endCol": 25,
+                "endLine": 15,
+                "intents": [
+                  "BOOKKEEPING"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 306,
+                    "endCol": 25,
+                    "endLine": 15,
+                    "intents": [
+                      "BOOKKEEPING"
+                    ],
+                    "role": "source-intent",
+                    "rule": "bookkeeping:bookkeeping",
+                    "source": "comment",
+                    "startByte": 293,
+                    "startCol": 12,
+                    "startLine": 15
+                  }
+                ],
+                "role": "source-intent",
+                "source": "comment",
+                "startByte": 293,
+                "startCol": 12,
+                "startLine": 15
+              },
+              {
+                "confidence": 0.8,
+                "endByte": 331,
+                "endCol": 24,
+                "endLine": 16,
+                "intents": [
+                  "VALIDATION"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 0.8,
+                    "endByte": 331,
+                    "endCol": 24,
+                    "endLine": 16,
+                    "intents": [
+                      "VALIDATION"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 319,
+                    "startCol": 12,
+                    "startLine": 16
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 319,
+                "startCol": 12,
+                "startLine": 16
+              },
+              {
+                "confidence": 1.0,
+                "endByte": 361,
+                "endCol": 19,
+                "endLine": 18,
+                "intents": [
+                  "UNTAGGED"
+                ],
+                "nodeAnchor": null,
+                "provenance": [
+                  {
+                    "confidence": 1.0,
+                    "endByte": 361,
+                    "endCol": 19,
+                    "endLine": 18,
+                    "intents": [
+                      "UNTAGGED"
+                    ],
+                    "role": "scaffold",
+                    "rule": "core:return-category",
+                    "source": "cfg",
+                    "startByte": 350,
+                    "startCol": 8,
+                    "startLine": 18
+                  }
+                ],
+                "role": "scaffold",
+                "source": "cfg",
+                "startByte": 350,
+                "startCol": 8,
+                "startLine": 18
+              }
+            ],
+            "hash": "f5fc948010bc339ff6c27ab0529df5768b8b59ae0753e8377d9d181a1b0bc4fd",
+            "revision": 0,
+            "uri": "file:///test/Bookkeeping.kt",
+            "version": 2
+          }
+        },
+        {
+          "jsonrpc": "2.0",
+          "method": "cint/publishCandidates",
+          "params": {
+            "analysisRevision": 3,
+            "candidates": [],
+            "groups": [],
+            "suggestionRevision": 3,
+            "uri": "file:///test/Bookkeeping.kt",
+            "version": 2
+          }
+        },
+        {
+          "id": 2,
+          "jsonrpc": "2.0",
+          "result": true
+        }
+      ],
+      "request": {
+        "id": 2,
+        "jsonrpc": "2.0",
+        "method": "cint/analyze",
+        "params": {
+          "uri": "file:///test/Bookkeeping.kt"
+        }
+      }
+    },
+    {
+      "messages": [],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "textDocument/didClose",
+        "params": {
+          "uri": "file:///test/Bookkeeping.kt"
+        }
+      }
+    },
+    {
+      "messages": [
+        {
+          "id": 3,
+          "jsonrpc": "2.0",
+          "result": true
+        }
+      ],
+      "request": {
+        "id": 3,
+        "jsonrpc": "2.0",
+        "method": "shutdown",
+        "params": {}
+      }
+    }
+  ]
+}

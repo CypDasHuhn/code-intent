@@ -1,0 +1,75 @@
+{
+  "contracts": {
+    "known-differences.json": "99a1d49d7b7470eed2e0c399a4f3145a66f2d0eb6528cb641aa7036d4a6f9812"
+  },
+  "files": {
+    "cli-csharp.json": "28cd4583042394b35b50bb9f06ef596a8a93df1544ebae8724249224ae424edd",
+    "cli-javascript.json": "a8d741aa6fd3a66f7d196730193147bb4a1309cc9e8727dbf751ab2c842f43a8",
+    "cli-kotlin-all.json": "6ffee9368c234ffcfc4fd396d6ec15d7bd57c300a14fb083dede5be11f9d1891",
+    "cli-kotlin.json": "6ffee9368c234ffcfc4fd396d6ec15d7bd57c300a14fb083dede5be11f9d1891",
+    "cli-typescript.json": "1bb252a69783074e5f034c40e495b57b14909a3ee628985d7d7f8d055647f2d8",
+    "cli-vue.json": "bb6eb292b0421ff334fb0305778b125f99abbdfb2d4f731d2863ad3cd7ab5dcb",
+    "protocol-config-flow.ndjson": "b969ad10cf55009a14671484e4bafb89e1c4d5e8ed8a933c62bf57fbf7f4e3ae",
+    "protocol-config-flow.session.json": "5afc6580a370b9ea1ec181611dbae4e0e7127035f3f865aae510e6b62f39358e",
+    "protocol-document-lifecycle.ndjson": "952025abe790248d015092b6978f7cb3e2a8f04f62536c9f86092295aa44c3d6",
+    "protocol-document-lifecycle.session.json": "cddfe27af8dbf52cba5c689c7169febbc181f57f43ca40a52b287d7fe26f1ce9",
+    "protocol-error-flow.ndjson": "9baeb74ada42255a946bd4cb8b173fde796cb60692bd147f33f5fdb6fc6cb6b7",
+    "protocol-error-flow.session.json": "1a91c9a8a8a38115a47f5f21a1b0df6e9163a628ebefe96539e80424dbcc128d",
+    "protocol-http-analyze.ndjson": "3cfa405af2cda6ca8b61560ac8d26d0ca0e1815f65135c114ceb01d3e333d550",
+    "protocol-http-health.ndjson": "35d19f236f53d5df01f2c6b2af724e5edaccb0385923d5f7d9978f16920f1f5b",
+    "protocol-http.session.json": "0ff8437c89efe301583dd71e9d92cc2d6b1505961028f38eef28ad49059e7e71",
+    "protocol-kotlin-analyze.ndjson": "051c61f3a00fd0479b966f2e45cc17b10ccb4dd15e1f975bacec2461c21accca",
+    "protocol-kotlin-analyze.session.json": "b8eb4e0afe985e8742065f0de7e1872a905de2333ebdfead3643c190e9c18ea6",
+    "protocol-restrictions-flow.ndjson": "6441053c2dd4fcac9f1b0b89612067a07a952c0a3937d018201bee2fef781fa5",
+    "protocol-restrictions-flow.session.json": "2cd964825ebbafed7d69244c9f514c1eb91de5fadc280298bcd3c95f43f57443",
+    "protocol-status-flow.ndjson": "4097399f8e1f2be1a4d693957b06bd94f45aeea9f069ba65ff3cf1dd4d3202a4",
+    "protocol-status-flow.session.json": "3b441c2970840f0f8d4713a03beb807a631270a01cbb49a561ed33d162bc88ab",
+    "protocol-suggest-disabled-flow.ndjson": "5ddacbff494f162084eb3ce1c274b49362499545bf4499bc32ea2ada320f3722",
+    "protocol-suggest-disabled-flow.session.json": "ac45cf19197c431fc372668de84f932c472e62ea39e7e9fb2b7e63ff6e7dbfda",
+    "protocol-suggest-flow.ndjson": "43f251a829050d7ca3f4b6b29ad1de6dcc1a4f86d018f00282a719358d1075be",
+    "protocol-suggest-flow.session.json": "8d2ec06ff451aa53ce5af462384c1496525a3125ff427be74db0555a644560bc",
+    "protocol-typescript-analyze.ndjson": "c6a9a0865a246f471a8ffe41ebb6b8eb3522642c3261b08bcc1208d24114e180",
+    "protocol-typescript-analyze.session.json": "ccf0927e7188e720cfb114852281638876edbcca2a2ea5427b7a07f725d50fa1",
+    "renderer-visible-v1.json": "d37736a182ca2fe7d0dbdcf5b33c919f4d98813c3ad19ef4657a0e3ff3474e09"
+  },
+  "fixtures": {
+    "fixtures/overlays/restrictions/.cint/ai-restrictions.json": "68b910149c673958c1ba4d2c2b3c7672e776c2d4d9413ba6590d5adc0f5174f4",
+    "fixtures/overlays/restrictions/.cint/suggestions.yml": "b34660b7294b8f9ad1e3f3f756904864bb4aef2ec0c9e825eecaf4ee5c35b863",
+    "fixtures/overlays/suggest/.cint/suggestions.yml": "b34660b7294b8f9ad1e3f3f756904864bb4aef2ec0c9e825eecaf4ee5c35b863",
+    "fixtures/scenarios.json": "44a2997ba13010d62f5171f84e15fbf7cee831930f360a1ddad8255f55ea197d",
+    "fixtures/sources/csharp/Sample.cs": "468949b7d5049a687999de6335b68711a0454332dc0e5b4d8b0ca87c926028b1",
+    "fixtures/sources/javascript/Sample.js": "b877e50ad5eb565edc23cc5bf865c7d90b50748b9adce890797c459a8c0d44fc",
+    "fixtures/sources/kotlin/Bookkeeping.kt": "31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba",
+    "fixtures/sources/kotlin/Catches.kt": "ff5103a3846a6055d1333c6c9208928ef5e4f8b9ed2e468e2bcd4662fa7d6de5",
+    "fixtures/sources/kotlin/Composition.kt": "cb42599c3bdc95b34e04669f0dcd50f4d55fb2fcc949d09238b6b34a6a771f77",
+    "fixtures/sources/kotlin/ErrorHandling.kt": "9b712a1917f67803207cd3971c4fe2c347bbf0ae4d0e7499218acd663acbf05d",
+    "fixtures/sources/kotlin/Heuristics.kt": "6bb21c613a64b30a3ebca502023907fa8a9acece5d36326b3897e493950c53ac",
+    "fixtures/sources/kotlin/LoggerInteractions.kt": "778aaa669fbae85fc29300f99a09ffcfa23da5f6b4f2e8dbf79e7f0580c8cab4",
+    "fixtures/sources/kotlin/Mutation.kt": "143b9e2ed282bd9350064ea862099c5d6a4afeb83266444358045b90e565f18b",
+    "fixtures/sources/kotlin/NeighboursCli.kt": "bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1",
+    "fixtures/sources/kotlin/PurityAssist.kt": "46bc69507caec5e120c2864fbd20af85fa0d83f2393c7b2c4e0769303d09b8d9",
+    "fixtures/sources/kotlin/Scaffolds.kt": "1ce35d1277af5fb0f795332c12d2995a0faa963888e0ad482c46bed5560bb76e",
+    "fixtures/sources/kotlin/ServiceIntents.kt": "8062921db68a91a24c9bf40a067975a175e0ae20a1e99df9d1224c4dcf52f323",
+    "fixtures/sources/typescript/Sample.ts": "53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68",
+    "fixtures/sources/typescript/ServiceIntents.ts": "c381eaf38f5da040358e405040284be6d1cab55e789f1087283a63bbb26ddb8c",
+    "fixtures/sources/vue/Sample.vue": "b8035468991a7119760bd440fc37c0ee9db66f2ced28f8e09988ed27c55bcaeb"
+  },
+  "formatVersion": 3,
+  "generatedAtPolicy": "omitted so repeated captures remain byte-identical",
+  "generator": {
+    "capture.py": "cf2bbc3ebe2ed70ccea3065974de85c03ae9ad871dea1d5c19e8c50be6a7c1f8",
+    "reproduce.sh": "a82aa5ecb2445d7f72f7baa3f1fb031c09d02cd198110b856c573022d5e62092",
+    "verify.py": "c7f1515aa5ac55fc18d0d51db56ceb5298ce7f616b1336b26f8de2f967ea32ba"
+  },
+  "ordering": {
+    "annotations": "server emission order",
+    "candidates": "server emission order",
+    "configPacks": "server emission order",
+    "protocolMessages": "server emission order, compared exactly"
+  },
+  "pathTokens": {
+    "<CORPUS_ROOT>": "frozen-v1-corpus directory at capture time"
+  },
+  "protocolVersion": 4,
+  "v1Commit": "3ccea9e9cdb5a4e652182136866b24929bbed0b3"
+}

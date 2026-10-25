@@ -1,0 +1,7 @@
+suggestions:
+  enabled: true
+  trigger: manual
+  provider: fake
+  model: fake-intent-v1
+  discoveryEnabled: false
+  maxEnrichmentCandidates: 2

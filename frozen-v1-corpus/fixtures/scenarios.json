@@ -1,0 +1,16 @@
+{
+  "formatVersion": 1,
+  "token": "<CORPUS_ROOT>/fixtures/sources",
+  "scenarios": {
+    "kotlin-analyze": {"source": "kotlin"},
+    "typescript-analyze": {"source": "typescript"},
+    "config-flow": {"source": "kotlin"},
+    "suggest-flow": {"source": "kotlin", "overlay": "suggest"},
+    "suggest-disabled-flow": {"source": "kotlin"},
+    "restrictions-flow": {"source": "kotlin", "overlay": "restrictions"},
+    "document-lifecycle": {"source": "kotlin"},
+    "status-flow": {"source": "kotlin"},
+    "error-flow": {"source": "kotlin"},
+    "http-analyze": {"source": "kotlin"}
+  }
+}
