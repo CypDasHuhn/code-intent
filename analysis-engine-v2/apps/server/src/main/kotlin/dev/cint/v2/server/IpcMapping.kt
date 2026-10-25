@@ -98,12 +98,27 @@ internal fun candidatesParamsOf(
         proposals = analysis.candidates.map { candidateOf(it, uri, hash) },
     )
 
+internal fun legacyContentHash(text: String): String =
+    ContentHash.compute(text.replace("\r\n", "\n").removeSuffix("\n")).value
+
+private fun candidateContentHash(
+    candidate: Candidate,
+    text: String?,
+): String? {
+    text ?: return null
+    val bytes = text.toByteArray(Charsets.UTF_8)
+    if (candidate.startByte !in 0..bytes.size || candidate.endByte !in candidate.startByte..bytes.size) return null
+    return legacyContentHash(String(bytes, candidate.startByte, candidate.endByte - candidate.startByte, Charsets.UTF_8))
+}
+
 internal fun legacyPublishMessages(
     uri: String,
     version: Int,
     hash: String,
     analysisVersion: Long,
     analysis: AnalysisResult,
+    text: String? = null,
+    revision: Long = 0,
 ): List<JsonRpcMessage> {
     val annotations =
         analysis.annotations.map { annotation ->
@@ -128,7 +143,7 @@ internal fun legacyPublishMessages(
             buildJsonObject {
                 put("candidateId", candidateId(candidate, uri))
                 put("path", candidate.path ?: uri)
-                put("contentHash", hash)
+                put("contentHash", candidateContentHash(candidate, text) ?: hash)
                 put("intents", JsonArray(candidate.intents.sorted().map(::JsonPrimitive)))
                 put("source", legacyCandidateSource(candidate.source))
                 put("confidence", candidate.confidence.value)
@@ -151,7 +166,7 @@ internal fun legacyPublishMessages(
             put("uri", uri)
             put("version", version)
             put("hash", hash)
-            put("revision", 0)
+            put("revision", revision)
             put("analysisRevision", analysisVersion)
             put("annotations", JsonArray(annotations))
         }

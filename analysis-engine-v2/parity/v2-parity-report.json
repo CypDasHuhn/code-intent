@@ -321,30 +321,6 @@
     },
     {
       "context": {
-        "differences": "params.analysisRevision expected=4 actual=3 | params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\" | params.revision expected=1 actual=0",
-        "method": "cint/publishTags",
-        "scenario": "protocol-kotlin-analyze",
-        "step": "5"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
-        "differences": "params.analysisRevision expected=4 actual=3 | params.suggestionRevision expected=4 actual=3",
-        "method": "cint/publishCandidates",
-        "scenario": "protocol-kotlin-analyze",
-        "step": "5"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
         "differences": "params.annotations.size expected=8 actual=9 | params.annotations[0].confidence expected=0.55 actual=0.5 | params.annotations[0].endByte expected=219 actual=520 | params.annotations[0].endCol expected=55 actual=5 | params.annotations[0].endLine expected=6 actual=13 | params.annotations[0].provenance[0].confidence expected=0.55 actual=0.5 | params.annotations[0].provenance[0].endByte expected=219 actual=520 | params.annotations[0].provenance[0].endCol expected=55 actual=5 | params.annotations[0].provenance[0].endLine expected=6 actual=13 | params.annotations[0].provenance[0].role expected=\"derivative-use\" actual=\"source-intent\" | params.annotations[0].provenance[0].rule expected=\"core:derivative-use\" actual=\"knowledge:function-annotation\" | params.annotations[0].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[0].provenance[0].startByte expected=172 actual=26 | params.annotations[0].provenance[0].startCol expected=8 actual=4 | params.annotations[0].provenance[0].startLine expected=6 actual=1 | params.annotations[0].role expected=\"derivative-use\" actual=\"source-intent\" | params.annotations[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[0].startByte expected=172 actual=26 | params.annotations[0].startCol expected=8 actual=4 | params.annotations[0].startLine expected=6 actual=1 | params.annotations[1].endByte expected=275 actual=219 | params.annotations[1].endLine expected=7 actual=6 | params.annotations[1].provenance[0].endByte expected=275 actual=219 | params.annotations[1].provenance[0].endLine expected=7 actual=6 | params.annotations[1].provenance[0].startByte expected=228 actual=172 | params.annotations[1].provenance[0].startLine expected=7 actual=6 | params.annotations[1].startByte expected=228 actual=172 | params.annotations[1].startLine expected=7 actual=6 | params.annotations[2].confidence expected=0.8 actual=0.55 | params.annotations[2].endByte expected=319 actual=275 | params.annotations[2].endCol expected=43 actual=55 | params.annotations[2].endLine expected=8 actual=7 | params.annotations[2].intents[0] expected=\"LOCAL_VALUE_MODIFY\" actual=\"DATA_MODIFY\" | params.annotations[2].provenance[0].confidence expected=0.8 actual=0.55 | params.annotations[2].provenance[0].endByte expected=319 actual=275 | params.annotations[2].provenance[0].endCol expected=43 actual=55 | params.annotations[2].provenance[0].endLine expected=8 actual=7 | params.annotations[2].provenance[0].intents[0] expected=\"LOCAL_VALUE_MODIFY\" actual=\"DATA_MODIFY\" | params.annotations[2].provenance[0].role expected=\"source-intent\" actual=\"derivative-use\" | params.annotations[2].provenance[0].rule expected=\"mutation:local-value-modify\" actual=\"core:derivative-use\"",
         "method": "cint/publishTags",
         "scenario": "protocol-suggest-flow",
@@ -353,11 +329,11 @@
       "id": "ipc.payload",
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
+      "ticket": "092-v2-service-init-parity"
     },
     {
       "context": {
-        "differences": "params.annotations[8].provenance.size expected=1 actual=2 | params.annotations[8].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[8].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[8].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[14].provenance.size expected=1 actual=2 | params.annotations[14].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[14].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[14].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.hash expected=\"187d4c295f03f7cb72fafbb8ac7be69bb24d5cd5af995c2c7d21fd7b707bf86e\" actual=\"53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68\"",
+        "differences": "params.annotations[8].provenance.size expected=1 actual=2 | params.annotations[8].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[8].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[8].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[14].provenance.size expected=1 actual=2 | params.annotations[14].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[14].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[14].provenance[0].source expected=\"treesitter\" actual=\"annotation\"",
         "method": "cint/publishTags",
         "scenario": "protocol-typescript-analyze",
         "step": "1"
@@ -365,11 +341,11 @@
       "id": "ipc.payload",
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
+      "ticket": "092-v2-service-init-parity"
     },
     {
       "context": {
-        "differences": "params.annotations[8].provenance.size expected=1 actual=2 | params.annotations[8].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[8].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[8].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[14].provenance.size expected=1 actual=2 | params.annotations[14].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[14].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[14].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.hash expected=\"187d4c295f03f7cb72fafbb8ac7be69bb24d5cd5af995c2c7d21fd7b707bf86e\" actual=\"53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68\"",
+        "differences": "params.annotations[8].provenance.size expected=1 actual=2 | params.annotations[8].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[8].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[8].provenance[0].source expected=\"treesitter\" actual=\"annotation\" | params.annotations[14].provenance.size expected=1 actual=2 | params.annotations[14].provenance[0].confidence expected=1.0 actual=0.7 | params.annotations[14].provenance[0].rule expected=\"logging:logging\" actual=\"knowledge:function-annotation\" | params.annotations[14].provenance[0].source expected=\"treesitter\" actual=\"annotation\"",
         "method": "cint/publishTags",
         "scenario": "protocol-typescript-analyze",
         "step": "2"
@@ -377,11 +353,11 @@
       "id": "ipc.payload",
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
+      "ticket": "092-v2-service-init-parity"
     },
     {
       "context": {
-        "differences": "params.candidates[0].candidateId expected=\"4780f3bf5aefd460fd6cee3a533401ea3f172384f3f8c782545f5b21cf9f1669\" actual=\"936c6b481ba36ce1db375d2ac3a229e929420279784974f95d53ad4776165fc4\" | params.candidates[0].contentHash expected=\"47ece857e6f67cf0c4b7ae3b08135afb022f48dd73fa70c9e273dab961786024\" actual=\"53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68\" | params.groups.size expected=1 actual=0",
+        "differences": "params.candidates[0].candidateId expected=\"4780f3bf5aefd460fd6cee3a533401ea3f172384f3f8c782545f5b21cf9f1669\" actual=\"936c6b481ba36ce1db375d2ac3a229e929420279784974f95d53ad4776165fc4\" | params.groups.size expected=1 actual=0",
         "method": "cint/publishCandidates",
         "scenario": "protocol-typescript-analyze",
         "step": "1"
@@ -393,7 +369,7 @@
     },
     {
       "context": {
-        "differences": "params.candidates[0].candidateId expected=\"4780f3bf5aefd460fd6cee3a533401ea3f172384f3f8c782545f5b21cf9f1669\" actual=\"936c6b481ba36ce1db375d2ac3a229e929420279784974f95d53ad4776165fc4\" | params.candidates[0].contentHash expected=\"47ece857e6f67cf0c4b7ae3b08135afb022f48dd73fa70c9e273dab961786024\" actual=\"53274b9e800933672d3e3ff2f5b78919725597a5da8707355996b7be81eabc68\" | params.groups.size expected=1 actual=0",
+        "differences": "params.candidates[0].candidateId expected=\"4780f3bf5aefd460fd6cee3a533401ea3f172384f3f8c782545f5b21cf9f1669\" actual=\"936c6b481ba36ce1db375d2ac3a229e929420279784974f95d53ad4776165fc4\" | params.groups.size expected=1 actual=0",
         "method": "cint/publishCandidates",
         "scenario": "protocol-typescript-analyze",
         "step": "2"
@@ -405,7 +381,7 @@
     },
     {
       "context": {
-        "differences": "params.candidates[0].candidateId expected=\"65b85a6caa21bf478eb900a977fbc2d9678a63edea6b325de3e773082352f169\" actual=\"d7c80a62351b69567e39cb92434d030d9fb80fbc8a6ef3df1c0a793ebc74f733\" | params.candidates[0].contentHash expected=\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[1].candidateId expected=\"e420f3cbcfd82477e018062a231ea6bafd65d6cf6c1e4f10eec4258836e1089b\" actual=\"b54755b6e384aeb506bca8552480cf539dbc3480a6e141e7f94ee37404c587d9\" | params.candidates[1].contentHash expected=\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[2].candidateId expected=\"8e0fbbfb30011301fd714a8f8faaf1e7d913636b97c4da8ba145cb629d78d0f2\" actual=\"37d485f7a24f5db0d97454be6fa37bce662e817662f308753fdb4de007aa7649\" | params.candidates[2].contentHash expected=\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[3].candidateId expected=\"5e1b319e56776ccc5a831d1f7be83e9963e6d75b97aaf7076d5d1bd750b560cc\" actual=\"2477510fcd65f6d374282650e6853c2c31f7c612db1defa20c57d97f631b172e\" | params.candidates[3].contentHash expected=\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[4].candidateId expected=\"e6b092e77500d8010ef8b305d7cd9d0dd08251885d6b3049c0c840cd06dc5a62\" actual=\"3bf3a437d72ca97613d72531639ae67521f8801599d629e380f38202f66368fc\" | params.candidates[4].contentHash expected=\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[5].candidateId expected=\"01fe205662e0ef52759a9dc72ed6f83a2d1c110b043d87b2493c97184a873436\" actual=\"40e29afd215a2d7481ad5c5e2964d73e93e0448f0b4368524fa012d20000a2aa\" | params.candidates[5].contentHash expected=\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[6].candidateId expected=\"86b90512bf06091f45567cf148c5303716e5bcef6dedb08a4044780389c7b94a\" actual=\"f8f5bc963408dea67280449dc87dd791e36af2a11c9be8c5c4c09a1a5896c27b\" | params.candidates[6].contentHash expected=\"fb6e20f2cf37e0dde0b88472b7139bd416f9293d2895f757906a8cc9f8feb6f0\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[7].candidateId expected=\"73c85c7686a2f59502360a11150b3268c14f36dc89bb4782b8c80ade85bd6e08\" actual=\"f60786ffcf23dc270f2efec1795347f36c78ec5c3681efc53be3752b37111eaa\" | params.candidates[7].contentHash expected=\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[8].candidateId expected=\"2228a02c466330852e7d547fa1a0f3a30b2ac7c0c67a8e3e19ca4287de6a9f79\" actual=\"2ce90ca54b34f12f96677d4d8f5375b52c0dd469457cf9b0dc9eceb5dc72176a\" | params.candidates[8].contentHash expected=\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[9].candidateId expected=\"80bccff5d493dfe8ccfe7590bb4ae723e89afe8743f4fdbfccd5686f450120e1\" actual=\"808651730151296cdeb768c02c3fb4365175c6db48a7dcfe0508af0661beab14\" | params.candidates[9].contentHash expected=\"90b2907e86dc530cabe1bf13e68aaca07c57744f2fa2e22817485ab456895a2c\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[10].candidateId expected=\"051cf029d52a84849b836b7e66c14de9562fb8951f7377019973e6e1a2e7acb4\" actual=\"7cb5d7f42f55e43963ab86d84af189284cf444596e54943bf499230f14d8ed44\" | params.candidates[10].contentHash expected=\"5cfc98b556186c724d7b481d47196e3dd82a72ad33ec9b220450e0a61b78cd83\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[11].candidateId expected=\"529d5686a60c09f6f8e592fe0346286e361df04ef2c93a6e85bc171d75768ba2\" actual=\"4201fd0cc96bf0b1f1691c08ec8af9073d76731619d94e1aa8515db5750c7a14\" | params.candidates[11].contentHash expected=\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[12].candidateId expected=\"bb8a8b003f7ef10c5030eb5f7e8bd39a12c2a7af2865fcf95819e3df8ffed476\" actual=\"ea1b76fa7b94b88b7ccbf47e4ef4141965678fc28f0e58429ca1a0940025e97b\" | params.candidates[12].contentHash expected=\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[13].candidateId expected=\"53f2110fc79a75fe8514d27538cadc49ce3794b011d5c0b24d89f2efff14a416\" actual=\"13168b9784b831728b0693701e05d875b6161099f38ff2405f6de226c4ec4b36\" | params.candidates[13].contentHash expected=\"3bb5167b69988363c8817bafe5b4bd71dcaf4c0ed6ab16117d6df7a1563618d0\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[14].candidateId expected=\"543b2aee67fd59e261f1169209dd286f94c3429fd84258644bf220ace7bc290c\" actual=\"0ade20227288d770473ece858e5ee308e96c53894d5fa2a53911c5be5df2b85d\" | params.candidates[14].contentHash expected=\"34de5d0c49bfe0509e759ae3ad7dc25dc3aa8b3f7a250a0340cddc464b7ba054\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[15].candidateId expected=\"901871d851dc8a855153ef85ca698cae3af4b2ed3d6a72f3267f1a61de0ffb0a\" actual=\"313367909724db2b248ea2ad19786cdb9ab1837617aa3cf380183329d83d854f\" | params.candidates[15].contentHash expected=\"34de5d0c49bfe0509e759ae3ad7dc25dc3aa8b3f7a250a0340cddc464b7ba054\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[16].candidateId expected=\"7d41e536934332a2442300884f76c8b31587fae20437dba0dd3d35ac6b06c85b\" actual=\"1376d3bf47515b3fb64dad97feabb723b75248d04df94798bf212cb54b62c58a\" | params.candidates[16].contentHash expected=\"39a41207fb86f9861072f8e508532315660327b698b55c571e491f8ecb5294fd\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[17].candidateId expected=\"3a36a15a9d9a6378b7f3c395f10f99c753238b968dc6b5cfc6cabe19e8f645fa\" actual=\"676ab105d2f5aa878d6be4306d4ec67ba869c7a9fa43da209486cae5900b812e\" | params.candidates[17].contentHash expected=\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.candidates[18].candidateId expected=\"aa9153356c6e3751c5e232c9a1a5336189ee963b55055f8ac6571365e4a07951\" actual=\"02a94789345437d3f4debcf0032c6aedf257bfba5c672362411c4acd4df6a02a\" | params.candidates[18].contentHash expected=\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\" actual=\"bc00494a29d9b2cb53cbf12bfea4bf2d240cded0f8aeb84d8c953b0c7e262ba1\" | params.groups.size expected=12 actual=0",
+        "differences": "params.candidates[0].candidateId expected=\"65b85a6caa21bf478eb900a977fbc2d9678a63edea6b325de3e773082352f169\" actual=\"d7c80a62351b69567e39cb92434d030d9fb80fbc8a6ef3df1c0a793ebc74f733\" | params.candidates[1].candidateId expected=\"e420f3cbcfd82477e018062a231ea6bafd65d6cf6c1e4f10eec4258836e1089b\" actual=\"b54755b6e384aeb506bca8552480cf539dbc3480a6e141e7f94ee37404c587d9\" | params.candidates[2].candidateId expected=\"8e0fbbfb30011301fd714a8f8faaf1e7d913636b97c4da8ba145cb629d78d0f2\" actual=\"37d485f7a24f5db0d97454be6fa37bce662e817662f308753fdb4de007aa7649\" | params.candidates[3].candidateId expected=\"5e1b319e56776ccc5a831d1f7be83e9963e6d75b97aaf7076d5d1bd750b560cc\" actual=\"2477510fcd65f6d374282650e6853c2c31f7c612db1defa20c57d97f631b172e\" | params.candidates[4].candidateId expected=\"e6b092e77500d8010ef8b305d7cd9d0dd08251885d6b3049c0c840cd06dc5a62\" actual=\"3bf3a437d72ca97613d72531639ae67521f8801599d629e380f38202f66368fc\" | params.candidates[5].candidateId expected=\"01fe205662e0ef52759a9dc72ed6f83a2d1c110b043d87b2493c97184a873436\" actual=\"40e29afd215a2d7481ad5c5e2964d73e93e0448f0b4368524fa012d20000a2aa\" | params.candidates[6].candidateId expected=\"86b90512bf06091f45567cf148c5303716e5bcef6dedb08a4044780389c7b94a\" actual=\"f8f5bc963408dea67280449dc87dd791e36af2a11c9be8c5c4c09a1a5896c27b\" | params.candidates[7].candidateId expected=\"73c85c7686a2f59502360a11150b3268c14f36dc89bb4782b8c80ade85bd6e08\" actual=\"f60786ffcf23dc270f2efec1795347f36c78ec5c3681efc53be3752b37111eaa\" | params.candidates[8].candidateId expected=\"2228a02c466330852e7d547fa1a0f3a30b2ac7c0c67a8e3e19ca4287de6a9f79\" actual=\"2ce90ca54b34f12f96677d4d8f5375b52c0dd469457cf9b0dc9eceb5dc72176a\" | params.candidates[9].candidateId expected=\"80bccff5d493dfe8ccfe7590bb4ae723e89afe8743f4fdbfccd5686f450120e1\" actual=\"808651730151296cdeb768c02c3fb4365175c6db48a7dcfe0508af0661beab14\" | params.candidates[10].candidateId expected=\"051cf029d52a84849b836b7e66c14de9562fb8951f7377019973e6e1a2e7acb4\" actual=\"7cb5d7f42f55e43963ab86d84af189284cf444596e54943bf499230f14d8ed44\" | params.candidates[11].candidateId expected=\"529d5686a60c09f6f8e592fe0346286e361df04ef2c93a6e85bc171d75768ba2\" actual=\"4201fd0cc96bf0b1f1691c08ec8af9073d76731619d94e1aa8515db5750c7a14\" | params.candidates[12].candidateId expected=\"bb8a8b003f7ef10c5030eb5f7e8bd39a12c2a7af2865fcf95819e3df8ffed476\" actual=\"ea1b76fa7b94b88b7ccbf47e4ef4141965678fc28f0e58429ca1a0940025e97b\" | params.candidates[13].candidateId expected=\"53f2110fc79a75fe8514d27538cadc49ce3794b011d5c0b24d89f2efff14a416\" actual=\"13168b9784b831728b0693701e05d875b6161099f38ff2405f6de226c4ec4b36\" | params.candidates[14].candidateId expected=\"543b2aee67fd59e261f1169209dd286f94c3429fd84258644bf220ace7bc290c\" actual=\"0ade20227288d770473ece858e5ee308e96c53894d5fa2a53911c5be5df2b85d\" | params.candidates[15].candidateId expected=\"901871d851dc8a855153ef85ca698cae3af4b2ed3d6a72f3267f1a61de0ffb0a\" actual=\"313367909724db2b248ea2ad19786cdb9ab1837617aa3cf380183329d83d854f\" | params.candidates[16].candidateId expected=\"7d41e536934332a2442300884f76c8b31587fae20437dba0dd3d35ac6b06c85b\" actual=\"1376d3bf47515b3fb64dad97feabb723b75248d04df94798bf212cb54b62c58a\" | params.candidates[17].candidateId expected=\"3a36a15a9d9a6378b7f3c395f10f99c753238b968dc6b5cfc6cabe19e8f645fa\" actual=\"676ab105d2f5aa878d6be4306d4ec67ba869c7a9fa43da209486cae5900b812e\" | params.candidates[18].candidateId expected=\"aa9153356c6e3751c5e232c9a1a5336189ee963b55055f8ac6571365e4a07951\" actual=\"02a94789345437d3f4debcf0032c6aedf257bfba5c672362411c4acd4df6a02a\" | params.groups.size expected=12 actual=0",
         "method": "cint/publishCandidates",
         "scenario": "protocol-suggest-flow",
         "step": "1"
@@ -414,66 +390,6 @@
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
       "ticket": "091-v2-candidate-parity"
-    },
-    {
-      "context": {
-        "differences": "params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-document-lifecycle",
-        "step": "1"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
-        "differences": "params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-kotlin-analyze",
-        "step": "1"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
-        "differences": "params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-kotlin-analyze",
-        "step": "2"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
-        "differences": "params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-restrictions-flow",
-        "step": "1"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
-    },
-    {
-      "context": {
-        "differences": "params.hash expected=\"7d3dc4a7481aec78177aab0a09ea1054a77d55a4dcd1f3865ef0c0f8e9d3fc96\" actual=\"31288bc460228b390df633577245aa1472a8ee6728cce8b1044730ebac30b6ba\"",
-        "method": "cint/publishTags",
-        "scenario": "protocol-suggest-disabled-flow",
-        "step": "1"
-      },
-      "id": "ipc.payload",
-      "reason": "V2 message payload differs from the frozen transcript",
-      "surface": "ipc",
-      "ticket": "094-v2-ipc-payload-parity"
     }
   ],
   "deferrals": [
@@ -504,8 +420,7 @@
   ],
   "followUpTickets": [
     "091-v2-candidate-parity",
-    "092-v2-service-init-parity",
-    "094-v2-ipc-payload-parity"
+    "092-v2-service-init-parity"
   ],
   "formatVersion": 1,
   "intentionalDifferences": [
@@ -906,6 +821,18 @@
       "ticket": "079-v2-ipc-protocol"
     },
     {
+      "id": "initialize.pack-fields",
+      "reason": "V2 exposes its own default pack catalog with manifest metadata and an empty config-field list.",
+      "source": "ipc",
+      "ticket": "069-v2-packs-and-defaults"
+    },
+    {
+      "id": "initialize.suggestions",
+      "reason": "V2 suggestion capability defaults are owned by the V2 server ticket.",
+      "source": "ipc",
+      "ticket": "081-v2-server"
+    },
+    {
       "id": "protocol.version",
       "reason": "Protocol 5 is negotiated for V2 while legacy 4 replays keep V1 shapes.",
       "source": "ipc",
@@ -946,45 +873,254 @@
           "annotation.provenanceIdentity": true,
           "initialize.capabilities": true,
           "initialize.fingerprint": true,
+          "initialize.languages": true,
           "publishCandidates.proposalRevision": true,
           "publishCandidates.proposals": true,
           "publishTags.analysisVersion": true,
           "publishTags.configRevision": true,
           "publishTags.diagnostics": true
         },
-        "differenceCount": 0,
+        "differenceCount": 77,
         "intentionalSections": [
           {
-            "intentionalDifferenceId": "server.unsupported-operations",
-            "section": "suggest"
-          },
-          {
-            "intentionalDifferenceId": "server.unsupported-operations",
-            "section": "restrictions"
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
           },
           {
             "intentionalDifferenceId": "config.protocol",
             "section": "config"
           },
           {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "config.protocol",
+            "section": "config"
+          },
+          {
+            "intentionalDifferenceId": "suggest.protocol",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "suggest.protocol",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "suggest.protocol",
+            "section": "suggest"
+          },
+          {
+            "intentionalDifferenceId": "restrictions.protocol",
+            "section": "restrictions"
+          },
+          {
+            "intentionalDifferenceId": "restrictions.protocol",
+            "section": "restrictions"
+          },
+          {
+            "intentionalDifferenceId": "restrictions.protocol",
+            "section": "restrictions"
+          },
+          {
             "intentionalDifferenceId": "status.protocol",
             "section": "status"
           },
           {
-            "intentionalDifferenceId": "http.facade",
-            "section": "http"
+            "intentionalDifferenceId": "status.protocol",
+            "section": "status"
           }
         ],
-        "passed": true,
-        "source": "V2 protocol 5 publishTags",
+        "passed": false,
+        "sections": [
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#tags.annotations",
+            "compared": true,
+            "differenceCount": 0,
+            "differences": [],
+            "intentionalDifferenceIds": [],
+            "name": "tags.annotations",
+            "ownerTicket": "090-v2-composition-parity",
+            "passed": true,
+            "registeredOnIpcSurface": false,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#candidates",
+            "compared": true,
+            "differenceCount": 38,
+            "differences": [
+              "candidates.candidates[0].candidateId expected=\"65b85a6caa21bf478eb900a977fbc2d9678a63edea6b325de3e773082352f169\" actual=\"d7c80a62351b69567e39cb92434d030d9fb80fbc8a6ef3df1c0a793ebc74f733\"",
+              "candidates.candidates[1].candidateId expected=\"e420f3cbcfd82477e018062a231ea6bafd65d6cf6c1e4f10eec4258836e1089b\" actual=\"b54755b6e384aeb506bca8552480cf539dbc3480a6e141e7f94ee37404c587d9\"",
+              "candidates.candidates[2].candidateId expected=\"8e0fbbfb30011301fd714a8f8faaf1e7d913636b97c4da8ba145cb629d78d0f2\" actual=\"37d485f7a24f5db0d97454be6fa37bce662e817662f308753fdb4de007aa7649\"",
+              "candidates.candidates[3].candidateId expected=\"5e1b319e56776ccc5a831d1f7be83e9963e6d75b97aaf7076d5d1bd750b560cc\" actual=\"2477510fcd65f6d374282650e6853c2c31f7c612db1defa20c57d97f631b172e\"",
+              "candidates.candidates[4].candidateId expected=\"e6b092e77500d8010ef8b305d7cd9d0dd08251885d6b3049c0c840cd06dc5a62\" actual=\"3bf3a437d72ca97613d72531639ae67521f8801599d629e380f38202f66368fc\"",
+              "candidates.candidates[5].candidateId expected=\"01fe205662e0ef52759a9dc72ed6f83a2d1c110b043d87b2493c97184a873436\" actual=\"40e29afd215a2d7481ad5c5e2964d73e93e0448f0b4368524fa012d20000a2aa\"",
+              "candidates.candidates[6].aiEligible expected=false actual=true",
+              "candidates.candidates[6].candidateId expected=\"86b90512bf06091f45567cf148c5303716e5bcef6dedb08a4044780389c7b94a\" actual=\"f8f5bc963408dea67280449dc87dd791e36af2a11c9be8c5c4c09a1a5896c27b\"",
+              "candidates.candidates[6].confidence expected=0.75 actual=0.4",
+              "candidates.candidates[6].model expected=\"fake-intent-v1\" actual=<missing>",
+              "candidates.candidates[6].promptVersion expected=\"fake-prompt-v2\" actual=<missing>",
+              "candidates.candidates[6].provider expected=\"fake\" actual=<missing>",
+              "candidates.candidates[6].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.candidates[6].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.candidates[7].candidateId expected=\"73c85c7686a2f59502360a11150b3268c14f36dc89bb4782b8c80ade85bd6e08\" actual=\"f60786ffcf23dc270f2efec1795347f36c78ec5c3681efc53be3752b37111eaa\"",
+              "candidates.candidates[8].candidateId expected=\"2228a02c466330852e7d547fa1a0f3a30b2ac7c0c67a8e3e19ca4287de6a9f79\" actual=\"2ce90ca54b34f12f96677d4d8f5375b52c0dd469457cf9b0dc9eceb5dc72176a\"",
+              "candidates.candidates[9].aiEligible expected=false actual=true",
+              "candidates.candidates[9].candidateId expected=\"80bccff5d493dfe8ccfe7590bb4ae723e89afe8743f4fdbfccd5686f450120e1\" actual=\"808651730151296cdeb768c02c3fb4365175c6db48a7dcfe0508af0661beab14\"",
+              "candidates.candidates[9].confidence expected=0.75 actual=0.4",
+              "candidates.candidates[9].model expected=\"fake-intent-v1\" actual=<missing>",
+              "candidates.candidates[9].promptVersion expected=\"fake-prompt-v2\" actual=<missing>",
+              "candidates.candidates[9].provider expected=\"fake\" actual=<missing>",
+              "candidates.candidates[9].rationale expected=\"Fake provider enriched low_confidence candidate.\" actual=<missing>",
+              "candidates.candidates[9].source expected=\"ai:fake\" actual=\"rule:service:delegation\"",
+              "candidates.candidates[10].candidateId expected=\"051cf029d52a84849b836b7e66c14de9562fb8951f7377019973e6e1a2e7acb4\" actual=\"7cb5d7f42f55e43963ab86d84af189284cf444596e54943bf499230f14d8ed44\"",
+              "candidates.candidates[11].candidateId expected=\"529d5686a60c09f6f8e592fe0346286e361df04ef2c93a6e85bc171d75768ba2\" actual=\"4201fd0cc96bf0b1f1691c08ec8af9073d76731619d94e1aa8515db5750c7a14\"",
+              "candidates.candidates[12].candidateId expected=\"bb8a8b003f7ef10c5030eb5f7e8bd39a12c2a7af2865fcf95819e3df8ffed476\" actual=\"ea1b76fa7b94b88b7ccbf47e4ef4141965678fc28f0e58429ca1a0940025e97b\"",
+              "candidates.candidates[13].candidateId expected=\"53f2110fc79a75fe8514d27538cadc49ce3794b011d5c0b24d89f2efff14a416\" actual=\"13168b9784b831728b0693701e05d875b6161099f38ff2405f6de226c4ec4b36\"",
+              "candidates.candidates[14].candidateId expected=\"543b2aee67fd59e261f1169209dd286f94c3429fd84258644bf220ace7bc290c\" actual=\"0ade20227288d770473ece858e5ee308e96c53894d5fa2a53911c5be5df2b85d\"",
+              "candidates.candidates[15].candidateId expected=\"901871d851dc8a855153ef85ca698cae3af4b2ed3d6a72f3267f1a61de0ffb0a\" actual=\"313367909724db2b248ea2ad19786cdb9ab1837617aa3cf380183329d83d854f\"",
+              "candidates.candidates[16].candidateId expected=\"7d41e536934332a2442300884f76c8b31587fae20437dba0dd3d35ac6b06c85b\" actual=\"1376d3bf47515b3fb64dad97feabb723b75248d04df94798bf212cb54b62c58a\"",
+              "candidates.candidates[17].candidateId expected=\"3a36a15a9d9a6378b7f3c395f10f99c753238b968dc6b5cfc6cabe19e8f645fa\" actual=\"676ab105d2f5aa878d6be4306d4ec67ba869c7a9fa43da209486cae5900b812e\"",
+              "candidates.candidates[18].candidateId expected=\"aa9153356c6e3751c5e232c9a1a5336189ee963b55055f8ac6571365e4a07951\" actual=\"02a94789345437d3f4debcf0032c6aedf257bfba5c672362411c4acd4df6a02a\"",
+              "candidates.groupCount expected=12 actual=<missing>",
+              "candidates.groups expected=[{\"anchorId\":\"69cfb0e17f45b9b626cc94256f9ec32da65479008b73965aed9bafad244c8b6a\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"65b85a6caa21bf478eb900a977fbc2d9678a63edea6b325de3e773082352f169\",\"confidence\":0.4,\"contentHash\":\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\",\"endByte\":219,\"endCol\":55,\"endLine\":6,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":187,\"startCol\":23,\"startLine\":6},{\"aiEligible\":true,\"candidateId\":\"e420f3cbcfd82477e018062a231ea6bafd65d6cf6c1e4f10eec4258836e1089b\",\"confidence\":0.4,\"contentHash\":\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\",\"endByte\":219,\"endCol\":55,\"endLine\":6,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":187,\"startCol\":23,\"startLine\":6}],\"contentHash\":\"25770fa1d8f72058bdbec96c5aaf8e09ac8acea04ae41b67fafc45cc7347a4a3\",\"endByte\":219,\"endCol\":55,\"endLine\":6,\"operations\":[{\"confidence\":0.4,\"endByte\":219,\"endCol\":55,\"endLine\":6,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":187,\"startCol\":23,\"startLine\":6},{\"confidence\":0.4,\"endByte\":219,\"endCol\":55,\"endLine\":6,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":187,\"startCol\":23,\"startLine\":6}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":187,\"startCol\":23,\"startLine\":6},{\"anchorId\":\"2d91c52d2584811527020e5b02ae114d4de83f9e090e6eca0da1f564f2a76fd5\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"8e0fbbfb30011301fd714a8f8faaf1e7d913636b97c4da8ba145cb629d78d0f2\",\"confidence\":0.4,\"contentHash\":\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\",\"endByte\":275,\"endCol\":55,\"endLine\":7,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":243,\"startCol\":23,\"startLine\":7},{\"aiEligible\":true,\"candidateId\":\"5e1b319e56776ccc5a831d1f7be83e9963e6d75b97aaf7076d5d1bd750b560cc\",\"confidence\":0.4,\"contentHash\":\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\",\"endByte\":275,\"endCol\":55,\"endLine\":7,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":243,\"startCol\":23,\"startLine\":7}],\"contentHash\":\"3a5c5aad460cf6ba6038bf9d0f0b05d88c2011e6e82bd2f98e9ecea2cb84ba6c\",\"endByte\":275,\"endCol\":55,\"endLine\":7,\"operations\":[{\"confidence\":0.4,\"endByte\":275,\"endCol\":55,\"endLine\":7,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":243,\"startCol\":23,\"startLine\":7},{\"confidence\":0.4,\"endByte\":275,\"endCol\":55,\"endLine\":7,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":243,\"startCol\":23,\"startLine\":7}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":243,\"startCol\":23,\"startLine\":7},{\"anchorId\":\"3bc3e4d3b930552bf0e7a28dd6db983f3723e6fbe7d8ffdca1fa39ee9a509a40\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"e6b092e77500d8010ef8b305d7cd9d0dd08251885d6b3049c0c840cd06dc5a62\",\"confidence\":0.4,\"contentHash\":\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\",\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":295,\"startCol\":19,\"startLine\":8},{\"aiEligible\":true,\"candidateId\":\"01fe205662e0ef52759a9dc72ed6f83a2d1c110b043d87b2493c97184a873436\",\"confidence\":0.4,\"contentHash\":\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\",\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":295,\"startCol\":19,\"startLine\":8}],\"contentHash\":\"b5f5b06c4eae5f599727ad43a8de2b23a5082a4cb6a5d577756efa5a935aa4fa\",\"endByte\":319,\"endCol\":43,\"endLine\":8,\"operations\":[{\"confidence\":0.4,\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":295,\"startCol\":19,\"startLine\":8},{\"confidence\":0.4,\"endByte\":319,\"endCol\":43,\"endLine\":8,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":295,\"startCol\":19,\"startLine\":8}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":295,\"startCol\":19,\"startLine\":8},{\"anchorId\":\"b668d32cad39d4e81281cfd70b6eaa5233f89c16bfa4e7b42f242e68b23308c1\",\"candidates\":[{\"aiEligible\":false,\"candidateId\":\"86b90512bf06091f45567cf148c5303716e5bcef6dedb08a4044780389c7b94a\",\"confidence\":0.75,\"contentHash\":\"fb6e20f2cf37e0dde0b88472b7139bd416f9293d2895f757906a8cc9f8feb6f0\",\"endByte\":318,\"endCol\":42,\"endLine\":8,\"intents\":[\"SERVICE_DELEGATION\"],\"model\":\"fake-intent-v1\",\"path\":\"file:///test/NeighboursCli.kt\",\"promptVersion\":\"fake-prompt-v2\",\"provider\":\"fake\",\"rationale\":\"Fake provider enriched low_confidence candidate.\",\"reason\":\"LOW_CONFIDENCE\",\"source\":\"ai:fake\",\"startByte\":305,\"startCol\":29,\"startLine\":8}],\"contentHash\":\"fb6e20f2cf37e0dde0b88472b7139bd416f9293d2895f757906a8cc9f8feb6f0\",\"endByte\":318,\"endCol\":42,\"endLine\":8,\"operations\":[{\"confidence\":0.75,\"endByte\":318,\"endCol\":42,\"endLine\":8,\"intent\":\"SERVICE_DELEGATION\",\"kind\":\"ADD\",\"rationale\":\"Fake provider enriched low_confidence candidate.\",\"source\":\"ai:fake\",\"startByte\":305,\"startCol\":29,\"startLine\":8}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":305,\"startCol\":29,\"startLine\":8},{\"anchorId\":\"f3b2d8e56eb73d01614fab52b5dfeb856f7f613b2ea803e59629b5ae7c27c854\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"73c85c7686a2f59502360a11150b3268c14f36dc89bb4782b8c80ade85bd6e08\",\"confidence\":0.4,\"contentHash\":\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\",\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":339,\"startCol\":19,\"startLine\":9},{\"aiEligible\":true,\"candidateId\":\"2228a02c466330852e7d547fa1a0f3a30b2ac7c0c67a8e3e19ca4287de6a9f79\",\"confidence\":0.4,\"contentHash\":\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\",\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":339,\"startCol\":19,\"startLine\":9}],\"contentHash\":\"574619a6c1e5be68dc8457842cacc478552cda1ac6d1c5f57659eb3d59f1f768\",\"endByte\":363,\"endCol\":43,\"endLine\":9,\"operations\":[{\"confidence\":0.4,\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":339,\"startCol\":19,\"startLine\":9},{\"confidence\":0.4,\"endByte\":363,\"endCol\":43,\"endLine\":9,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":339,\"startCol\":19,\"startLine\":9}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":339,\"startCol\":19,\"startLine\":9},{\"anchorId\":\"d95bd0066b56b81a54b912dc492f0452365aaed2b30007723711ae28da6f5d9e\",\"candidates\":[{\"aiEligible\":false,\"candidateId\":\"80bccff5d493dfe8ccfe7590bb4ae723e89afe8743f4fdbfccd5686f450120e1\",\"confidence\":0.75,\"contentHash\":\"90b2907e86dc530cabe1bf13e68aaca07c57744f2fa2e22817485ab456895a2c\",\"endByte\":362,\"endCol\":42,\"endLine\":9,\"intents\":[\"SERVICE_DELEGATION\"],\"model\":\"fake-intent-v1\",\"path\":\"file:///test/NeighboursCli.kt\",\"promptVersion\":\"fake-prompt-v2\",\"provider\":\"fake\",\"rationale\":\"Fake provider enriched low_confidence candidate.\",\"reason\":\"LOW_CONFIDENCE\",\"source\":\"ai:fake\",\"startByte\":349,\"startCol\":29,\"startLine\":9}],\"contentHash\":\"90b2907e86dc530cabe1bf13e68aaca07c57744f2fa2e22817485ab456895a2c\",\"endByte\":362,\"endCol\":42,\"endLine\":9,\"operations\":[{\"confidence\":0.75,\"endByte\":362,\"endCol\":42,\"endLine\":9,\"intent\":\"SERVICE_DELEGATION\",\"kind\":\"ADD\",\"rationale\":\"Fake provider enriched low_confidence candidate.\",\"source\":\"ai:fake\",\"startByte\":349,\"startCol\":29,\"startLine\":9}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":349,\"startCol\":29,\"startLine\":9},{\"anchorId\":\"d84642cbc848ba4cd3189ed1de28b781661ed05e8e2bbe3dd1d27ae169faf1c7\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"051cf029d52a84849b836b7e66c14de9562fb8951f7377019973e6e1a2e7acb4\",\"confidence\":0.4,\"contentHash\":\"5cfc98b556186c724d7b481d47196e3dd82a72ad33ec9b220450e0a61b78cd83\",\"endByte\":416,\"endCol\":52,\"endLine\":10,\"intents\":[\"SERVICE_DELEGATION\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"LOW_CONFIDENCE\",\"source\":\"rule:service:delegation\",\"startByte\":372,\"startCol\":8,\"startLine\":10}],\"contentHash\":\"5cfc98b556186c724d7b481d47196e3dd82a72ad33ec9b220450e0a61b78cd83\",\"endByte\":416,\"endCol\":52,\"endLine\":10,\"operations\":[{\"confidence\":0.4,\"endByte\":416,\"endCol\":52,\"endLine\":10,\"intent\":\"SERVICE_DELEGATION\",\"kind\":\"ADD\",\"source\":\"rule:service:delegation\",\"startByte\":372,\"startCol\":8,\"startLine\":10}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":372,\"startCol\":8,\"startLine\":10},{\"anchorId\":\"47cbb16446cb3247d0e7261aef22a0848e4af4544d07c0ddb4cb21aef93cd511\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"529d5686a60c09f6f8e592fe0346286e361df04ef2c93a6e85bc171d75768ba2\",\"confidence\":0.4,\"contentHash\":\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\",\"endByte\":415,\"endCol\":51,\"endLine\":10,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":387,\"startCol\":23,\"startLine\":10},{\"aiEligible\":true,\"candidateId\":\"bb8a8b003f7ef10c5030eb5f7e8bd39a12c2a7af2865fcf95819e3df8ffed476\",\"confidence\":0.4,\"contentHash\":\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\",\"endByte\":415,\"endCol\":51,\"endLine\":10,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":387,\"startCol\":23,\"startLine\":10}],\"contentHash\":\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\",\"endByte\":415,\"endCol\":51,\"endLine\":10,\"operations\":[{\"confidence\":0.4,\"endByte\":415,\"endCol\":51,\"endLine\":10,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":387,\"startCol\":23,\"startLine\":10},{\"confidence\":0.4,\"endByte\":415,\"endCol\":51,\"endLine\":10,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":387,\"startCol\":23,\"startLine\":10}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":387,\"startCol\":23,\"startLine\":10},{\"anchorId\":\"1a6aad72a3d26381c3aa528137a9e8f97b5668c7526e2d24429c59f0a1b7994c\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"53f2110fc79a75fe8514d27538cadc49ce3794b011d5c0b24d89f2efff14a416\",\"confidence\":0.4,\"contentHash\":\"3bb5167b69988363c8817bafe5b4bd71dcaf4c0ed6ab16117d6df7a1563618d0\",\"endByte\":469,\"endCol\":52,\"endLine\":11,\"intents\":[\"SERVICE_DELEGATION\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"LOW_CONFIDENCE\",\"source\":\"rule:service:delegation\",\"startByte\":425,\"startCol\":8,\"startLine\":11}],\"contentHash\":\"3bb5167b69988363c8817bafe5b4bd71dcaf4c0ed6ab16117d6df7a1563618d0\",\"endByte\":469,\"endCol\":52,\"endLine\":11,\"operations\":[{\"confidence\":0.4,\"endByte\":469,\"endCol\":52,\"endLine\":11,\"intent\":\"SERVICE_DELEGATION\",\"kind\":\"ADD\",\"source\":\"rule:service:delegation\",\"startByte\":425,\"startCol\":8,\"startLine\":11}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":425,\"startCol\":8,\"startLine\":11},{\"anchorId\":\"bc76b7afac36443c48dbadb4422bf3c0f59c390300a1aa8ffcc55bd2bc5d418a\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"543b2aee67fd59e261f1169209dd286f94c3429fd84258644bf220ace7bc290c\",\"confidence\":0.4,\"contentHash\":\"34de5d0c49bfe0509e759ae3ad7dc25dc3aa8b3f7a250a0340cddc464b7ba054\",\"endByte\":468,\"endCol\":51,\"endLine\":11,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":440,\"startCol\":23,\"startLine\":11},{\"aiEligible\":true,\"candidateId\":\"901871d851dc8a855153ef85ca698cae3af4b2ed3d6a72f3267f1a61de0ffb0a\",\"confidence\":0.4,\"contentHash\":\"34de5d0c49bfe0509e759ae3ad7dc25dc3aa8b3f7a250a0340cddc464b7ba054\",\"endByte\":468,\"endCol\":51,\"endLine\":11,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":440,\"startCol\":23,\"startLine\":11}],\"contentHash\":\"34de5d0c49bfe0509e759ae3ad7dc25dc3aa8b3f7a250a0340cddc464b7ba054\",\"endByte\":468,\"endCol\":51,\"endLine\":11,\"operations\":[{\"confidence\":0.4,\"endByte\":468,\"endCol\":51,\"endLine\":11,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":440,\"startCol\":23,\"startLine\":11},{\"confidence\":0.4,\"endByte\":468,\"endCol\":51,\"endLine\":11,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":440,\"startCol\":23,\"startLine\":11}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":440,\"startCol\":23,\"startLine\":11},{\"anchorId\":\"ac5ed48d5b0a6a52200a3f367305197b6486250fac44c0ef5f2d6ad1c890743f\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"7d41e536934332a2442300884f76c8b31587fae20437dba0dd3d35ac6b06c85b\",\"confidence\":0.4,\"contentHash\":\"39a41207fb86f9861072f8e508532315660327b698b55c571e491f8ecb5294fd\",\"endByte\":514,\"endCol\":44,\"endLine\":12,\"intents\":[\"SERVICE_DELEGATION\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"LOW_CONFIDENCE\",\"source\":\"rule:service:delegation\",\"startByte\":478,\"startCol\":8,\"startLine\":12}],\"contentHash\":\"39a41207fb86f9861072f8e508532315660327b698b55c571e491f8ecb5294fd\",\"endByte\":514,\"endCol\":44,\"endLine\":12,\"operations\":[{\"confidence\":0.4,\"endByte\":514,\"endCol\":44,\"endLine\":12,\"intent\":\"SERVICE_DELEGATION\",\"kind\":\"ADD\",\"source\":\"rule:service:delegation\",\"startByte\":478,\"startCol\":8,\"startLine\":12}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":478,\"startCol\":8,\"startLine\":12},{\"anchorId\":\"6561d7b318f390fc8af80440049bf7d8a7353a309fe4b851f70787530ca83d3c\",\"candidates\":[{\"aiEligible\":true,\"candidateId\":\"3a36a15a9d9a6378b7f3c395f10f99c753238b968dc6b5cfc6cabe19e8f645fa\",\"confidence\":0.4,\"contentHash\":\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\",\"endByte\":513,\"endCol\":43,\"endLine\":12,\"intents\":[\"LOOKUP\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:lookup\",\"startByte\":485,\"startCol\":15,\"startLine\":12},{\"aiEligible\":true,\"candidateId\":\"aa9153356c6e3751c5e232c9a1a5336189ee963b55055f8ac6571365e4a07951\",\"confidence\":0.4,\"contentHash\":\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\",\"endByte\":513,\"endCol\":43,\"endLine\":12,\"intents\":[\"SEARCH\"],\"path\":\"file:///test/NeighboursCli.kt\",\"reason\":\"PACK_DOMAIN\",\"source\":\"rule:data-access:search\",\"startByte\":485,\"startCol\":15,\"startLine\":12}],\"contentHash\":\"a766d10982caef27c2b1c24a090b0351ab1adc97e7ca511973074fafc495d258\",\"endByte\":513,\"endCol\":43,\"endLine\":12,\"operations\":[{\"confidence\":0.4,\"endByte\":513,\"endCol\":43,\"endLine\":12,\"intent\":\"LOOKUP\",\"kind\":\"ADD\",\"source\":\"rule:data-access:lookup\",\"startByte\":485,\"startCol\":15,\"startLine\":12},{\"confidence\":0.4,\"endByte\":513,\"endCol\":43,\"endLine\":12,\"intent\":\"SEARCH\",\"kind\":\"ADD\",\"source\":\"rule:data-access:search\",\"startByte\":485,\"startCol\":15,\"startLine\":12}],\"path\":\"file:///test/NeighboursCli.kt\",\"startByte\":485,\"startCol\":15,\"startLine\":12}] actual=<missing>",
+              "candidates.suggestionRevision expected=2 actual=<missing>",
+              "candidates.uri expected=\"file:///test/NeighboursCli.kt\" actual=<missing>",
+              "candidates.version expected=1 actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [],
+            "name": "candidates",
+            "ownerTicket": "091-v2-candidate-parity",
+            "passed": false,
+            "registeredOnIpcSurface": true,
+            "unmatchedCount": 38
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#configFlow",
+            "compared": true,
+            "differenceCount": 8,
+            "differences": [
+              "config.reads[0].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[0].overlay expected={} actual=<missing>",
+              "config.reads[1].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[1].overlay expected={\"validation\":{\"predicates\":[\"fixturePredicate\"]}} actual=<missing>",
+              "config.reads[2].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[2].overlay expected={\"logging\":{\"kotlin\":{\"methods\":[\"trace\"]}},\"validation\":{\"predicates\":[\"fixturePredicate\"]}} actual=<missing>",
+              "config.reads[3].error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/config/read\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/config/read\"}}}",
+              "config.reads[3].overlay expected={\"logging\":{\"kotlin\":{\"methods\":[\"trace\"]}}} actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "config.protocol"
+            ],
+            "name": "config",
+            "ownerTicket": "069-v2-packs-and-defaults",
+            "passed": true,
+            "registeredOnIpcSurface": false,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#documentLifecycle",
+            "compared": true,
+            "differenceCount": 0,
+            "differences": [],
+            "intentionalDifferenceIds": [],
+            "name": "documentLifecycle",
+            "ownerTicket": "090-v2-composition-parity",
+            "passed": true,
+            "registeredOnIpcSurface": true,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#suggest",
+            "compared": true,
+            "differenceCount": 22,
+            "differences": [
+              "suggest.disabled.accepted expected=false actual=<missing>",
+              "suggest.disabled.count expected=0 actual=<missing>",
+              "suggest.disabled.disabled expected=true actual=<missing>",
+              "suggest.disabled.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/suggest\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/suggest\"}}}",
+              "suggest.enabled.accepted expected=true actual=<missing>",
+              "suggest.enabled.cancelled expected=false actual=<missing>",
+              "suggest.enabled.count expected=19 actual=<missing>",
+              "suggest.enabled.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/suggest\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/suggest\"}}}",
+              "suggest.enabled.restrictions expected=0 actual=<missing>",
+              "suggest.log.additions expected=0 actual=<missing>",
+              "suggest.log.budgetExhausted expected=false actual=<missing>",
+              "suggest.log.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/suggest/log\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/suggest/log\"}}}",
+              "suggest.log.events expected=[] actual=<missing>",
+              "suggest.log.graded expected=0 actual=<missing>",
+              "suggest.log.incomplete expected=false actual=<missing>",
+              "suggest.log.overhead expected=0 actual=<missing>",
+              "suggest.log.reused expected=0 actual=<missing>",
+              "suggest.log.toolCalls expected=0 actual=<missing>",
+              "suggest.log.total expected=0 actual=<missing>",
+              "suggest.log.turns expected=0 actual=<missing>",
+              "suggest.log.uncovered expected=[] actual=<missing>",
+              "suggest.log.uri expected=\"file:///test/NeighboursCli.kt\" actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "suggest.protocol"
+            ],
+            "name": "suggest",
+            "ownerTicket": "079-v2-ipc-protocol",
+            "passed": true,
+            "registeredOnIpcSurface": false,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#restrictions",
+            "compared": true,
+            "differenceCount": 7,
+            "differences": [
+              "restrictions.afterRemoval.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/restrictions\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/restrictions\"}}}",
+              "restrictions.afterRemoval.restrictions expected=[] actual=<missing>",
+              "restrictions.listed.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/restrictions\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/restrictions\"}}}",
+              "restrictions.listed.restrictions expected=[{\"add\":[{\"confidence\":0.8,\"endOffset\":7,\"intent\":\"SEARCH\",\"rationale\":\"fixture restriction\",\"startOffset\":0}],\"contentHash\":\"fixture\",\"createdAt\":\"2026-10-24T00:00:00Z\",\"endCol\":7,\"endLine\":0,\"id\":\"fixture-restriction\",\"model\":\"fake-intent-v1\",\"path\":\"file:///test/Bookkeeping.kt\",\"promptVersion\":\"fake-prompt-v2\",\"provider\":\"fake\",\"remove\":[{\"confidence\":0.7,\"endOffset\":7,\"intent\":\"LOGGING\",\"rationale\":\"fixture restriction\",\"startOffset\":0}],\"startCol\":0,\"startLine\":0,\"status\":\"dormant\",\"symbol\":null,\"unitFingerprint\":null}] actual=<missing>",
+              "restrictions.removed.accepted expected=true actual=<missing>",
+              "restrictions.removed.error expected=<missing> actual={\"code\":-32000,\"message\":\"unsupported in the v2 server: cint/restrictions/remove\",\"data\":{\"kind\":\"unsupported-operation\",\"details\":{\"method\":\"cint/restrictions/remove\"}}}",
+              "restrictions.removed.removed expected=true actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "restrictions.protocol"
+            ],
+            "name": "restrictions",
+            "ownerTicket": "059-ai-restriction-proposals",
+            "passed": true,
+            "registeredOnIpcSurface": false,
+            "unmatchedCount": 0
+          },
+          {
+            "baseline": "frozen-v1-corpus/renderer-visible-v1.json#status",
+            "compared": true,
+            "differenceCount": 2,
+            "differences": [
+              "status.liveStatus expected=<missing> actual={\"status\":\"ok\",\"version\":\"0.1.0\",\"uptimeMs\":3,\"activeDocuments\":0,\"suggestionQueue\":0}",
+              "status.liveStatusError expected={\"code\":-32000,\"message\":\"unknown method: cint/status\"} actual=<missing>"
+            ],
+            "intentionalDifferenceIds": [
+              "status.protocol"
+            ],
+            "name": "status",
+            "ownerTicket": "081-v2-server",
+            "passed": true,
+            "registeredOnIpcSurface": false,
+            "unmatchedCount": 0
+          }
+        ],
+        "source": "V2 protocol 5 tags; V2 frozen-replay projections for candidates, config, lifecycle, suggest, restrictions, and status",
+        "unexercisedDifferenceIds": [],
+        "unmatchedCount": 38,
         "verified": true
       }
     ],
     "rendererDerivation": {
       "baseline": "frozen-v1-corpus/renderer-visible-v1.json",
-      "differenceCount": 0,
-      "passed": true,
+      "differenceCount": 77,
+      "passed": false,
+      "sectionsCompared": 7,
       "source": "V2",
+      "unmatchedCount": 38,
       "verified": true
     },
     "scenarios": [
@@ -1002,7 +1138,7 @@
           "response:9"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
           "config.protocol"
         ],
         "name": "protocol-config-flow",
@@ -1134,7 +1270,7 @@
           "response:3"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions"
+          "initialize.pack-fields"
         ],
         "name": "protocol-document-lifecycle",
         "steps": [
@@ -1232,7 +1368,9 @@
           "response:5"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
+          "protocol.version",
+          "initialize.suggestions",
           "restrictions.protocol",
           "config.protocol"
         ],
@@ -1325,7 +1463,7 @@
           "response:7"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
           "config.protocol"
         ],
         "name": "protocol-kotlin-analyze",
@@ -1464,7 +1602,8 @@
           "response:5"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
+          "initialize.suggestions",
           "restrictions.protocol"
         ],
         "name": "protocol-restrictions-flow",
@@ -1559,7 +1698,7 @@
           "response:3"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
           "status.protocol"
         ],
         "name": "protocol-status-flow",
@@ -1615,7 +1754,7 @@
           "response:3"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
           "suggest.protocol"
         ],
         "name": "protocol-suggest-disabled-flow",
@@ -1689,7 +1828,8 @@
           "response:5"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions",
+          "initialize.pack-fields",
+          "initialize.suggestions",
           "suggest.protocol"
         ],
         "name": "protocol-suggest-flow",
@@ -1787,7 +1927,7 @@
           "response:3"
         ],
         "intentionalDifferenceIds": [
-          "initialize.additions"
+          "initialize.pack-fields"
         ],
         "name": "protocol-typescript-analyze",
         "steps": [
@@ -1862,13 +2002,15 @@
     "candidatesMatched": 42,
     "cliFilesCompared": 16,
     "cliFilesMatched": 16,
-    "defects": 25,
-    "intentionalDifferences": 56,
-    "ipcDefects": 13,
+    "defects": 18,
+    "intentionalDifferences": 58,
+    "ipcDefects": 6,
     "ipcScenarios": 9,
     "rendererChecksPassed": true,
     "rendererDerivationVerified": true,
-    "rendererDifferenceCount": 0
+    "rendererDifferenceCount": 77,
+    "rendererSectionsCompared": 7,
+    "rendererUnmatchedCount": 38
   },
   "syntax": [
     {

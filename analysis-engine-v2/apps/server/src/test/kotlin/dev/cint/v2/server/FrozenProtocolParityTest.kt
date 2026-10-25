@@ -77,12 +77,12 @@ class FrozenProtocolParityTest {
             val source = scenarios().getValue(session.getValue("scenario").jsonPrimitive.content).source
             val root = Files.createTempDirectory("cint-v2-ipc-$name")
             try {
-                val sources = root.resolve("sources")
+                val sources = root.resolve("fixtures/sources/$source")
                 Files.createDirectories(sources)
                 for (file in Files.list(corpusRoot.resolve("fixtures/sources/$source")).use { it.toList() }) {
                     Files.copy(file, sources.resolve(file.fileName))
                 }
-                val server = start(root, sources)
+                val server = start(sources, sources)
                 val client = Client(server.socket)
                 val frozenSequence = steps.flatMap { step -> step.jsonObject.getValue("messages").jsonArray.map { methodOf(it.jsonObject) } }
                 val actualSequence = mutableListOf<String>()
@@ -100,7 +100,7 @@ class FrozenProtocolParityTest {
                     actualSequence += messages.map(::methodOf)
                     val frozenMessages = step.getValue("messages").jsonArray.map { it.jsonObject }
                     val frozenMethods = frozenMessages.map(::methodOf)
-                    comparePayloads(name, index, frozenMessages, messages, defects, exercisedRules)
+                    comparePayloads(name, index, root, frozenMessages, messages, defects, exercisedRules)
                     stepReports += buildJsonObject {
                         put("index", index)
                         put("method", method)
@@ -137,7 +137,12 @@ class FrozenProtocolParityTest {
             }
         }
 
-        rendererChecks += rendererCheck(defects)
+        rendererChecks += rendererCheck(defects, collected)
+        val unexercisedRenderer =
+            rendererChecks
+                .flatMap { it.getValue("unexercisedDifferenceIds").jsonArray }
+                .map { it.jsonPrimitive.content }
+        assertTrue(unexercisedRenderer.isEmpty(), "registered intentional renderer differences were not exercised: $unexercisedRenderer")
         val unexercised = DIFFERENCE_RULES.map(::ruleKey).filterNot(exercisedRules::contains)
         assertTrue(unexercised.isEmpty(), "registered intentional IPC differences were not exercised: $unexercised")
         assertTrue(scenarios.isNotEmpty())
@@ -210,6 +215,7 @@ class FrozenProtocolParityTest {
     private fun comparePayloads(
         scenario: String,
         step: Int,
+        root: Path,
         frozen: List<JsonObject>,
         actual: List<JsonObject>,
         defects: MutableList<JsonObject>,
@@ -230,8 +236,8 @@ class FrozenProtocolParityTest {
         }
         val size = maxOf(frozen.size, actual.size)
         for (index in 0 until size) {
-            val expected = frozen.getOrNull(index)
-            val observed = actual.getOrNull(index)
+            val expected = frozen.getOrNull(index)?.let { normalizeReplayPaths(it, root).jsonObject }
+            val observed = actual.getOrNull(index)?.let { normalizeReplayPaths(it, root).jsonObject }
             if (expected == null || observed == null) {
                 defects += defect(
                     "ipc.message-count",
@@ -270,11 +276,9 @@ class FrozenProtocolParityTest {
             if (remaining.isNotEmpty()) {
                 val ticket =
                     when {
-                        remaining.any { it.contains("knowledge:") } -> "094-v2-ipc-payload-parity"
-                        remaining.any { it.contains("scaffold") || it.contains("derivative-use") } -> "090-v2-composition-parity"
                         remaining.any { it.contains("candidates") || it.contains("groups") || it.contains("proposals") } -> "091-v2-candidate-parity"
-                        remaining.any { it.contains("annotations") || it.contains("intents") || it.contains("provenance") } -> "088-v2-detection-fact-parity"
-                        else -> "094-v2-ipc-payload-parity"
+                        remaining.any { it.contains("hash") || it.contains("revision") || it.contains("contentHash") } -> "094-v2-ipc-payload-parity"
+                        else -> "092-v2-service-init-parity"
                     }
                 defects += defect(
                     "ipc.payload",
@@ -322,7 +326,10 @@ class FrozenProtocolParityTest {
         }
     }
 
-    private fun rendererCheck(defects: MutableList<JsonObject>): JsonObject {
+    private fun rendererCheck(
+        defects: MutableList<JsonObject>,
+        collected: Map<String, List<JsonObject>>,
+    ): JsonObject {
         val root = Files.createTempDirectory("cint-v2-renderer")
         try {
             val sources = Files.createDirectories(root.resolve("sources"))
@@ -375,23 +382,13 @@ class FrozenProtocolParityTest {
                         }
                     },
                 )
-            val differences = mutableListOf<String>()
-            diffJson(baselineAnnotations, projected, "tags.annotations", differences)
-            if (baseline.getValue("initialize").jsonObject.getValue("languages") != initialize.getValue("languages")) {
-                differences += "initialize.languages expected=${baseline.getValue("initialize").jsonObject.getValue("languages")} actual=${initialize.getValue("languages")}"
-            }
-            if (differences.isNotEmpty()) {
-                defects += defect(
-                    "renderer.annotations",
-                    "090-v2-composition-parity",
-                    "V2-derived renderer projection differs from the frozen renderer baseline",
-                    mapOf("differences" to differences.take(40).joinToString(" | ")),
-                )
-            }
+            val initializedLanguagesMatch =
+                baseline.getValue("initialize").jsonObject.getValue("languages") == initialize.getValue("languages")
             val checks =
                 linkedMapOf(
                     "initialize.capabilities" to initialize.containsKey("capabilities"),
                     "initialize.fingerprint" to initialize.containsKey("fingerprint"),
+                    "initialize.languages" to initializedLanguagesMatch,
                     "publishTags.configRevision" to tagsParams.containsKey("configRevision"),
                     "publishTags.analysisVersion" to tagsParams.containsKey("analysisVersion"),
                     "publishTags.diagnostics" to tagsParams.containsKey("diagnostics"),
@@ -412,27 +409,124 @@ class FrozenProtocolParityTest {
                 )
             client.close()
             server.close()
+
+            val exercised = mutableSetOf<String>()
+            val sections =
+                listOf(
+                    rendererSection(
+                        "tags.annotations",
+                        baselineAnnotations,
+                        projected,
+                        emptyList(),
+                        "frozen-v1-corpus/renderer-visible-v1.json#tags.annotations",
+                        exercised,
+                        defects,
+                        "renderer.annotations",
+                        "090-v2-composition-parity",
+                        "V2-derived renderer tag projection differs from the frozen renderer baseline",
+                    ),
+                    rendererSection(
+                        "candidates",
+                        baseline.getValue("candidates"),
+                        projectCandidates(collected["protocol-suggest-flow"].orEmpty()),
+                        emptyList(),
+                        "frozen-v1-corpus/renderer-visible-v1.json#candidates",
+                        exercised,
+                        defects,
+                        "renderer.candidates",
+                        "091-v2-candidate-parity",
+                        "V2-derived renderer candidate projection differs from the frozen renderer baseline",
+                        registeredOnIpcSurface = true,
+                    ),
+                    rendererSection(
+                        "config",
+                        baseline.getValue("configFlow"),
+                        projectConfig(collected["protocol-config-flow"].orEmpty(), baseline.getValue("configFlow").jsonObject),
+                        RENDERER_DIFFERENCE_RULES.filter { it.section == "config" },
+                        "frozen-v1-corpus/renderer-visible-v1.json#configFlow",
+                        exercised,
+                        defects,
+                        "renderer.config",
+                        "069-v2-packs-and-defaults",
+                        "V2 config projection differs from the frozen renderer baseline",
+                    ),
+                    rendererSection(
+                        "documentLifecycle",
+                        baseline.getValue("documentLifecycle"),
+                        projectLifecycle(collected["protocol-document-lifecycle"].orEmpty()),
+                        emptyList(),
+                        "frozen-v1-corpus/renderer-visible-v1.json#documentLifecycle",
+                        exercised,
+                        defects,
+                        "renderer.lifecycle",
+                        "090-v2-composition-parity",
+                        "V2 lifecycle projection differs from the frozen renderer baseline",
+                        registeredOnIpcSurface = true,
+                    ),
+                    rendererSection(
+                        "suggest",
+                        baseline.getValue("suggest"),
+                        projectSuggest(
+                            collected["protocol-suggest-flow"].orEmpty(),
+                            collected["protocol-suggest-disabled-flow"].orEmpty(),
+                        ),
+                        RENDERER_DIFFERENCE_RULES.filter { it.section == "suggest" },
+                        "frozen-v1-corpus/renderer-visible-v1.json#suggest",
+                        exercised,
+                        defects,
+                        "renderer.suggest",
+                        "079-v2-ipc-protocol",
+                        "V2 suggest projection differs from the frozen renderer baseline",
+                    ),
+                    rendererSection(
+                        "restrictions",
+                        baseline.getValue("restrictions"),
+                        projectRestrictions(collected["protocol-restrictions-flow"].orEmpty()),
+                        RENDERER_DIFFERENCE_RULES.filter { it.section == "restrictions" },
+                        "frozen-v1-corpus/renderer-visible-v1.json#restrictions",
+                        exercised,
+                        defects,
+                        "renderer.restrictions",
+                        "059-ai-restriction-proposals",
+                        "V2 restrictions projection differs from the frozen renderer baseline",
+                    ),
+                    rendererSection(
+                        "status",
+                        buildJsonObject { put("liveStatusError", baseline.getValue("status").jsonObject.getValue("liveStatusError")) },
+                        buildJsonObject { put("liveStatus", payloadOf(responseById(collected["protocol-status-flow"].orEmpty(), "2"))) },
+                        RENDERER_DIFFERENCE_RULES.filter { it.section == "status" },
+                        "frozen-v1-corpus/renderer-visible-v1.json#status",
+                        exercised,
+                        defects,
+                        "renderer.status",
+                        "081-v2-server",
+                        "V2 status projection differs from the frozen renderer baseline",
+                    ),
+                )
+            val unexercised = RENDERER_DIFFERENCE_RULES.map(::rendererRuleKey).filterNot(exercised::contains)
             return buildJsonObject {
                 put("verified", true)
-                put("source", "V2 protocol 5 publishTags")
-                put("passed", differences.isEmpty())
-                put("differenceCount", differences.size)
+                put("source", "V2 protocol 5 tags; V2 frozen-replay projections for candidates, config, lifecycle, suggest, restrictions, and status")
+                put("passed", sections.all { it.getValue("unmatchedCount").jsonPrimitive.content.toInt() == 0 })
+                put("differenceCount", sections.sumOf { it.getValue("differenceCount").jsonPrimitive.content.toInt() })
+                put("unmatchedCount", sections.sumOf { it.getValue("unmatchedCount").jsonPrimitive.content.toInt() })
+                put("unexercisedDifferenceIds", JsonArray(unexercised.map(::JsonPrimitive)))
                 put(
                     "checks",
                     buildJsonObject { checks.toSortedMap().forEach { (key, value) -> put(key, value) } },
                 )
                 put("annotationCount", actualAnnotations.size)
+                put("sections", buildJsonArray { sections.forEach(::add) })
                 put(
                     "intentionalSections",
                     buildJsonArray {
-                        for ((section, id) in listOf(
-                            "suggest" to "server.unsupported-operations",
-                            "restrictions" to "server.unsupported-operations",
-                            "config" to "config.protocol",
-                            "status" to "status.protocol",
-                            "http" to "http.facade",
-                        )) {
-                            add(buildJsonObject { put("section", section); put("intentionalDifferenceId", id) })
+                        for (rule in RENDERER_DIFFERENCE_RULES.filter { rendererRuleKey(it) in exercised }) {
+                            add(
+                                buildJsonObject {
+                                    put("section", rule.section)
+                                    put("intentionalDifferenceId", rule.id)
+                                },
+                            )
                         }
                     },
                 )
@@ -441,6 +535,172 @@ class FrozenProtocolParityTest {
             root.toFile().deleteRecursively()
         }
     }
+
+    private fun rendererSection(
+        name: String,
+        baseline: JsonElement,
+        actual: JsonElement,
+        rules: List<RendererDifferenceRule>,
+        baselinePath: String,
+        exercised: MutableSet<String>,
+        defects: MutableList<JsonObject>,
+        defectId: String,
+        ticket: String,
+        reason: String,
+        registeredOnIpcSurface: Boolean = false,
+    ): JsonObject {
+        val differences = mutableListOf<String>()
+        diffJson(baseline, actual, name, differences)
+        val unmatched = mutableListOf<String>()
+        val intentional = linkedSetOf<String>()
+        for (path in differences) {
+            val rule = rules.firstOrNull { path.startsWith("$name.${it.pathPrefix}") }
+            if (rule == null) {
+                unmatched += path
+            } else {
+                exercised += rendererRuleKey(rule)
+                intentional += rule.id
+            }
+        }
+        if (unmatched.isNotEmpty() && !registeredOnIpcSurface) {
+            defects += defect(
+                defectId,
+                ticket,
+                reason,
+                mapOf(
+                    "section" to name,
+                    "differences" to unmatched.take(40).joinToString(" | "),
+                ),
+            )
+        }
+        return buildJsonObject {
+            put("name", name)
+            put("baseline", baselinePath)
+            put("compared", true)
+            put("passed", unmatched.isEmpty())
+            put("differenceCount", differences.size)
+            put("unmatchedCount", unmatched.size)
+            put("registeredOnIpcSurface", registeredOnIpcSurface)
+            put("ownerTicket", ticket)
+            put("intentionalDifferenceIds", JsonArray(intentional.map(::JsonPrimitive)))
+            put("differences", JsonArray(differences.take(40).map(::JsonPrimitive)))
+        }
+    }
+
+    private fun projectLifecycle(messages: List<JsonObject>): JsonElement =
+        buildJsonArray {
+            for (message in messages.filter { methodOf(it) in setOf("cint/publishTags", "cint/publishCandidates") }) {
+                val params = message.getValue("params").jsonObject
+                add(
+                    buildJsonObject {
+                        put("method", methodOf(message))
+                        params["uri"]?.let { put("uri", it) }
+                        params["version"]?.let { put("version", it) }
+                        put("analysisRevision", params["analysisRevision"] ?: JsonNull)
+                        put("revision", params["revision"] ?: JsonNull)
+                        put("suggestionRevision", params["suggestionRevision"] ?: JsonNull)
+                        put("annotations", (params["annotations"] as? JsonArray)?.size ?: 0)
+                        put("candidates", (params["candidates"] as? JsonArray)?.size ?: 0)
+                        put("groups", (params["groups"] as? JsonArray)?.size ?: 0)
+                    },
+                )
+            }
+        }
+
+    private fun projectCandidates(messages: List<JsonObject>): JsonElement {
+        val params =
+            messages
+                .firstOrNull { methodOf(it) == "cint/publishCandidates" && it.getValue("params").jsonObject.containsKey("candidates") }
+                ?.getValue("params")
+                ?.jsonObject
+                ?: return buildJsonObject {
+                    put("analysisRevision", JsonNull)
+                    put("candidateCount", 0)
+                    put("candidates", JsonArray(emptyList()))
+                }
+        val candidates = params["candidates"] as? JsonArray ?: JsonArray(emptyList())
+        return buildJsonObject {
+            put("analysisRevision", params["analysisRevision"] ?: JsonNull)
+            put("candidateCount", candidates.size)
+            put("candidates", candidates)
+        }
+    }
+
+    private fun projectConfig(
+        messages: List<JsonObject>,
+        baselineFlow: JsonObject,
+    ): JsonElement =
+        buildJsonObject {
+            put(
+                "reads",
+                buildJsonArray {
+                    for (read in baselineFlow.getValue("reads").jsonArray) {
+                        val expected = read.jsonObject
+                        val requestId = expected.getValue("requestId").jsonPrimitive.content
+                        val response = responseById(messages, requestId)
+                        add(
+                            buildJsonObject {
+                                put("requestId", requestId.toLongOrNull()?.let(::JsonPrimitive) ?: JsonPrimitive(requestId))
+                                when {
+                                    response == null -> put("missing", true)
+                                    response.containsKey("error") -> put("error", response.getValue("error"))
+                                    else -> {
+                                        val result = response["result"] ?: JsonNull
+                                        put("overlay", (result as? JsonObject)?.get("overlay") ?: JsonNull)
+                                    }
+                                }
+                            },
+                        )
+                    }
+                },
+            )
+        }
+
+    private fun projectSuggest(
+        enabledMessages: List<JsonObject>,
+        disabledMessages: List<JsonObject>,
+    ): JsonElement =
+        buildJsonObject {
+            put("disabled", payloadOf(responseById(disabledMessages, "2")))
+            put("enabled", payloadOf(responseById(enabledMessages, "2")))
+            put("log", payloadOf(responseById(enabledMessages, "4")))
+            put("progressNotifications", JsonArray(emptyList()))
+        }
+
+    private fun projectRestrictions(messages: List<JsonObject>): JsonElement =
+        buildJsonObject {
+            put("afterRemoval", payloadOf(responseById(messages, "4")))
+            put("listed", payloadOf(responseById(messages, "2")))
+            put("removed", payloadOf(responseById(messages, "3")))
+        }
+
+    private fun payloadOf(message: JsonObject?): JsonElement =
+        when {
+            message == null -> JsonNull
+            message.containsKey("error") -> buildJsonObject { put("error", message.getValue("error")) }
+            else -> message["result"] ?: JsonNull
+        }
+
+    private fun responseById(
+        messages: List<JsonObject>,
+        id: String,
+    ): JsonObject? = messages.firstOrNull { it["id"]?.jsonPrimitive?.content == id }
+
+    private fun normalizeReplayPaths(
+        element: JsonElement,
+        root: Path,
+    ): JsonElement =
+        when (element) {
+            is JsonObject -> JsonObject(element.mapValues { (_, value) -> normalizeReplayPaths(value, root) })
+            is JsonArray -> JsonArray(element.map { normalizeReplayPaths(it, root) })
+            is JsonPrimitive ->
+                if (element.isString) {
+                    JsonPrimitive(element.content.replace(root.toString(), "<CORPUS_ROOT>"))
+                } else {
+                    element
+                }
+            else -> element
+        }
 
     private fun normalizeReport(element: JsonElement): JsonElement =
         when (element) {
@@ -467,6 +727,9 @@ class FrozenProtocolParityTest {
 
     private fun ruleKey(rule: DifferenceRule): String =
         "${rule.scenario}:${rule.step}:${rule.id}:${rule.method}:${rule.pathPrefix}:${rule.expectedMethods}:${rule.actualMethods}"
+
+    private fun rendererRuleKey(rule: RendererDifferenceRule): String =
+        "${rule.section}:${rule.pathPrefix}:${rule.id}"
 
     private fun start(
         root: Path,
@@ -649,6 +912,14 @@ class FrozenProtocolParityTest {
         val pathPrefix: String? = null,
     )
 
+    private data class RendererDifferenceRule(
+        val section: String,
+        val pathPrefix: String,
+        val id: String,
+        val ticket: String,
+        val reason: String,
+    )
+
     private companion object {
         val DIFFERENCE_RULES: List<DifferenceRule> =
             buildList {
@@ -664,7 +935,11 @@ class FrozenProtocolParityTest {
                     "protocol-error-flow",
                 )
                 for (scenario in scenarios) {
-                    add(DifferenceRule(scenario, 0, "initialize.additions", method = "response:1", pathPrefix = ""))
+                    add(DifferenceRule(scenario, 0, "initialize.pack-fields", method = "response:1", pathPrefix = "result.config.packs"))
+                }
+                add(DifferenceRule("protocol-error-flow", 0, "protocol.version", method = "response:1", pathPrefix = "result.protocol"))
+                for (scenario in listOf("protocol-error-flow", "protocol-restrictions-flow", "protocol-suggest-flow")) {
+                    add(DifferenceRule(scenario, 0, "initialize.suggestions", method = "response:1", pathPrefix = "result.suggestions"))
                 }
                 for (step in 1..7) {
                     add(DifferenceRule("protocol-config-flow", step, "config.protocol", expectedMethods = listOf("response:${step + 1}"), actualMethods = listOf("error:-32000")))
@@ -680,9 +955,67 @@ class FrozenProtocolParityTest {
                 add(DifferenceRule("protocol-suggest-flow", 3, "suggest.protocol", expectedMethods = listOf("response:3"), actualMethods = listOf("error:-32000")))
                 add(DifferenceRule("protocol-suggest-flow", 4, "suggest.protocol", expectedMethods = listOf("response:4"), actualMethods = listOf("error:-32000")))
                 add(DifferenceRule("protocol-status-flow", 1, "status.protocol", expectedMethods = listOf("error:-32000"), actualMethods = listOf("response:2")))
-                add(DifferenceRule("protocol-error-flow", 1, "restrictions.protocol", method = "error:-32000", pathPrefix = ""))
-                add(DifferenceRule("protocol-error-flow", 2, "config.protocol", method = "error:-32000", pathPrefix = ""))
-                add(DifferenceRule("protocol-error-flow", 3, "config.protocol", method = "error:-32000", pathPrefix = ""))
+                add(DifferenceRule("protocol-error-flow", 1, "restrictions.protocol", method = "error:-32000", pathPrefix = "error.message"))
+                add(DifferenceRule("protocol-error-flow", 1, "restrictions.protocol", method = "error:-32000", pathPrefix = "error.data"))
+                add(DifferenceRule("protocol-error-flow", 2, "config.protocol", method = "error:-32000", pathPrefix = "error.message"))
+                add(DifferenceRule("protocol-error-flow", 2, "config.protocol", method = "error:-32000", pathPrefix = "error.data"))
+                add(DifferenceRule("protocol-error-flow", 3, "config.protocol", method = "error:-32000", pathPrefix = "error.message"))
+                add(DifferenceRule("protocol-error-flow", 3, "config.protocol", method = "error:-32000", pathPrefix = "error.data"))
+            }
+
+        val RENDERER_DIFFERENCE_RULES: List<RendererDifferenceRule> =
+            buildList {
+                for (index in 0..3) {
+                    add(
+                        RendererDifferenceRule(
+                            "config",
+                            "reads[$index]",
+                            "config.protocol",
+                            "069-v2-packs-and-defaults",
+                            "V2 config is JSON-first and the live server reports config operations as unsupported operations.",
+                        ),
+                    )
+                }
+                for (section in listOf("disabled", "enabled", "log")) {
+                    add(
+                        RendererDifferenceRule(
+                            "suggest",
+                            section,
+                            "suggest.protocol",
+                            "079-v2-ipc-protocol",
+                            "V2 suggest uses selection spans and streaming; the live server reports suggestion operations as unsupported.",
+                        ),
+                    )
+                }
+                for (section in listOf("afterRemoval", "listed", "removed")) {
+                    add(
+                        RendererDifferenceRule(
+                            "restrictions",
+                            section,
+                            "restrictions.protocol",
+                            "059-ai-restriction-proposals",
+                            "V2 restrictions use GET-style and upsert operations; the live server reports them as unsupported.",
+                        ),
+                    )
+                }
+                add(
+                    RendererDifferenceRule(
+                        "status",
+                        "liveStatusError",
+                        "status.protocol",
+                        "081-v2-server",
+                        "V2 replaces the V1 unknown-method status error with a live status surface.",
+                    ),
+                )
+                add(
+                    RendererDifferenceRule(
+                        "status",
+                        "liveStatus",
+                        "status.protocol",
+                        "081-v2-server",
+                        "V2 replaces the V1 unknown-method status error with a live status surface.",
+                    ),
+                )
             }
 
         val V2_COUNTS =
@@ -702,6 +1035,8 @@ class FrozenProtocolParityTest {
             listOf(
                 Triple("protocol.version", "086-external-protocol-versioning", "Protocol 5 is negotiated for V2 while legacy 4 replays keep V1 shapes."),
                 Triple("initialize.additions", "079-v2-ipc-protocol", "V2 initialize adds fingerprint, server, and capabilities."),
+                Triple("initialize.pack-fields", "069-v2-packs-and-defaults", "V2 exposes its own default pack catalog with manifest metadata and an empty config-field list."),
+                Triple("initialize.suggestions", "081-v2-server", "V2 suggestion capability defaults are owned by the V2 server ticket."),
                 Triple("config.protocol", "069-v2-packs-and-defaults", "V2 config is JSON-first and served by the runtime surface."),
                 Triple("suggest.protocol", "079-v2-ipc-protocol", "V2 suggestions use selection spans and streaming methods."),
                 Triple("restrictions.protocol", "059-ai-restriction-proposals", "V2 restrictions use GET-style and upsert methods."),

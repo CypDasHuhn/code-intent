@@ -18,6 +18,7 @@ internal class DocumentStore(
 ) {
     private val documents = linkedMapOf<String, OpenDocument>()
     private val revisions = mutableMapOf<String, AtomicLong>()
+    private val configRevisions = mutableMapOf<String, AtomicLong>()
     private val publishLocks = ConcurrentHashMap<String, ReentrantLock>()
     private var generations = 0L
 
@@ -47,6 +48,17 @@ internal class DocumentStore(
     @Synchronized
     fun nextRevision(uri: String): Long =
         revisions.computeIfAbsent(uri) { AtomicLong(0) }.incrementAndGet()
+
+    @Synchronized
+    fun bumpRevisions() {
+        documents.keys.forEach { uri ->
+            nextRevision(uri)
+            configRevisions.computeIfAbsent(uri) { AtomicLong(0) }.incrementAndGet()
+        }
+    }
+
+    @Synchronized
+    fun configRevision(uri: String): Long = configRevisions[uri]?.get() ?: 0
 
     @Synchronized
     fun current(uri: String): OpenDocument? = documents[uri]

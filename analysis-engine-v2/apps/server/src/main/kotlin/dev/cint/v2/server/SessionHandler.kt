@@ -202,8 +202,11 @@ internal class SessionHandler(
     override fun config(
         operation: ConfigOperation,
         params: ConfigParams,
-    ): IpcResult =
-        unsupported(
+    ): IpcResult {
+        if (legacy && operation in LEGACY_CONFIG_MUTATIONS) {
+            documents.bumpRevisions()
+        }
+        return unsupported(
             when (operation) {
                 ConfigOperation.READ -> IpcMethods.CONFIG_READ
                 ConfigOperation.APPEND -> IpcMethods.CONFIG_APPEND
@@ -212,6 +215,7 @@ internal class SessionHandler(
                 ConfigOperation.SCHEMA -> IpcMethods.CONFIG_SCHEMA
             },
         )
+    }
 
     override fun status(): IpcResult {
         val status = gate.call { runtime.status(CancellationToken.from { closed }) }
@@ -433,7 +437,13 @@ internal class SessionHandler(
                 )
             }
         return try {
-            ResultFactory.success(ContentHash.compute(Files.readAllBytes(path)).value)
+            val value =
+                if (legacy) {
+                    legacyContentHash(Files.readString(path))
+                } else {
+                    ContentHash.compute(Files.readAllBytes(path)).value
+                }
+            ResultFactory.success(value)
         } catch (_: Exception) {
             ResultFactory.failure(ContractError.NotFound("analysis-target", target))
         }
@@ -444,8 +454,8 @@ internal class SessionHandler(
         analysis: AnalysisResult,
         revision: Long,
     ): List<JsonRpcMessage> {
-        val hash = ContentHash.compute(document.text).value
-        return publishMessages(document.uri, document.version, hash, revision, analysis)
+        val hash = hashOf(document.text)
+        return publishMessages(document.uri, document.version, hash, revision, analysis, document.text)
     }
 
     private fun publishMessages(
@@ -454,14 +464,22 @@ internal class SessionHandler(
         hash: String,
         revision: Long,
         analysis: AnalysisResult,
+        text: String? = null,
     ): List<JsonRpcMessage> =
         if (legacy) {
-            legacyPublishMessages(uri, version, hash, revision, analysis)
+            legacyPublishMessages(uri, version, hash, revision, analysis, text, documents.configRevision(uri))
         } else {
             listOf(
                 IpcNotifications.publishTags(tagsParamsOf(uri, version, hash, revision, analysis)),
                 IpcNotifications.publishCandidates(candidatesParamsOf(uri, version, hash, revision, analysis)),
             )
+        }
+
+    private fun hashOf(text: String): String =
+        if (legacy) {
+            legacyContentHash(text)
+        } else {
+            ContentHash.compute(text).value
         }
 
     private fun analysisRequest(
@@ -627,6 +645,13 @@ internal class SessionHandler(
     }
 
     private companion object {
+        val LEGACY_CONFIG_MUTATIONS =
+            setOf(
+                ConfigOperation.APPEND,
+                ConfigOperation.REMOVE,
+                ConfigOperation.WRITE,
+            )
+
         val LEGACY_KNOWN_INTENTS =
             listOf(
                 "BOOKKEEPING",

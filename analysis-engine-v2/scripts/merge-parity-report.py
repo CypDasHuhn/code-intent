@@ -31,6 +31,8 @@ renderer_derivation = {
     "verified": bool(v2_renderer) and all(item.get("verified") is True for item in v2_renderer),
     "passed": bool(v2_renderer) and all(item.get("passed") is True for item in v2_renderer),
     "differenceCount": sum(int(item.get("differenceCount", 0)) for item in v2_renderer),
+    "unmatchedCount": sum(int(item.get("unmatchedCount", 0)) for item in v2_renderer),
+    "sectionsCompared": sum(len(item.get("sections", [])) for item in v2_renderer),
     "baseline": "frozen-v1-corpus/renderer-visible-v1.json",
 }
 
@@ -69,6 +71,8 @@ report = {
         "rendererChecksPassed": all(all(value is True for value in check.get("checks", {}).values()) for check in renderer),
         "rendererDerivationVerified": renderer_derivation.get("verified") is True,
         "rendererDifferenceCount": renderer_derivation.get("differenceCount", 0),
+        "rendererUnmatchedCount": renderer_derivation.get("unmatchedCount", 0),
+        "rendererSectionsCompared": renderer_derivation.get("sectionsCompared", 0),
         "intentionalDifferences": len(intentional),
         "defects": len(defects),
     },
