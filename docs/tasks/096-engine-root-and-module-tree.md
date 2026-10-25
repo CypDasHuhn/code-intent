@@ -1,6 +1,6 @@
 ---
 name: Engine at repository root and grouped module tree
-status: todo
+status: done
 depends-on: [085]
 reviewers: [architecture, correctness]
 ---
