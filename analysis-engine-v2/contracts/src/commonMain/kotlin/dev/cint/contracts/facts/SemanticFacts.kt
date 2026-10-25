@@ -33,6 +33,51 @@ data class WriteFact(
     val nodeId: String,
     val kind: WriteKind,
     val referenceId: String? = null,
+    val valueId: String? = null,
+    val targetName: String? = null,
+)
+
+@Serializable
+enum class ValueKind {
+    LITERAL,
+    IDENTIFIER,
+    CALL,
+    OTHER,
+}
+
+@Serializable
+data class ValueFact(
+    val nodeId: String,
+    val kind: ValueKind = ValueKind.OTHER,
+    val constant: Boolean = false,
+    val sideEffectFree: Boolean = false,
+    val rejection: Boolean = false,
+    val booleanValue: Boolean? = null,
+) {
+    init {
+        require(booleanValue == null || kind == ValueKind.LITERAL) {
+            "booleanValue requires ValueKind.LITERAL"
+        }
+        require(!rejection || kind == ValueKind.LITERAL) {
+            "rejection requires ValueKind.LITERAL"
+        }
+    }
+}
+
+@Serializable
+enum class StatementKind {
+    STATEMENT,
+    RETURN,
+    CONTINUE,
+    BREAK,
+}
+
+@Serializable
+data class StatementFact(
+    val nodeId: String,
+    val containerId: String,
+    val expressionId: String? = null,
+    val kind: StatementKind = StatementKind.STATEMENT,
 )
 
 @Serializable

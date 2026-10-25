@@ -19,13 +19,16 @@ data class FactBatch(
     val tries: List<TryFact> = emptyList(),
     val imports: List<ImportFact> = emptyList(),
     val references: List<ReferenceFact> = emptyList(),
+    val statements: List<StatementFact> = emptyList(),
+    val values: List<ValueFact> = emptyList(),
 ) {
     fun isEmpty(): Boolean =
         syntaxTree == null &&
         calls.isEmpty() && writes.isEmpty() && declarations.isEmpty() &&
         comments.isEmpty() && scopes.isEmpty() && guards.isEmpty() &&
         returns.isEmpty() && properties.isEmpty() && functions.isEmpty() &&
-        ifs.isEmpty() && tries.isEmpty() && imports.isEmpty() && references.isEmpty()
+        ifs.isEmpty() && tries.isEmpty() && imports.isEmpty() && references.isEmpty() &&
+        statements.isEmpty() && values.isEmpty()
 }
 
 @Serializable
