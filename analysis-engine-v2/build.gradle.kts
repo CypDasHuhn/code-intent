@@ -19,6 +19,7 @@ buildscript {
 
 plugins {
     kotlin("jvm") version "2.4.10" apply false
+    kotlin("plugin.serialization") version "2.4.10" apply false
     base
 }
 
@@ -32,7 +33,10 @@ allprojects {
 }
 
 subprojects {
-    apply(plugin = "org.jetbrains.kotlin.jvm")
+    // contracts uses kotlin("multiplatform") instead
+    if (project.name != "contracts") {
+        apply(plugin = "org.jetbrains.kotlin.jvm")
+    }
 
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
@@ -40,9 +44,11 @@ subprojects {
         }
     }
 
-    extensions.configure<JavaPluginExtension> {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+    if (project.name != "contracts") {
+        extensions.configure<JavaPluginExtension> {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
     }
 
     tasks.withType<Test>().configureEach {

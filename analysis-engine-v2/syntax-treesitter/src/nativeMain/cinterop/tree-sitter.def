@@ -1,0 +1,7 @@
+headers = tree-sitter.h
+headerFilter = tree-sitter.h
+package = dev.cint.v2.syntax.treesitter.cinterop
+compilerOpts.linux = -I/usr/include
+compilerOpts.macos = -I/opt/homebrew/include -I/usr/local/include
+linkerOpts.linux = -ltree-sitter
+linkerOpts.macos = -ltree-sitter

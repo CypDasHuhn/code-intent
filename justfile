@@ -75,3 +75,37 @@ tags root *args: install
 # Remove Gradle build outputs.
 clean:
     cd {{engine}} && ./gradlew clean
+
+# V2 recipes (analysis-engine-v2)
+engine-v2 := "analysis-engine-v2"
+
+# Build V2 skeleton without running tests.
+v2-build:
+    cd {{engine-v2}} && ./gradlew --no-daemon assemble
+
+# Run V2 tests including graph guard.
+v2-test:
+    cd {{engine-v2}} && ./gradlew --no-daemon check
+
+# Run V2 graph guard only.
+v2-graph-guard:
+    cd {{engine-v2}} && ./gradlew --no-daemon graphGuard
+
+# Build V2 CLI distribution.
+v2-cli:
+    cd {{engine-v2}} && ./gradlew --no-daemon :cli:installDist
+
+# Build V2 server distribution.
+v2-server:
+    cd {{engine-v2}} && ./gradlew --no-daemon :server:installDist
+
+# Build V2 MCP distribution.
+v2-mcp:
+    cd {{engine-v2}} && ./gradlew --no-daemon :mcp:installDist
+
+# Build all V2 app distributions.
+v2-install: v2-cli v2-server v2-mcp
+
+# Clean V2 build outputs.
+v2-clean:
+    cd {{engine-v2}} && ./gradlew --no-daemon clean
