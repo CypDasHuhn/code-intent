@@ -1,5 +1,6 @@
 package dev.cint.knowledge
 
+import dev.cint.contracts.data.Status
 import dev.cint.contracts.knowledge.KnowledgeChange
 import dev.cint.contracts.ports.KnowledgeStore
 import dev.cint.contracts.util.ContractError
@@ -26,11 +27,23 @@ internal fun applyKnowledgeChange(
         is KnowledgeChange.RemoveSpanOverride ->
             store.removeSpanOverride(change.selector)
         is KnowledgeChange.SetPatternHypothesis ->
-            store.setPatternHypothesis(change.hypothesis).discardValue()
+            if (change.hypothesis.status != Status.SUGGESTED) {
+                ResultFactory.failure(
+                    ContractError.PreconditionFailed(
+                        "Pattern hypotheses must be validated through patterns.validate",
+                    ),
+                )
+            } else {
+                store.setPatternHypothesis(change.hypothesis).discardValue()
+            }
         is KnowledgeChange.RemovePatternHypothesis ->
             store.removePatternHypothesis(change.selector)
         is KnowledgeChange.MaterializeDefaults ->
-            store.materializeDefaults(change.defaults)
+            ResultFactory.failure(
+                ContractError.PreconditionFailed(
+                    "Pack defaults must be materialized through runtime/knowledge materialization",
+                ),
+            )
         is KnowledgeChange.Batch -> {
             for (nested in change.changes) {
                 val result = applyKnowledgeChange(store, nested, depth + 1)

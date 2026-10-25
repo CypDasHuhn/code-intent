@@ -88,6 +88,31 @@ class DefaultRuntime private constructor(
         return ResultFactory.success(packs)
     }
 
+    override fun suggestDefaults(
+        languages: Set<String>?,
+        cancellation: CancellationToken,
+    ): ContractResult<List<PackDefault>> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        val requested =
+            if (languages != null) {
+                ResultFactory.success(languages.filter { it.isNotBlank() }.map { it.trim() }.toSet())
+            } else {
+                initializationLanguages(config, language.catalog)
+            }
+        if (requested.isFailure) return ResultFactory.failure(requested.errorOrNull!!)
+        return collectDefaultsFor(requested.getOrThrow(), packSource, cancellation)
+    }
+
+    override fun indexContentHash(
+        path: String,
+        cancellation: CancellationToken,
+    ): ContractResult<String?> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        return index.contentHash(path, cancellation)
+    }
+
     private fun analyzeInputs(
         inputs: List<SourceInput>,
         request: AnalysisRequest,
@@ -192,13 +217,21 @@ class DefaultRuntime private constructor(
         val knowledge = snapshot.getOrThrow()
         return ResultFactory.success(
             RuntimeStatus(
-                isInitialized = !closed,
+                isInitialized =
+                    !closed &&
+                        (knowledge.materialized ||
+                            knowledge.functionAnnotations.isNotEmpty() ||
+                            knowledge.spanOverrides.isNotEmpty() ||
+                            knowledge.patternHypotheses.isNotEmpty()),
                 indexedFiles = indexedPaths.size,
                 knowledgeEntries =
                     knowledge.functionAnnotations.size +
                         knowledge.spanOverrides.size +
                         knowledge.patternHypotheses.size,
                 lastAnalysis = lastAnalysis,
+                indexedPaths = indexedPaths.toList(),
+                knowledgeMaterialized = knowledge.materialized,
+                isRuntimeOpen = !closed,
             ),
         )
     }
@@ -442,7 +475,14 @@ private fun collectDefaults(
 ): ContractResult<List<PackDefault>> {
     val languages = initializationLanguages(config, catalog)
     if (languages.isFailure) return ResultFactory.failure(languages.errorOrNull!!)
-    val requested = languages.getOrThrow()
+    return collectDefaultsFor(languages.getOrThrow(), packSource, cancellation)
+}
+
+private fun collectDefaultsFor(
+    requested: Set<String>,
+    packSource: RulePackSource,
+    cancellation: CancellationToken,
+): ContractResult<List<PackDefault>> {
     if (requested.isEmpty()) return ResultFactory.success(emptyList())
 
     val manifests = packSource.manifests(cancellation)

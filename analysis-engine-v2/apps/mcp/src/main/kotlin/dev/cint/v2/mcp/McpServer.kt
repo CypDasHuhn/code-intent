@@ -4,6 +4,8 @@ import dev.cint.contracts.mcp.McpResourceContent
 import dev.cint.contracts.mcp.McpResourceReadRequest
 import dev.cint.contracts.mcp.McpResourceReadResult
 import dev.cint.contracts.mcp.McpToolCall
+import dev.cint.contracts.ports.InitCheckpointStore
+import dev.cint.runtime.InitCheckpointStores
 import dev.cint.contracts.ports.Runtime
 import dev.cint.contracts.util.CancellationToken
 import java.io.InputStream
@@ -29,10 +31,12 @@ class McpServer(
     input: InputStream = System.`in`,
     output: OutputStream = System.out,
     now: () -> Instant = { Clock.System.now() },
+    checkpointStore: InitCheckpointStore = InitCheckpointStores.inMemory(),
+    workflowId: String = "default",
 ) {
     private val reader = input.bufferedReader(Charsets.UTF_8)
     private val writer = output.bufferedWriter(Charsets.UTF_8)
-    private val tools = McpRuntimeTools(runtime, now)
+    private val tools = McpRuntimeTools(runtime, now, checkpointStore, workflowId)
     private val executor =
         Executors.newSingleThreadExecutor { task ->
             Thread(task, "cint-mcp-tool").apply { isDaemon = true }

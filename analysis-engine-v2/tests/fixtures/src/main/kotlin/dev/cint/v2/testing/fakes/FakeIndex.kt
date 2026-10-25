@@ -152,6 +152,16 @@ class FakeIndex(
         return ResultFactory.success(dependents[path].orEmpty().sorted())
     }
 
+    override fun contentHash(
+        path: String,
+        cancellation: CancellationToken,
+    ): ContractResult<String?> {
+        val checked = cancellation.throwIfCancelled()
+        if (checked.isFailure) return ResultFactory.failure(checked.errorOrNull!!)
+        val text = contents[path] ?: return ResultFactory.success(null)
+        return ResultFactory.success(ContentHash.compute(text).value)
+    }
+
     fun indexedCount(): Int = latestByDocument.size
 
     fun setContent(path: String, text: String) {

@@ -4,6 +4,7 @@ import dev.cint.contracts.facts.IndexedSource
 import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractResult
+import dev.cint.contracts.util.ResultFactory
 
 interface Index {
     fun ensure(
@@ -31,6 +32,11 @@ interface Index {
         path: String,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<List<String>>
+
+    fun contentHash(
+        path: String,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<String?> = ResultFactory.success(null)
 }
 
 data class IndexInput(

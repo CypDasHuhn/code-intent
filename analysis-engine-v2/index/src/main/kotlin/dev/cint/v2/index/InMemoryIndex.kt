@@ -395,6 +395,18 @@ class InMemoryIndex(
         return success(dependents.sorted())
     }
 
+    override fun contentHash(
+        path: String,
+        cancellation: CancellationToken,
+    ): ContractResult<String?> {
+        cancelled(cancellation, "Index.contentHash")?.let { return failure(it) }
+        val bytes = when (val result = readBytes(path)) {
+            is Success -> result.contents
+            is Failure -> return failure(result.error)
+        }
+        return success(ContentHash.compute(bytes).value)
+    }
+
     override fun fullRescan(
         inputs: List<IndexInput>,
         cancellation: CancellationToken,

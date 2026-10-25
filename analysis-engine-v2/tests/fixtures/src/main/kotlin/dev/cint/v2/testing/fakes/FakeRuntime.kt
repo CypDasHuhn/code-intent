@@ -93,6 +93,11 @@ class FakeRuntime(
         return ResultFactory.success(merged)
     }
 
+    override fun indexContentHash(
+        path: String,
+        cancellation: CancellationToken,
+    ): ContractResult<String?> = index.contentHash(path, cancellation)
+
     override fun knowledge(): KnowledgeStore = knowledgeStore
 
     override fun materializeDefaults(
@@ -130,10 +135,15 @@ class FakeRuntime(
             ?: 0
         return ResultFactory.success(
             RuntimeStatus(
-                isInitialized = !closed,
+                isInitialized =
+                    !closed &&
+                        (knowledgeEntries > 0 ||
+                            knowledgeStore.snapshot(cancellation)
+                                .let { it.isSuccess && it.getOrThrow().materialized }),
                 indexedFiles = analyzedPaths.size,
                 knowledgeEntries = knowledgeEntries,
                 lastAnalysis = lastAnalysis,
+                isRuntimeOpen = !closed,
             ),
         )
     }

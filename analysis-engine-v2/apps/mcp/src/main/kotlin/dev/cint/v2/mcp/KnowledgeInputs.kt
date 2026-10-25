@@ -177,6 +177,35 @@ internal object KnowledgeInputs {
         }
     }
 
+    fun patternTarget(
+        element: JsonObject,
+        hypothesis: PatternHypothesis,
+        now: Instant,
+    ): FunctionAnnotation {
+        val selector = parseFunctionSelector(element["selector"] ?: element)
+        val intents =
+            if (element["intents"] == null) {
+                hypothesis.proposedIntents
+            } else {
+                parseIntents(element["intents"], "intents", hypothesis.proposedIntents)
+            }
+        return construct {
+            FunctionAnnotation(
+                selector = selector,
+                intents = intents,
+                scope = parseEnum(element["scope"], hypothesis.scope, "scope"),
+                provenance = parseEnum(element["provenance"], hypothesis.provenance, "provenance"),
+                confidence = parseConfidence(element["confidence"], hypothesis.confidence),
+                status = parseEnum(element["status"], Status.SUGGESTED, "status"),
+                createdAt = now,
+                updatedAt = now,
+                path = element.string("path"),
+                patternId = hypothesis.selector.identityKey,
+                evidence = hypothesis.evidence,
+            )
+        }
+    }
+
     private fun parseFunctionSelector(element: JsonElement): FunctionSelector =
         functionSelector(element)
 

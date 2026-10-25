@@ -21,6 +21,39 @@ internal object McpCatalog {
     fun tools(): List<McpToolDefinition> = buildList {
         add(
             tool(
+                name = "init.begin",
+                description = "Start or resume a persistent repository init checkpoint.",
+                schema = objectSchema(
+                    properties = mapOf(
+                        "workflowId" to stringProperty("Optional workflow identity. Defaults to the repo."),
+                    ),
+                ),
+            ),
+        )
+        add(
+            tool(
+                name = "init.status",
+                description = "Report completed init steps, analyzed paths, and pending proposals.",
+                schema = objectSchema(
+                    properties = mapOf(
+                        "workflowId" to stringProperty("Optional workflow identity. Defaults to the repo."),
+                    ),
+                ),
+            ),
+        )
+        add(
+            tool(
+                name = "init.complete",
+                description = "Mark the persistent init checkpoint complete.",
+                schema = objectSchema(
+                    properties = mapOf(
+                        "workflowId" to stringProperty("Optional workflow identity. Defaults to the repo."),
+                    ),
+                ),
+            ),
+        )
+        add(
+            tool(
                 name = "analysis.run",
                 description = "Run deterministic V2 analysis over repository target paths.",
                 schema = objectSchema(
@@ -39,6 +72,30 @@ internal object McpCatalog {
                 name = "knowledge.snapshot",
                 description = "Read the complete materialized knowledge snapshot.",
                 schema = objectSchema(),
+            ),
+        )
+        add(
+            tool(
+                name = "knowledge.suggestDefaults",
+                description = "Read pack defaults for the repository without writing knowledge.",
+                schema = objectSchema(
+                    properties = mapOf(
+                        "languages" to stringArrayProperty("Optional language identifiers to inspect."),
+                        "workflowId" to stringProperty("Optional workflow identity. Defaults to the repo."),
+                    ),
+                ),
+            ),
+        )
+        add(
+            tool(
+                name = "knowledge.materializeDefaults",
+                description = "Materialize pack defaults only when no project knowledge exists.",
+                schema = objectSchema(
+                    properties = mapOf(
+                        "languages" to stringArrayProperty("Optional languages used to suggest defaults."),
+                        "workflowId" to stringProperty("Optional workflow identity. Defaults to the repo."),
+                    ),
+                ),
             ),
         )
         add(
@@ -134,6 +191,22 @@ internal object McpCatalog {
                     properties = mapOf(
                         "id" to stringProperty("Pattern identity key, pattern, or path."),
                         "accept" to booleanProperty("True to accept, false to reject."),
+                    ),
+                ),
+            ),
+        )
+        add(
+            tool(
+                name = "patterns.materialize",
+                description = "Convert an accepted pattern hypothesis into function annotations.",
+                schema = objectSchema(
+                    required = listOf("id", "targets"),
+                    properties = mapOf(
+                        "id" to stringProperty("Pattern identity key, pattern, or path."),
+                        "targets" to objectArrayProperty(
+                            "Function selectors to annotate, optionally overriding intents or metadata.",
+                        ),
+                        "workflowId" to stringProperty("Optional workflow identity. Defaults to the repo."),
                     ),
                 ),
             ),

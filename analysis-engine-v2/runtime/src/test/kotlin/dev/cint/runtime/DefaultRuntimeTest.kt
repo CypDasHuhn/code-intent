@@ -63,6 +63,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotSame
 import kotlin.test.assertNotNull
@@ -225,7 +226,8 @@ class DefaultRuntimeTest {
             ).getOrThrow()
 
         val status = runtime.status().getOrThrow()
-        assertTrue(status.isInitialized)
+        assertFalse(status.isInitialized)
+        assertTrue(status.isRuntimeOpen)
         runtime.shutdown().getOrThrow()
     }
 
@@ -268,6 +270,32 @@ class DefaultRuntimeTest {
     }
 
     @Test
+    fun suggestDefaultsReadsPacksWithoutWritingKnowledge() {
+        val root = temporaryRoot()
+        val packSource = FakeRulePackSource(
+            packManifests = listOf(PackManifest("demo", "Demo", "1", listOf("fake"))),
+            defaultsByLanguage = mapOf("fake" to listOf(default("packed", Intents.LOGGING))),
+        )
+        val runtime =
+            createRuntime(
+                RuntimeConfig(
+                    rootPath = root.toString(),
+                    initializeLanguages = setOf("fake"),
+                    detectLanguages = false,
+                    materializeDefaultsOnOpen = false,
+                ),
+                packSource,
+            ).getOrThrow()
+
+        val defaults = runtime.suggestDefaults(setOf("fake")).getOrThrow()
+
+        assertEquals(listOf("packed"), defaults.map { it.selector.qualifiedName })
+        assertTrue(runtime.knowledge().functionAnnotations().getOrThrow().isEmpty())
+        assertTrue(!Files.exists(root.resolve(".cint/knowledge.json")))
+        runtime.shutdown().getOrThrow()
+    }
+
+    @Test
     fun initializationMaterializesOnlyWhenNoStoreExists() {
         val root = temporaryRoot()
         val packSource = FakeRulePackSource(
@@ -283,6 +311,7 @@ class DefaultRuntimeTest {
         val first = createRuntime(config, packSource).getOrThrow()
         val knowledgeFile = root.resolve(".cint/knowledge.json")
         assertTrue(Files.isRegularFile(knowledgeFile))
+        assertTrue(first.status().getOrThrow().isInitialized)
         assertEquals(
             listOf("packed"),
             first.knowledge().functionAnnotations().getOrThrow().map { it.selector.qualifiedName },

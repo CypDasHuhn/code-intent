@@ -18,6 +18,8 @@ data class FunctionAnnotation(
     val createdAt: Instant,
     val updatedAt: Instant,
     val path: String? = null,
+    val patternId: String? = null,
+    val evidence: List<String> = emptyList(),
 ) {
     val identityKey: String
         get() =
@@ -47,6 +49,8 @@ data class FunctionAnnotation(
             createdAt: Instant,
             updatedAt: Instant = createdAt,
             path: String? = null,
+            patternId: String? = null,
+            evidence: List<String> = emptyList(),
         ): FunctionAnnotation = FunctionAnnotation(
             selector = selector,
             intents = intents.toSet(),
@@ -57,6 +61,8 @@ data class FunctionAnnotation(
             createdAt = createdAt,
             updatedAt = updatedAt,
             path = path,
+            patternId = patternId,
+            evidence = evidence.toList(),
         )
     }
 }

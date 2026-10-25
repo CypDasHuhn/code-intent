@@ -7,10 +7,8 @@ import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import dev.cint.knowledge.KnowledgeStoreJson
 import java.nio.charset.StandardCharsets
-import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 
 object KnowledgeStoreFiles {
     fun load(
@@ -56,18 +54,8 @@ object KnowledgeStoreFiles {
             )
         }
         val text = encoded.getOrThrow()
-        val target = path.toAbsolutePath()
-        val parent = target.parent ?: Path.of(".").toAbsolutePath()
         return try {
-            Files.createDirectories(parent)
-            val temporary = Files.createTempFile(parent, ".knowledge-", ".tmp")
-            try {
-                Files.writeString(temporary, text, StandardCharsets.UTF_8)
-                moveIntoPlace(temporary, target)
-            } catch (error: Exception) {
-                Files.deleteIfExists(temporary)
-                throw error
-            }
+            AtomicFileWrites.writeText(path, text, ".knowledge-")
             ResultFactory.success(Unit)
         } catch (error: Exception) {
             ResultFactory.failure(
@@ -77,19 +65,6 @@ object KnowledgeStoreFiles {
     }
 
     fun exists(path: Path): Boolean = Files.isRegularFile(path)
-
-    private fun moveIntoPlace(temporary: Path, target: Path) {
-        try {
-            Files.move(
-                temporary,
-                target,
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE,
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING)
-        }
-    }
 
     private fun cancellationError(cancellation: CancellationToken): ContractError? =
         cancellation.throwIfCancelled().errorOrNull

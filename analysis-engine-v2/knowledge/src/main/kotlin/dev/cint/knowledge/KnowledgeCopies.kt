@@ -7,7 +7,7 @@ import dev.cint.contracts.util.ContractError
 import kotlinx.datetime.Instant
 
 internal fun FunctionAnnotation.defensiveCopy(): FunctionAnnotation =
-    copy(intents = intents.toSet())
+    copy(intents = intents.toSet(), evidence = evidence.toList())
 
 internal fun SpanOverride.defensiveCopy(): SpanOverride =
     copy(intents = intents.toSet())

@@ -1,5 +1,6 @@
 package dev.cint.v2.mcp
 
+import dev.cint.runtime.InitCheckpointStores
 import dev.cint.runtime.RuntimeConfig
 import dev.cint.runtime.RuntimeFactory
 import kotlin.system.exitProcess
@@ -25,12 +26,17 @@ object Main {
             return
         }
 
+        if (options.root == null) {
+            System.err.println(
+                "cint-mcp: no --root; init checkpoints are in-memory and will not survive restarts",
+            )
+        }
         val runtime =
             RuntimeFactory.create(
                 RuntimeConfig(
                     rootPath = options.root,
                     knowledgePath = options.knowledge,
-                    detectLanguages = false,
+                    detectLanguages = true,
                     materializeDefaultsOnOpen = false,
                 ),
             )
@@ -38,13 +44,27 @@ object Main {
             System.err.println("cint-mcp: unable to start runtime: ${runtime.errorOrNull}")
             exitProcess(2)
         }
-        McpServer(runtime.getOrThrow()).run()
+        val checkpoints =
+            InitCheckpointStores.open(
+                rootPath = options.root,
+                checkpointPath = options.checkpoint,
+            )
+        if (checkpoints.isFailure) {
+            System.err.println("cint-mcp: unable to open init checkpoints: ${checkpoints.errorOrNull}")
+            exitProcess(2)
+        }
+        McpServer(
+            runtime = runtime.getOrThrow(),
+            checkpointStore = checkpoints.getOrThrow(),
+            workflowId = DEFAULT_WORKFLOW_ID,
+        ).run()
     }
 }
 
 private data class Options(
     val root: String? = null,
     val knowledge: String? = null,
+    val checkpoint: String? = null,
     val help: Boolean = false,
     val version: Boolean = false,
 )
@@ -52,6 +72,7 @@ private data class Options(
 private fun parseOptions(args: Array<String>): Options {
     var root: String? = null
     var knowledge: String? = null
+    var checkpoint: String? = null
     var help = false
     var version = false
     var index = 0
@@ -69,6 +90,11 @@ private fun parseOptions(args: Array<String>): Options {
                     args.getOrNull(++index) ?: throw IllegalArgumentException("--knowledge requires a path")
             }
             argument.startsWith("--knowledge=") -> knowledge = argument.substringAfter("=")
+            argument == "--checkpoint" -> {
+                checkpoint =
+                    args.getOrNull(++index) ?: throw IllegalArgumentException("--checkpoint requires a path")
+            }
+            argument.startsWith("--checkpoint=") -> checkpoint = argument.substringAfter("=")
             argument.startsWith("-") ->
                 throw IllegalArgumentException("unknown argument '$argument'")
             root == null -> root = argument
@@ -82,13 +108,26 @@ private fun parseOptions(args: Array<String>): Options {
     if (knowledge != null && knowledge.isBlank()) {
         throw IllegalArgumentException("--knowledge must not be blank")
     }
-    return Options(root = root, knowledge = knowledge, help = help, version = version)
+    if (checkpoint != null && checkpoint.isBlank()) {
+        throw IllegalArgumentException("--checkpoint must not be blank")
+    }
+    return Options(
+        root = root,
+        knowledge = knowledge,
+        checkpoint = checkpoint,
+        help = help,
+        version = version,
+    )
 }
 
+private const val DEFAULT_WORKFLOW_ID = "repository"
+
 private const val USAGE =
-    "Usage: cint-mcp [--root PATH] [--knowledge PATH]\n" +
-        "  --root PATH       Repository root used for knowledge and analysis\n" +
-        "  --knowledge PATH  Explicit knowledge store path\n" +
-        "  --version         Print the server version\n" +
-        "  --help            Print this help\n" +
+    "Usage: cint-mcp [--root PATH] [--knowledge PATH] [--checkpoint PATH]\n" +
+        "  --root PATH        Repository root used for knowledge and analysis\n" +
+        "  --knowledge PATH   Explicit knowledge store path\n" +
+        "  --checkpoint PATH  Explicit init checkpoint path\n" +
+        "                     Without --root or --checkpoint, init state is in-memory only\n" +
+        "  --version          Print the server version\n" +
+        "  --help             Print this help\n" +
         "Speaks MCP JSON-RPC over stdin/stdout."

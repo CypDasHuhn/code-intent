@@ -93,8 +93,9 @@ analysis-engine/
 former `kernel`. Names are still provisional, but the roles are not.
 
 `knowledge` is the materialized semantic store: function annotations, span
-overrides, pattern hypotheses, and provenance. `knowledge-persistence` is the
-filesystem adapter for the knowledge JSON document; it owns `Path` and file IO.
+overrides, pattern hypotheses, and provenance. `knowledge-persistence` owns the
+filesystem adapters for the knowledge JSON document and the init checkpoint
+document, including `Path`, file IO, atomic writes, and checkpoint locking.
 `mcp` is the external-agent boundary; it is an app, not a library.
 
 Possible later splits: `ai` may become a sidecar or move to the host, and
@@ -227,8 +228,11 @@ analysis, rule evaluation, parsing, filesystem access, or provider access. Users
 MCP agents, and fallback AI all write through its mutation API; AI gets no
 separate store.
 
-`knowledge-persistence` owns the JSON file adapter around the knowledge snapshot
-codec. It does not own store semantics.
+`knowledge-persistence` owns the JSON file adapters around the knowledge
+snapshot codec and the init checkpoint store. It owns file paths, atomic writes,
+and checkpoint locking, but not store semantics or init workflow policy. Apps
+reach the checkpoint adapter through the runtime facade rather than importing
+the adapter module directly.
 
 ### `languages`
 

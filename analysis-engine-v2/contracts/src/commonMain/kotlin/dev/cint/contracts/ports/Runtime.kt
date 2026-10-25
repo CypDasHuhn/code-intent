@@ -5,6 +5,7 @@ import dev.cint.contracts.facts.IndexedSource
 import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.contracts.knowledge.KnowledgeChange
+import dev.cint.contracts.knowledge.PackDefault
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
@@ -41,6 +42,16 @@ interface Runtime {
     fun packs(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<List<RuntimePack>> =
         ResultFactory.success(emptyList())
 
+    fun suggestDefaults(
+        languages: Set<String>? = null,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<List<PackDefault>> = ResultFactory.success(emptyList())
+
+    fun indexContentHash(
+        path: String,
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<String?> = ResultFactory.success(null)
+
     fun knowledge(): KnowledgeStore
 
     fun materializeDefaults(
@@ -73,4 +84,7 @@ data class RuntimeStatus(
     val knowledgeEntries: Int,
     val lastAnalysis: Long? = null,
     val errors: List<String> = emptyList(),
+    val indexedPaths: List<String> = emptyList(),
+    val knowledgeMaterialized: Boolean = false,
+    val isRuntimeOpen: Boolean = true,
 )
