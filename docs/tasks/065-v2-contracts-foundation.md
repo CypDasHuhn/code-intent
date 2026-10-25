@@ -1,6 +1,6 @@
 ---
 name: V2 contracts foundation
-status: todo
+status: done
 depends-on: [063]
 reviewers: [correctness, architecture]
 ---

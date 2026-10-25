@@ -1,6 +1,6 @@
 ---
 name: V2 build skeleton and graph guard
-status: todo
+status: done
 depends-on: []
 reviewers: [correctness, architecture]
 ---

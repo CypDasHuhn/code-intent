@@ -1,6 +1,6 @@
 ---
 name: Freeze V1 corpus and protocol behavior
-status: todo
+status: done
 depends-on: []
 reviewers: [correctness, architecture]
 ---

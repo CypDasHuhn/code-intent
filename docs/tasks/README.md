@@ -85,10 +85,10 @@ concurrently once their dependencies are done.
 
 | id | wave | name | status | depends-on | scope |
 |---|---|---|---|---|---|
-| 063 | 0 | [V2 build skeleton and graph guard](063-v2-build-skeleton.md) | todo | — | Parallel KMP/Native build, canonical modules, graph guard, just/CI entry points. |
-| 064 | 1 | [Kotlin/Native platform spike](064-native-platform-spike.md) | todo | 063 | Tree-sitter cinterop, JSON, Unix socket, child process, HTTP/TLS evidence. |
-| 065 | 1 | [V2 contracts foundation](065-v2-contracts-foundation.md) | todo | 063 | Data model, ports, knowledge DTOs, deadlines, pure identity/hashing. |
-| 066 | 0 | [Freeze V1 corpus and protocol behavior](066-v1-corpus-and-protocol-freeze.md) | todo | — | Capture V1 outputs, IPC transcripts, and known differences. |
+| 063 | 0 | [V2 build skeleton and graph guard](063-v2-build-skeleton.md) | done | — | Parallel KMP/Native build, canonical modules, graph guard, just/CI entry points. |
+| 064 | 1 | [Kotlin/Native platform spike](064-native-platform-spike.md) | done | 063 | Tree-sitter cinterop, JSON, Unix socket, child process, HTTP/TLS evidence. |
+| 065 | 1 | [V2 contracts foundation](065-v2-contracts-foundation.md) | done | 063 | Data model, ports, knowledge DTOs, deadlines, pure identity/hashing. |
+| 066 | 0 | [Freeze V1 corpus and protocol behavior](066-v1-corpus-and-protocol-freeze.md) | done | — | Capture V1 outputs, IPC transcripts, and known differences. |
 | 067 | 2 | [Shared V2 fakes and test harness](067-v2-shared-fakes.md) | todo | 065 | Deterministic fakes for every port and fixture loaders. |
 | 068 | 2 | [V2 knowledge store and materialization](068-v2-knowledge-store.md) | todo | 065 | Function annotations, overrides, defaults, provenance, mutation. |
 | 069 | 2 | [V2 packs, manifests, and seed defaults](069-v2-packs-and-defaults.md) | todo | 065 | Manifest packs and defaults; no user-facing pack config shape. |

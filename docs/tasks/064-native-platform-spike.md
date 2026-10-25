@@ -1,6 +1,6 @@
 ---
 name: Kotlin/Native platform spike
-status: todo
+status: done
 depends-on: [063]
 reviewers: [architecture]
 ---
