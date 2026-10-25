@@ -42,13 +42,32 @@ for surface, report in (("cli", cli), ("ipc", ipc)):
         if not entry.get("ticket") or not entry.get("reason"):
             raise SystemExit(f"{surface} defect is missing a ticket or reason: {entry}")
         defects.append({"surface": surface, **entry})
+renderer_checks_passed = all(
+    bool(check.get("checks")) and all(value is True for value in check.get("checks", {}).values())
+    for check in v2_renderer
+)
+renderer_unexercised = [
+    difference_id
+    for check in v2_renderer
+    for difference_id in check.get("unexercisedDifferenceIds", [])
+]
+renderer_gate_failures = []
 if not renderer_derivation.get("verified"):
+    renderer_gate_failures.append("renderer projection was not derived or checked")
+if not renderer_derivation.get("passed"):
+    renderer_gate_failures.append("one or more renderer sections have unmatched differences")
+if not renderer_checks_passed:
+    renderer_gate_failures.append("one or more renderer checks drifted")
+if renderer_unexercised:
+    renderer_gate_failures.append("registered renderer differences were not exercised: " + ", ".join(renderer_unexercised))
+if renderer_gate_failures:
     defects.append(
         {
             "surface": "renderer",
             "id": "renderer.derivation",
             "ticket": "094-v2-ipc-payload-parity",
-            "reason": "V2 renderer projection was not derived or checked",
+            "reason": "; ".join(renderer_gate_failures),
+            "context": {"unmatchedCount": renderer_derivation.get("unmatchedCount", 0)},
         }
     )
 
@@ -68,8 +87,9 @@ report = {
         "candidatesMatched": cli_summary.get("candidatesMatched", 0),
         "ipcScenarios": ipc_summary.get("scenarios", 0),
         "ipcDefects": ipc_summary.get("defectCount", 0),
-        "rendererChecksPassed": all(all(value is True for value in check.get("checks", {}).values()) for check in renderer),
+        "rendererChecksPassed": renderer_checks_passed,
         "rendererDerivationVerified": renderer_derivation.get("verified") is True,
+        "rendererPassed": renderer_derivation.get("passed") is True,
         "rendererDifferenceCount": renderer_derivation.get("differenceCount", 0),
         "rendererUnmatchedCount": renderer_derivation.get("unmatchedCount", 0),
         "rendererSectionsCompared": renderer_derivation.get("sectionsCompared", 0),

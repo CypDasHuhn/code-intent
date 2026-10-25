@@ -202,6 +202,16 @@ class FrozenProtocolParityTest {
             rendererChecks.all { it.getValue("verified").jsonPrimitive.content.toBoolean() },
             "renderer-visible derivation did not run: $rendererChecks",
         )
+        assertTrue(
+            rendererChecks.all { it.getValue("passed").jsonPrimitive.content.toBoolean() },
+            "renderer-visible derivation has unmatched differences: $rendererChecks",
+        )
+        assertTrue(
+            rendererChecks.all {
+                it.getValue("checks").jsonObject.values.all { value -> value.jsonPrimitive.content.toBoolean() }
+            },
+            "renderer-visible checks drifted: $rendererChecks",
+        )
         val signatures = defects.map(::defectSignature).groupingBy { it }.eachCount().toSortedMap()
         val baselinePath = Path.of(System.getProperty("v2.v2Root"), "parity", "ipc-defect-baseline.json")
         assertTrue(Files.isRegularFile(baselinePath), "missing IPC defect baseline $baselinePath")
@@ -431,14 +441,13 @@ class FrozenProtocolParityTest {
                         "candidates",
                         baseline.getValue("candidates"),
                         projectCandidates(collected["protocol-suggest-flow"].orEmpty()),
-                        emptyList(),
+                        RENDERER_DIFFERENCE_RULES.filter { it.section == "candidates" },
                         "frozen-v1-corpus/renderer-visible-v1.json#candidates",
                         exercised,
                         defects,
                         "renderer.candidates",
                         "091-v2-candidate-parity",
                         "V2-derived renderer candidate projection differs from the frozen renderer baseline",
-                        registeredOnIpcSurface = true,
                     ),
                     rendererSection(
                         "config",
@@ -463,7 +472,6 @@ class FrozenProtocolParityTest {
                         "renderer.lifecycle",
                         "090-v2-composition-parity",
                         "V2 lifecycle projection differs from the frozen renderer baseline",
-                        registeredOnIpcSurface = true,
                     ),
                     rendererSection(
                         "suggest",
@@ -549,7 +557,6 @@ class FrozenProtocolParityTest {
         defectId: String,
         ticket: String,
         reason: String,
-        registeredOnIpcSurface: Boolean = false,
     ): JsonObject {
         val differences = mutableListOf<String>()
         diffJson(baseline, actual, name, differences)
@@ -564,7 +571,7 @@ class FrozenProtocolParityTest {
                 intentional += rule.id
             }
         }
-        if (unmatched.isNotEmpty() && !registeredOnIpcSurface) {
+        if (unmatched.isNotEmpty()) {
             defects += defect(
                 defectId,
                 ticket,
@@ -582,7 +589,6 @@ class FrozenProtocolParityTest {
             put("passed", unmatched.isEmpty())
             put("differenceCount", differences.size)
             put("unmatchedCount", unmatched.size)
-            put("registeredOnIpcSurface", registeredOnIpcSurface)
             put("ownerTicket", ticket)
             put("intentionalDifferenceIds", JsonArray(intentional.map(::JsonPrimitive)))
             put("differences", JsonArray(differences.take(40).map(::JsonPrimitive)))
@@ -612,19 +618,30 @@ class FrozenProtocolParityTest {
     private fun projectCandidates(messages: List<JsonObject>): JsonElement {
         val params =
             messages
-                .firstOrNull { methodOf(it) == "cint/publishCandidates" && it.getValue("params").jsonObject.containsKey("candidates") }
+                .lastOrNull { methodOf(it) == "cint/publishCandidates" && it.getValue("params").jsonObject.containsKey("candidates") }
                 ?.getValue("params")
                 ?.jsonObject
                 ?: return buildJsonObject {
                     put("analysisRevision", JsonNull)
+                    put("suggestionRevision", JsonNull)
+                    put("uri", JsonNull)
+                    put("version", JsonNull)
                     put("candidateCount", 0)
+                    put("groupCount", 0)
                     put("candidates", JsonArray(emptyList()))
+                    put("groups", JsonArray(emptyList()))
                 }
         val candidates = params["candidates"] as? JsonArray ?: JsonArray(emptyList())
+        val groups = params["groups"] as? JsonArray ?: JsonArray(emptyList())
         return buildJsonObject {
+            put("uri", params["uri"] ?: JsonNull)
+            put("version", params["version"] ?: JsonNull)
             put("analysisRevision", params["analysisRevision"] ?: JsonNull)
+            put("suggestionRevision", params["suggestionRevision"] ?: JsonNull)
             put("candidateCount", candidates.size)
+            put("groupCount", groups.size)
             put("candidates", candidates)
+            put("groups", groups)
         }
     }
 
@@ -983,6 +1000,37 @@ class FrozenProtocolParityTest {
                         ),
                     )
                 }
+                add(
+                    RendererDifferenceRule(
+                        "candidates",
+                        "suggestionRevision",
+                        "suggest.candidate-enrichment",
+                        "079-v2-ipc-protocol",
+                        "The frozen renderer baseline is the publish after cint/suggest; V2 reports cint/suggest as unsupported and cannot advance suggestionRevision.",
+                    ),
+                )
+                for (index in listOf(6, 9)) {
+                    add(
+                        RendererDifferenceRule(
+                            "candidates",
+                            "candidates[$index]",
+                            "suggest.candidate-enrichment",
+                            "079-v2-ipc-protocol",
+                            "The frozen candidate at index $index was enriched by the deterministic fake provider during cint/suggest; V2 reports cint/suggest as unsupported, leaving the candidate unenriched.",
+                        ),
+                    )
+                }
+                for (index in listOf(3, 5)) {
+                    add(
+                        RendererDifferenceRule(
+                            "candidates",
+                            "groups[$index]",
+                            "suggest.candidate-enrichment",
+                            "079-v2-ipc-protocol",
+                            "This group carries the candidate enriched by the deterministic fake provider during cint/suggest; V2 reports cint/suggest as unsupported, leaving the group unenriched.",
+                        ),
+                    )
+                }
                 for (section in listOf("disabled", "enabled", "log")) {
                     add(
                         RendererDifferenceRule(
@@ -1046,6 +1094,7 @@ class FrozenProtocolParityTest {
                 Triple("initialize.suggestions", "081-v2-server", "V2 suggestion capability defaults are owned by the V2 server ticket."),
                 Triple("config.protocol", "069-v2-packs-and-defaults", "V2 config is JSON-first and served by the runtime surface."),
                 Triple("suggest.protocol", "079-v2-ipc-protocol", "V2 suggestions use selection spans and streaming methods."),
+                Triple("suggest.candidate-enrichment", "079-v2-ipc-protocol", "V2 does not implement cint/suggest, so V1 fake-provider candidate enrichment and its suggestionRevision are absent."),
                 Triple("restrictions.protocol", "059-ai-restriction-proposals", "V2 restrictions use GET-style and upsert methods."),
                 Triple("status.protocol", "081-v2-server", "V2 adds live status and metrics surfaces."),
                 Triple("error.handling", "079-v2-ipc-protocol", "V2 errors carry structured data.kind/data.details."),
