@@ -9,12 +9,12 @@ import kotlin.test.assertNull
 class TreeSitterLanguageRegistryTest {
     @Test
     fun resolvesIdsAliasesAndExtensions() {
-        assertEquals("kotlin", TreeSitterLanguageRegistry.resolve("KT")?.id)
-        assertEquals("typescript", TreeSitterLanguageRegistry.resolve("tsx")?.id)
-        assertEquals("csharp", TreeSitterLanguageRegistry.resolve("c#")?.id)
+        assertEquals("kotlin", TreeSitterLanguageRegistry.forLanguage("KT")?.id)
+        assertEquals("typescript", TreeSitterLanguageRegistry.forLanguage("tsx")?.id)
+        assertEquals("csharp", TreeSitterLanguageRegistry.forLanguage("c#")?.id)
         assertEquals("javascript", TreeSitterLanguageRegistry.forExtension("mjs")?.id)
         assertEquals("kotlin", TreeSitterLanguageRegistry.forPath("src/Main.kts")?.id)
-        assertNull(TreeSitterLanguageRegistry.resolve("brainfuck"))
+        assertNull(TreeSitterLanguageRegistry.forLanguage("brainfuck"))
     }
 
     @Test

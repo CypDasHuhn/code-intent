@@ -155,7 +155,7 @@ class LspSemanticProviderTest {
     }
 
     @Test
-    fun editorModeUsesHostChannelAndShutsDownOnce() {
+    fun editorModeDoesNotCloseCallerOwnedHostChannel() {
         val expected = SemanticResult.HoverAt("host hover")
         val channel = FakeHostChannel(expected)
         val config =
@@ -171,7 +171,7 @@ class LspSemanticProviderTest {
         assertEquals(1, channel.openCount)
         provider.shutdown().successValue()
         provider.shutdown().successValue()
-        assertEquals(1, channel.closeCount)
+        assertEquals(0, channel.closeCount)
     }
 
     @Test
@@ -201,6 +201,7 @@ class LspSemanticProviderTest {
         } finally {
             provider.shutdown().successValue()
         }
+        assertEquals(1, channel.closeCount)
     }
 
     @Test
@@ -218,16 +219,26 @@ class LspSemanticProviderTest {
     }
 
     @Test
-    fun editorShutdownPropagatesCloseFailureOnce() {
+    fun editorShutdownPropagatesCloseFailureForProviderOpenedChannelOnce() {
         val channel =
             FakeHostChannel(
                 SemanticResult.HoverAt("unused"),
                 closeError = ContractError.InternalError("close failed"),
             )
+        val channelProvider =
+            object : HostSemanticChannelProvider {
+                override fun open(config: HostChannelConfig): ContractResult<HostSemanticChannel> = ResultFactory.success(channel)
+            }
         val provider =
             LspSemanticProvider
-                .create(SemanticProviderConfig(mode = ProviderMode.EDITOR), "kotlin", hostChannel = channel)
-                .successValue()
+                .create(
+                    SemanticProviderConfig(
+                        mode = ProviderMode.EDITOR,
+                        hostChannelConfig = HostChannelConfig("test"),
+                    ),
+                    "kotlin",
+                    hostChannelProvider = channelProvider,
+                ).successValue()
         val error = provider.shutdown().failureValue()
         assertIs<ContractError.InternalError>(error)
         assertEquals("close failed", error.message)

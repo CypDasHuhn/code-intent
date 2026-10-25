@@ -30,3 +30,5 @@ Orchestrate knowledge initialization, index, languages, pipeline, and publicatio
 ## Notes
 
 - Runtime is the only analysis composition root.
+- Own root-location wiring: move or replace `languages`' `MarkerRootLocator` filesystem traversal and inject a runtime root locator/root path.
+- Own environment provider policy: supply or override provider commands and defaults (including Kotlin) through runtime configuration rather than relying on `languages` data defaults.

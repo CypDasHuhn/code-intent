@@ -59,6 +59,7 @@ class LspSemanticProvider private constructor(
     private val languageId: String,
     private val session: LspSession?,
     private val editorChannel: HostSemanticChannel?,
+    private val ownsEditorChannel: Boolean,
     private val typeExtractor: LspTypeExtractor,
 ) : SemanticProvider {
     private val shutdown = AtomicBoolean(false)
@@ -344,7 +345,7 @@ class LspSemanticProvider private constructor(
         if (!shutdown.compareAndSet(false, true)) return ResultFactory.success(Unit)
         return try {
             if (editorChannel != null) {
-                editorChannel.close()
+                if (ownsEditorChannel) editorChannel.close() else ResultFactory.success(Unit)
             } else {
                 session?.close()
                 ResultFactory.success(Unit)
@@ -434,6 +435,7 @@ class LspSemanticProvider private constructor(
             hostChannelProvider: HostSemanticChannelProvider?,
             typeExtractor: LspTypeExtractor,
         ): ContractResult<LspSemanticProvider> {
+            val ownsChannel = hostChannel == null
             val channel =
                 hostChannel ?: run {
                     val channelConfig =
@@ -455,7 +457,9 @@ class LspSemanticProvider private constructor(
                         is dev.cint.contracts.util.Failure -> return ResultFactory.failure(opened.error)
                     }
                 }
-            return ResultFactory.success(LspSemanticProvider(config, language, languageId, null, channel, typeExtractor))
+            return ResultFactory.success(
+                LspSemanticProvider(config, language, languageId, null, channel, ownsChannel, typeExtractor),
+            )
         }
 
         private fun createManaged(
@@ -603,7 +607,9 @@ class LspSemanticProvider private constructor(
                     }
                 return ResultFactory.failure(withContext)
             }
-            return ResultFactory.success(LspSemanticProvider(config, language, languageId, session, null, typeExtractor))
+            return ResultFactory.success(
+                LspSemanticProvider(config, language, languageId, session, null, false, typeExtractor),
+            )
         }
     }
 }

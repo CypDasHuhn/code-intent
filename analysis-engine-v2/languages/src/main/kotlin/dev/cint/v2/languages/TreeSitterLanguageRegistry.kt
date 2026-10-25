@@ -1,96 +1,79 @@
 package dev.cint.v2.languages
 
 import dev.cint.contracts.facts.LanguageDescriptor
+import dev.cint.contracts.ports.ProviderMode
 
-object TreeSitterLanguageRegistry {
-    private data class Entry(
-        val descriptor: LanguageDescriptor,
-        val aliases: Set<String>,
-    )
-
-    private val registryEntries = listOf(
-        Entry(
+object TreeSitterLanguageRegistry : LanguageCatalog {
+    override val descriptors: List<LanguageDescriptor> =
+        listOf(
             LanguageDescriptor(
                 id = "kotlin",
                 name = "Kotlin",
                 extensions = listOf("kt", "kts"),
                 grammarName = "tree-sitter-kotlin",
                 mimeTypes = listOf("text/x-kotlin"),
+                providerMode = ProviderMode.MANAGED,
+                rootMarkers = listOf("settings.gradle.kts", "settings.gradle", "build.gradle.kts", "build.gradle", ".git"),
+                profile = "kotlin",
+                aliases = listOf("kt"),
             ),
-            aliases = setOf("kt"),
-        ),
-        Entry(
             LanguageDescriptor(
                 id = "c",
                 name = "C",
                 extensions = listOf("c", "h"),
                 grammarName = "tree-sitter-c",
                 mimeTypes = listOf("text/x-c"),
+                rootMarkers = listOf("compile_commands.json", "CMakeLists.txt", ".git"),
+                profile = "c",
+                aliases = listOf("h"),
             ),
-            aliases = setOf("h"),
-        ),
-        Entry(
             LanguageDescriptor(
                 id = "javascript",
                 name = "JavaScript",
                 extensions = listOf("js", "jsx", "mjs", "cjs"),
                 grammarName = "tree-sitter-javascript",
                 mimeTypes = listOf("text/javascript"),
+                rootMarkers = listOf("package.json", ".git"),
+                profile = "javascript",
+                aliases = listOf("js", "jsx"),
             ),
-            aliases = setOf("js", "jsx"),
-        ),
-        Entry(
             LanguageDescriptor(
                 id = "typescript",
                 name = "TypeScript",
                 extensions = listOf("ts", "tsx", "mts", "cts"),
                 grammarName = "tree-sitter-typescript",
                 mimeTypes = listOf("text/typescript"),
+                rootMarkers = listOf("tsconfig.json", "package.json", ".git"),
+                profile = "typescript",
+                aliases = listOf("ts", "tsx"),
             ),
-            aliases = setOf("ts", "tsx"),
-        ),
-        Entry(
             LanguageDescriptor(
                 id = "vue",
                 name = "Vue",
                 extensions = listOf("vue"),
                 grammarName = "tree-sitter-vue",
                 mimeTypes = listOf("text/x-vue"),
+                rootMarkers = listOf("package.json", ".git"),
+                profile = "vue",
+                aliases = listOf("vue-sfc"),
             ),
-            aliases = setOf("vue-sfc"),
-        ),
-        Entry(
             LanguageDescriptor(
                 id = "csharp",
                 name = "C#",
                 extensions = listOf("cs"),
                 grammarName = "tree-sitter-c-sharp",
                 mimeTypes = listOf("text/x-csharp"),
+                rootMarkers = listOf("*.sln", "*.csproj", ".git"),
+                profile = "csharp",
+                aliases = listOf("c#", "cs", "c-sharp"),
             ),
-            aliases = setOf("c#", "cs", "c-sharp"),
-        ),
-    )
+        )
 
-    private val byName: Map<String, LanguageDescriptor> = buildMap {
-        for (entry in registryEntries) {
-            put(entry.descriptor.id, entry.descriptor)
-            for (alias in entry.aliases) put(alias, entry.descriptor)
-        }
-    }
+    private val catalog = LanguageCatalog.of(descriptors)
 
-    val descriptors: List<LanguageDescriptor> = registryEntries.map { it.descriptor }
+    override fun forLanguage(language: String): LanguageDescriptor? = catalog.forLanguage(language)
 
-    fun resolve(language: String): LanguageDescriptor? =
-        byName[language.trim().lowercase().removePrefix(".")]
+    override fun forExtension(extension: String): LanguageDescriptor? = catalog.forExtension(extension)
 
-    fun forExtension(extension: String): LanguageDescriptor? {
-        val normalized = extension.trim().lowercase().removePrefix(".")
-        return descriptors.firstOrNull { normalized in it.extensions }
-    }
-
-    fun forPath(path: String): LanguageDescriptor? {
-        val extension = path.substringAfterLast('.', "")
-        if (extension.isEmpty()) return null
-        return forExtension(extension)
-    }
+    override fun forPath(path: String): LanguageDescriptor? = catalog.forPath(path)
 }
