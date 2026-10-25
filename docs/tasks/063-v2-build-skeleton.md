@@ -7,11 +7,11 @@ reviewers: [correctness, architecture]
 
 ## Goal
 
-Create the parallel V2 build under analysis-engine-v2 with the canonical module names, directory grouping, and an enforced dependency graph. No production analysis logic.
+Create the parallel V2 build with the canonical module names, directory grouping, and an enforced dependency graph. No production analysis logic.
 
 ## Scope
 
-- Create analysis-engine-v2 as a separate Kotlin Multiplatform/Native build; do not modify analysis-engine.
+- Create the V2 tree (later promoted to `analysis-engine/` by ticket 085) as a separate Kotlin Multiplatform/Native build; do not modify the V1 engine.
 - Use the project tree in docs/rewrite/module-graph.md: flat top-level modules, with apps/ and tests/ only for host and test entry points; keep Gradle project names canonical (:core, :packs, :index, :knowledge, :languages, :syntax-treesitter, :lsp, :intent-pipeline, :runtime, :ai, :ipc, :cli, :server, :mcp, :contracts).
 - Add empty projects for all V2 modules and shared test modules.
 - Add a graph guard that reads the declared project edges and fails on undeclared or reverse edges.

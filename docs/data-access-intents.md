@@ -127,12 +127,4 @@ legitimately co-occur on different spans in the same function or call chain.
 
 ## Registration and host coverage
 
-The pack is registered in
-`analysis-engine/core/rulepacks/src/main/resources/META-INF/services/dev.cint.api.RulePack`
-as `dev.cint.rulepacks.intents.dataaccess.DataAccessRulePack`. Bundled discovery
-and host composition are covered by `BundledRulePackRegistrationTest`,
-`BundledRulePackLoadingTest`, and `BundledRulePackRegistrationHostTest`, which
-assert both `SEARCH` and `LOOKUP` per bundled language. Classification itself is
-covered by the direct pack tests in `rulepacks-tests`. The current pipeline
-snapshot contains no data-access spans because its fixtures do not include
-search/lookup examples; the manual gate records this coverage in m013.
+The pack is declared in `analysis-engine/packs/src/main/resources/packs/bundled-packs.json` as the `data-access` pack. Bundled discovery and runtime binding are covered by the pack, pipeline, and frozen-corpus parity tests. Classification itself is covered by the direct pack tests and the frozen-corpus parity suite.

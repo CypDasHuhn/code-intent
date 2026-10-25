@@ -1,302 +1,57 @@
-# Annotations, User Directives, and AI Candidates
+# Knowledge, Candidates, and AI
 
-## User annotations
+## Persisted knowledge
 
-The client writes `.cint/user-annotations.json` (schema version 1) per project.
-Each record has:
+Project knowledge is versioned data owned by the `knowledge` module and stored
+at `<root>/.cint/knowledge.json` by default. It contains:
 
-```json
-{
-  "path": "relative/path.kt",
-  "symbol": "optionalName",
-  "contentHash": "sha256",
-  "startLine": 0,
-  "startCol": 0,
-  "endLine": 0,
-  "endCol": 0,
-  "intents": ["PURE"],
-  "note": "optional",
-  "createdAt": "ISO-8601"
-}
-```
+- **Function annotations** — selector, intents, scope (`GLOBAL`, `FILE`, or
+  `PROJECT`), provenance, confidence, status, timestamps, optional path,
+  pattern id, and evidence.
+- **Span overrides** — intent changes for a specific span.
+- **Pattern hypotheses** — proposed intent sets with evidence, examples,
+  counterexamples, status, and provenance.
+- **Pack origins** — which pack/version materialized defaults, plus a
+  materialized flag.
 
-Resolution (`core/user`):
+`KnowledgeChange` is the mutation surface: set/remove function annotations,
+span overrides, and pattern hypotheses; materialize defaults; or apply a batch.
+Users, MCP agents, and fallback AI all use this API. The store validates every
+change, so there is no second AI-only store.
 
-- Path matching accepts project-relative or absolute source paths.
-- Symbol anchors bind to named declarations/functions/properties and require a
-  matching content hash or a stored range inside the candidate.
-- Range anchors use UTF-8 byte columns; a present hash must match the current
-  range or the record is stale.
-- Resolved records become `SOURCE_INTENT` contributions with rule id
-  `core:user-annotations`, source tier `user`, confidence `1.0`, and
-  `nodeAnchor = null`.
-- Records merge with pack contributions by role+byte span; removal removes only
-  the user provenance.
-- `UNTAGGED` is stripped from user contributions.
-- Unknown user intent names are preserved as open intents.
+Pack defaults are seed data. They materialize once; later analyses consume the
+stored annotation rather than re-applying the default.
 
-Directives:
+## Function propagation
 
-- `PURE` — no side effects, deterministic. Participates in the annotated
-  pure-function derivative path.
-- `READONLY` — no writes, may read external state. Treated as a
-  side-effect-free read for derivative use and validation composition.
-- Both remain visible in the intent set and provenance; neither is pack-owned.
+Function annotations resolve to call sites and call chains deterministically.
+The selector supports qualified name plus optional import path, receiver type,
+declaring type, signature, and structural pattern. Propagation does not call AI;
+it reuses the persisted contract.
 
-### Lock protocol
+## Candidates
 
-The Kotlin writer and Neovim writer share
-`.cint/user-annotations.json.lock/`:
+Rulepacks may emit review-only candidates where they are uncertain. Candidates
+carry intents, source, confidence, span, reason, and optional provider/model
+metadata. They never enter composition, the knowledge store, or the `reads`
+graph. A user or agent decision promotes knowledge through the normal mutation
+API.
 
-- The lock directory carries `owner` with a random token, pid, and Linux
-  `/proc/<pid>/stat` start marker.
-- Staleness is liveness-based; a live or suspended holder is never stolen.
-- A `.lock.steal` claim serializes stale transitions. A claimant rechecks the
-  canonical lock under the claim before moving/deleting.
-- Release is a verified rename-to-tombstone (`.stale-<token>`) then delete.
-  Unexpected restore failures hard-fail. Both writers fence before the data
-  rename.
-- Ownerless/legacy paths are age-reaped; acquire timeout is 15 s.
-- `CrossWriterAnnotationLockTest` runs the JUnit writer and real headless
-  Neovim against one temp root, records enter/exit intervals, and rejects
-  overlap. It is part of `just test-engine` and `just test-cross-writer`.
-- Accepted residual: the claim-reaping check-then-act window can move a newly
-  published live claim aside under compound concurrent reapers; normal live
-  holders are never stale, and partial outcomes hard-fail. A strict guarantee
-  would need an OS advisory lock or unique-generation CAS.
+## Fallback AI
 
-## Candidate channel
+Fallback AI exists for uninitialized repositories, recently changed code, CI,
+tests, and offline environments. It returns proposals, and the pipeline applies
+accepted results through the knowledge mutation API. It is off the deterministic
+derivation path and is not the primary AI workflow.
 
-- Rules return established `Emit` and review-only `CandidateEmit`.
-- Candidate sources: `candidate`, `rule:<id>`, or `ai:<provider>`. AI output is
-  structurally candidate-only.
-- Candidate identity: path + content hash + byte span + sorted intents + reason.
-- Alternatives at one anchor form a group. Confirming any alternative resolves
-  the group; siblings stop being published.
-- Decisions: confirm writes a user annotation and re-analyzes; reject persists
-  suppression in `.cint/suggestions.json`; skip is per-client/session.
-- Grouped remove+add proposals use `proposalId`/`groupId`; confirm writes one
-  `.cint/ai-restrictions.json` record instead of a user annotation.
-- Candidates never enter reads, composition, or annotation stores.
+## MCP
 
-## AI discovery session
+The primary AI workflow is an external MCP agent. `cint-mcp` exposes:
 
-Ticket 058 replaces pack-candidate-only enrichment with an expression-level
-session by default; ticket 059 adds grouped removal proposals:
+- `analysis.run`, `repo.status`, `repo.index`
+- `knowledge.snapshot`, `knowledge.suggestDefaults`,
+  `knowledge.materializeDefaults`
+- function annotation, span override, and pattern tools
 
-```text
-cached analysis + established annotations
-  -> core expression units (including leaves)
-  -> batched worklist + known vocabulary
-  -> annotation agent (internal tool loop; current document + LSP facts)
-  -> add/remove verdicts (none/add/remove per unit)
-  -> validation (unit containment, exact removal target, vocabulary, duplicates, confidence)
-  -> grouped remove+add proposal or add-only candidate
-  -> merge with deterministic candidates -> group + publish
-```
-
-Tools are `list_expression_units`, `get_expression`, `get_parent`,
-`get_enclosing_statement`, `get_enclosing_function`, `read_range`,
-`lookup_type`, `get_annotations`, and `submit_verdicts`. All text results pass
-through `redactPatterns` (`allowGlobs` gates the pass). The session is asynchronous, one pass per
-document version, cancellable, and discarded when the version changes.
-
-Budget and coverage behavior is unchanged: `sessionTimeoutMs` (120 s),
-per-request `timeoutMs` (10 s), `maxTurns` (50), `maxToolCalls` (200),
-`maxUnitsPerRequest` (24), `maxTokensPerRequest` (2048), plus the candidate and
-confidence caps. Budget exhaustion publishes the graded units and reports
-coverage; deterministic annotations are unaffected. `restrictionsEnabled`
-(default true) gates grouped removal proposals and the restriction inspector.
-
-Protocol 4 adds `discovery`/`restrictions`/`cache` capabilities,
-`cint/suggest/progress`, coverage/counts on the `cint/suggest` result, and
-`cint/suggest/log`. `restrictionsEnabled: false` disables proposals and the
-inspector while leaving deterministic analysis and add-only proposals unaffected.
-`cint/suggest.restrictions` is the post-filter published proposal count, and
-protocol-3 clients receive no `operations` or `restrictions` fields.
-`discoveryEnabled: false` restores the legacy enrichment pipeline.
-
-## AI restriction proposals
-
-A verdict that removes established intents becomes one proposal group anchored
-on its expression unit. The group carries explicit `ADD` and `REMOVE`
-operations; add-only verdicts keep the existing candidate path. Removal targets
-must match an established `SOURCE_INTENT` at the exact byte span. User
-annotations, `ai-confirmed` contributions (including protected provenance inside
-a `mixed` span), and `PURE`/`READONLY` are rejected. A removal may target an
-enclosing span from a child unit and carry a negative relative start offset. A
-group that loses all operations after validation is dropped. All candidate and
-proposal decisions share a decision lock, and proposal confirm revalidates
-removals and replacement adds. A decision republish
-is scoped per client: it preserves that client's unrelated pending add candidates
-and proposals, revalidates carried proposals, drops groups whose removal target
-or replacement add is already established, and does not send proposal groups to
-protocol-3 clients.
-
-`cint/publishCandidates` groups expose `proposalId`/`groupId` and `operations`.
-`cint/candidates/decide` accepts those ids for grouped confirm/deny/skip.
-Confirm applies the whole group atomically and writes
-`.cint/ai-restrictions.json`; deny suppresses the proposal in
-`.cint/suggestions.json`; skip is session-only. Add-only confirms still write
-`.cint/user-annotations.json`.
-
-```json
-{
-  "version": 1,
-  "restrictions": [
-    {
-      "id": "stable-proposal-id",
-      "path": "src/main/kotlin/Facts.kt",
-      "symbol": "magicCommentIn",
-      "contentHash": "3f0c...",
-      "unitFingerprint": "b41d...",
-      "anchor": {
-        "startLine": 215,
-        "startCol": 8,
-        "endLine": 215,
-        "endCol": 55
-      },
-      "remove": [{ "intent": "LOGGING", "startOffset": -12, "endOffset": 47 }],
-      "add": [{ "intent": "SEARCH", "startOffset": 0, "endOffset": 47 }],
-      "provider": "deepseek",
-      "model": "deepseek-chat",
-      "promptVersion": "deepseek-intent-v3",
-      "createdAt": "2026-10-23T12:00:00Z"
-    }
-  ]
-}
-```
-
-Offsets are relative to the anchored expression unit; adds are contained in it,
-while a removal may start before it when targeting an enclosing span. Analysis
-resolves a record by path, anchor content hash, stored symbol, and unit
-fingerprint (including adjacent sibling context); duplicate, ambiguous, or
-missing identity is dormant and harmless. It applies removals after user
-annotations and before composition, and adds replacements with
-`source = ai-confirmed` and contributor `core:ai-confirmed`; structured
-provider/model/prompt provenance is carried on the contribution fields and on
-the restriction record/list, not a concatenated rule id. Derivative and scaffold
-annotations are recomputed from the filtered source set. Removing a record restores the original annotation on
-re-analysis. User annotations always win over a restriction.
-`cint/restrictions/list` returns `{restrictions: [...]}` with
-`active`/`dormant`/`unknown` status and the operation/provider fields;
-`cint/restrictions/remove` takes `{id}` and returns `{accepted, removed}`. Both
-require protocol 4 and `restrictionsEnabled`.
-
-## AI reuse and caching
-
-Analysis and AI verdict reuse split identity into two hashes:
-
-- `deterministicEnv`: engine code, pack/rule code, config, user annotations,
-  AI restrictions, language-profile code/resources, and oracle mode.
-- `aiEnv`: `deterministicEnv` plus provider, model, prompt version, and vocabulary.
-
-An unchanged content hash and language under the same `deterministicEnv`
-republishes the cached analysis for the new buffer version without parsing, LSP,
-rules, composition, or a provider call. Anchor contexts are built lazily only if
-a stored decision needs one. A per-unit verdict cache keys language, import set,
-node kind, normalized text, enclosing symbol/signature, referenced names,
-existing-intent token fingerprint, and `aiEnv`. Negative verdicts are stored,
-positive operations use token-relative offsets, and cache hits are remapped and
-revalidated against current text.
-
-The suggestion pass diffs the text of its last completed grading pass, so
-matching non-overlapping units are reused while changed units and units
-referencing changed declarations are graded again. Formatting reuses every
-normalized fingerprint, including annotations inside units. Similar changed
-units and same-symbol restrictions are sent as `prior:` hints even when the unit
-is invalidated; prior restrictions do not depend on cache enablement. Hints are
-never published directly. Rejections, confirmations, and restrictions use a
-versioned unit identity plus operation shape, so formatting does not resurrect or
-drop them and duplicate identical expressions stay independent. Confirmed
-add-only annotations persist the same versioned identity, token range, and
-normalized offsets; split-region decisions compute region-relative anchors and
-persist a stable region identity from language plus normalized region text, with
-ambiguous identities dormant. Scoping, status, and proposal suppression require
-the same region; legacy unanchored records keep the clipped span/hash path.
-Split analysis also analyzes host-level source outside leaf regions, so host-level
-confirmations apply; status and proposal suppression share cached applicability.
-Split discovery recursively enumerates leaf regions plus host-level units and
-carries per-unit/per-region languages through the prompt and type lookup.
-
-Verdicts persist in `.cint/cache/ai-verdicts.json`, versioned with the full
-deterministic/AI environment, bounded by `cacheMaxEntries`/`cacheTtlHours`, with
-no source text or rationale on disk. `cacheEnabled`/`cachePersist` gate in-memory
-and disk reuse; `cint/suggest` reports `reused`, `graded`, `total`, and
-`overhead`. Restriction records are fingerprint-versioned: 059 records keep their
-original normalization, and new records use token identity/offsets. External type
-changes with unchanged text are an accepted staleness limit.
-
-## Legacy pack-candidate enrichment
-
-Pipeline:
-
-```text
-cached analysis candidates
-  -> filter aiEligible
-  -> bounded excerpt + metadata + known/neighboring intents
-  -> IntentSuggestionProvider (fake or DeepSeek)
-  -> CandidateValidator (vocabulary, span containment, confidence range/cap, dedupe)
-  -> merge with deterministic candidates
-  -> group + publish
-```
-
-DeepSeek defaults (`core/suggest`, current):
-
-- provider `deepseek`, model `deepseek-chat`
-- prompt version `deepseek-intent-v3`
-- temperature `0.3`, max tokens `1024`
-- `maxCandidates: 0` and `maxEnrichmentCandidates: 0` mean **unlimited**
-  (positive values cap)
-- timeout `10000 ms`, worker threads `2`
-- max confidence `0.84` (diagnostic cap)
-- excerpt radius `400` bytes per side
-- one attempt per candidate; no retries
-
-Privacy and validation:
-
-- Discovery sends the current batch of expression units plus tool results for the
-  current document. Legacy enrichment sends the candidate span plus bounded
-  excerpt, path/language, candidate metadata, known/neighboring intents, and
-  prompt version. Neither path reads other project files or sends whole files.
-- `allowGlobs` gates the pass; `redactPatterns` star out matches in every text
-  result before sending while preserving byte length/newlines.
-- The API key comes from `DEEPSEEK_CHAT_KEY` (or `apiKeyEnv`), is used in the
-  Authorization header, and is never logged or published.
-- Provider failures, timeouts, and malformed output leave deterministic tags and
-  candidates untouched. A timeout cancels the pass without partial results.
-- Provider failure events carry structured detail from the built-in provider:
-  a missing API-key environment variable, `HTTP <status>: <error snippet>`, the
-  transport error class, or a malformed-response marker. Arbitrary provider
-  prose and raw exception messages are still not stored; custom providers get
-  only the generic `provider failure` event unless they supply a safe `detail`.
-- AI candidates carry provider/model/prompt/rationale diagnostics. Confidence is
-  diagnostic, not an establishment threshold.
-
-Server config lives in `.cint/suggestions.yml` under `suggestions:`. A missing
-file means disabled/manual with the defaults above. Pack candidates still
-publish when AI is disabled. `initialize.suggestions` is a secret-free
-capability descriptor.
-
-## Client candidate and review UI
-
-- Passive deterministic candidates: muted `?` sign + dotted undercurl.
-- Protocol-3 passive AI candidates: `AI` sign, purple AI highlight/undercurl,
-  one ` AI` end-of-line badge per line, and one arrival notification per
-  AI-count increase.
-- Protocol-4 discovery passive mode is quiet: no AI undercurl, sign, badge, or
-  conceal. The status still reports AI additions, pending restrictions, reused
-  units, and coverage. Deterministic candidates keep their normal marks.
-- Review mode renders `+` additions, `−` removals, and `− +` reclassification
-  groups with confidence, source, rationale, and a virtual evidence line.
-  `:CintReviewList` fills a cint-owned quickfix list; `]c`/`[c` and
-  `:CintReviewAccept`/`:CintReviewDeny` follow the entry under the quickfix
-  cursor and open a picker for overlapping groups.
-- `:CintRestrictions` lists active/dormant restriction records and removes one
-  through `cint/restrictions/remove`, then re-analyzes.
-- `:CintAiLog` fetches `cint/suggest/log` and shows coverage, reuse, tool calls,
-  verdicts, budgets, uncovered units, and provider failure detail. It connects on
-  demand when the buffer has no live session.
-- `:CintSuggestCancel` cancels the running pass. Progress is
-  `grading N/M · reused R · activity`; completion notifies once with additions,
-  restrictions, reuse, and tool-call counts.
+MCP handlers call `runtime`; tool DTOs live in `contracts`. MCP is not the
+renderer IPC protocol.

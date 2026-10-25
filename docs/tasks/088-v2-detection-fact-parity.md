@@ -17,5 +17,5 @@ Close the remaining V1/V2 detection-fact gaps recorded by the 084 parity report.
 
 ## Acceptance
 
-- Every defect in `analysis-engine-v2/parity/v2-parity-report.json` assigned to this ticket is resolved or reclassified with evidence.
-- `just v2-parity` baseline is reduced and the committed report is regenerated.
+- Every defect in `analysis-engine/parity/v2-parity-report.json` assigned to this ticket is resolved or reclassified with evidence.
+- `just parity` baseline is reduced and the committed report is regenerated.

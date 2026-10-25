@@ -59,16 +59,16 @@ demands it — never all by default. The dimensions in use:
   reproduces it.
 
 Engine commands here are `just build`, `just test-engine`, `just test-lsp`,
-`just test-nvim`, `just lint`, and `just install`. `just build` assembles the
-engine without running tests; `test-engine` covers the deterministic suites
-(including `host`, `server`, `rulepacks-tests`, `test-fixtures`, and
-`integration-tests`). `test-lsp` is opt-in via `CINT_LSP_ROOT` and a running
-`kotlin-lsp`.
+`just lint`, and `just install`. `just build` assembles the engine without
+running tests; `test-engine` covers every deterministic module suite,
+`tests/fixtures`, `tests/integration`, and the module graph guard. `test-lsp`
+runs the focused LSP provider tests.
 
 Lint scope is Kotlin only: `just lint`/`just lint-fix` run ktlint over
-`analysis-engine/**/src/**/*.kt`. The Lua renderer has no formatter gate; its
-behavior is covered by `just test-nvim`. CI runs `just build`, `just
-test-engine`, `just lint`, and `just test-nvim` with an explicit
+`analysis-engine/**/src/**/*.kt`. The Neovim renderer lives in the external
+`code-intent-nvim` repository and is tested there. CI runs `just build`,
+`just test-engine`, `just lint`, `just graph-guard`, `just parity`,
+`just smoke`, and `just syntax-provenance` with an explicit
 `CINT_TESTING_GROUNDS`.
 
 ## Ticket format

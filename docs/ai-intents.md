@@ -407,7 +407,7 @@ diagnostic; candidate-only is enforced because AI output is a `CandidateEmit`.
   provider uses the JDK `HttpClient` only.
 - `server` — config/key injection, async orchestration, settings, protocol,
   persistence, and provider construction from settings.
-- `nvim-renderer` — candidate rendering and review UI.
+- `code-intent-nvim` (external repository) — candidate rendering and review UI.
 - `cli` — deterministic candidates only; no AI by default.
 
 ## Non-goals

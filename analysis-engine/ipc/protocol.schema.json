@@ -1,0 +1,1631 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:code-intent:ipc:protocol",
+  "title": "CodeIntent renderer IPC protocol",
+  "description": "Published SDK schema for the CodeIntent renderer wire protocol. Clients pin x-protocol-version and send x-schema-fingerprint during initialize.",
+  "type": "object",
+  "x-protocol-version": 5,
+  "x-schema-fingerprint": "ce1e3590ccbbd9e08784f09ec7c7f9e514e26ddd9488ef1216644b9d853d48b5",
+  "x-supported-versions": [
+    3,
+    4,
+    5
+  ],
+  "x-compatibility": [
+    {
+      "version": 3,
+      "status": "legacy",
+      "requiresFingerprint": false,
+      "initializeShape": "V1 initialize result",
+      "compatibility": "accepted without a fingerprint; V2-only initialize fields are removed and handlers emit V1 shapes"
+    },
+    {
+      "version": 4,
+      "status": "legacy",
+      "requiresFingerprint": false,
+      "initializeShape": "V1 initialize result",
+      "compatibility": "accepted without a fingerprint; V2-only initialize fields are removed and handlers emit V1 shapes; restrictions/cache capabilities are advertised"
+    },
+    {
+      "version": 5,
+      "status": "current",
+      "requiresFingerprint": true,
+      "initializeShape": "V2 initialize result",
+      "compatibility": "full V2 wire shapes; fingerprint must equal ProtocolFingerprint.CURRENT"
+    }
+  ],
+  "x-requests": [
+    "cint/analyze",
+    "cint/candidates/decide",
+    "cint/config/append",
+    "cint/config/read",
+    "cint/config/remove",
+    "cint/config/schema",
+    "cint/config/write",
+    "cint/metrics",
+    "cint/restrictions",
+    "cint/restrictions/list",
+    "cint/restrictions/remove",
+    "cint/restrictions/upsert",
+    "cint/status",
+    "cint/suggest",
+    "cint/suggest/cancel",
+    "cint/suggest/history",
+    "cint/suggest/log",
+    "cint/suggest/stream",
+    "initialize",
+    "shutdown"
+  ],
+  "x-notifications": {
+    "clientToServer": [
+      "textDocument/didChange",
+      "textDocument/didClose",
+      "textDocument/didOpen"
+    ],
+    "serverToClient": [
+      "cint/error",
+      "cint/publishCandidates",
+      "cint/publishTags",
+      "cint/suggest/progress"
+    ]
+  },
+  "x-types": [
+    {
+      "$ref": "#/$defs/dev.cint.ipc.AnalyzeParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.AnalyzeResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.AnalyzedFile"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.CandidateDecisionParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.CandidateOperation"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.CandidateOperationKind"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.CandidateOrigin"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.ClientInfo"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.ConfigOperation"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.ConfigParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.ConfigResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.DocumentCloseParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.DocumentParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.InitializeParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.InitializeResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.IpcAnnotation"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.IpcCandidate"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.IpcDiagnostic"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.IpcProvenance"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.IpcSpan"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.MetricsResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.NoParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.PublishCandidatesParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.PublishTagsParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.Restriction"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.RestrictionOperation"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.RestrictionRemoveParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.RestrictionRemoveResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.RestrictionUpsertParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.RestrictionsListParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.RestrictionsListResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.ServerInfo"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.StatusResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestCancelParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestHistoryParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestItem"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestLogParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestParams"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestProgress"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestResult"
+    },
+    {
+      "$ref": "#/$defs/dev.cint.ipc.SuggestSelection"
+    }
+  ],
+  "$defs": {
+    "dev.cint.ipc.AnalyzeParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "targetPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-optional": true
+        },
+        "forceFullAnalysis": {
+          "type": "boolean",
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.AnalyzeResult": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.AnalyzedFile"
+          },
+          "x-optional": true
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcCandidate"
+          },
+          "x-optional": true
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcDiagnostic"
+          },
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.AnalyzedFile": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcAnnotation"
+          },
+          "x-optional": true
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcDiagnostic"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.CandidateDecisionParams": {
+      "type": "object",
+      "properties": {
+        "candidateId": {
+          "type": "string"
+        },
+        "decision": {
+          "type": "string"
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "required": [
+        "candidateId",
+        "decision"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.CandidateOperation": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/dev.cint.ipc.CandidateOperationKind"
+        },
+        "intents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        },
+        "startLine": {
+          "type": "integer"
+        },
+        "startCol": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endCol": {
+          "type": "integer"
+        },
+        "startByte": {
+          "type": "integer"
+        },
+        "endByte": {
+          "type": "integer"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "origin": {
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "ruleId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "x-optional": true
+            },
+            "provider": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "x-optional": true
+            },
+            "model": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "x-optional": true
+            },
+            "promptVersion": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "x-optional": true
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false,
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "intent": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "rationale": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "required": [
+        "kind",
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol",
+        "startByte",
+        "endByte",
+        "confidence"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.CandidateOperationKind": {
+      "type": "string",
+      "enum": [
+        "dev.cint.ipc.CandidateOperationKind.ADD",
+        "dev.cint.ipc.CandidateOperationKind.REMOVE",
+        "dev.cint.ipc.CandidateOperationKind.REPLACE"
+      ]
+    },
+    "dev.cint.ipc.CandidateOrigin": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "promptVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.ClientInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.ConfigOperation": {
+      "type": "string",
+      "enum": [
+        "dev.cint.ipc.ConfigOperation.READ",
+        "dev.cint.ipc.ConfigOperation.APPEND",
+        "dev.cint.ipc.ConfigOperation.REMOVE",
+        "dev.cint.ipc.ConfigOperation.WRITE",
+        "dev.cint.ipc.ConfigOperation.SCHEMA"
+      ]
+    },
+    "dev.cint.ipc.ConfigParams": {
+      "type": "object",
+      "properties": {
+        "packId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "field": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "config": {
+          "additionalProperties": {},
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "sources": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.ConfigResult": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "additionalProperties": true,
+          "x-optional": true
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        },
+        "schema": {
+          "additionalProperties": {},
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.DocumentCloseParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uri"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.DocumentParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "languageId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uri",
+        "text",
+        "version",
+        "languageId"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.InitializeParams": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "type": "integer"
+        },
+        "fingerprint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "client": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "x-optional": true
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ],
+          "additionalProperties": false,
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "protocol"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.InitializeResult": {
+      "type": "object",
+      "properties": {
+        "protocol": {
+          "type": "integer",
+          "x-optional": true
+        },
+        "fingerprint": {
+          "type": "string",
+          "x-optional": true
+        },
+        "root": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        },
+        "config": {
+          "additionalProperties": {},
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "suggestions": {
+          "additionalProperties": {},
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "server": {
+          "$ref": "#/$defs/dev.cint.ipc.ServerInfo",
+          "x-optional": true
+        },
+        "capabilities": {
+          "additionalProperties": {},
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.IpcAnnotation": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "intents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "startLine": {
+          "type": "integer"
+        },
+        "startCol": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endCol": {
+          "type": "integer"
+        },
+        "startByte": {
+          "type": "integer"
+        },
+        "endByte": {
+          "type": "integer"
+        },
+        "nodeAnchor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "provenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcProvenance"
+          },
+          "x-optional": true
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcDiagnostic"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "role",
+        "intents",
+        "source",
+        "confidence",
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol",
+        "startByte",
+        "endByte"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.IpcCandidate": {
+      "type": "object",
+      "properties": {
+        "candidateId": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "contentHash": {
+          "type": "string"
+        },
+        "intents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startLine": {
+          "type": "integer"
+        },
+        "startCol": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endCol": {
+          "type": "integer"
+        },
+        "startByte": {
+          "type": "integer"
+        },
+        "endByte": {
+          "type": "integer"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "origin": {
+          "$ref": "#/$defs/dev.cint.ipc.CandidateOrigin"
+        },
+        "category": {
+          "type": "string"
+        },
+        "fingerprints": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "x-optional": true
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.CandidateOperation"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "candidateId",
+        "path",
+        "contentHash",
+        "intents",
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol",
+        "startByte",
+        "endByte",
+        "confidence",
+        "origin",
+        "category"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.IpcDiagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "dev.cint.ipc.IpcSeverity.error",
+            "dev.cint.ipc.IpcSeverity.warning",
+            "dev.cint.ipc.IpcSeverity.info"
+          ],
+          "x-optional": true
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "span": {
+          "properties": {
+            "startLine": {
+              "type": "integer"
+            },
+            "startCol": {
+              "type": "integer"
+            },
+            "endLine": {
+              "type": "integer"
+            },
+            "endCol": {
+              "type": "integer"
+            },
+            "startByte": {
+              "type": "integer"
+            },
+            "endByte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "startLine",
+            "startCol",
+            "endLine",
+            "endCol",
+            "startByte",
+            "endByte"
+          ],
+          "additionalProperties": false,
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.IpcProvenance": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "type": "string"
+        },
+        "packId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "role": {
+          "type": "string"
+        },
+        "intents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "startLine": {
+          "type": "integer"
+        },
+        "startCol": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endCol": {
+          "type": "integer"
+        },
+        "startByte": {
+          "type": "integer"
+        },
+        "endByte": {
+          "type": "integer"
+        },
+        "evidence": {
+          "x-optional": true
+        }
+      },
+      "required": [
+        "ruleId",
+        "role",
+        "intents",
+        "source",
+        "confidence",
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol",
+        "startByte",
+        "endByte"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.IpcSpan": {
+      "type": "object",
+      "properties": {
+        "startLine": {
+          "type": "integer"
+        },
+        "startCol": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endCol": {
+          "type": "integer"
+        },
+        "startByte": {
+          "type": "integer"
+        },
+        "endByte": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol",
+        "startByte",
+        "endByte"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.MetricsResult": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.NoParams": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.PublishCandidatesParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "analysisRevision": {
+          "type": "integer"
+        },
+        "proposalRevision": {
+          "type": "integer"
+        },
+        "proposals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcCandidate"
+          }
+        }
+      },
+      "required": [
+        "uri",
+        "version",
+        "analysisRevision",
+        "proposalRevision",
+        "proposals"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.PublishTagsParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "configRevision": {
+          "type": "integer"
+        },
+        "analysisVersion": {
+          "type": "integer"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcAnnotation"
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.IpcDiagnostic"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "uri",
+        "version",
+        "hash",
+        "configRevision",
+        "analysisVersion",
+        "annotations"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.Restriction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "startLine": {
+          "type": "integer"
+        },
+        "startCol": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endCol": {
+          "type": "integer"
+        },
+        "contentHash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "unitFingerprint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "promptVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "createdAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "add": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.RestrictionOperation"
+          },
+          "x-optional": true
+        },
+        "remove": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.RestrictionOperation"
+          },
+          "x-optional": true
+        },
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "condition": {
+          "additionalProperties": {},
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.RestrictionOperation": {
+      "type": "object",
+      "properties": {
+        "intent": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "rationale": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "startOffset": {
+          "type": "integer",
+          "x-optional": true
+        },
+        "endOffset": {
+          "type": "integer",
+          "x-optional": true
+        }
+      },
+      "required": [
+        "intent",
+        "confidence"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.RestrictionRemoveParams": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.RestrictionRemoveResult": {
+      "type": "object",
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "removed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "accepted",
+        "removed"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.RestrictionUpsertParams": {
+      "type": "object",
+      "properties": {
+        "restriction": {
+          "$ref": "#/$defs/dev.cint.ipc.Restriction"
+        }
+      },
+      "required": [
+        "restriction"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.RestrictionsListParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.RestrictionsListResult": {
+      "type": "object",
+      "properties": {
+        "restrictions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.Restriction"
+          },
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.ServerInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-optional": true
+        },
+        "version": {
+          "type": "string",
+          "x-optional": true
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.StatusResult": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "x-optional": true
+        },
+        "version": {
+          "type": "string"
+        },
+        "uptimeMs": {
+          "type": "integer",
+          "x-optional": true
+        },
+        "activeDocuments": {
+          "type": "integer",
+          "x-optional": true
+        },
+        "suggestionQueue": {
+          "type": "integer",
+          "x-optional": true
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestCancelParams": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "required": [
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestHistoryParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "x-optional": true
+        }
+      },
+      "required": [
+        "uri"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestItem": {
+      "type": "object",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/dev.cint.ipc.IpcSpan"
+        },
+        "intents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "rationale": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "intents",
+        "confidence",
+        "rationale"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestLogParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "uri"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestParams": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "selection": {
+          "properties": {
+            "startLine": {
+              "type": "integer"
+            },
+            "startCol": {
+              "type": "integer"
+            },
+            "endLine": {
+              "type": "integer"
+            },
+            "endCol": {
+              "type": "integer"
+            },
+            "startByte": {
+              "type": "integer"
+            },
+            "endByte": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "startLine",
+            "startCol",
+            "endLine",
+            "endCol",
+            "startByte",
+            "endByte"
+          ],
+          "additionalProperties": false,
+          "type": [
+            "object",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "x-optional": true
+        },
+        "context": {
+          "type": "string",
+          "x-optional": true
+        },
+        "requestId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestProgress": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "completed": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.SuggestItem"
+          },
+          "x-optional": true
+        }
+      },
+      "required": [
+        "requestId",
+        "completed",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestResult": {
+      "type": "object",
+      "properties": {
+        "accepted": {
+          "type": "boolean",
+          "x-optional": true
+        },
+        "disabled": {
+          "type": "boolean",
+          "x-optional": true
+        },
+        "cancelled": {
+          "type": "boolean",
+          "x-optional": true
+        },
+        "count": {
+          "type": "integer",
+          "x-optional": true
+        },
+        "restrictions": {
+          "type": "integer",
+          "x-optional": true
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dev.cint.ipc.SuggestItem"
+          },
+          "x-optional": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "dev.cint.ipc.SuggestSelection": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/dev.cint.ipc.IpcSpan"
+        }
+      },
+      "required": [
+        "uri",
+        "selection"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -7,8 +7,9 @@ One file per unit of work. Status is owned by the orchestrator. See
 V1 work was planned in [`rulepack-support-plan.md`](../rulepack-support-plan.md).
 The V2 rewrite is queued below as 063–087; its design lives in
 [`rewrite/module-graph.md`](../rewrite/module-graph.md) and
-[`rewrite/knowledge-model.md`](../rewrite/knowledge-model.md). V2 is built
-alongside V1 in `analysis-engine-v2`; V1 stays frozen until cutover.
+[`rewrite/knowledge-model.md`](../rewrite/knowledge-model.md). Ticket 085
+completed the V2 cutover; the single engine lives in `analysis-engine/` and V1
+remains available only in git history and the frozen corpus.
 
 | id | name | status | depends-on | scope |
 |---|---|---|---|---|
@@ -78,8 +79,9 @@ alongside V1 in `analysis-engine-v2`; V1 stays frozen until cutover.
 
 ## V2 rewrite queue
 
-Tickets 063–087 build the parallel `analysis-engine-v2` tree. V1 remains frozen
-and is the behavioral reference. Wave numbers are parallelization hints; the
+Tickets 063–087 built the V2 tree that became the primary `analysis-engine/` at
+cutover. V1 remains frozen in git history and the corpus as the behavioral
+reference. Wave numbers are parallelization hints; the
 frontmatter `depends-on` is authoritative. Same-wave tickets can run
 concurrently once their dependencies are done.
 
@@ -107,9 +109,9 @@ concurrently once their dependencies are done.
 | 082 | 6 | [V2 MCP tool server](082-v2-mcp-tool-server.md) | done | 068, 078 | MCP tools/resources for analysis and knowledge. |
 | 083 | 7 | [V2 MCP repo init workflow](083-v2-mcp-init-workflow.md) | done | 082 | Resumable agent-driven init and pattern hypotheses. |
 | 084 | 8 | [V2 parity and integration suite](084-v2-parity-integration.md) | done | 066, 080, 081, 082, 083, 088, 089, 090, 091, 092, 093, 094 | Corpus, protocol, CLI, server, and MCP parity. |
-| 085 | 9 | [V1 to V2 cutover](085-v2-cutover.md) | todo | 084, 088, 089, 090, 091, 092, 093, 094 | Promote V2, drop suffixes, delete V1. |
-| 086 | 10 | [Version the external renderer protocol](086-external-protocol-versioning.md) | todo | 085 | Explicit protocol version and compatibility contract. |
-| 087 | 11 | [Extract the Neovim renderer](087-extract-nvim-renderer.md) | todo | 086 | Move the renderer to its own repository. |
+| 085 | 9 | [V1 to V2 cutover](085-v2-cutover.md) | done | 084, 088, 089, 090, 091, 092, 093, 094 | Promote V2, drop suffixes, delete V1. |
+| 086 | 10 | [Version the external renderer protocol](086-external-protocol-versioning.md) | done | 085 | Explicit protocol version and compatibility contract. |
+| 087 | 11 | [Extract the Neovim renderer](087-extract-nvim-renderer.md) | done | 086 | Move the renderer to its own repository. |
 | 088 | 12 | [V2 detection fact parity](088-v2-detection-fact-parity.md) | done | 065, 066, 072 | Remaining logging, validation, data-access, return, local-copy, and span/confidence parity. |
 | 089 | 12 | [V2 bookkeeping and validation parity](089-v2-bookkeeping-validation-parity.md) | done | 065, 068, 069, 070, 075 | Declaration/intent semantics for bookkeeping and validation gating. |
 | 090 | 12 | [V2 composition parity](090-v2-composition-parity.md) | done | 065, 068, 070, 075, 076 | Scaffold, derivative-use, return-category, and function-scaffold parity. |

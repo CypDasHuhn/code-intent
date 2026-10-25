@@ -1,6 +1,6 @@
 ---
 name: V1 to V2 cutover
-status: todo
+status: done
 depends-on: [084, 088, 089, 090, 091, 092, 093, 094]
 reviewers: [correctness, architecture]
 ---
@@ -11,7 +11,7 @@ Promote V2 to the primary build and remove V1.
 
 ## Scope
 
-- Move analysis-engine-v2 to analysis-engine.
+- Move the V2 tree to `analysis-engine/`.
 - Drop temporary -v2 executable suffixes.
 - Update justfile, CI, scripts, and docs paths.
 - Delete the V1 engine tree.

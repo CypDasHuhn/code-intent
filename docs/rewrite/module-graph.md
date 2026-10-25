@@ -1,11 +1,12 @@
-# V2 Rewrite: Module Graph and Boundaries
+# Module Graph and Boundaries
 
-Working notes, not a committed plan. The first V2 deliverable is a compilable
-skeleton with every project, every dependency, and every interaction contract
-named before feature code exists.
+The current engine lives under `analysis-engine/` and is the V2 implementation.
+Every project, dependency, and interaction contract is declared before feature
+code and enforced by `graphGuard`.
 
 V1 proved the intent model, the rule/fact split, and the renderer protocol. It
-is the behavioral reference. It is not the architectural template.
+remains the behavioral reference in git history and the frozen corpus. It is not
+the architectural template.
 
 The semantic knowledge, function-contract, and MCP-first AI model is in
 [knowledge-model.md](knowledge-model.md). The implementation queue is
@@ -58,12 +59,14 @@ that fails the build when an edge is added outside the graph.
 9. **MCP is the primary AI surface.** External agents behave like users: they
    read analysis and write knowledge through the same mutation API. In-house AI
    is fallback for uninitialized repos, dirty code, CI, and offline use.
-10. **IPC is lockstep in the PoC.** No version negotiation; one schema and a
-    fingerprint handshake. Break freely and rebuild both halves.
+10. **IPC is versioned and negotiated.** Clients name an explicit protocol
+    version; versions 3-4 are legacy replay and version 5 is current. The current
+    version also requires the published schema fingerprint. Unsupported versions
+    and missing versions fail explicitly.
 11. **V2 starts as a walking skeleton.** Empty projects, then contracts, then
     fakes. Tree-sitter, SQLite, and LSP come after the skeleton proves the graph.
 
-## Proposed project tree
+## Project tree
 
 Names describe roles, not directory nesting.
 
@@ -297,9 +300,10 @@ knowledge like a user.
 
 ### `ipc`
 
-NDJSON message DTOs and framing shared with the renderer. One schema. A
-fingerprint in the handshake, not a version matrix. The `server` app binds it to
-a socket; `runtime` does not know it exists.
+NDJSON message DTOs and framing shared with external renderers. Protocol
+versions 3-4 are legacy replay and 5 is current, with an explicit compatibility
+matrix; protocol 5 additionally requires the published schema fingerprint. The
+`server` app binds it to a socket; `runtime` does not know it exists.
 
 ### `apps`
 
@@ -388,7 +392,7 @@ the IPC boundary; `mcp` exposes the agent boundary over MCP.
 
 ## Walking skeleton milestone
 
-This is the V2 PoC. It proves the graph before any real parser exists.
+This was the V2 PoC that proved the graph before real parsers existed.
 
 1. Create every project with an empty build file and the declared edges.
 2. Add a graph guard test that reads the module graph and fails on any
@@ -413,7 +417,8 @@ the actual intent packs.
   `knowledge`, `index`, and `intent-pipeline`.
 - Replace pack-owned user config with materialized semantic knowledge.
 - Make AI an MCP-first client, not the primary analysis engine.
-- Do not version the IPC protocol during the PoC; lockstep plus fingerprint.
+- Version the IPC protocol explicitly: legacy 3-4, current 5, and a schema
+  fingerprint for the current version.
 - Do not optimize per-file CPU before the index removes redundant work.
 - Do not let apps import core internals; expose a runtime facade.
 - Do not let `index` resolve languages or import adapters.
@@ -441,18 +446,17 @@ the actual intent packs.
 - [x] Revise the draft for `core`, `ipc`, `ai`, `intent-pipeline`, `knowledge`,
   `mcp`, and the index/languages boundary.
 - [x] Capture the V2 knowledge, function-contract, and MCP-first AI model.
-- [ ] Agree final module names and directory layout.
-- [ ] Create the empty projects and declared dependency graph.
-- [ ] Add the architecture guard to CI.
-- [ ] Define contracts and fake implementations.
-- [ ] Prove the CLI and server walking skeleton.
-- [ ] Freeze the V1 corpus and IPC transcripts.
-- [ ] Start the index and tree-sitter adapter.
+- [x] Agree final module names and directory layout.
+- [x] Create the empty projects and declared dependency graph.
+- [x] Add the architecture guard to CI.
+- [x] Define contracts and fake implementations.
+- [x] Prove the CLI and server walking skeleton.
+- [x] Freeze the V1 corpus and IPC transcripts.
+- [x] Start the index and tree-sitter adapter.
 
 ## Spike exception: native-spike
 
 `native-spike` is an opt-in, throwaway spike, not a production module. It is included only with
-`-PnativeSpike` (or when a `native-spike` task is named) and is excluded from default `just
-v2-build` and CI. It has a single edge, `native-spike -> syntax-treesitter`; it does not depend on
+`-PnativeSpike` (or when a `native-spike` task is named) and is excluded from default `just build` and CI. It has a single edge, `native-spike -> syntax-treesitter`; it does not depend on
 `contracts` directly, and no production module may depend on it. The cinterop and link
 configuration live in `syntax-treesitter`, not in the spike.

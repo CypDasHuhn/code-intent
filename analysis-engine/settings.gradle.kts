@@ -1,31 +1,51 @@
 rootProject.name = "code-intent"
 
-include(
-    ":api",
-    ":rulepacks",
+val nativeSpikeEnabled = providers.gradleProperty("nativeSpike").orNull == "true" ||
+    gradle.startParameter.taskNames.any { it.contains("native-spike") }
+
+val moduleIncludes = mutableListOf(
+    ":contracts",
     ":core",
-    ":suggest",
-    ":host",
-    ":treesitter",
+    ":packs",
+    ":index",
+    ":knowledge",
+    ":knowledge-persistence",
+    ":languages",
+    ":syntax-treesitter",
     ":lsp",
-    ":frontend",
+    ":intent-pipeline",
+    ":runtime",
+    ":ai",
+    ":ipc",
     ":cli",
     ":server",
-    ":rulepacks-tests",
+    ":mcp",
     ":test-fixtures",
-    ":integration-tests",
+    ":integration-tests"
 )
+if (nativeSpikeEnabled) {
+    moduleIncludes += ":native-spike"
+}
+include(moduleIncludes)
 
-project(":api").projectDir = file("core/api")
-project(":rulepacks").projectDir = file("core/rulepacks")
-project(":core").projectDir = file("core/core")
-project(":suggest").projectDir = file("core/suggest")
-project(":host").projectDir = file("core/host")
-project(":treesitter").projectDir = file("languages/treesitter")
-project(":lsp").projectDir = file("languages/lsp")
-project(":frontend").projectDir = file("languages/frontend")
-project(":cli").projectDir = file("hosts/cli")
-project(":server").projectDir = file("hosts/server")
-project(":rulepacks-tests").projectDir = file("tests/rulepacks-tests")
-project(":test-fixtures").projectDir = file("tests/test-fixtures")
-project(":integration-tests").projectDir = file("tests/integration-tests")
+project(":contracts").projectDir = file("contracts")
+project(":core").projectDir = file("core")
+project(":packs").projectDir = file("packs")
+project(":index").projectDir = file("index")
+project(":knowledge").projectDir = file("knowledge")
+project(":knowledge-persistence").projectDir = file("knowledge-persistence")
+project(":languages").projectDir = file("languages")
+project(":syntax-treesitter").projectDir = file("syntax-treesitter")
+project(":lsp").projectDir = file("lsp")
+project(":intent-pipeline").projectDir = file("intent-pipeline")
+project(":runtime").projectDir = file("runtime")
+project(":ai").projectDir = file("ai")
+project(":ipc").projectDir = file("ipc")
+project(":cli").projectDir = file("apps/cli")
+project(":server").projectDir = file("apps/server")
+project(":mcp").projectDir = file("apps/mcp")
+project(":test-fixtures").projectDir = file("tests/fixtures")
+project(":integration-tests").projectDir = file("tests/integration")
+if (nativeSpikeEnabled) {
+    project(":native-spike").projectDir = file("native-spike")
+}

@@ -1,7 +1,6 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 engine := "analysis-engine"
-renderer := "nvim-renderer"
 
 default: list
 
@@ -11,34 +10,30 @@ list:
 
 # Build engine modules without running tests.
 build:
-    cd {{engine}} && ./gradlew assemble
+    cd {{engine}} && ./gradlew --no-daemon --max-workers=4 assemble
 
-# Run the deterministic engine tests (no live LSP dependency).
+# Run the deterministic engine tests and graph guard.
 test-engine:
-    cd {{engine}} && ./gradlew :api:test :rulepacks:test :core:test :suggest:test :host:test :treesitter:test :frontend:test :cli:test :server:test :rulepacks-tests:test :test-fixtures:test :integration-tests:test
+    cd {{engine}} && ./gradlew --no-daemon --max-workers=4 check
 
 # Run the shared-LSP oracle test. Set CINT_LSP_ROOT to a project with a running kotlin-lsp.
 test-lsp:
-    cd {{engine}} && ./gradlew :lsp:test
+    cd {{engine}} && ./gradlew --no-daemon :lsp:test
 
-# Run the Neovim renderer tests headlessly.
-test-nvim:
-    ./{{renderer}}/tests/run.sh
+# Run engine tests.
+test: test-engine
 
-# Run the cross-writer test on its own; test-engine and CI already run it.
-test-cross-writer:
-    cd {{engine}} && ./gradlew :core:test --tests 'dev.cint.core.user.CrossWriterAnnotationLockTest'
-
-# Run engine and renderer tests.
-test: test-engine test-nvim
-
-# Check Kotlin formatting with ktlint. Lua is not format-linted in this repo.
+# Check Kotlin formatting with ktlint.
 lint:
     ktlint --relative '{{engine}}/**/src/**/*.kt'
 
 # Auto-format Kotlin sources with ktlint.
 lint-fix:
     ktlint --format --relative '{{engine}}/**/src/**/*.kt'
+
+# Regenerate the published renderer protocol JSON Schema.
+protocol-schema:
+    cd {{engine}} && ./gradlew --no-daemon :ipc:generateProtocolSchema
 
 # Apply the first Kotlin LSP code action for each diagnostic across Kotlin files.
 lsp-fix root=engine max="25":
@@ -52,9 +47,13 @@ size root=engine:
 dir-size root=engine:
     ./scripts/classify-directory-size.nu {{quote(root)}}
 
-# Build the CLI and live server distributions.
+# Build the CLI, live server, and MCP distributions.
 install:
-    cd {{engine}} && ./gradlew :cli:installDist :server:installDist
+    cd {{engine}} && ./gradlew --no-daemon :cli:installDist :server:installDist :mcp:installDist
+
+# Package installed distributions plus the protocol schema as a versioned release tarball.
+release version="0.1.0": install
+    CINT_ENGINE_VERSION={{quote(version)}} ./scripts/package-release.sh
 
 # Run the batch CLI. Extra arguments are forwarded.
 cli *args:
@@ -66,60 +65,30 @@ server *args:
 
 # Run the live Unix-socket server. The nvim client normally spawns this.
 live socket root *args: install
-    ./{{engine}}/build/install/cint-server/bin/cint-server --socket {{quote(socket)}} --root {{quote(root)}} {{args}}
+    ./{{engine}}/apps/server/build/install/cint-server/bin/cint-server --socket {{quote(socket)}} --root {{quote(root)}} {{args}}
 
 # Generate a tags.json artifact for a project.
 tags root *args: install
-    ./{{engine}}/build/install/cint/bin/cint {{quote(root)}} --out {{quote(root + "/tags.json")}} {{args}}
+    ./{{engine}}/apps/cli/build/install/cint/bin/cint {{quote(root)}} --out {{quote(root + "/tags.json")}} {{args}}
 
 # Remove Gradle build outputs.
 clean:
-    cd {{engine}} && ./gradlew clean
+    cd {{engine}} && ./gradlew --no-daemon clean
 
-# V2 recipes (analysis-engine-v2)
-engine-v2 := "analysis-engine-v2"
+# Run the declared module graph guard and its self-test.
+graph-guard:
+    cd {{engine}} && ./gradlew --no-daemon --max-workers=4 graphGuard graphGuardSelfTest
 
-# Build V2 skeleton without running tests.
-v2-build:
-    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 assemble
-
-# Run V2 tests including graph guard.
-v2-test:
-    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 check
-
-# Regenerate the V1 Kotlin syntax snapshot from the pinned V1 commit and compare it to the checked-in files.
-v2-syntax-provenance:
-    ./analysis-engine-v2/scripts/verify-v1-syntax-snapshot.sh
-
-# Run the frozen CLI and IPC parity suites and merge the machine-readable report.
-v2-parity:
-    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 :integration-tests:test :server:test
-    python3 {{engine-v2}}/scripts/merge-parity-report.py {{engine-v2}}/parity/v2-parity-report.json
-    git diff --exit-code -- {{engine-v2}}/parity/v2-parity-report.json {{engine-v2}}/parity/defect-baseline.json {{engine-v2}}/parity/ipc-defect-baseline.json
+# Run the frozen CLI and IPC parity suites and verify the committed report.
+parity:
+    cd {{engine}} && ./gradlew --no-daemon --max-workers=4 :integration-tests:test :server:test
+    python3 {{engine}}/scripts/merge-parity-report.py {{engine}}/parity/v2-parity-report.json
+    git diff --exit-code -- {{engine}}/parity/v2-parity-report.json {{engine}}/parity/defect-baseline.json {{engine}}/parity/ipc-defect-baseline.json
 
 # Smoke-test the built CLI, live server, and MCP distributions.
-v2-smoke: v2-install
-    ./{{engine-v2}}/scripts/v2-smoke.sh
+smoke: install
+    ./{{engine}}/scripts/smoke.sh
 
-# Run V2 graph guard against the declared graph and its self-test cases.
-v2-graph-guard:
-    cd {{engine-v2}} && ./gradlew --no-daemon --max-workers=4 graphGuard graphGuardSelfTest
-
-# Build V2 CLI distribution.
-v2-cli:
-    cd {{engine-v2}} && ./gradlew --no-daemon :cli:installDist
-
-# Build V2 server distribution.
-v2-server:
-    cd {{engine-v2}} && ./gradlew --no-daemon :server:installDist
-
-# Build V2 MCP distribution.
-v2-mcp:
-    cd {{engine-v2}} && ./gradlew --no-daemon :mcp:installDist
-
-# Build all V2 app distributions.
-v2-install: v2-cli v2-server v2-mcp
-
-# Clean V2 build outputs.
-v2-clean:
-    cd {{engine-v2}} && ./gradlew --no-daemon clean
+# Verify the checked-in V1 Kotlin syntax snapshot against the pinned V1 commit.
+syntax-provenance:
+    ./{{engine}}/scripts/verify-v1-syntax-snapshot.sh

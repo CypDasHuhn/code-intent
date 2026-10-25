@@ -1,868 +1,148 @@
 # CodeIntent Engine
 
-Kotlin engine for intent classification. Tree-sitter provides structure, a
-function-local CFG provides control-flow facts, LSP provides types, rulepacks
-classify source intents, and core composition builds scaffolds and derivative
-use.
-The engine emits only semantic facts; clients resolve intent sets into meanings
-and visuals. Built-in frontends cover Kotlin, JavaScript, TypeScript, Vue, and
-C#.
+The engine turns source files into intent annotations and review candidates. The
+repository now contains one engine, `analysis-engine/`, built as a Kotlin
+multi-module project. Tree-sitter supplies syntax, a semantic provider supplies
+types, manifest packs supply detection and seed defaults, and persisted
+knowledge supplies project-specific function contracts.
 
-Module paths below are relative to the repository root. Command snippets that
-use `./gradlew` or `build/install` run from `analysis-engine/`.
+All commands below run from the repository root unless a `cd analysis-engine`
+is shown.
 
 ## Modules
 
 | module | responsibility |
-|--------|----------------|
-| `api` | frozen plugin contract: intents, rules, views, `RuleEmit`/`Emit`/`CandidateEmit`, annotations |
-| `rulepacks` | bundled logging, error-handling, bookkeeping, validation, normalization, data-access, service, mutation, data-transformation, return-value, and local-copy packs (boolean-combinatorics and chaining are implemented but currently disabled) |
-| `core` | facts, config, artifact writer, oracle interface, CFG, scheduler, candidate channel, composition |
-| `suggest` | expression-unit annotation session/tool loop, candidate context (bounded excerpt + metadata), provider SPI, fake and DeepSeek providers, privacy gate/redaction, validation, merge, and grouping |
-| `host` | host pipeline and project config loading shared by CLI, HTTP, and live server |
-| `treesitter` | tree-sitter parsers and syntax profiles for Kotlin, JavaScript, TypeScript, Vue, and C# |
-| `lsp` | spec-driven LSP oracle |
-| `frontend` | language registry wiring parser, syntax model, and oracle |
-| `cli` | batch host over a directory |
-| `server` | HTTP host and per-project Unix-socket daemon |
-| `rulepacks-tests` | integration tests for bundled packs using real parsers/frontends |
-| `test-fixtures` | shared `java-test-fixtures` parser, pack, and fixture helpers |
-| `integration-tests` | composition, host, frontend-pipeline, and snapshot integration tests |
+|---|---|
+| `contracts` | Data model and narrow ports: intents, facts, annotations, candidates, knowledge DTOs, manifests, IPC/MCP messages. No JVM types. |
+| `core` | Deterministic kernel: scheduler, strata, fixpoint, capability view, annotation store, composition. |
+| `packs` | Bundled manifest packs, playbooks, matchers, and seed defaults (`packs/src/main/resources/packs/bundled-packs.json`). |
+| `index` | File hashing, incremental fact cache, dependency tracking, and `IndexedSource` construction. |
+| `knowledge` | Materialized function annotations, span overrides, pattern hypotheses, pack defaults, provenance, validation, and mutations. |
+| `knowledge-persistence` | JSON snapshot and init-checkpoint adapters around knowledge. |
+| `languages` | Source-adapter facade. The only module allowed to bind `syntax-treesitter` and `lsp`. |
+| `syntax-treesitter` | Tree-sitter parse, incremental tree, changed ranges, node hashes, and fact extraction on JVM and Kotlin/Native. |
+| `lsp` | Managed, attached, and editor-proxy `SemanticProvider` implementations. |
+| `intent-pipeline` | Pack selection, rule plans, function knowledge resolution, core invocation, and result shaping. |
+| `ai` | Fallback AI for uninitialized or dirty code. It returns proposals and never owns knowledge. |
+| `runtime` | Composition root: index lifecycle, language resolution, knowledge lifecycle, pipeline invocation, and the public `analyze` surface. |
+| `ipc` | NDJSON JSON-RPC framing and wire DTOs shared with the renderer. |
+| `apps/cli` | Batch `cint` executable. |
+| `apps/server` | Live Unix-socket `cint-server` daemon (and protocol compatibility). |
+| `apps/mcp` | `cint-mcp` agent server for analysis and knowledge tools. |
+| `tests/fixtures` (`:test-fixtures`) | Shared fakes and fixture loaders. |
+| `tests/integration` (`:integration-tests`) | Pack/knowledge integration and frozen-corpus parity tests. |
 
-Modules are grouped under `analysis-engine/core/` (`api`, `core`, `suggest`),
-`analysis-engine/languages/`, `analysis-engine/hosts/`, and
-`analysis-engine/tests/`; Gradle project names remain `:api`, `:core`,
-and so on. `core` has no tree-sitter, LSP, or editor dependency. `suggest`
-depends on `api` and `core` (candidate identity/hash) and carries no server or
-provider SDK. `frontend` is the composition
-root that binds a language id to its parser, syntax profile, and oracle. `host`
-owns the pipeline that assembles discovered and constructed packs, applies
-project config, and is reused by every host.
-
-Rulepacks are discovered from `META-INF/services/dev.cint.api.RulePack`
-descriptors. The loader parses those descriptors explicitly, validates each
-provider's API version and ownership, and degrades per provider instead of
-aborting the whole load. The bundled descriptor registers logging,
-error-handling, bookkeeping, validation, normalization, data-access, service,
-mutation, data-transformation, return-value, and
-local-copy packs; `BundledRulePackSelection` constructs the per-language
-error-handling rules. The tests-only modules are not production dependencies.
+Dependency direction is enforced by `graphGuard` against `graph-guard.json`.
+`contracts` depends on nothing; `core` depends only on `contracts`; `runtime` may
+use packs, index, knowledge, languages, and the intent pipeline but never imports
+a parser or LSP class directly; apps depend on runtime (the server additionally
+uses `ipc`).
 
 ## Languages
 
-Rules, the engine, and intents are shared. A new language adds data and a small
-frontend binding, not new analysis code:
+Kotlin, C, JavaScript, TypeScript, Vue, and C# are registered in
+`languages/src/main/kotlin/dev/cint/v2/languages/TreeSitterLanguageRegistry.kt`.
+Each descriptor carries extensions, aliases, grammar name, MIME types, root
+markers, provider mode, and syntax profile.
 
-1. Add the grammar dependency and a parser under `treesitter`.
-2. Add `analysis-engine/languages/treesitter/src/main/resources/syntax/<language>.yaml`. It maps the
-   canonical `SyntaxGroups` names to that grammar's node kinds.
-3. Register a `LanguageFrontend` under `frontend`. It supplies `parse`, `syntax`,
-   and `oracle`.
-4. Add the language's detection names (calls, types, imports, predicates) to the
-   owning rulepack's typed config defaults.
+Adding a language means adding a grammar entry in `syntax-treesitter`, a
+descriptor in the `languages` registry, and any pack defaults or detection data
+for that language. The core kernel never names a language or an LSP server.
 
-Kotlin, JavaScript, TypeScript, Vue, and C# are built in. Profiles live under
-`analysis-engine/languages/treesitter/src/main/resources/syntax/`, and
-frontends are registered in `analysis-engine/languages/frontend/`.
+Vue split regions are analyzed through the language facade and shifted back to
+host coordinates. The syntax adapter performs no file IO; callers load bytes.
 
-### Split handlers
+## Packs and detection
 
-A frontend can also implement `SplitHandler`. Its `regions(file)` returns
-`SplitRegion(language, text, startByte, startLine, startCol)` entries for
-embedded content. `SplitAnalyzer` parses each region with that language's
-frontend, runs the normal rules, and shifts the resulting spans back into the
-host file coordinates. Vue uses this to analyze `<script>` and
-`<script setup lang="ts">` blocks as JavaScript or TypeScript while reporting
-positions in the `.vue` file.
+Packs are content, not classpath code. `packs` loads `bundled-packs.json`, which
+declares pack ids, rule ids, owned intents, dependencies, and seed defaults.
+`intent-pipeline` selects packs and builds rule plans; `core` evaluates them.
 
-Split handlers can nest. Region content is analyzed by the region language; the
-host source outside leaf regions is analyzed separately with the host frontend so
-host-level expressions (for example Vue template expressions) keep their
-annotations and restrictions. Overlapping regions remain unsupported.
+Bundled intents include `LOGGING`, `ERROR_HANDLING`, `BOOKKEEPING`,
+`VALIDATION`, `NORMALIZATION`, `SEARCH`, `LOOKUP`, `SERVICE_DELEGATION`,
+`SERVICE_INIT`, `DATA_MODIFY`, `LOCAL_VALUE_MODIFY`, `BOOL_COMBINATORICS`,
+`DATA_TRANSFORMATION`, `RETURN_VALUE`, `CHAINING`, `LOCAL_COPY`, and
+`USER_FEEDBACK`. `UNTAGGED` is reserved and never owned by a rule.
 
-## Classification
+The core scheduler resolves required and optional intent reads to owning rules,
+builds strata, rejects cycles and missing owners, and runs each stratum once.
+Core composition is the terminal node and produces scaffold and derivative-use
+annotations. Candidates never enter composition or the knowledge store.
 
-Every annotation has:
+## Knowledge
 
-- `role`: `SOURCE_INTENT`, `DERIVATIVE_USE`, or `SCAFFOLD`
-- `intents`: a set such as `{LOGGING}` or `{LOGGING, ERROR_HANDLING}`
+Function annotations, span overrides, pattern hypotheses, and materialized pack
+defaults are persisted project data. Users, MCP agents, and fallback AI all write
+through the same knowledge mutation API. The default store lives at
+`<root>/.cint/knowledge.json`; `--knowledge` overrides the path.
 
-`UNTAGGED` is a reserved intent label for unclassified effects. Clients ignore
-it when resolving a scaffold's visual meaning/tag and when deciding whether a
-scaffold is mixed-intent; a scaffold carrying one real intent plus `UNTAGGED`
-renders as that intent instead of suppressing color/highlight.
+Pack defaults are seeds. They are materialized once and then belong to the
+project, so deleting a default does not make it reappear on every analysis.
 
-Detection rulepacks and core composition:
+## Runtime and hosts
 
-- `logging:logging` — configured print calls and qualifiers, logger receiver
-  interaction, and logging-state conditions. A call on a receiver whose LSP type
-  is a configured logger type is tagged; factory properties and qualifiers answer
-  without LSP, while ambiguous receiver names and import-gated matches consult
-  the type oracle. A resolved non-logger type rejects the heuristic; an
-  unresolved type falls back to it. Live mode caps hover time.
-- `bookkeeping:bookkeeping` — a property annotated with `@Bookkeeping` or
-  preceded by `// cint:bookkeeping`. The declaration and all writes to it are
-  tagged Bookkeeping; reads are not.
-- `validation:validation` — an `if` guard tagged Validation when its branch
-  contains a rejecting exit (bare `return`/`continue`/`break`, or a
-  sentinel return) and the condition is not a known write. Elvis/coalesce forms
-  use the same gate. A validation predicate, a Bookkeeping write, or a
-  `// cint:validation` comment is rejection-independent. `throw`/`raise` guards are
-`ERROR_HANDLING`, not `VALIDATION`, unless an explicit validation certificate
-is present. Unbraced bodies are
-  supported, and jumps inside nested functions/lambdas, nested loops, or nested
-  switches do not certify the outer guard. The read-only fallback accepts
-  unknown read-only conditions at lower confidence; known writes and mutation
-  intents block it. The annotation is also a return certificate, so core can
-  categorize returns without knowing the validation intent or config. Bare
-  exits stay neutral.
-- `error-handling-<language>:error-handling` — `throw` and configured checks (elvis/coalesce throws are tagged from the `?:`/`??` operator through the throw)
-  (`require`, `assert`, ...). Call spans include trailing lambda arguments.
-- `normalization:normalization` — configured normalizer calls and prefixes
-  (`trim`, case folding, parse/coerce, canonicalize) that are gated by a
-  configured qualifier or oracle-resolved type. Ambiguous display formatting,
-  unprefixed unconfigured helpers, and chain tails after an established transform
-  are candidates.
-- `data-access:search` — configured repository/query calls and prefixes
-  (`findBy`, `getBy`, `loadBy`, `search`, `query`) on a configured search
-  qualifier/type; ambiguous `get`/`find`/`fetch*` wrappers and bare configured
-  calls stay candidates. Repository criteria calls such as `findById`,
-  `getById`, and `loadById` remain `SEARCH`; the default `boundaryPrefixes` set is empty, so no
-  `LOOKUP` alternative is emitted unless the project configures one.
-- `data-access:lookup` — known-map/table index reads, configured lookup calls on
-  known receivers/types, and enum/constant resolution (`valueOf`, `fromCode`,
-  ...). Write targets and unknown indexes are not lookup; ambiguous calls are
-  candidates, while configured compound mutation calls are excluded from
-  SEARCH/LOOKUP ambiguity.
-- `service:delegation` — a thin whole-body forwarding expression to a configured
-  service call. Mixed bodies, local-write/guard/try bodies, and controller or
-  facade patterns without configured service evidence are candidates.
-- `service:init` — configured construction, client creation, factory/connection
-  setup, DI calls, and constructor injection (Kotlin `@Inject constructor`,
-  TypeScript parameter properties, and C# primary/record constructors). Factory
-  suffixes are init-only, so factory construction is not delegation. Lifecycle
-  names alone are candidates; init call spans use the call/creation node.
-- `mutation:data-modify` — configured persistence calls on repository/ORM,
-  file, queue, event, and object-store receivers. A receiver must prove a
-  durable qualifier, qualified durable type, or templated client; generic
-  `Queue`/`Table`/`Session` names do not establish persistence on their own.
-  Configured read-prefixed mutations such as `findOneAndUpdate` and
-  `findOneAndDelete` are checked before the read filter; bare configured calls
-  and unknown wrappers stay candidates.
-- `mutation:local-value-modify` — writes to declaration-local variables and
-  configured mutable collection operations on proven collection receivers.
-  Member/external assignments, unproven `add`/`put`/`remove` calls, implicit
-  `for`/`foreach` counters, and bookkeeping writes stay out of the established
-  set. Explicit `while`-loop increments/decrements and their declarations
-  intentionally remain local modifications. The rule reads `LOCAL_COPY` (and
-  `BOOKKEEPING`); with `ignorePureCopies` default-on, a write carrying
-  established `LOCAL_COPY` is skipped entirely, while setting it false restores
-  `LOCAL_COPY` + `LOCAL_VALUE_MODIFY` co-occurrence. Candidate copies do not
-  suppress because only established annotations enter the reads graph.
-  `mutableLocalDeclarations` is off by default; when enabled it also emits on
-  mutable Kotlin `var`, JavaScript/TypeScript `let`/`var`, and mutable C# local
-  declarations that have a later effective write. `val`/`const`/`readonly`
-  declarations, declarations used only for pure copies, bookkeeping locals,
-  implicit `for`/`foreach` counters, and unwritten locals stay out. The emit
-  lands on the individual written declarator, so a multi-declarator statement
-  does not paint unwritten siblings.
-- Callback invocations are classified without whole-program dataflow. Direct
-  calls to function-typed parameters (for example `move(from, to)`), including
-  JS/TS callbacks in function declarations and arrow functions, interface-aware
-  SAM invocations (`Consumer`→`accept`, `Runnable`→`run`, `Supplier`→`get`,
-  `Callable`→`call`, `Predicate`→`test`, `Function`→`apply`, and
-  Kotlin function types→`invoke`), and annotated functions are resolved from the
-  callable's parameter list rather than the raw first `(`. The outer SAM type
-  takes precedence over function arrows in its type arguments, so
-  `Consumer<(Path) -> Unit>` maps to `accept`. Declared types with no function or
-  SAM marker (Kotlin type aliases, TypeScript function aliases, C# custom
-  delegates) fall back to their default function/durable reference evidence, so
-  a durable default still establishes `DATA_MODIFY`; the receiver-SAM mapping
-  remains declared-type-only to avoid scope-function false positives. A generic
-  callback is a `SERVICE_DELEGATION` candidate. When the parameter's default or known implementation references a
-  qualified configured durable path/call (for example
-  `move: (Path, Path) -> Unit = Files::move`, a lambda body containing
-  `Files.move`, or a bare JS/TS `fs.rename` default), the mutation pack
-  establishes `DATA_MODIFY`. Service delegation treats that `DATA_MODIFY`
-  classification as the shared policy through an optional read (`DATA_MODIFY`
-  is optional because the service pack can be loaded alone), so custom or
-  removed durable targets keep `DATA_MODIFY`/candidate outcomes coherent. The
-  callback call is never painted as a local mutation merely because its callee
-  is a parameter.
-- `bool-combinatorics:bool-combinatorics` — complex boolean shape from guard
-  conditions, return expressions, and initializers. Established when the
-  expression has multiple/mixed `&&`/`||`, a negated compound, a configured
-  quantifier (`all`/`any`/`none`, `every`/`some`, `All`/`Any`), or two or more
-  distinct classified predicates. Simple comparisons, `if (x != null)`, trivial
-  `a && b`, negation-only guards, and prefix collisions like `issue`/`hashCode`
-  stay untagged or candidate.
-- `data-transformation:data-transformation` — configured collection-shaping
-  calls (map/filter/fold/reduce/distinct/sorted/groupBy/quantifiers, and
-  language equivalents). It reads `SEARCH` and its own intent so search-owned
-  receivers and chained transformations settle first. Established only with a
-  configured qualifier, a known collection type, or a receiver already carrying
-  `SEARCH`/`DATA_TRANSFORMATION`; bare calls, unknown types, unclassified call
-  receivers, and offline-oracle receivers stay candidates. In-place JS mutators
-  may overlap `LOCAL_VALUE_MODIFY`.
-- `return-value:return-value` — explicit value returns from CFG return sites.
-  Emission lands on the whole return statement from the `return` keyword
-  through the expression, so it is additive with `SEARCH`, `VALIDATION`,
-  `DATA_MODIFY`, `CHAINING`, and other intents on the expression. Bare `return`
-  and bare `return@label` do not qualify; a labeled return with a value emits
-  the labeled return statement. Constant/literal-only expressions are excluded
-  unless `includeLiterals` (alias `allowLiterals`) is enabled. The rule reads no
-  other intent. `RETURN_VALUE` is not a scaffold category: core subtracts it
-  when resolving return/branch/function scaffolds so the returned domain intent
-  (`ERROR_HANDLING`, `SEARCH`, ...) is preserved.
-- `chaining:chaining` — fluent call shape with at least `minimumLinks` (default
-  2, alias `minLinks`). The walker keeps a call only when it covers the
-  receiver's exact node/site span, so array/index/binary bases contribute only
-  their real call links (for example `a[b()].c().d()` collects the `c`→`d`
-  links and emits the full expression, while `a[b()].c()` is below the minimum).
-  The outermost call emits once and inner calls are members. Boolean `||`
-  operands and parenthesized OR
-  receivers are excluded when `excludeBooleanChains` is on (default); `||`
-  inside strings, arguments, or a recognized lambda boundary does not suppress a chain.
-  Conditional/ternary bases stay `LOW_CONFIDENCE` candidates. The rule reads no
-  other intent.
-- `local-copy:local-copy` — parameter-to-field/local copies from assignments and
-  declaration/property initializers, including class/constructor-scoped
-  properties. Established requires a field-like LHS (owner-qualified, leading
-  underscore, or configured prefix), a non-field RHS, and case-sensitive
-  equality after stripping the configured prefix and leading underscores, with
-  declared properties excluded as sources. Field/self copies do not establish.
-  Enclosing-function parameter names are parsed as supporting evidence, but this
-  remains a local heuristic rather than binding resolution; field/self,
-  ambiguous owner-qualified, and differently named local shapes are candidates
-  (`candidates`/`includeCandidates` default on). Literals and call expressions
-  do not qualify. General mutation and persistence are excluded.
-- `core:return-category` — classifies each `return` from the function CFG. A
-  return on a certified guard's true edge inherits that guard's source intents
-  (for example `VALIDATION`); a rejection sentinel on the other edge inherits
-  them too. A normal return is `UNTAGGED` and blocks whole-function scaffolds
-  instead of staying neutral. Core reads the generic certificate flag on source
-  annotations, not validation-specific config.
-- `core:derivative-use` — a local whose initializer is read-only (no known
-  writes or `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`/`BOOKKEEPING` mutation) and whose
-  reads flow into classified statements. Every read normally must be classified;
-  when any read carries `RETURN_VALUE`, the local and its writes receive
-  `RETURN_VALUE` even if sibling reads (for example `result.errors` before a
-  throw) are unclassified. Other intents still require every read to be
-  classified. Known read-only initializers derive at
-  `0.7`; unknown read-only initializers derive at `0.55`. External reads are
-  allowed, while known writes/mutations block promotion. A read-only property
-  initializer or assignment RHS propagates its source intents to the whole
-  declaration/assignment statement; effects inside lambdas/call arguments are
-  dropped while value intents (`SEARCH`, `DATA_TRANSFORMATION`) are kept, and
-  confidence is the minimum source confidence. Annotated/user-pure functions
-  whose references all occur inside other derivative-use declarations are still
-  promoted only when explicitly pure.
-- `core:scaffold` — bottom-up control-flow classification. An `if`/`catch` gets
-  the union of its guard and body intents. Side-effect-free guards (constants,
-  comparisons, reads) are neutral; effectful guards add `UNTAGGED`. Mixed
-  `if`/`else` emits separate then/else spans, so the `if` part can be `LOGGING`
-  while an untagged else stays visible. A catch span includes the preceding
-  try-body `}` so the try/catch boundary is concealed as one unit. A `try` is
-  classified whole only when the body, catches, and finally are fully covered;
-  otherwise all-logging catches can still classify the `try {` header.
+`Runtime` resolves `LanguageSupport`, asks `index.ensure` for indexed source, and
+invokes `intent-pipeline`. It is the only analysis surface apps need.
 
-## Candidate channel
+### CLI
 
-The v5 rule contract (`CINT_API_VERSION = 5`) returns one list:
-
-```kotlin
-sealed interface RuleEmit { /* intents, span, source, confidence, bytes */ }
-
-data class Emit(...) : RuleEmit                    // established
-
-data class CandidateEmit(
-    ...,
-    val reason: CandidateReason,                   // GAP, LOW_CONFIDENCE, PACK_DOMAIN
-    val aiEligible: Boolean = true,
-    val rationale: String? = null,
-    val promptVersion: String? = null,
-    val provider: String? = null,
-    val model: String? = null,
-) : RuleEmit
+```sh
+./analysis-engine/apps/cli/build/install/cint/bin/cint <root> [options]
 ```
 
-`Rule.run` and `Matcher.match` return `List<RuleEmit>`. `Emit` is the only type
-`toContribution` accepts. `settle` checks that every emit uses the rule's owned
-intent, turns only established emits into contributions, and collects
-candidates separately. Fixpoint rules converge on established output only and
-keep candidates from the final settled iteration. `RuleEngine.analyze` returns
-`AnalysisOutput(annotations, candidates)`.
+Useful options: `--knowledge <path>`, `--init`, `--out/-o`, `--format
+json|ndjson`, `--full-rescan`, `--all`, `--lang`, `--provider
+managed|attached`, `--provider-command`, `--provider-endpoint`, and
+`--provider-timeout-ms`. The semantic provider is mandatory; `--no-lsp` is
+rejected.
 
-Candidates never enter `AnnotationStore`, composition, purity, provenance, the
-`reads` graph, or `cint/publishTags`; they travel on a separate channel.
-Candidate builders default to source `candidate`; deterministic candidates use
-`rule:<rule-id>` and AI proposals use `ai:<provider>`. Identity is path +
-anchor/content hash + byte span + sorted intents + reason. Confirmed candidates
-re-enter through the existing user-annotation path on the next analysis.
+### Live server
 
-AI discovery is post-analysis and optional. The server resolves
-`.cint/suggestions.yml`, injects the provider config and key lookup, and
-orchestrates one pass per document version. When `discoveryEnabled` is true and
-the selected provider supports the session surface, the server enumerates every
-expression unit from the language syntax model, including leaves, and runs an
-internal tool loop over the current document and LSP type facts. The agent must
-return an explicit `none`, add, or remove verdict for each unit; missing verdicts
-are reported as uncovered, not as success. Adds are validated inside their unit,
-against the known vocabulary, existing spans, duplicates, and the confidence
-ceiling. Removes must match an established `SOURCE_INTENT` at the exact span;
-user annotations, `ai-confirmed` replacements (including protected provenance
-inside a `mixed` span), and `PURE`/`READONLY` are rejected, and operations that
-no longer resolve are dropped. A removal may target an enclosing established
-span from a child unit; its relative offset can be negative as long as it
-overlaps the anchor. A remove+add verdict becomes one anchored proposal group
-with explicit `ADD`/`REMOVE` operations; add-only verdicts keep the existing
-candidate shape. Invalid proposals are dropped per unit without failing the
-pass. When discovery is
-disabled, the older pack-candidate enrichment path remains available. The only
-remote provider in this slice is DeepSeek (`deepseek-chat`,
-`DEEPSEEK_CHAT_KEY`, prompt `deepseek-intent-v3`), using the JDK `HttpClient`
-with no provider SDK and no retries. AI proposals carry `source = ai:deepseek`,
-`provider`/`model`/`promptVersion`/`rationale`, and a diagnostic confidence
-capped by `maxConfidence` (default `0.84`). The prompt is recall-oriented: it
-asks for plausible low-confidence alternatives and permits sub-span adds.
-Candidate-only is structural, not a confidence threshold: the output is a
-`CandidateEmit` (or a suggest-layer proposal group) and never enters the
-annotation store, scheduler, or composition directly.
+```sh
+./analysis-engine/apps/server/build/install/cint-server/bin/cint-server --socket /path/to/project.sock --root /path/to/project
+```
 
-Reuse is exact for documents and per-unit for AI verdicts. A deterministic
-environment hashes engine code, pack/rule code, config, user annotations, AI
-restrictions, language-profile code/resources, and oracle mode; the AI
-environment adds provider, model, prompt version, and known vocabulary. An
-unchanged content hash and language under the same deterministic environment
-republishes the cached `AnalysisOutput` without parsing, LSP, rules, composition,
-or a provider call; anchor contexts are built only when a decision actually needs
-a fingerprint. Unit verdicts are keyed by language, import set, node kind,
-normalized text, enclosing symbol/signature, referenced names, existing-intent
-token fingerprint, and `aiEnv`; negative verdicts and token-relative operation
-offsets are stored, with raw offsets retained for legacy/out-of-anchor
-operations. The suggestion pass diffs the text of its last completed grading
-pass, so changed ranges and changed declaration names invalidate dependent units
-while formatting still reuses every normalized fingerprint. Similar changed units
-and same-symbol restrictions are passed to the provider as `prior:` hints only;
-prior-restriction hints do not depend on the verdict-cache toggle. Decisions and
-restriction records use a normalized unit identity plus operation shape so
-formatting does not resurrect a rejected suggestion or drop a confirmed
-restriction, and duplicate identical expressions stay independent. Confirmed
-add-only annotations persist the containing unit fingerprint and token range so
-they survive formatting. Restriction fingerprints are versioned: version-1 059
-records use the old normalization, new records use token identity and token
-offsets, and an unmatched legacy fingerprint falls back to the stored
-content-hash span. Entries live in `.cint/cache/ai-verdicts.json`, versioned with
-the full deterministic/AI environment, bounded by
-`cacheMaxEntries`/`cacheTtlHours`, and contain no source text or rationale
-(rationale is kept only for in-memory reuse). Changing the engine, pack, config,
-annotations, restrictions, language profile, oracle mode, provider, model,
-prompt, or vocabulary discards/invalidates the relevant layer. External type
-changes without text changes are an accepted staleness limit until the next text
-or environment change.
+The live transport is NDJSON JSON-RPC over a Unix socket. Current protocol is 5;
+protocols 3-4 are accepted as legacy and receive V1-shaped initialize payloads; protocols 1-2 are rejected.
+See [`docs/ipc/PROTOCOL.md`](ipc/PROTOCOL.md) for the external contract,
+compatibility matrix, and published schema, and
+[`analysis-engine/ipc/PROTOCOL.md`](../analysis-engine/ipc/PROTOCOL.md) for
+implementation notes.
 
-Confirming a proposal group writes `.cint/ai-restrictions.json` under the shared
-`.cint/user-annotations.json.lock` protocol. Each record stores `path`, `symbol`,
-bare lowercase SHA-256 `contentHash`, `unitFingerprint`, `fingerprintVersion`,
-anchor span, `remove`/`add` operations with raw offsets and token offsets, and
-provider/model/prompt provenance. Analysis resolves records by path plus a
-versioned unit fingerprint (including adjacent sibling context), falling back to
-the stored content-hash/symbol span for legacy version-1 records; duplicate,
-moved-by-insertion, or missing identities are dormant rather than rebound.
-Removals are applied after user contributions and before composition, and
-replacements are added as `source = ai-confirmed` with contributor
-`core:ai-confirmed` and structured provider/model/prompt contribution fields;
-derivative and scaffold annotations are recomputed from the filtered source set.
-The same provider/model/prompt values remain on the restriction record and in
-`cint/restrictions/list`. A user annotation at the same span wins. Deny persists
-suppression in `.cint/suggestions.json`; skip is session-only.
-`cint/restrictions/list` reports active/dormant records and
-`cint/restrictions/remove` removes one and re-analyzes open documents.
+### MCP
 
-### Renderer review UI
-
-The nvim renderer keeps candidates passive (dotted underline and a muted `?`
-sign) until `:CintReview` toggles buffer-local review mode. In review mode every
-candidate range uses a visible review highlight and a virtual line above the
-range with intent name(s), confidence, source/reason, and a concise rationale.
-`:CintReviewAccept [intent]` confirms the candidate under the caret, opening a picker when several alternatives cover the caret (or choosing the
-alternative matching `intent`).
-`:CintReviewDeny` rejects every alternative in that anchor group. Both commands
-keep review mode active and let the server republish update the marks; toggling
-review off restores passive rendering. When no candidate covers the caret, or a
-requested intent is absent, the renderer notifies instead of sending a decision.
-`:CintIntentLabels` toggles virtual intent labels above every annotation. `:CintStripes` toggles active-span mixed-intent color striping. `:CintSuggest` reports a protocol below 3, a missing suggestions descriptor, and
-`suggestions.enabled: false` in `.cint/suggestions.yml` as distinct errors; it
-never enables AI.
-
-## Client-side meanings
-
-The engine deliberately emits only `role` and `intents`; it has no meaning
-labels or resolution table. Clients (for example the nvim renderer) map intents
-to labels and merge sets, so presentation can change without re-running analysis.
-A client might map `LOGGING -> CONCEAL`, `ERROR_HANDLING -> SHOW`, and let `SHOW`
-win for mixed scaffolds. The nvim renderer filters `UNTAGGED` from meaning/tag
-resolution and from the mixed-intent decision, so `{ERROR_HANDLING, UNTAGGED}`
-renders as `ERROR_HANDLING`.
+`cint-mcp` exposes `analysis.run`, `repo.status`, `repo.index`,
+`knowledge.snapshot`, `knowledge.suggestDefaults`,
+`knowledge.materializeDefaults`, and the function/span/pattern knowledge tools.
+It is the primary agent workflow; fallback AI is separate and optional.
 
 ## Config
 
-Detection config belongs to rulepacks. A project config file supplies pack
-sections keyed by pack id plus a `core:` section for framework policy:
-
-```yaml
-core:
-  purity:
-    annotations: [Pure, "Contract(pure = true)"]
-  lsp:
-    enabled: true
-    timeoutMs: 750
-
-logging:
-  kotlin:
-    printCalls: [println, print]
-    printQualifiers: [System.out, System.err]
-
-error-handling-kotlin:
-  calls: [require, requireNotNull, check, checkNotNull, error, TODO, assert]
-  throws: true
-
-validation:
-  predicates: [none, any, all, isEmpty, isBlank, contains, matches]
-  predicatePrefixes: [is, has]
-
-mutation:
-  kotlin:
-    persistenceCalls: [save, update, delete, put, sendMessage, convertAndSend]
-    persistencePaths: [Files.write, File.WriteAllTextAsync]
-    persistenceQualifiers: [repository, dao, bucket, kafka]
-    persistenceTypes:
-      [Repository, EntityManager, org.hibernate.Session, javax.jms.Queue]
-    persistencePrefixes: [persist, publish, send, write, flush, commit]
-    mutableOperations: [add, put, remove, clear]
-    mutableTypes: [MutableList, MutableMap, ArrayList]
-    mutableReceiverNames: [items, values, cache]
-    assignmentPatterns: [assignment, increment, decrement]
-    ignorePureCopies: true
-    mutableLocalDeclarations: false
-
-return-value:
-  kotlin:
-    includeLiterals: false
-
-chaining:
-  kotlin:
-    minimumLinks: 2
-    excludeBooleanChains: true
-
-local-copy:
-  kotlin:
-    prefixes: [m_, s_, f_]
-    candidates: true
-```
-
-Bundled pack ids are `logging`, `error-handling`, `bookkeeping`, `validation`,
-`normalization`, `data-access`, `service`, `mutation`, `bool-combinatorics`,
-`data-transformation`, `return-value`, `chaining`, and `local-copy`; each carries
-per-language fields for its own detection vocabulary.
-
-Missing values use the owning pack's defaults. Unknown packs and keys are
-reported. Purity annotations remain explicit: an annotation means pure and
-absence means no purity claim; there is no body inference. Purity still gates
-function-reference derivative promotion, while local initializer promotion uses
-the read-only policy above.
-
-An optional user overlay at `<root>/.cint/config.overlay.yml` is auto-discovered
-on load and after live config mutations. It is keyed by pack id; `PACK`-scoped
-fields sit directly under the pack and `LANGUAGE`-scoped fields nest under the
-language:
-
-```yaml
-logging:
-  kotlin:
-    methods: [audit]
-
-validation:
-  predicates: [isPresent]
-```
-
-Additive overlay support is opt-in: a pack must implement
-`ConfigurableRulePack.configureAdditive` (normally via
-`ConfigSchema.decodeAdditive`). For those packs the overlay is applied after the
-project config with additive semantics: string lists and sets union with the
-effective pack value, string-set maps recurse, and scalars from the overlay win.
-Packs that do not opt in keep their project/default values; the loader reports
-`UNSUPPORTED_PACK_OVERLAY`, and the server rejects the mutation and rolls the
-overlay back. Most bundled packs use `SingleIntentPack`; the mutation pack uses
-a custom `ConfigurableRulePack` with the same additive semantics. The overlay only changes pack config; it never creates source
-annotations, contributions, evidence, confidence, or magic comments. A malformed
-overlay is reported, and mutations are refused until it is fixed.
-
-Suggestion settings are discovered at `<root>/.cint/suggestions.yml` under a
-top-level `suggestions:` mapping. Implemented keys are `enabled` (default
-`false`), `trigger` (default `manual`), `provider` (default `deepseek` when
-enabled and unset; `fake` remains available), `model` (default `deepseek-chat`
-for the DeepSeek provider), `maxCandidates` (default `0`; `0` or less is
-unlimited, positive values cap validated add candidates first and then proposal
-groups with the remaining slots), `maxEnrichmentCandidates`
-(default `0`; `0` or less sends every AI-eligible candidate, positive values cap
-the pass), `promptVersion` (default `deepseek-intent-v3` for DeepSeek), `timeoutMs`
-(default `10000`, minimum `1`), `workerThreads` (default `2`, clamped to `1..8`),
-`discoveryEnabled` (default `true`), `discoveryIncludeLeaves` (default `true`),
-`discoveryMaxUnitsPerRequest` (default `24`, minimum `1`), `sessionTimeoutMs`
-(default `120000`, minimum `1`), `maxTurns` (default `50`, minimum `1`),
-`maxToolCalls` (default `200`, minimum `0`), and `maxTokensPerRequest` (default
-`2048`, minimum `1`), `restrictionsEnabled` (default `true`), `cacheEnabled`
-(default `true`), `cachePersist` (default `true`), `cacheMaxEntries` (default
-`5000`, `0` disables entries), `cacheTtlHours` (default `720`, `0` disables
-expiry), `similarHintThreshold` (default `0.8`), `apiKeyEnv` (default
-`DEEPSEEK_CHAT_KEY`), `baseUrl` (default
-`https://api.deepseek.com/chat/completions`), `maxTokens` (default `1024`),
-`maxConfidence` (default `0.84`, clamped to `0..0.84`), `excerptRadiusBytes`
-(default `400`, minimum `0`), `allowGlobs` (default empty, which allows every
-path), and `redactPatterns` (default empty). This gate controls the
-`cint/suggest` discovery/enrichment pass; deterministic pack candidates still
-publish when it is disabled. Discovery scans expression units, not arbitrary
-lines, and is bounded by the session timeout, turn, tool-call, units-per-request,
-and token budgets. If a session budget is exhausted, the server publishes the
-graded units and reports coverage instead of discarding everything.
-
-Analysis reuse is documented in the AI discovery section above. The server resolves this file, injects the provider config and key lookup, and
-orchestrates the pass. `:suggest` owns the DeepSeek provider and its remote
-transport: it builds the `Authorization` header, uses the JDK `HttpClient`, and
-applies `timeoutMs` to the HTTP request. `baseUrl` and `apiKeyEnv` are
-project-controlled, so enabling suggestions trusts the project config. The key
-value appears only in the request header, never in the secret-free capability
-descriptor or logs. Missing keys, non-200 responses, timeouts, and malformed
-output yield no AI proposals after one attempt; there are no retries. AI
-candidates carry `source = ai:deepseek` plus `provider`/`model`/`promptVersion`/
-`rationale`, and their confidence is a diagnostic value capped at
-`maxConfidence`, not an auto-establish threshold.
-
-Discovery sends the current batch of expression units and tool results for the
-current document; legacy enrichment sends the candidate span plus
-`excerptRadiusBytes` per side with candidate metadata, known/neighboring intents,
-path/language, and the prompt version. Neither path reads other project files.
-`allowGlobs` gates the pass, and `redactPatterns` star out regex matches in every
-text result before sending while preserving byte length and line breaks. Batch
-prompts bound per-unit text and existing annotation lists to the same session
-byte budget as tool results. The suggestion and provider pools
-are bounded by `workerThreads`, and provider calls are interrupted after
-`timeoutMs`. Both pools stop when the server run loop exits or the JVM shutdown
-hook runs; the protocol `shutdown` request only acknowledges and leaves them
-usable for later clients. Decisions are stored in `<root>/.cint/suggestions.json`; each record
-carries `candidateId`, `path`, `contentHash`, `intents`, `reason`, `decision`,
-`createdAt`, and optional `anchorId` plus a `startLine`/`startCol`/`endLine`/
-`endCol` span snapshot. Missing `anchorId` and span fields default sensibly, so
-older records still load. A confirm also writes the existing
-`<root>/.cint/user-annotations.json` record for add-only candidates. Proposal
-groups confirmed with removals write `<root>/.cint/ai-restrictions.json`
-instead; the file carries `version` and `restrictions`, each with `id`, `path`,
-`symbol`, bare lowercase SHA-256 `contentHash`, a real `unitFingerprint`, an
-anchor span, relative-offset `remove`/`add` operations (a removal offset may be
-negative when it targets an enclosing span), and provider/model/prompt
-provenance. Both files are guarded by the `<root>/.cint/user-annotations.json.lock`
-lock directory, which is shared by the Kotlin writers and the nvim annotation
-writer. Writers acquire the directory exclusively for the read-modify-write and
-remove it afterward; readers only read the data files, which are replaced
-atomically. Restriction records require at least one removal; the writer rejects
-add-only records so no file can be persisted that the reader would reject. The
-restriction reader accepts file `version` 1; an unknown version
-is not applied, and `add`/`remove` refuse to rewrite such a file so existing
-records are never destroyed. A restriction whose anchor identity cannot be resolved uniquely is
-dormant and remains inspectable; removing it restores the original annotation on
-the next analysis.
-
-## LSP sharing
-
-The Kotlin oracle connects to the **same** `kotlin-lsp --multi-client` server
-that Neovim uses. The socket is derived deterministically from the project root
-(`13000 + sha256(root)[0:8] % 20000`), matching the nvim adapter. If no server
-is listening, the engine starts one with the same flags; otherwise it attaches
-and never spawns a duplicate. `--no-lsp` forces heuristic facts only.
-
-LSP queries are read-only (`textDocument/hover` for the receiver type). The
-engine does not share document sync, diagnostics, or capabilities with the
-editor.
-
-Receiver types are memoized per analysis, so rules asking about the same
-receiver/offset share one result. A session key includes the file path and
-content hash; reusing a session for new text resets its per-analysis cache,
-counters and budget. The oracle keeps a bounded per-document-version cache for
-positive and negative hover results. It invalidates a URI lazily when a later
-query sees changed text, sending `didClose` then `didOpen` with a bumped
-version; other URIs survive. Positive types are durable for a document version.
-Empty hovers use a bounded negative TTL (500 ms by default, configurable at the
-oracle seam): they are reused for immediate analyses and re-hovered after the
-TTL, so a cold or partially indexed server can recover without pinning a
-negative for the whole version. Timeouts and failures are not stored in the
-document cache; they are memoized only within one analysis by `OracleSession`, so
-duplicate hovers are still impossible in an analysis while a later analysis
-retries. A revalidated negative or retried failure is a hover call, not a cache
-hit. Each analysis also has an oracle budget/circuit breaker: after two
-timeouts, three failures, or 1500 ms of cumulative hover time, further queries
-return no type and detection degrades to text/config evidence. Split documents
-use one budget per analyzed region because each region has its own frontend and
-oracle; the bundled split languages currently use the null oracle, so this has
-no live hover cost today.
-
-Data-access lookup/search and enum queries gate the oracle behind callee,
-qualifier, known-map, enum-shape and AST receiver-shape evidence, so literals,
-binary expressions and lambdas do not hover while call/index/navigation
-receivers remain typeable. Service delegation applies the same receiver-shape
-gate before its type fallback. The live server reports per-analysis counters on
-stderr: `requests`, `queries` (actual hover/delegate calls), `cacheHits`,
-`sessionHits`, `delegateHits`, `timeouts`, `failures`, `blocked` and
-`elapsedMs`; prompts and keys are never logged. Null-oracle analyses emit no
-oracle diagnostic.
-
-## Live server
-
-The server can run as a per-project daemon over a Unix socket:
-
-```sh
-./gradlew :server:installDist
-cint-server --socket /path/to/project.sock --root /path/to/project
-```
-
-Transport is NDJSON JSON-RPC, protocol `4`. `initialize` takes
-`{protocol, root, client}` and returns `{protocol, root, languages, config,
-suggestions}`. `config` is `{packs, overlay}`: `packs` lists pack descriptors
-(`packId`, `rules` with `id`/`owns`/`reads`, `languages`, and `fields` with
-`key`/`kind`/`scope`/`languages`), and `overlay` is the user overlay map. An
-unreadable overlay adds `overlayError` to `config`. Field `kind` is one of
-`STRING`, `BOOLEAN`, `STRINGS`, `STRING_LIST`, `STRING_SETS`, `CUSTOM`; `scope`
-is `PACK` or `LANGUAGE`, and only language-scoped fields carry concrete
-`languages`.
-
-`suggestions` is a secret-free capability descriptor: `{enabled, trigger,
-provider, model, knownIntents, discovery, restrictions, cache,
-maxUnitsPerRequest}`. `discovery` is true when `discoveryEnabled` is set and the selected provider
-supports the session surface; `restrictions` is true when `restrictionsEnabled`
-is set (default true) for a protocol-4 client, independent of provider support
-because the inspector remains usable; proposal generation additionally needs the
-discovery session surface and `discoveryEnabled`; `cache` is true for a
-protocol-4 client when `cacheEnabled` is set (default true). It comes
-from `.cint/suggestions.yml`; a missing
-file advertises `enabled: false`, `trigger: "manual"`, and null provider/model;
-an enabled file without a provider advertises `deepseek` and `deepseek-chat`.
-The server answers with its own protocol version (`4`) and records each
-client's requested value during `initialize`; it does not downgrade the
-response. Discovery, `cint/suggest/progress`, `cint/suggest/log`, and the
-restriction inspector require the requesting client to have sent protocol
-`>= 4`; the inspector also requires `restrictionsEnabled`. Protocol-3 clients
-keep the legacy enrichment path, receive deterministic tags and the existing
-candidate shapes (no `operations` group field and no `restrictions` response
-field), and see no discovery progress, log, or restriction groups. The cache
-capability flag is true only for protocol-4 clients when caching is enabled.
-
-The client sends `textDocument/didOpen`, `didChange`, and `didClose` with full
-text and a monotonic version. The server re-runs that file and emits
-`cint/publishTags` with `uri`, `version`, content `hash`, config `revision`,
-`analysisRevision`, and `annotations`. A `didChange` with the same content hash
-under the same deterministic environment skips analysis and republishes the
-cached annotations under a fresh `analysisRevision`. `revision` tracks pack/config changes;
-`analysisRevision` is a monotonic per-document counter for every analysis
-publish. The analysis, its config snapshot, and the new `analysisRevision` are
-allocated together under the global lock, so revision order always matches
-analysis order and a publish from a newer config snapshot cannot receive an
-older `analysisRevision`. The client ignores stale out-of-order publishes whose
-version or `analysisRevision` is older than the last accepted one, using
-`revision` as a tiebreaker when an `analysisRevision` is reused. Analysis and
-revision sampling are serialized under the global lock; socket writes and config
-republishes happen outside it. `cint/analyze` requests an explicit re-run.
-Profiles and shards stay client-side; changing them never re-runs analysis.
-
-Every tags publish is followed by `cint/publishCandidates` on the secondary
-channel (see below). Config mutations remain unchanged:
-
-- `cint/config/read` takes no params and returns `{packs, overlay}`.
-- `cint/config/append` and `cint/config/remove` take
-  `{packId, language, field, value}` and return the same `{packs, overlay}`.
-  They validate the pack, language, field, kind (`STRINGS` or `STRING_LIST`),
-  and language scope, write `<root>/.cint/config.overlay.yml`, reload packs, bump
-  the config revision, and republish tags for open documents. If the target pack
-  does not support additive overlay (`UNSUPPORTED_PACK_OVERLAY`), the server
-  restores or deletes the overlay, reloads the previous state, and reports an
-  error without bumping the revision.
-
-### Candidate protocol
-
-- `cint/publishCandidates` is pushed after each tags publish and after a
-  suggest/decision republish, including when the result is empty. Params are
-  `uri`, `version`, `analysisRevision`, `suggestionRevision`, flat `candidates`,
-  and `groups`. A candidate carries `candidateId`, `path`, `contentHash`,
-  `intents`, `source`, `confidence`, span and byte positions, `reason`,
-  `aiEligible`, plus optional `rationale`, `promptVersion`, `provider`, and
-  `model`. A group carries `anchorId`, `path`, `contentHash`, span/positions, and
-  its `candidates` alternatives for one anchored span. Protocol-4 groups also
-  carry explicit `operations` (`ADD`/`REMOVE` with intent, span, confidence, and
-  optional rationale/source); protocol-3 clients do not receive that field. An AI
-  restriction group has `proposalId`/`groupId` matching the contract and no
-  independently confirmable `candidates`. `suggestionRevision` is
-  server-wide and monotonic. A candidate publish is dropped if its
-  `analysisRevision` is older than the cached analysis or the last published
-  candidates; the cached analysis revision advances with the config snapshot.
-- `cint/suggest` takes `{uri, version, requestId}` and asynchronously grades the
-  expression worklist for that exact document version. It returns
-  `{accepted, cancelled, count, total, graded, reused, additions, toolCalls,
-  turns, incomplete, budgetExhausted, skipped, overhead, uncovered}` plus
-  `restrictions` for protocol-4 clients; `restrictions` is the post-filter
-  published proposal count, not the raw session count. A disabled, stale-version,
-  or already-busy pass returns `{accepted: false, ...}` with `disabled`, `stale`,
-  or `busy`. A provider timeout returns `{accepted: false, cancelled: true,
-  timeout: true, count: 0}` after interrupting the provider. Only one pass runs
-  per document, and the result is dropped if the document, `analysisRevision`, or
-  candidate state changes before publish.
-- `cint/suggest/progress` is pushed during a discovery pass with
-  `{uri, version, graded, reused, total, activity}`.
-- `cint/suggest/log` takes `{uri}` and returns the last session's counts,
-  coverage, and tool/reuse events for `:CintAiLog`. The log includes the
-  built-in provider's safe failure detail (missing key environment variable,
-  HTTP status, transport error class) but not prompt text or raw prose.
-- `cint/suggest/cancel` takes `{uri?, requestId?}`, marks the matching in-flight
-  pass cancelled, and returns `true`. Cancelled request ids are pruned after 60
-  seconds.
-- `cint/candidates/decide` takes `{uri, version, candidateId | proposalId |
-  groupId, decision}` with `decision` one of `confirm`, `reject`, or `skip`. It
-  validates the document version and current anchor hash, persists the decision,
-  and republishes. It returns `{accepted: true, stale: false, decision}` or
-  `{accepted: false, stale: true}` / `{accepted: false, missing: true}`.
-  When `restrictionsEnabled` is false, a proposal decision returns
-  `{accepted: false, disabled: true}` before any write; this applies to
-  confirm/reject/skip. All candidate and proposal decisions share a decision
-  lock. Proposal confirm revalidates removals and replacement adds against the
-  current analysis under that lock, returning `stale` when another decision
-  already consumed a removal target or established a replacement.
-  Confirm for an add-only candidate adds a user annotation and records the
-  candidate's `anchorId` and span, which resolves the whole anchor group.
-  Confirm for a proposal group applies all `ADD`/`REMOVE` operations atomically
-  by writing one `.cint/ai-restrictions.json` record; its replacement intents
-  appear as `source = ai-confirmed` with contributor `core:ai-confirmed` and
-  structured provider/model/prompt contribution fields on the next analysis.
-  Reject persists suppression for that candidate or proposal anchor. Skip
-  remains per-client/session and is not persisted. Confirm and reject are
-  project-global: the server republishes the URI to every client that has it
-  open, scoped per writer. Each writer keeps its own pending add candidates and
-  proposals; carried proposals are revalidated against the new analysis and
-  dropped when their removal target is gone, and protocol-3 writers never receive
-  proposal groups. `cint/restrictions/remove` also preserves pending review
-  state. A republish after a decision still emits `cint/publishCandidates`, with
-  empty `candidates`/`groups` only when nothing remains. If the user annotation
-  or restriction record is later removed, the next analysis restores or
-  re-proposes the original annotation.
-- `cint/restrictions/list` (alias `cint/restrictions`) takes optional `{uri}` and
-  returns `{restrictions: [...]}`. Each record has `id`, `path`, `symbol`,
-  `contentHash`, `unitFingerprint`, anchor `startLine`/`startCol`/`endLine`/
-  `endCol`, `remove`/`add` operation arrays, `provider`, `model`,
-  `promptVersion`, `createdAt`, and `status` (`active`, `dormant`, or `unknown`).
-  A stored operation is `{intent, startOffset, endOffset, confidence, rationale}`.
-  `cint/restrictions/remove` takes `{id}` and returns `{accepted, removed}`,
-  removing the record and re-analyzing open documents so the original annotation
-  returns. Both require protocol 4 and `restrictionsEnabled`.
-
-Failures use the existing JSON-RPC error shape `{code: -32000, message}`.
-`cint/config/read` errors when the overlay is unreadable; append/remove also
-refuse to overwrite an invalid overlay.
-
-Flags: `--socket`, `--root`, `--no-lsp`, `--config`, `--lang`. The live server
-reuses the shared `kotlin-lsp` socket. The HTTP server remains available for
-batch and editor-agnostic requests.
-
-## Usage
-
-```sh
-# batch
-./gradlew :cli:run --args="/path/to/project --out tags.json"
-
-# install the launcher
-./gradlew :cli:installDist
-build/install/cint/bin/cint /path/to/project
-
-# HTTP
-./gradlew :server:run --args="--port 8765"
-curl -X POST http://127.0.0.1:8765/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"path":"Sample.kt","root":"/path/to/project","text":"..."}'
-```
-
-POST `/analyze` accepts `path`, `root`, `text`, `language`, `config`, and an
-optional `types` map (`{"<byteOffset>": "fq.Type"}`) to inject editor-provided
-facts. `--no-lsp` disables the LSP oracle on the server.
-
-## Artifact
-
-```json
-{
-  "language": "kotlin",
-  "intents": ["LOGGING", "BOOKKEEPING", "ERROR_HANDLING", "VALIDATION", "UNTAGGED"],
-  "files": [
-    {
-      "path": "Sample.kt",
-      "hash": "sha256-hex",
-      "spans": [
-        {"role":"source-intent","intents":["LOGGING"],
-         "source":"lsp","confidence":0.95,
-         "startLine":10,"startCol":8,"endLine":10,"endCol":22,
-         "startByte":240,"endByte":278,"nodeAnchor":null,
-         "provenance":[{"rule":"logging:logging","role":"source-intent",
-           "intents":["LOGGING"],"source":"lsp",
-           "confidence":0.95,"startLine":10,"startCol":8,"endLine":10,"endCol":22,
-           "startByte":240,"endByte":278}]},
-        {"role":"scaffold","intents":["LOGGING","ERROR_HANDLING"],
-         "source":"treesitter","confidence":0.9,
-         "startLine":12,"startCol":4,"endLine":18,"endCol":5,
-         "startByte":310,"endByte":455,"nodeAnchor":null,
-         "provenance":[{"rule":"core:scaffold","role":"scaffold",
-           "intents":["LOGGING","ERROR_HANDLING"],
-           "source":"treesitter","confidence":0.9,"startLine":12,"startCol":4,
-           "endLine":18,"endCol":5,"startByte":310,"endByte":455}]}
-      ],
-      "candidates": [
-        {"intents":["VALIDATION"],
-         "source":"rule:validation:validation","confidence":0.4,
-         "startLine":20,"startCol":4,"endLine":20,"endCol":24,
-         "startByte":520,"endByte":544,
-         "reason":"GAP","aiEligible":true}
-      ]
-    }
-  ]
-}
-```
-
-Provenance contribution objects may additionally carry `provider`, `model`, and
-`promptVersion` when the contribution originates from an `ai-confirmed`
-restriction. These keys are optional; ordinary pack provenance omits them.
-
-Lines and columns are 0-based. `hash` covers canonical content (CRLF -> LF, one
-trailing newline removed) so consumers can reject stale artifacts. `candidates`
-defaults to an empty list. Entries share the live presentation fields (`intents`,
-`source`, `confidence`, span/bytes, `reason`, `aiEligible`, and optional
-`rationale`/`promptVersion`/`provider`/`model`) but omit the live-only
-`candidateId` and `contentHash`; the artifact is a presentation surface, not a
-decision surface.
+Project configuration and knowledge live under `<root>/.cint/`. Detection
+values and seed defaults are pack content. Runtime options (knowledge path,
+provider command/endpoint/timeout, and language selection) are supplied by each
+app. The renderer reads published protocol data and does not evaluate rules.
 
 ## Development
 
 ```sh
-just build        # assemble every module; does not run tests
-just test-engine  # deterministic engine, host, server, and integration tests
-just test-lsp     # opt-in shared-LSP oracle test (CINT_LSP_ROOT)
-just test-nvim    # headless renderer tests
-just lint         # ktlint over Kotlin sources
-just install      # CLI and live-server distributions
+just build                # assemble every module
+just test-engine          # all deterministic tests plus graph guard
+just test-lsp             # focused LSP provider tests
+just lint                 # ktlint over Kotlin sources
+just install              # cint, cint-server, cint-mcp distributions
+just graph-guard          # module graph guard and self-test
+just parity               # frozen CLI/IPC parity suites and report check
+just smoke                # built distribution smoke test
+just syntax-provenance    # pinned V1 syntax snapshot verification
+just protocol-schema      # regenerate the renderer protocol JSON Schema
 ```
 
-Lint scope is Kotlin only; the Lua renderer is covered by `just test-nvim` but
-is not format-linted here.
+Lint scope is Kotlin only. Neovim renderer tests live in the external
+`code-intent-nvim` repository.
 
 ## Testing grounds
 
-`../testing-grounds/kotlin/`, `javascript/`, `typescript/`, `vue/`, and `csharp/`
-contain fixtures for interactions, scaffolds, catches, derivative uses, purity
-annotations, Error Handling, and heuristic false positives. They are
-intentionally not part of Gradle and need not compile.
-
-```sh
-cint ../testing-grounds --no-lsp --all
-```
+`testing-grounds/` contains Kotlin, JavaScript, TypeScript, Vue, and C# fixtures
+for logging, guards, scaffolds, derivative uses, and false-positive cases. They
+are intentionally not part of Gradle and need not compile.

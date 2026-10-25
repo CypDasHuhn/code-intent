@@ -1,6 +1,6 @@
 ---
 name: Version the external renderer protocol
-status: todo
+status: done
 depends-on: [085]
 reviewers: [correctness, api-fidelity]
 ---

@@ -6,30 +6,32 @@
 | **intent** | Open string label attached to a span, e.g. `LOGGING`, `SEARCH`, `VALIDATION`. |
 | **role** | One of `SOURCE_INTENT`, `DERIVATIVE_USE`, `SCAFFOLD`. Core owns the last two. |
 | **source tier** | Where evidence came from: `treesitter`, `lsp`, `comment`, `cfg`, `annotation`, `user`, `heuristic`, `ai:<provider>`. |
-| **provenance** | Per-contributor origin of an annotation (rule, role, intents, source, confidence, span). |
-| **contribution** | Internal store unit; source contributions have rule + role + intents + span. |
+| **provenance** | Per-contributor origin of an annotation or knowledge record. |
 | **rule** | Unit owning exactly one intent and declaring reads/optionalReads. |
-| **rulepack** | Distribution unit bundling rules plus its typed config schema. |
-| **reads / optionalReads** | Required / additive intent dependencies, resolved to owning rules. |
+| **rulepack** | Manifest content bundling playbook rules plus seed defaults. |
+| **playbook** | Pack rule plan consumed by `intent-pipeline` and evaluated by `core`. |
+| **reads / optionalReads** | Required / additive intent dependencies resolved to owning rules. |
 | **stratum** | Scheduler layer of rules evaluated once against frozen earlier output. |
 | **fixpoint** | Internal iteration for a rule that reads its own output; monotone over a finite lattice. |
-| **scaffold** | Composition annotation covering an enclosing region (if/try/function/return) with its intents. |
+| **scaffold** | Composition annotation covering an enclosing region with its intents. |
 | **derivative use** | Composition annotation marking a value/assignment that carries another span's intent through read-only flow. |
-| **candidate** | Review-only `CandidateEmit`; never enters composition or the annotation store. |
-| **AI candidate** | Candidate from `ai:<provider>`, structurally candidate-only, confirmable by the user. |
-| **AI-eligible** | Candidate flagged by a pack as suitable for AI enrichment. |
-| **anchor** | Candidate identity span/hash; alternatives at one anchor form a group. |
-| **confirm / reject / skip** | Candidate decisions: write user annotation + reanalyze / persist suppression / hide for current client session. |
-| **user directive** | `PURE` or `READONLY` user intent with built-in composition semantics. |
+| **candidate** | Review-only output; never enters composition or the knowledge store. |
+| **function annotation** | Persisted knowledge record for a function selector: intents, scope, status, provenance. |
+| **span override** | Persisted knowledge record that replaces intents at a span. |
+| **pattern hypothesis** | Proposed intent set for a structural pattern, with evidence and status. |
+| **pack default** | Seed knowledge materialized from a pack; it becomes project-owned once materialized. |
+| **knowledge store** | The materialized semantic data at `<root>/.cint/knowledge.json`. |
+| **selector** | Function identity: qualified name plus optional import/receiver/declaring type/signature/pattern. |
+| **confirm / reject / skip** | Candidate decisions: promote knowledge / persist suppression / hide for the current client session. |
 | **UNTAGGED** | Reserved neutral marker for unclassified spans; never rule-owned. |
 | **span** | 0-based start/end line+column plus byte offsets. |
 | **analysisRevision** | Monotonic per-document live publish ordering for analysis/tags. |
 | **suggestionRevision** | Monotonic ordering for candidate publishes. |
-| **oracle** | Type-information provider; `LspOracle` for Kotlin, `NullOracle` otherwise. |
-| **oracle budget/session** | Per-analysis memoization plus timeout/failure/elapsed circuit breaker. |
-| **live daemon** | `cint-server`, NDJSON JSON-RPC over a per-user Unix socket, protocol 4. |
+| **semantic provider** | Type/symbol provider behind the `SemanticProvider` port; managed, attached, or editor proxy. |
+| **live daemon** | `cint-server`, NDJSON JSON-RPC over a per-user Unix socket. |
 | **split region** | Vue `<script>` region analyzed as JS/TS then shifted back to host coordinates. |
 | **meaning** | Client-side visual policy (`SHOW`, `HIGHLIGHT`, `IGNORE`, `CONCEAL`) resolved from intents/tags. |
 | **handler** | Client rendering primitive selected by a meaning (`color`, `highlight`, `ignore`, `conceal`). |
 | **profile / shard** | Client config overlay file / named config patch stacked on a profile. |
 | **hover** | Non-focusable cursor-relative intent inspector showing the innermost span's intents. |
+| **MCP** | Agent-facing tool boundary (`cint-mcp`); distinct from the renderer IPC protocol. |

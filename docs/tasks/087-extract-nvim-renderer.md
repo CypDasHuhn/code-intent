@@ -1,6 +1,6 @@
 ---
 name: Extract the Neovim renderer
-status: todo
+status: done
 depends-on: [086]
 reviewers: [architecture, correctness]
 ---

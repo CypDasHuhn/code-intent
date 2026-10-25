@@ -1,0 +1,46 @@
+package dev.cint.v2.syntax.treesitter
+
+internal object V1KotlinSnapshot {
+    const val V1_COMMIT: String = "3ccea9e9cdb5a4e652182136866b24929bbed0b3"
+
+    val fingerprints: Map<String, String> =
+        mapOf(
+            "Bookkeeping.kt" to "2314b07c41c6e5d6782560a5e611b7ac404ede40daff4916571b8ba0545dd45a",
+            "Catches.kt" to "be3ccfffb363dd04bf35c7e190d94eaf6a15080d4c4ea61856ec2e431c372873",
+            "Composition.kt" to "c392c3fcb6ca7117bc805a89c22134f5c7cf2716493e63b7ccb9f1a12a2b6b15",
+            "ErrorHandling.kt" to "922717c1d51cc34497c36108df368d76323331eef1afbc57df6c3b7c0c0837c7",
+            "Heuristics.kt" to "c41c1e96cb4f11b8db331cd9df17ed287623bc6c78fa9eaaea4cf9d8ffa76cdb",
+            "LoggerInteractions.kt" to "f9a2ad994518ef0d22189c4024fa67797ff72dd4f34bef7aedd641c8e4258f08",
+            "Mutation.kt" to "b813132c8b022aa7d5be9ee79f063ebae16ce38d554a5520dd8568743737e3fd",
+            "NeighboursCli.kt" to "84062e4ff29e2fbdefc6ab9623f1e30b8377da4461f97d85e487a6dea7966ce8",
+            "PurityAssist.kt" to "841f66814712a76b1f182420b6628b1393b92280be1d612b2575436413463bdd",
+            "Scaffolds.kt" to "ed037f40c3956cb8780434922fbebf6ef94dce37c52c12c6a6336b2f3c92cc2a",
+            "ServiceIntents.kt" to "5c09be4ae95495329066702e6b9909ade9868f1470bee31fb5fe38f91d8bef4c",
+        )
+
+    val sources: Map<String, String> =
+        mapOf(
+            "Bookkeeping.kt" to
+                "package testinggrounds\n\nclass BookkeepingExample {\n    @Bookkeeping\n    var skipped = 0\n\n    // cint:bookkeeping\n    var rejected = 0\n\n    fun record(value: Int): Boolean {\n        if (value < 0) {\n            skipped++\n            return false\n        }\n        if (value == 0) {\n            rejected += 1\n            return false\n        }\n        return true\n    }\n\n    fun total(): Int = skipped + rejected\n}\n",
+            "Catches.kt" to
+                "package testinggrounds\n\nimport org.slf4j.LoggerFactory\n\nprivate val log = LoggerFactory.getLogger(\"Catches\")\n\nfun loggingCatch() {\n    try {\n        work()\n    } catch (failure: Exception) {\n        log.warn(\"failed\", failure)\n    }\n}\n\nfun catchWithRethrow() {\n    try {\n        work()\n    } catch (e: Exception) {\n        log.warn(\"failed\", e)\n        throw e\n    }\n}\n\nfun catchWithDeadLocal() {\n    try {\n        work()\n    } catch (ex: Exception) {\n        if (1 == 1) {\n            val unused = \"\"\n            log.warn(\"failed\", ex)\n        }\n    }\n}\n\nfun allLoggingTry() {\n    try {\n        log.warn(\"attempt\")\n    } catch (failure: Exception) {\n        log.warn(\"failed\", failure)\n    }\n}\n\nfun catchWithAssistCandidate() {\n    try {\n        work()\n    } catch (ex: Exception) {\n        val message = \"failed\"\n        log.warn(message, ex)\n    }\n}\n\nfun work() {\n}\n",
+            "Composition.kt" to
+                "private val log = LoggerFactory.getLogger(\"Composition\")\n\nfun compose(repository: SearchRepository, call: String?, nodes: List<String>, values: List<String>): Boolean {\n    val uses = repository.findAll().map { it.name }\n    for (node in uses) {\n        val current = node ?: continue\n        if (uses.isEmpty()) continue\n        if (receiverNode(node) != null) return false\n        log.info(current)\n    }\n    val selected = uses.all { isConstant(it) || isIdentifier(it) }\n    val pure =\n        isConstant(selected) ||\n            isIdentifier(selected) ||\n            isAnnotatedPureCall(selected) ||\n            isUserPureCall(selected)\n    return pure\n}\n\nfun receiverNode(value: String): String? = if (value.trim().isNotEmpty()) value else null\nfun isConstant(value: String): Boolean = value.isNotEmpty()\nfun isIdentifier(value: String): Boolean = value.isNotBlank()\nfun isAnnotatedPureCall(value: String): Boolean = value.startsWith(\"pure\")\nfun isUserPureCall(value: String): Boolean = value.endsWith(\"pure\")\n",
+            "ErrorHandling.kt" to
+                "package testinggrounds\n\nfun requirePositive(x: Int) {\n    require(x > 0)\n}\n\nfun requireValue(value: String?) {\n    requireNotNull(value)\n}\n\nfun checkPositive(x: Int) {\n    check(x > 0)\n}\n\nfun checkValue(value: String?) {\n    checkNotNull(value)\n}\n\nfun fail(message: String) {\n    error(message)\n}\n\nfun todo() {\n    TODO()\n}\n\nfun rethrow(failure: Exception): Nothing = throw failure\n",
+            "Heuristics.kt" to
+                "package testinggrounds\n\nclass Service {\n    fun warn(message: String) {}\n\n    fun info(message: String) {}\n}\n\nprivate val logger = Service()\n\nfun falsePositiveByName() {\n    logger.warn(\"looks like logging\")\n}\n",
+            "LoggerInteractions.kt" to
+                "package testinggrounds\n\nimport org.slf4j.LoggerFactory\n\nprivate val logger = LoggerFactory.getLogger(\"TestingGrounds\")\n\nfun directLogger() {\n    logger.info(\"direct\")\n}\n\nfun stdoutPrint() {\n    System.out.println(\"stdout\")\n}\n\nfun plainPrint() {\n    println(\"plain\")\n}\n\nfun unqualifiedError() {\n    error(\"not logging\")\n}\n\nfun fakeReceiver() {\n    val fake = FakeLogger()\n    fake.info(\"not logging\")\n}\n\nclass FakeLogger {\n    fun info(message: String) {}\n}\n",
+            "Mutation.kt" to
+                "class MutationFixture {\n    @Bookkeeping\n    var skipped = 0\n\n    fun persist(user: User, event: Event, channel: SendChannel<Int>, items: MutableList<User>) {\n        repository.save(user)\n        file.writeText(\"payload\")\n        bucket.put(user.id, user)\n        kafkaTemplate.send(event)\n        channel.send(1)\n        cache.save(user)\n        items.add(user)\n        var count = 0\n        count++\n        user.name = \"x\"\n        handler.persistAll(user)\n        handler.updateProfile(user)\n        skipped++\n    }\n}\n",
+            "NeighboursCli.kt" to
+                "class NeighboursCli {\n    fun publish(\n        stage: (String) -> String,\n        move: (Path, Path) -> Unit = Files::move,\n        notify: (Path) -> Unit,\n    ) {\n        var jsonTemp = Paths.get(\"neighbours.json.tmp\")\n        var htmlTemp = Paths.get(\"neighbours.html.tmp\")\n        jsonTemp = Paths.get(stage(\"json\"))\n        htmlTemp = Paths.get(stage(\"html\"))\n        move(jsonTemp, Paths.get(\"neighbours.json\"))\n        move(htmlTemp, Paths.get(\"neighbours.html\"))\n        notify(Paths.get(\"neighbours.json\"))\n    }\n}\n",
+            "PurityAssist.kt" to
+                "package testinggrounds\n\nimport org.slf4j.LoggerFactory\n\nprivate val log = LoggerFactory.getLogger(\"Purity\")\n\n@Pure\nfun pureText(): String = \"text\"\n\n@Contract(pure = true)\nfun contractedText(): String = \"text\"\n\nfun impureText(): String = \"text\"\n\nfun literalAssist() {\n    val message = \"literal\"\n    log.warn(message)\n}\n\nfun annotatedAssist() {\n    val message = pureText()\n    log.warn(message)\n}\n\nfun contractedAssist() {\n    val message = contractedText()\n    log.warn(message)\n}\n\nfun unannotatedAssist() {\n    val message = impureText()\n    log.warn(message)\n}\n\nfun unusedLocal() {\n    val unused = \"\"\n    log.warn(\"still logs\")\n}\n",
+            "Scaffolds.kt" to
+                "package testinggrounds\n\nimport org.slf4j.LoggerFactory\n\nprivate val log = LoggerFactory.getLogger(\"Scaffolds\")\n\nfun constantGuard() {\n    if (1 == 1) {\n        log.warn(\"constant\")\n    }\n}\n\nfun configGuard(loggingEnabled: Boolean) {\n    if (loggingEnabled) {\n        log.warn(\"config\")\n    }\n}\n\nfun nonLoggingGuard(x: Int) {\n    if (x > 0) {\n        log.warn(\"x\")\n    }\n}\n\nfun mixedBranch() {\n    if (1 == 1) {\n        log.warn(\"then\")\n    } else {\n        doWork()\n    }\n}\n\nfun nested() {\n    if (1 == 1) {\n        if (2 == 2) {\n            log.warn(\"nested\")\n        }\n    }\n}\n\nfun doWork() {\n}\n",
+            "ServiceIntents.kt" to
+                "class UserController(private val userService: UserService) {\n    fun find(id: String): User = userService.find(id)\n\n    fun save(value: User) {\n        userService.save(value)\n    }\n}\n\nclass ClientHolder {\n    fun initialize() {\n        val client = HttpClient()\n        client.connect()\n    }\n}\n\nclass AnnotatedUserController @Inject constructor(private val annotatedService: UserService) {\n    fun find(id: String): User = annotatedService.find(id)\n}\n",
+        )
+}

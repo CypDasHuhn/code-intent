@@ -27,4 +27,4 @@ Provide the long-lived editor daemon over the V2 runtime and IPC protocol.
 
 ## Notes
 
-- Use a temporary cint-server-v2 executable name until cutover.
+- The executable is `cint-server`; the temporary V2 suffix was dropped at cutover.

@@ -98,12 +98,4 @@ positions. `testing-grounds/kotlin/ServiceIntents.kt` is the shared fixture.
 
 ## Registration and host coverage
 
-The pack is registered in
-`analysis-engine/core/rulepacks/src/main/resources/META-INF/services/dev.cint.api.RulePack`
-as `dev.cint.rulepacks.intents.service.ServiceRulePack`. Bundled discovery and
-host composition are covered by `BundledRulePackRegistrationTest`,
-`BundledRulePackLoadingTest`, and `BundledRulePackRegistrationHostTest`, which
-assert `SERVICE_DELEGATION` and `SERVICE_INIT` per bundled language. The current
-pipeline snapshot includes `service:init` from `csharp/Sample.cs`, and
-`ServiceFixtureTest` covers `testing-grounds/kotlin/ServiceIntents.kt`. The
-manual gate records this coverage in m013.
+The pack is declared in `analysis-engine/packs/src/main/resources/packs/bundled-packs.json` as the `service` pack. Bundled discovery and runtime binding are covered by the pack, pipeline, and frozen-corpus parity tests. Classification itself is covered by the direct pack tests and the frozen-corpus parity suite.

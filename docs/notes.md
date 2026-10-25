@@ -38,14 +38,15 @@ source repo -> analysis-engine
               tree-sitter -> syntax facts -> CFG
               LSP (optional) -> type facts
               rules -> annotations -> JSON-RPC over Unix socket
-            -> nvim-renderer -> extmarks
+            -> code-intent-nvim (external) -> extmarks
 
 ```
 
 Components:
 
 - `analysis-engine/` — Kotlin/JVM Gradle app. Parses, builds facts/CFG, tags.
-- `nvim-renderer/` — Lua Neovim plugin. Socket-only; renders published tags.
+- `code-intent-nvim` (sibling repository) — Lua Neovim plugin. Socket-only;
+  renders published tags.
 
 The engine is editor-agnostic. The renderer is the only editor-specific part.
 
@@ -136,7 +137,7 @@ not in one global file; the engine never branches on language.
 ## 5. Detection as implemented (current rulepacks)
 
 Detection is data-driven over `View` facts; rulepacks do not walk grammar node
-kinds directly. The bundled packs live in `analysis-engine/core/rulepacks`:
+kinds directly. The bundled packs live in `analysis-engine/packs/src/main/resources/packs/bundled-packs.json`:
 
 - `logging:logging` — one `LOGGING` rule with print, logger-interaction, and
   logging-state matchers. It recognizes configured print calls/qualifiers,
@@ -190,7 +191,7 @@ inference.
   `:CintAnalyze` force a run.
 - Commands include `:CintRender|Clear|Toggle|Refresh|Info|Profile|Shard|Analyze|`
   `LiveTags|ServerStatus|ServerDisconnect|ServerStop|ServerRestart`. Headless
-  tests: `just test-nvim` / `nvim-renderer/tests/run.sh`.
+  tests: `code-intent-nvim/tests/run.sh`.
 
 Important: for THIS tool, stale data is worse than for a linter — a stale linter
 shows wrong squiggles; a stale painter **hides the wrong lines**.
@@ -276,7 +277,7 @@ interpreter) collides with the short handle, but the repo name disambiguates.
 - `fa4fe4d` content-hash staleness guard (CLI + renderer).
 - Verified: fixture + `mtquery` (78 files, ~1s full scan), e2e CLI->renderer.
 - dotfiles: added PATH entry in `shell/paths/10-unix.lua` ->
-  `analysis-engine/build/install/cint/bin`; regenerate via
+  `analysis-engine/apps/cli/build/install/cint/bin`; regenerate via
   `lua bootstrap.lua shell`. (Committed? check; may be uncommitted.)
 - Environment gotchas: system gradle broken
   (`GRADLE_HOME=/usr/share/java/gradle` missing module) -> use sdkman gradle or
@@ -548,7 +549,7 @@ Authoritative for resuming. Older sections are historical where they conflict.
   Confirming an alternative resolves the whole anchor group, so siblings vanish
   with the republished candidate list. Candidate commands are gated on a
   returned protocol >= 3 with `suggestions.enabled ~= false`.
-- Tests: `nvim-renderer/tests/live_spec.lua` drives an in-process fake daemon;
+- Tests: `code-intent-nvim/tests/live_spec.lua` drives an in-process fake daemon;
   `candidates_spec.lua` covers candidate publish/revision gating, suggest,
   review, decisions, and the protocol-2 fallback; `render_spec.lua` covers
   extmarks, profiles, and language mapping.
@@ -579,11 +580,11 @@ Authoritative for resuming. Older sections are historical where they conflict.
 - `just build` assembles every module without running tests.
 - `just test-engine` runs deterministic tests including host, server,
   rulepacks-tests, test-fixtures, and integration-tests.
-- `just test-lsp` is opt-in via `CINT_LSP_ROOT`; `just test-nvim` runs the
-  headless renderer suite.
+- `just test-lsp` is opt-in via `CINT_LSP_ROOT`. The renderer suite runs in the
+  external `code-intent-nvim` repository.
 - `just lint`/`lint-fix` run ktlint over Kotlin sources only.
-- CI runs build, engine tests, lint, and renderer tests with
-  `CINT_TESTING_GROUNDS` set explicitly.
+- CI runs build, engine tests, lint, graph guard, parity, smoke, and syntax
+  provenance with `CINT_TESTING_GROUNDS` set explicitly.
 
 ### Known gaps / next
 

@@ -643,78 +643,52 @@ Those are CFG/dataflow facts plus domain analyzers, not one local heuristic.
 
 ## 10. Implementation snapshot
 
-Key engine files:
+The current engine is the V2 tree under `analysis-engine/`. Key files:
 
-- `analysis-engine/core/api/.../Model.kt` and `Contract.kt` — intents, roles,
-  annotations, rules, packs, views, emits, and the scheduler contract.
-- `analysis-engine/core/api/.../Dsl.kt` — the thin `View` DSL.
-- `analysis-engine/core/core/.../facts/view/CapabilityView.kt` — the scope-gated
-  view rules consume.
-- `analysis-engine/core/core/.../facts/store/AnnotationStore.kt` — per-rule
-  contribution replacement and provenance.
-- `analysis-engine/core/core/.../runtime/scheduler/RuleEngine.kt` and
-  `RuleScheduler.kt` — stratification and fixpoint.
-- `analysis-engine/core/core/.../runtime/composition/` — `ScaffoldComposition`,
-  `DerivativeComposition`, `ReturnComposition`, and the terminal composition.
-- `analysis-engine/core/core/.../facts/flow/ControlFlow.kt` — function-local CFG
-  and return sites, including labeled `return@...` sites for value-bearing
-  returns.
-- `analysis-engine/core/core/.../syntax/Syntax.kt` and `ProfileSyntaxModel.kt` —
-  language-neutral syntax facts and profile-driven node kinds.
-- `analysis-engine/core/core/.../runtime/rulepack/` — explicit
-  `META-INF/services` discovery, validation, and per-provider degradation.
-- `analysis-engine/core/host/.../HostPipeline.kt`, `HostConfig.kt`, and
-  `ProjectConfigLoader.kt` — production pack selection and project config.
-- `analysis-engine/core/rulepacks/.../logging/`, `errorhandling/`,
-  `bookkeeping/`, and `validation/` — bundled detection packs;
-  `intents/normalization/`, `intents/dataaccess/`, `intents/service/`,
-  `intents/mutation/`, `intents/logic/`, `intents/transformation/`, and
-  `intents/structural/` supply the newer `NORMALIZATION`, `SEARCH`/`LOOKUP`,
-  `SERVICE_DELEGATION`/`SERVICE_INIT`, `DATA_MODIFY`/`LOCAL_VALUE_MODIFY`,
-  `BOOL_COMBINATORICS`, `DATA_TRANSFORMATION`, and `RETURN_VALUE`/`CHAINING`/
-  `LOCAL_COPY` packs; `support/BundledRulePackSelection.kt` supplies the
-  per-language error-handling packs.
-- `analysis-engine/languages/treesitter/src/main/resources/syntax/*.yaml` — Kotlin,
-  JavaScript, TypeScript, Vue, and C# node-kind profiles.
-- `analysis-engine/languages/frontend/.../KotlinFrontend.kt` — `Frontends` registry and
-  per-language bindings.
-- `analysis-engine/languages/frontend/.../SplitAnalyzer.kt` — embedded-region analysis
-  with coordinate shifting; Vue uses it for `<script>` blocks.
+- `analysis-engine/contracts/src/commonMain/kotlin/dev/cint/contracts/data/` —
+  intents, roles, annotations, candidates, provenance, and spans.
+- `analysis-engine/contracts/src/commonMain/kotlin/dev/cint/contracts/ports/` —
+  `SyntaxEngine`, `SemanticProvider`, `Index`, `KnowledgeStore`,
+  `RulePackSource`, `IntentPipeline`, `Runtime`, and transports.
+- `analysis-engine/contracts/src/commonMain/kotlin/dev/cint/contracts/knowledge/` —
+  function annotations, span overrides, pattern hypotheses, pack defaults, and
+  `KnowledgeChange`.
+- `analysis-engine/core/src/main/kotlin/dev/cint/core/` — scheduler, strata,
+  capability view, annotation store, and composition.
+- `analysis-engine/packs/src/main/resources/packs/bundled-packs.json` —
+  manifest packs, playbooks, owned intents, and seed defaults.
+- `analysis-engine/index/` — hashing, incremental cache, and indexed source.
+- `analysis-engine/knowledge/` and `analysis-engine/knowledge-persistence/` —
+  materialized knowledge semantics and JSON/checkpoint adapters.
+- `analysis-engine/languages/` — descriptor catalog and adapter binding.
+- `analysis-engine/syntax-treesitter/` — tree-sitter parse/facts and node hashes.
+- `analysis-engine/lsp/` — managed, attached, and editor-proxy semantic
+  providers.
+- `analysis-engine/intent-pipeline/` — pack plans, knowledge resolution, and
+  deterministic function propagation.
+- `analysis-engine/runtime/` — orchestration and the public `analyze` surface.
+- `analysis-engine/apps/cli`, `apps/server`, `apps/mcp` — batch, live daemon,
+  and agent servers.
 
 Key client files:
 
-- `nvim-renderer/lua/cint/init.lua` — live pipeline, profiles, shards, reveal.
-- `nvim-renderer/lua/cint/render.lua` — extmarks/concealment.
-- `nvim-renderer/lua/cint/live.lua` — daemon transport.
-- `nvim-renderer/plugin/cint.lua` — commands/autocmds.
+The Neovim client, including its live pipeline, render layer, daemon transport,
+and commands, lives in the external `code-intent-nvim` repository. The engine
+publishes the wire contract in [`ipc/PROTOCOL.md`](ipc/PROTOCOL.md).
 
 Fixtures:
 
-- `testing-grounds/kotlin/Bookkeeping.kt` — annotation + comment, writes,
-  validation guards.
-- `testing-grounds/kotlin/Scaffolds.kt` — guards/branches/untagged.
-- `testing-grounds/kotlin/Catches.kt` — try/catch spans.
-- `testing-grounds/kotlin/LoggerInteractions.kt` — typed/heuristic sources.
-- `testing-grounds/kotlin/Mutation.kt` — persistence, local writes, collection
-  operations.
-- `testing-grounds/kotlin/NeighboursCli.kt` — callback effect classification
-  and mutable local writes.
-- `testing-grounds/kotlin/ServiceIntents.kt` — delegation and service init.
-- `testing-grounds/kotlin/Composition.kt` — mixed composition fixture: boolean
-  combinatorics, transformations, search, validation, and declaration
-  propagation.
+- `testing-grounds/` — Kotlin, C, JavaScript, TypeScript, Vue, and C# source
+  fixtures for detection and composition.
+- `frozen-v1-corpus/` — read-only V1 outputs and transcripts used by parity
+  tests.
 
 Tests and tooling:
 
 - `just build` — assemble all modules without tests.
-- `just test-engine` — deterministic engine/host/server/integration suites.
-- `just test-nvim` — headless renderer suite.
-- `just test-lsp` — opt-in shared-LSP oracle test.
+- `just test-engine` — deterministic module suites, integration tests, and the
+  graph guard.
+- `just test-lsp` — focused LSP provider tests.
 - `just lint` — ktlint over Kotlin sources.
-
-Snapshots:
-
-- `analysis-engine/tests/integration-tests/src/test/resources/snapshots/` holds the
-  pre-018 (014-tree) `HostPipeline` snapshots restored from `739dff7`
-  (legacy-shape and pipeline-shape; compared against `3f20435` in ticket 014)
-  and the post-018 current pipeline baseline.
+- `just parity`, `just smoke`, and `just syntax-provenance` — frozen-corpus,
+  distribution, and pinned-snapshot verification.

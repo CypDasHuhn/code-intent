@@ -17,4 +17,4 @@ Close the remaining full-payload IPC differences that are not covered by detecti
 ## Acceptance
 
 - IPC defects assigned to this ticket are resolved or registered with transcript evidence.
-- `v2-parity` regenerates the committed report with a reduced IPC baseline.
+- `just parity` regenerates the committed report with a reduced IPC baseline.

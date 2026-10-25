@@ -5,51 +5,49 @@
 | command | effect |
 |---|---|
 | `just build` | assemble engine modules |
-| `just test-engine` | deterministic engine tests (includes cross-writer lock test) |
-| `just test-nvim` | headless Neovim renderer specs |
-| `just test-lsp` | opt-in shared kotlin-lsp oracle test (`CINT_LSP_ROOT`) |
-| `just test-cross-writer` | focused JVM+Neovim annotation lock test |
+| `just test-engine` | all deterministic engine tests plus the graph guard |
+| `just test-lsp` | focused LSP provider tests |
 | `just lint` / `just lint-fix` | ktlint check/autocorrect over Kotlin sources |
-| `just lsp-fix` | apply first Kotlin LSP action per diagnostic |
-| `just size` | file line-count classes (SUSPICIOUS >=300, EXTREME >=400) |
-| `just dir-size` | directory crowding report |
-| `just install` | build CLI and live-server distributions |
+| `just graph-guard` | module graph guard and self-test |
+| `just parity` | frozen CLI/IPC parity suites and committed report check |
+| `just smoke` | smoke-test built `cint`, `cint-server`, and `cint-mcp` |
+| `just syntax-provenance` | verify the V1 Kotlin syntax snapshot against the pinned commit |
+| `just install` | build CLI, live-server, and MCP distributions |
 | `just cli` / `just server` / `just live` / `just tags` | run hosts/artifact |
 
-CI runs `just build`, `just test-engine`, `just lint`, and `just test-nvim` with
-an explicit testing-grounds path. `CINT_REQUIRE_NVIM=1` makes the cross-writer
-test fail instead of skip when Neovim is missing.
+CI runs build, engine tests, lint, graph guard, parity, install, smoke, and
+syntax provenance with an explicit testing-grounds path. Renderer tests run in
+the external `code-intent-nvim` repository against the installed engine.
 
 ## Test topology
 
 Engine:
 
-- `:api:test` — frozen contract, config schema, DSL.
-- `:core:test` — scheduler, composition, store, oracle, user annotations,
-  cross-writer lock test.
-- `:rulepacks:test` — pack-local config and behavior.
-- `:suggest:test` — candidate validation/grouping/privacy/providers.
-- `:host:test` — host pipeline, config/overlay, loader.
-- `:treesitter:test` — parser/syntax profiles, purity.
-- `:frontend:test` — language frontends, split handling.
-- `:cli:test`, `:server:test` — hosts and live protocol.
-- `:rulepacks-tests:test` — cross-pack/rulepack behavior and fixtures.
-- `:integration-tests:test` — composition, view, host snapshots, split.
-- `:test-fixtures:test` — shared fixture compilation.
+- `:contracts` — data model, serialization, ports, graph contracts.
+- `:core` — scheduler, strata, fixpoint, composition, annotation store.
+- `:packs` — manifests, defaults, pack catalog validation.
+- `:index` — hashing, incremental cache, invalidation.
+- `:knowledge`, `:knowledge-persistence` — store semantics and JSON/checkpoint
+  adapters.
+- `:languages`, `:syntax-treesitter`, `:lsp` — descriptor binding, grammar
+  parsing, and semantic providers.
+- `:intent-pipeline` — pack selection, knowledge resolution, propagation.
+- `:runtime` — orchestration and lifecycle.
+- `:ai`, `:ipc` — fallback proposals and protocol DTO/framing.
+- `:cli`, `:server`, `:mcp` — app behavior.
+- `:test-fixtures`, `:integration-tests` — shared fakes plus pack, surface, and
+  frozen-corpus parity tests.
 
-Renderer specs are listed in
-[renderer-and-protocol.md](renderer-and-protocol.md#tests).
+Renderer specs and cross-repo compatibility checks are listed in
+[renderer-and-protocol.md](renderer-and-protocol.md#renderer-tests).
 
 ## Size hygiene
 
-- Current `just size`: **no EXTREME files**; largest files are ~386 lines.
 - Thresholds: SUSPICIOUS >=300, EXTREME >=400 (committed in
   `scripts/classify-kotlin-size.nu`).
-- Accepted OVERCROWDED roots: `analysis-engine`, `core/core`, and the
-  `rulepacks-tests` package root; single-file packages are intentionally out of
-  scope. Everything else should be split by responsibility.
-- Prefer moving code by responsibility (transport/state, config/rules/defaults,
+- Prefer moving code by responsibility (transport/state, config/defaults,
   test scenario/harness/fixtures) rather than arbitrary chunks.
+- `just size` and `just dir-size` report file and directory crowding.
 
 ## Ticket and review workflow
 
@@ -66,17 +64,11 @@ defer to a named ticket -> commit. Rounds are resumed sessions; reviewers do not
 re-report addressed findings. Review dimensions: `correctness` (default),
 `api-fidelity`, `detection-fidelity`, `architecture`.
 
-Non-automatable acceptance belongs in `docs/manual-test.md` with ticket id and
-status. A ticket may be done with an unverified manual entry if the reason is
-recorded.
-
 ## Tickets and status
 
 - One file per unit: `docs/tasks/NNN-slug.md` with frontmatter
   `name/status/depends-on/reviewers`.
 - Status is orchestrator-owned. `docs/tasks/README.md` is the queue table.
-- Current queue: 062 is the only unblocked ticket (deferred split-host record
-  ownership from 060); 017 remains blocked.
 - Review reports live at `docs/reviews/<id>/<role>.md`.
 
 ## Git conventions
@@ -84,14 +76,7 @@ recorded.
 - Conventional commits: `type(domain): description`, imperative, lowercase,
   <=72 chars, no trailing period.
 - Stage precisely; no `git add -A` for mixed trees; no secrets.
-- Do not push/merge/force without request. Merges in this repo use `--no-ff`
-  merge commits per ticket branch.
+- Do not push/merge/force without request. Merges use `--no-ff` merge commits per
+  ticket branch.
 - Parallel work uses worktrees under `~/repos/code-intent-worktrees/`.
 - Never commit `.cint/**` runtime state or generated build output.
-
-## Manual gate focus
-
-Unverified live paths remain: editor/daemon restart for user annotations
-(`m009`, `m010`), live AI candidate review/decision persistence (`m012`),
-real DeepSeek through the live daemon (`m014`), and live oracle wall-clock
-latency (`m016`). Cross-writer annotation locking (`m015`) is automated.

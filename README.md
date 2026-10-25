@@ -23,43 +23,51 @@ This note here is the last Human-written lines in this repository.
 
 | dir                                   | what                                                                                                                                                                             |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`analysis-engine/`](analysis-engine) | Kotlin engine. Tree-sitter for structure, LSP for types, pluggable rulepacks, core composition, batch CLI, HTTP host, and live Unix-socket daemon. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# syntax profiles. |
-| `nvim-renderer/`                      | Neovim plugin that consumes live annotations and paints spans (background tint, gutter icon, conceal).                                                                          |
+| [`analysis-engine/`](analysis-engine) | Kotlin engine. Manifest packs, deterministic core, tree-sitter syntax adapter, mandatory semantic provider, persisted knowledge, runtime orchestration, batch CLI, live Unix-socket daemon, and MCP server. Built-in Kotlin, JavaScript, TypeScript, Vue, and C# language support. |
+
+The Neovim client is a separate repository, `code-intent-nvim` (sibling checkout
+at `../code-intent-nvim`). This repository publishes the versioned renderer
+protocol in [`docs/ipc/PROTOCOL.md`](docs/ipc/PROTOCOL.md) and
+[`analysis-engine/ipc/protocol.schema.json`](analysis-engine/ipc/protocol.schema.json).
+It contains no Neovim code and runs no renderer tests.
 
 ## Flow
 
 ```
 source / buffer
       │
-      ├─ tree-sitter ──► spans, nesting, control flow
-      └─ LSP ─────────► types, symbols, definitions
+      ├─ tree-sitter ──► syntax facts, nesting, control flow
+      └─ semantic provider (LSP) ──► types, symbols
                 │
                 ▼
-     rulepacks + core composition
+     index + intent pipeline
+       ├─ manifest packs + playbooks
+       ├─ persisted function knowledge
+       └─ deterministic core scheduler + composition
                 │
         ┌───────┴────────┐
         ▼                ▼
-     tags.json       HTTP /analyze / live publish
+     tags.json       live protocol / MCP
         │                │
-        └──────► nvim-renderer
+        └──────► code-intent-nvim (external)
 ```
 
-Tree-sitter owns statement-level structure (tier 0). LSP only annotates those
-nodes with semantic facts (tier 1). The engine stays editor- and
-language-agnostic; language specifics are data in a syntax profile, and a small
-frontend binding selects the parser, profile, and oracle.
+The engine is a fixed analysis hull. Detection ships as manifest packs and seed
+defaults; semantic knowledge is persisted project data. The index owns change
+detection, `runtime` orchestrates, and `languages` is the only module that binds
+source adapters.
 
 ## Quick start
 
 ```sh
-cd analysis-engine
-./gradlew :cli:run --args="/path/to/project --out tags.json"
-./gradlew :cli:installDist
-./gradlew :server:run --args="--port 8765"
+just install
+./analysis-engine/apps/cli/build/install/cint/bin/cint /path/to/project --out tags.json
+# or run the live daemon directly
+./analysis-engine/apps/server/build/install/cint-server/bin/cint-server --socket /tmp/cint.sock --root /path/to/project
 ```
 
 See [`docs/engine.md`](docs/engine.md) for the module
-layout, config, rulepacks, and LSP sharing. The full documentation index is
+layout, knowledge model, config, and LSP sharing. The full documentation index is
 [`docs/README.md`](docs/README.md).
 
 ## Tasks
@@ -70,8 +78,13 @@ Common workflows are wrapped in the [`justfile`](justfile):
 just --list
 just build
 just test-engine
-just test-nvim
 just lint
 just install
-just tags /path/to/project --no-lsp
+just parity
+just smoke
+just tags /path/to/project
 ```
+
+Renderer development and tests live in the external `code-intent-nvim`
+repository; see [`docs/ipc/PROTOCOL.md`](docs/ipc/PROTOCOL.md) for the pinned
+protocol contract.

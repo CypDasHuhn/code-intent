@@ -4,13 +4,15 @@ Index of the written contract for CodeIntent.
 
 ## Current
 
-These documents describe the implemented V1 behavior. Where they conflict with
-the rewrite model, the rewrite documents are authoritative.
+These documents describe the implemented V2 engine. The V1 corpus remains a
+read-only parity reference.
 
-- [architecture.md](architecture.md) — implemented module boundaries, rulepack
-  loading, scheduler, composition, and hosts.
+- [architecture.md](architecture.md) — implemented module boundaries, index and
+  pipeline flow, knowledge model, runtime, and hosts.
+- [engine.md](engine.md) — engine modules, languages, packs, knowledge, runtime,
+  hosts, and development commands.
 - [intent-model.md](intent-model.md) — intents, sources, derivative use,
-  scaffolds, CFG, profiles, and implementation snapshot.
+  scaffolds, and the intent vocabulary.
 - [ai-intents.md](ai-intents.md) — V1 historical: secondary emits, AI candidate
   inference, review/persistence, and protocol.
 - [ai-annotation-session.md](ai-annotation-session.md) — V1 historical:
@@ -20,8 +22,7 @@ the rewrite model, the rewrite documents are authoritative.
   commands, manual gate, and commit rules.
 - [manual-test.md](manual-test.md) — non-automated acceptance checks and their
   status.
-- [notes.md](notes.md) — session knowledge dump. §20 is the current
-  post-restructure state; earlier sections are historical.
+- [notes.md](notes.md) — session knowledge dump; earlier sections are historical.
 - [rulepack-support-plan.md](rulepack-support-plan.md) — rulepack semantic
   foundation and sequencing plan.
 - [data-access-intents.md](data-access-intents.md) — search and lookup pack,
@@ -31,12 +32,15 @@ the rewrite model, the rewrite documents are authoritative.
 
 ## Rewrite
 
-- [rewrite/module-graph.md](rewrite/module-graph.md) — V2 working notes:
-  project layout, dependency graph, interaction contracts, and the walking
-  skeleton milestone.
-- [rewrite/knowledge-model.md](rewrite/knowledge-model.md) — V2 persisted
-  function annotations, span overrides, materialized pack defaults, deterministic
+- [rewrite/module-graph.md](rewrite/module-graph.md) — project layout,
+  dependency graph, interaction contracts, and the native-spike exception.
+- [rewrite/knowledge-model.md](rewrite/knowledge-model.md) — persisted function
+  annotations, span overrides, materialized pack defaults, deterministic
   propagation, and the MCP-first AI workflow.
+- [rewrite/native-spike.md](rewrite/native-spike.md) — pointer to the native
+  spike findings.
+- [rewrite/knowledge-store-format.md](rewrite/knowledge-store-format.md) —
+  persisted knowledge snapshot shape.
 
 ## Work tracking
 
@@ -54,7 +58,9 @@ the rewrite model, the rewrite documents are authoritative.
 ## Repository
 
 - [../README.md](../README.md) — project overview, components, flow, quick start.
-- [../docs/engine.md](../docs/engine.md) — engine modules,
-  languages, detection, config, LSP, hosts, artifacts, and tests.
-- [../nvim-renderer/README.md](../nvim-renderer/README.md) — renderer setup,
-  commands, profiles, shards, handlers, and protocol.
+- [ipc/PROTOCOL.md](ipc/PROTOCOL.md) — external renderer wire protocol,
+  compatibility matrix, handshake, and published schema.
+- [../analysis-engine/ipc/PROTOCOL.md](../analysis-engine/ipc/PROTOCOL.md) —
+  engine-side protocol implementation notes.
+- `code-intent-nvim` (sibling repository) — Neovim client setup, commands,
+  profiles, shards, handlers, and tests.
