@@ -35,6 +35,11 @@ sealed interface IpcMessage {
     data class PublishRequest(
         val requestId: String,
         val annotations: List<PublishedAnnotation>,
+        val uri: String? = null,
+        val version: Int? = null,
+        val hash: String? = null,
+        val configRevision: Long? = null,
+        val analysisVersion: Long? = null,
     ) : IpcMessage
 
     @Serializable
@@ -97,6 +102,7 @@ sealed interface IpcMessage {
         val schemaVersion: Int = 1,
         val fingerprint: String,
         val clientInfo: ClientInfo,
+        val protocol: Int? = null,
     ) : IpcMessage
 
     @Serializable
@@ -107,6 +113,10 @@ sealed interface IpcMessage {
         val serverInfo: ServerInfo,
         val error: String? = null,
     ) : IpcMessage
+
+    @Serializable
+    @SerialName("Wire")
+    data class Wire(val json: String) : IpcMessage
 }
 
 @Serializable
@@ -124,6 +134,8 @@ data class PublishedAnnotation(
     val role: dev.cint.contracts.data.Role,
     val confidence: dev.cint.contracts.data.Confidence,
     val provenance: dev.cint.contracts.data.Provenance,
+    val startByte: Int? = null,
+    val endByte: Int? = null,
 )
 
 @Serializable
