@@ -292,7 +292,8 @@ private fun diagnosticOf(error: AnalysisError): IpcDiagnostic =
 
 private fun wireSource(source: String): String =
     when (source.lowercase()) {
-        "knowledge", "annotation", "comment", "user", "pack-default" -> "annotation"
+        "knowledge", "annotation", "user", "pack-default" -> "annotation"
+        "comment" -> "comment"
         "rule", "candidate", "treesitter", "syntax" -> "treesitter"
         "composition", "cfg" -> "cfg"
         "ai", "ai-fallback", "mcp-agent" -> "ai"
@@ -304,7 +305,8 @@ private fun legacySource(source: String): String =
     when (source.lowercase()) {
         "knowledge", "annotation", "user", "pack-default" -> "annotation"
         "comment" -> "comment"
-        "rule", "candidate", "treesitter", "syntax", "heuristic" -> "treesitter"
+        "rule", "candidate", "treesitter", "syntax" -> "treesitter"
+        "heuristic" -> "heuristic"
         "composition", "cfg" -> "cfg"
         "ai", "ai-fallback", "mcp-agent" -> "ai"
         else -> "treesitter"

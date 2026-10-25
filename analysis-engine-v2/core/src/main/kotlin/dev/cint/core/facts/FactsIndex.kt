@@ -58,11 +58,23 @@ class FactsIndex(
     fun ifFact(node: SyntaxNode): dev.cint.contracts.facts.IfFact? =
         facts.ifs.firstOrNull { it.nodeId == node.id }
 
-    fun statements(container: SyntaxNode): List<SyntaxNode> =
-        facts.statements
-            .filter { it.containerId == container.id }
-            .mapNotNull { node(it.nodeId) }
-            .sortedBy { it.startByte }
+    fun statements(container: SyntaxNode): List<SyntaxNode> {
+        val direct =
+            facts.statements
+                .filter { it.containerId == container.id }
+                .mapNotNull { node(it.nodeId) }
+                .sortedBy { it.startByte }
+        if (direct.isNotEmpty()) return direct
+        for (childId in container.childIds) {
+            val nested =
+                facts.statements
+                    .filter { it.containerId == childId }
+                    .mapNotNull { node(it.nodeId) }
+                    .sortedBy { it.startByte }
+            if (nested.isNotEmpty()) return nested
+        }
+        return emptyList()
+    }
 
     fun statement(node: SyntaxNode): StatementFact? =
         facts.statements.firstOrNull { it.nodeId == node.id }

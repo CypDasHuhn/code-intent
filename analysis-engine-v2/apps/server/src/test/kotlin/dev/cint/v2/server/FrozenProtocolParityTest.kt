@@ -270,6 +270,7 @@ class FrozenProtocolParityTest {
             if (remaining.isNotEmpty()) {
                 val ticket =
                     when {
+                        remaining.any { it.contains("knowledge:") } -> "094-v2-ipc-payload-parity"
                         remaining.any { it.contains("scaffold") || it.contains("derivative-use") } -> "090-v2-composition-parity"
                         remaining.any { it.contains("candidates") || it.contains("groups") || it.contains("proposals") } -> "091-v2-candidate-parity"
                         remaining.any { it.contains("annotations") || it.contains("intents") || it.contains("provenance") } -> "088-v2-detection-fact-parity"

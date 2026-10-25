@@ -80,6 +80,12 @@ private data class LanguageProfile(
     val navigationKinds: Set<String>,
     val memberKinds: Set<String>,
     val receiverIsFirstChild: Boolean = false,
+    val statementListKinds: Set<String> = emptySet(),
+    val statementWrapperKinds: Set<String> = emptySet(),
+    val referenceKinds: Set<String> = emptySet(),
+    val effectKinds: Set<String> = emptySet(),
+    val effectFragments: Set<String> = emptySet(),
+    val literalKinds: Set<String> = emptySet(),
 )
 
 private object Profiles {
@@ -114,6 +120,11 @@ private object Profiles {
         callSuffixKinds = setOf("call_suffix", "value_arguments", "argument_list"),
         navigationKinds = setOf("navigation_expression"),
         memberKinds = setOf("navigation_suffix"),
+        statementListKinds = setOf("statements"),
+        referenceKinds = setOf("simple_identifier", "navigation_expression", "call_expression", "user_type"),
+        effectKinds = setOf("call_expression", "assignment", "jump_expression", "lambda_literal", "annotated_lambda", "object_literal", "object_declaration"),
+        effectFragments = setOf("assignment", "lambda", "object", "increment", "decrement"),
+        literalKinds = setOf("string_literal", "character_literal", "integer_literal", "hex_literal", "real_literal", "boolean_literal", "null", "collection_literal"),
     )
 
     private val javascript = LanguageProfile(
@@ -146,6 +157,11 @@ private object Profiles {
         callSuffixKinds = setOf("arguments", "type_arguments"),
         navigationKinds = setOf("member_expression", "subscript_expression"),
         memberKinds = setOf("property_identifier"),
+        statementListKinds = setOf("statement_block", "program"),
+        statementWrapperKinds = setOf("expression_statement"),
+        referenceKinds = setOf("identifier", "property_identifier", "private_property_identifier", "member_expression", "call_expression"),
+        effectKinds = setOf("call_expression", "assignment_expression", "augmented_assignment_expression", "update_expression", "new_expression", "yield_expression", "await_expression", "throw_statement", "arrow_function", "function_expression", "object"),
+        literalKinds = setOf("string", "template_string", "number", "regex", "true", "false", "null", "undefined"),
     )
 
     private val csharp = LanguageProfile(
@@ -180,6 +196,11 @@ private object Profiles {
         navigationKinds = setOf("member_access_expression", "element_access_expression"),
         memberKinds = setOf("identifier"),
         receiverIsFirstChild = true,
+        statementListKinds = setOf("block"),
+        statementWrapperKinds = setOf("expression_statement"),
+        referenceKinds = setOf("identifier", "member_access_expression", "invocation_expression", "predefined_type"),
+        effectKinds = setOf("invocation_expression", "assignment_expression", "postfix_unary_expression", "prefix_unary_expression", "object_creation_expression", "await_expression", "throw_statement", "throw_expression", "lambda_expression"),
+        literalKinds = setOf("integer_literal", "real_literal", "string_literal", "character_literal", "boolean_literal", "null_literal"),
     )
 
     private val c = LanguageProfile(
@@ -212,6 +233,10 @@ private object Profiles {
         callSuffixKinds = setOf("argument_list"),
         navigationKinds = setOf("field_expression", "subscript_expression"),
         memberKinds = setOf("field_identifier"),
+        statementListKinds = setOf("compound_statement"),
+        referenceKinds = setOf("identifier", "field_identifier", "type_identifier", "call_expression"),
+        effectKinds = setOf("call_expression", "assignment_expression", "update_expression"),
+        literalKinds = setOf("string_literal", "char_literal", "number_literal"),
     )
 
     private val vue = javascript.copy(
@@ -279,8 +304,15 @@ internal object SyntaxFactExtractor {
             }
         }
 
-        fun firstIdentifier(node: SyntaxNode): SyntaxNode? =
-            descendantsOf(node).firstOrNull { it.kind in profile.identifierKinds }
+        fun firstIdentifier(
+            node: SyntaxNode,
+            skipAnnotations: Boolean = false,
+        ): SyntaxNode? =
+            descendantsOf(node).firstOrNull { candidate ->
+                candidate.kind in profile.identifierKinds &&
+                    (!skipAnnotations ||
+                        ancestorsOf(candidate).none { ancestor -> ancestor.kind in profile.annotationKinds })
+            }
 
         fun bodyOf(node: SyntaxNode): SyntaxNode? =
             childrenOf(node).firstOrNull { it.kind in profile.bodyKinds }
@@ -396,7 +428,9 @@ internal object SyntaxFactExtractor {
 
         val functions = if (FactCategory.FUNCTIONS in requested) {
             functionNodes.map { node ->
-                val nameNode = firstIdentifier(node)?.takeIf { it.startByte < (bodyOf(node)?.startByte ?: Int.MAX_VALUE) }
+                val nameNode =
+                    firstIdentifier(node, skipAnnotations = true)
+                        ?.takeIf { it.startByte < (bodyOf(node)?.startByte ?: Int.MAX_VALUE) }
                 FunctionFact(
                     nodeId = node.id,
                     name = nameNode?.text,
@@ -416,9 +450,9 @@ internal object SyntaxFactExtractor {
                 descendantsOf(node).firstOrNull { candidate ->
                     candidate.kind in profile.identifierKinds &&
                         ancestorsOf(candidate).none { it.kind in profile.annotationKinds }
-                } ?: firstIdentifier(node)
+                } ?: firstIdentifier(node, skipAnnotations = true)
             } else {
-                firstIdentifier(node)
+                firstIdentifier(node, skipAnnotations = true)
             }
 
         val properties = if (FactCategory.PROPERTIES in requested) {
@@ -621,6 +655,89 @@ internal object SyntaxFactExtractor {
             emptyList()
         }
 
+        fun isCommentKind(node: SyntaxNode): Boolean = node.kind in profile.commentKinds
+
+        fun statementKind(node: SyntaxNode): dev.cint.contracts.facts.StatementKind {
+            val text = node.text.trimStart()
+            return when {
+                text.startsWith("return") -> dev.cint.contracts.facts.StatementKind.RETURN
+                text.startsWith("continue") -> dev.cint.contracts.facts.StatementKind.CONTINUE
+                text.startsWith("break") -> dev.cint.contracts.facts.StatementKind.BREAK
+                else -> dev.cint.contracts.facts.StatementKind.STATEMENT
+            }
+        }
+
+        fun statementExpression(node: SyntaxNode): SyntaxNode? {
+            if (node.kind !in profile.statementWrapperKinds) return null
+            return childrenOf(node).firstOrNull {
+                !isCommentKind(it) && it.text.trim() != ";"
+            }
+        }
+
+        val statements = if (FactCategory.RETURNS in requested || FactCategory.IFS in requested || FactCategory.TRIES in requested) {
+            nodes
+                .filter { it.kind in profile.statementListKinds }
+                .flatMap { list ->
+                    childrenOf(list)
+                        .filterNot { child ->
+                            isCommentKind(child) ||
+                                child.text.trim() == "{" ||
+                                child.text.trim() == "}"
+                        }
+                        .mapNotNull { child ->
+                            val kind = statementKind(child)
+                            if (child.text.isBlank()) return@mapNotNull null
+                            dev.cint.contracts.facts.StatementFact(
+                                nodeId = child.id,
+                                containerId = list.id,
+                                expressionId = if (kind == dev.cint.contracts.facts.StatementKind.RETURN) {
+                                    child.childIds.mapNotNull(byId::get)
+                                        .filterNot { it.text.trim() == "return" || isCommentKind(it) }
+                                        .lastOrNull()?.id
+                                } else {
+                                    statementExpression(child)?.id
+                                },
+                                kind = kind,
+                            )
+                        }
+                }
+        } else {
+            emptyList()
+        }
+
+        val values = if (FactCategory.RETURNS in requested || FactCategory.IFS in requested || FactCategory.TRIES in requested) {
+            val rejectionTexts = setOf("null", "undefined", "false", "0", "-1", "\"\"", "''", "[]", "{}")
+            nodes.filter { it.parentId != null }.map { node ->
+                val subtree = sequenceOf(node) + descendantsOf(node)
+                val constant = subtree.none { child -> child.kind in profile.referenceKinds }
+                val sideEffectFree =
+                    subtree.none { child ->
+                        child.kind in profile.effectKinds ||
+                            profile.effectFragments.any { fragment -> child.kind.contains(fragment) } ||
+                            (child.kind in profile.incrementKinds && (child.text.contains("++") || child.text.contains("--")))
+                    }
+                val text = node.text.trim()
+                val literal = node.kind in profile.literalKinds || text in rejectionTexts
+                val valueKind =
+                    when {
+                        literal -> dev.cint.contracts.facts.ValueKind.LITERAL
+                        node.kind in profile.callKinds -> dev.cint.contracts.facts.ValueKind.CALL
+                        node.kind in profile.identifierKinds -> dev.cint.contracts.facts.ValueKind.IDENTIFIER
+                        else -> dev.cint.contracts.facts.ValueKind.OTHER
+                    }
+                dev.cint.contracts.facts.ValueFact(
+                    nodeId = node.id,
+                    kind = valueKind,
+                    constant = constant,
+                    sideEffectFree = sideEffectFree,
+                    rejection = literal && text in rejectionTexts,
+                    booleanValue = if (literal && text in setOf("true", "false")) text == "true" else null,
+                )
+            }
+        } else {
+            emptyList()
+        }
+
         val imports = if (FactCategory.IMPORTS in requested) {
             nodes.filter { it.kind in profile.importKinds }.map { node ->
                 val text = node.text
@@ -657,6 +774,8 @@ internal object SyntaxFactExtractor {
                 tries = tries,
                 imports = imports,
                 references = references,
+                statements = statements,
+                values = values,
             )
         )
     }
