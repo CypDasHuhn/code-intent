@@ -260,6 +260,26 @@ private object Profiles {
 private val ASSIGNMENT_OPERATORS =
     setOf("=", "+=", "-=", "*=", "/=", "%=", "**=", "&=", "|=", "^=", "<<=", ">>=", ">>>=", "??=", "?:=")
 
+private val TYPE_REFERENCE_KINDS =
+    setOf("type_identifier", "predefined_type", "scoped_type_identifier", "generic_type")
+private val TYPE_CONTEXT_KINDS =
+    setOf(
+        "type_argument_list",
+        "type_arguments",
+        "type_parameters",
+        "generic_name",
+        "generic_type",
+        "nullable_type",
+        "pointer_type",
+        "array_type",
+        "type_annotation",
+        "user_type",
+        "type_projection",
+        "type_parameter",
+        "type_reference",
+        "supertype",
+    )
+
 internal object SyntaxFactExtractor {
     fun extract(tree: SyntaxTree, queryIds: List<String>): ContractResult<FactBatch> {
         val requested = if (queryIds.isEmpty()) {
@@ -454,6 +474,11 @@ internal object SyntaxFactExtractor {
             } else {
                 firstIdentifier(node, skipAnnotations = true)
             }
+
+        fun isTypeReference(node: SyntaxNode): Boolean {
+            if (node.kind in TYPE_REFERENCE_KINDS) return true
+            return ancestorsOf(node).any { it.kind in TYPE_CONTEXT_KINDS }
+        }
 
         val properties = if (FactCategory.PROPERTIES in requested) {
             (propertyNodes + variableNodes).map { node ->
@@ -750,7 +775,7 @@ internal object SyntaxFactExtractor {
         }
 
         val references = if (FactCategory.REFERENCES in requested) {
-            nodes.filter { it.kind in profile.identifierKinds }
+            nodes.filter { it.kind in profile.identifierKinds && !isTypeReference(it) }
                 .groupBy { it.text }
                 .map { (name, matches) -> ReferenceFact(name, matches.map { it.id }) }
                 .sortedBy { it.name }

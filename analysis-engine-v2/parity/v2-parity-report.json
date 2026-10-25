@@ -112,13 +112,13 @@
         "path": "Scaffolds.kt"
       },
       {
-        "actualAnnotations": 9,
+        "actualAnnotations": 11,
         "actualCandidates": 5,
         "expectedAnnotations": 11,
         "expectedCandidates": 5,
         "hashMatches": true,
         "language": "kotlin",
-        "matchedAnnotations": 9,
+        "matchedAnnotations": 11,
         "matchedCandidates": 5,
         "path": "ServiceIntents.kt"
       },
@@ -134,13 +134,13 @@
         "path": "Sample.ts"
       },
       {
-        "actualAnnotations": 6,
+        "actualAnnotations": 7,
         "actualCandidates": 3,
         "expectedAnnotations": 7,
         "expectedCandidates": 3,
         "hashMatches": true,
         "language": "typescript",
-        "matchedAnnotations": 6,
+        "matchedAnnotations": 7,
         "matchedCandidates": 2,
         "path": "ServiceIntents.ts"
       },
@@ -156,13 +156,13 @@
         "path": "Sample.js"
       },
       {
-        "actualAnnotations": 18,
+        "actualAnnotations": 19,
         "actualCandidates": 1,
         "expectedAnnotations": 19,
         "expectedCandidates": 1,
         "hashMatches": true,
         "language": "csharp",
-        "matchedAnnotations": 18,
+        "matchedAnnotations": 19,
         "matchedCandidates": 0,
         "path": "Sample.cs"
       },
@@ -187,50 +187,6 @@
     "v1Commit": "3ccea9e9cdb5a4e652182136866b24929bbed0b3"
   },
   "defects": [
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.8,\"endByte\":244,\"endCol\":42,\"endLine\":11,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":244,\\\"endCol\\\":42,\\\"endLine\\\":11,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":221,\\\"startCol\\\":19,\\\"startLine\\\":11}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":221,\"startCol\":19,\"startLine\":11}",
-        "language": "csharp",
-        "path": "Sample.cs"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "092-v2-service-init-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.8,\"endByte\":388,\"endCol\":91,\"endLine\":15,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":388,\\\"endCol\\\":91,\\\"endLine\\\":15,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":347,\\\"startCol\\\":50,\\\"startLine\\\":15}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":347,\"startCol\":50,\"startLine\":15}",
-        "language": "kotlin",
-        "path": "ServiceIntents.kt"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "092-v2-service-init-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.8,\"endByte\":57,\"endCol\":57,\"endLine\":0,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":57,\\\"endCol\\\":57,\\\"endLine\\\":0,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":21,\\\"startCol\\\":21,\\\"startLine\\\":0}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":21,\"startCol\":21,\"startLine\":0}",
-        "language": "kotlin",
-        "path": "ServiceIntents.kt"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "092-v2-service-init-parity"
-    },
-    {
-      "context": {
-        "annotation": "{\"confidence\":0.8,\"endByte\":78,\"endCol\":55,\"endLine\":1,\"intents\":[\"SERVICE_INIT\"],\"nodeAnchor\":null,\"provenance\":[\"{\\\"confidence\\\":0.8,\\\"endByte\\\":78,\\\"endCol\\\":55,\\\"endLine\\\":1,\\\"intents\\\":[\\\"SERVICE_INIT\\\"],\\\"role\\\":\\\"source-intent\\\",\\\"rule\\\":\\\"service:init\\\",\\\"source\\\":\\\"heuristic\\\",\\\"startByte\\\":37,\\\"startCol\\\":14,\\\"startLine\\\":1}\"],\"role\":\"source-intent\",\"source\":\"heuristic\",\"startByte\":37,\"startCol\":14,\"startLine\":1}",
-        "language": "typescript",
-        "path": "ServiceIntents.ts"
-      },
-      "id": "cli.annotation.missing-or-value-mismatch",
-      "reason": "Frozen annotation is missing or differs in V2 output",
-      "surface": "cli",
-      "ticket": "092-v2-service-init-parity"
-    },
     {
       "context": {
         "candidate": "{\"aiEligible\":true,\"confidence\":0.4,\"endByte\":185,\"endCol\":7,\"endLine\":9,\"intents\":[\"SERVICE_INIT\"],\"reason\":\"LOW_CONFIDENCE\",\"source\":\"rule:service:init\",\"startByte\":180,\"startCol\":2,\"startLine\":9}",
@@ -329,7 +285,7 @@
       "id": "ipc.payload",
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
-      "ticket": "092-v2-service-init-parity"
+      "ticket": "090-v2-composition-parity"
     },
     {
       "context": {
@@ -341,7 +297,7 @@
       "id": "ipc.payload",
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
-      "ticket": "092-v2-service-init-parity"
+      "ticket": "094-v2-ipc-payload-parity"
     },
     {
       "context": {
@@ -353,7 +309,7 @@
       "id": "ipc.payload",
       "reason": "V2 message payload differs from the frozen transcript",
       "surface": "ipc",
-      "ticket": "092-v2-service-init-parity"
+      "ticket": "094-v2-ipc-payload-parity"
     },
     {
       "context": {
@@ -419,8 +375,9 @@
     }
   ],
   "followUpTickets": [
+    "090-v2-composition-parity",
     "091-v2-candidate-parity",
-    "092-v2-service-init-parity"
+    "094-v2-ipc-payload-parity"
   ],
   "formatVersion": 1,
   "intentionalDifferences": [
@@ -1997,12 +1954,12 @@
   },
   "summary": {
     "annotationsCompared": 211,
-    "annotationsMatched": 207,
+    "annotationsMatched": 211,
     "candidatesCompared": 45,
     "candidatesMatched": 42,
     "cliFilesCompared": 16,
     "cliFilesMatched": 16,
-    "defects": 18,
+    "defects": 14,
     "intentionalDifferences": 58,
     "ipcDefects": 6,
     "ipcScenarios": 9,

@@ -8,6 +8,7 @@ import dev.cint.contracts.facts.CommentFact
 import dev.cint.contracts.facts.DeclarationFact
 import dev.cint.contracts.facts.DeclarationKind
 import dev.cint.contracts.facts.GuardKind
+import dev.cint.contracts.facts.ScopeKind
 import dev.cint.contracts.facts.SyntaxNode
 import dev.cint.contracts.facts.WriteFact
 import dev.cint.contracts.facts.WriteKind
@@ -605,31 +606,8 @@ private class ServiceInitEvaluator : V1Evaluator(RuleSpec("service:init", Intent
             if (type == null || !INIT_TYPES.any { type.endsWith(it) || type.endsWith(it + "Client") } && !type.endsWith("Factory") && !type.endsWith("Client")) continue
             view.emitNode(node, 0.85, "treesitter")?.let(result::add)
         }
-        val root = view.rootNode()
-        if (root != null) {
-            for (node in view.descendants(root)) {
-                val text = node.text
-                if (!node.kind.contains("class") || !text.contains("(")) continue
-                val open = text.indexOf("constructor(").let { if (it >= 0) it + "constructor".length else text.indexOf('(') }
-                if (open < 0) continue
-                var depth = 0
-                var close = -1
-                for (index in open until text.length) {
-                    if (text[index] == '(') depth++ else if (text[index] == ')') {
-                        depth--
-                        if (depth == 0) { close = index; break }
-                    }
-                }
-                if (close <= open) continue
-                val params = text.substring(open, close + 1)
-                val typed = SERVICE_SUFFIXES.any { params.contains(": $it") || params.contains(": " + it + "<") || params.contains("$it ") }
-                if (!typed) continue
-                val startCol = node.startCol + open
-                val endCol = node.startCol + close + 1
-                val start = node.copy(startByte = node.startByte + open, startCol = startCol)
-                val end = node.copy(endByte = node.startByte + close + 1, endCol = endCol)
-                result += view.emitRange(start, end, 0.8, "heuristic")
-            }
+        for (node in constructorInjectionNodes(view)) {
+            view.emitNode(node, 0.8, "heuristic")?.let(result::add)
         }
         for (declaration in view.declarations) {
             if (declaration.kind != DeclarationKind.FUNCTION) continue
@@ -660,6 +638,76 @@ private class ServiceInitEvaluator : V1Evaluator(RuleSpec("service:init", Intent
         }
         return result.distinctBy { Triple(it.startByte, it.endByte, it.intents) }
     }
+
+    private fun constructorInjectionNodes(view: RuleEvaluationView): List<SyntaxNode> {
+        val result = mutableListOf<SyntaxNode>()
+        val classNodes =
+            view.scopes
+                .filter { it.kind == ScopeKind.CLASS }
+                .mapNotNull { view.node(it.nodeId) }
+                .distinctBy { it.startByte to it.endByte }
+        for (classNode in classNodes) {
+            val params = PRIMARY_CONSTRUCTOR.find(classNode.text)?.groupValues?.get(1) ?: continue
+            result += injectionParameters(view, classNode, params)
+        }
+        for (function in view.functions) {
+            val functionNode = view.node(function.nodeId) ?: continue
+            val classNode =
+                classNodes
+                    .filter { within(functionNode, it) }
+                    .minByOrNull { it.endByte - it.startByte } ?: continue
+            val className = classNameOf(classNode) ?: continue
+            val name = function.name ?: continue
+            val constructor = name == className || name == "constructor"
+            if (!constructor) continue
+            val params = FUNCTION_PARAMETERS.find(functionNode.text)?.groupValues?.get(1) ?: continue
+            result += injectionParameters(view, functionNode, params)
+        }
+        return result.distinctBy { it.startByte to it.endByte }
+    }
+
+    private fun injectionParameters(
+        view: RuleEvaluationView,
+        container: SyntaxNode,
+        params: String,
+    ): List<SyntaxNode> =
+        splitParameters(params).mapNotNull { parameter ->
+            val type = injectionParameterType(parameter) ?: return@mapNotNull null
+            if (!isWiringType(type)) return@mapNotNull null
+            findTextNode(view, container, parameter) ?: container
+        }
+
+    private fun injectionParameterType(parameter: String): String? {
+        val declaration = parameter.substringBefore('=').trim()
+        PROPERTY_PARAMETER.find(declaration)?.let { return it.groupValues[2].trim() }
+        TYPESCRIPT_PARAMETER_PROPERTY.find(declaration)?.let { return it.groupValues[2].trim() }
+        val withoutAttribute = declaration.replace(Regex("""^\s*\[[^\]]*]\s*"""), "")
+        return PARAMETER_TYPE.find(withoutAttribute)?.groupValues?.get(1)?.trim()
+    }
+
+    private fun isWiringType(type: String): Boolean =
+        TYPE_TOKEN.findAll(type).any { match ->
+            typeMatches(
+                match.value,
+                SERVICE_TYPES + INIT_TYPES,
+                SERVICE_SUFFIXES + INIT_SUFFIXES,
+            )
+        }
+
+    private fun findTextNode(
+        view: RuleEvaluationView,
+        container: SyntaxNode,
+        text: String,
+    ): SyntaxNode? {
+        val target = text.trim()
+        return view
+            .descendants(container)
+            .filter { it.text.trim() == target }
+            .minByOrNull { it.endByte - it.startByte }
+    }
+
+    private fun classNameOf(node: SyntaxNode): String? =
+        CLASS_NAME.find(node.text)?.groupValues?.get(1)
 
     private fun mostlyInit(
         view: RuleEvaluationView,
@@ -935,6 +983,19 @@ private fun SyntaxNode.trimmedEnd(): SyntaxNode {
 private fun within(node: SyntaxNode, container: SyntaxNode): Boolean =
     node.startByte >= container.startByte && node.endByte <= container.endByte
 
+private fun typeMatches(
+    actual: String,
+    configured: Set<String>,
+    suffixes: Set<String>,
+): Boolean {
+    val simple = actual.substringAfterLast('.')
+    return configured.any { expected ->
+        actual == expected ||
+            actual.endsWith(".$expected") ||
+            (!actual.contains('.') && expected.substringAfterLast('.') == actual)
+    } || suffixes.any { simple.endsWith(it) }
+}
+
 private fun qualifierMatches(receiver: String, qualifier: String): Boolean {
     val segments = receiver.split('.').map { it.substringBefore('(').substringBefore('[').trim() }
     return segments.any { it.equals(qualifier, ignoreCase = true) } ||
@@ -1092,7 +1153,9 @@ private val LOCAL_CANDIDATE_PREFIXES = setOf("mutate", "modify", "update", "rese
 private val DELEGATION_CALLS = setOf("delegate", "forward", "dispatch", "callThrough", "Delegate", "Forward", "Dispatch", "CallThrough")
 private val DELEGATION_QUALIFIERS = setOf("services", "Services")
 private val SERVICE_NAMES = setOf("service", "svc", "repository", "repo", "facade", "adapter", "gateway", "client", "delegate", "proxy", "controller", "services", "apiClient", "httpClient", "remote", "_service", "_repository", "_facade", "_adapter", "_gateway", "_client")
+private val SERVICE_TYPES = setOf("ApiClient", "ServiceClient", "ServiceProxy", "ServiceFacade", "ServiceAdapter", "ServiceGateway")
 private val SERVICE_SUFFIXES = setOf("Service", "Repository", "Repo", "Facade", "Adapter", "Gateway", "Client", "Provider", "Controller")
+private val INIT_SUFFIXES = setOf("Factory")
 private val INIT_CALLS = setOf("createClient", "newClient", "buildClient", "createService", "newService", "createConnection", "CreateClient", "BuildClient", "CreateService", "CreateConnection", "Initialize", "Configure", "AddHttpClient", "AddDbContext", "AddSingleton", "AddScoped", "AddTransient", "BuildServiceProvider")
 private val INIT_QUALIFIERS = setOf("ClientBuilder", "ServiceFactory", "DriverManager", "DataSource", "HttpClient", "OkHttpClient", "WebClient", "RestClient", "RestTemplate", "Retrofit", "Feign", "ServiceLoader", "ServiceProvider", "ConnectionFactory", "Pool")
 private val INIT_TYPES = setOf("HttpClient", "OkHttpClient", "WebClient", "RestClient", "RestTemplate", "Retrofit", "FeignClient", "KafkaProducer", "KafkaConsumer", "RedisClient", "Jedis", "MongoClient", "DataSource", "Connection", "Socket", "Server", "Factory")
@@ -1107,3 +1170,21 @@ private val FIELD_PREFIXES = listOf("m_", "s_", "f_")
 private val SIMPLE_IDENTIFIER = Regex("""^[A-Za-z_$][A-Za-z0-9_$]*$""")
 private val BARE_LABELED_RETURN = Regex("""^return@[A-Za-z_][A-Za-z0-9_]*$""")
 private val LOCAL_COPY_CALLS = setOf("copy", "clone", "toList", "toSet", "toMutableList", "toMutableMap", "toMutableSet", "toArray", "toQueue", "toStack")
+
+private val PRIMARY_CONSTRUCTOR =
+    Regex(
+        """\b(?:class|record)\s+\w+(?:<[^>]*>)?(?:\s*@[A-Za-z_][\w.]*(?:\s*\([^)]*\))?)*\s*(?:(?:public|private|protected|internal)\s+)?(?:constructor\s*)?\(([^)]*)\)""",
+        RegexOption.DOT_MATCHES_ALL,
+    )
+private val CLASS_NAME = Regex("""\b(?:class|object|interface|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)""")
+private val PROPERTY_PARAMETER =
+    Regex(
+        """(?:^|\s)(?:private|public|protected|internal|open|override|lateinit)?\s*(?:val|var)\s+(\w+)\s*:\s*(.+?)\s*$""",
+    )
+private val TYPESCRIPT_PARAMETER_PROPERTY =
+    Regex(
+        """^(?:(?:public|private|protected|readonly|override)\s+)+([A-Za-z_$][A-Za-z0-9_$]*\??)\s*:\s*(.+?)\s*$""",
+    )
+private val FUNCTION_PARAMETERS = Regex("""^[^(]*\(([^)]*)\)""")
+private val PARAMETER_TYPE = Regex("""^(.+?)\s+[A-Za-z_][A-Za-z0-9_]*$""")
+private val TYPE_TOKEN = Regex("""[A-Za-z_][A-Za-z0-9_.]*""")
