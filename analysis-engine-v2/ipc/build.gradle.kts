@@ -1,11 +1,12 @@
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
+    `java-library`
 }
 
 dependencies {
-    implementation(project(":contracts"))
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    api(project(":contracts"))
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     testImplementation(kotlin("test-junit"))
 }

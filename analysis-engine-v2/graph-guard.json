@@ -59,6 +59,10 @@
     ["intent-pipeline", "test-fixtures"],
     ["runtime", "test-fixtures"],
     ["cli", "test-fixtures"],
-    ["cli", "languages"]
+    ["cli", "languages"],
+    ["runtime", "index"],
+    ["server", "index"],
+    ["server", "test-fixtures"],
+    ["server", "languages"]
   ]
 }

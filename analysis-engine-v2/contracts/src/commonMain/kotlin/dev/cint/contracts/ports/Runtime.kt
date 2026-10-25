@@ -2,10 +2,13 @@ package dev.cint.contracts.ports
 
 import dev.cint.contracts.data.AnalysisResult
 import dev.cint.contracts.facts.IndexedSource
+import dev.cint.contracts.facts.SourceInput
 import dev.cint.contracts.knowledge.KnowledgeSnapshot
 import dev.cint.contracts.knowledge.KnowledgeChange
 import dev.cint.contracts.util.CancellationToken
+import dev.cint.contracts.util.ContractError
 import dev.cint.contracts.util.ContractResult
+import dev.cint.contracts.util.ResultFactory
 import kotlinx.serialization.Serializable
 
 interface Runtime {
@@ -13,6 +16,30 @@ interface Runtime {
         request: AnalysisRequest,
         cancellation: CancellationToken = CancellationToken.NONE,
     ): ContractResult<AnalysisResult>
+
+    fun analyzeSource(
+        source: SourceInput,
+        request: AnalysisRequest = AnalysisRequest(),
+        cancellation: CancellationToken = CancellationToken.NONE,
+    ): ContractResult<AnalysisResult> =
+        when (source) {
+            is SourceInput.FilePath ->
+                analyze(
+                    request.copy(
+                        targetPaths = listOf(source.path),
+                        language = request.language ?: source.languageHint,
+                    ),
+                    cancellation,
+                )
+
+            is SourceInput.InMemory ->
+                ResultFactory.failure(
+                    ContractError.PreconditionFailed("runtime does not support in-memory analysis"),
+                )
+        }
+
+    fun packs(cancellation: CancellationToken = CancellationToken.NONE): ContractResult<List<RuntimePack>> =
+        ResultFactory.success(emptyList())
 
     fun knowledge(): KnowledgeStore
 
@@ -32,6 +59,12 @@ interface Runtime {
 
     fun shutdown(): ContractResult<Unit>
 }
+
+@Serializable
+data class RuntimePack(
+    val manifest: PackManifest,
+    val playbook: Playbook,
+)
 
 @Serializable
 data class RuntimeStatus(

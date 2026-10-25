@@ -14,6 +14,7 @@ import dev.cint.contracts.ports.KnowledgeStore
 import dev.cint.contracts.ports.LanguageSupport
 import dev.cint.contracts.ports.RulePackSource
 import dev.cint.contracts.ports.Runtime
+import dev.cint.contracts.ports.RuntimePack
 import dev.cint.contracts.ports.RuntimeStatus
 import dev.cint.contracts.util.CancellationToken
 import dev.cint.contracts.util.ContractError
@@ -59,28 +60,66 @@ class DefaultRuntime private constructor(
                 ContractError.InvalidInput("analysis request has no target paths", "targetPaths"),
             )
         }
+        val inputs = paths.map { SourceInput.FilePath(it, request.language) }
+        return analyzeInputs(inputs, request, cancellation)
+    }
+
+    override fun analyzeSource(
+        source: SourceInput,
+        request: AnalysisRequest,
+        cancellation: CancellationToken,
+    ): ContractResult<AnalysisResult> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        return analyzeInputs(listOf(source), request, cancellation)
+    }
+
+    override fun packs(cancellation: CancellationToken): ContractResult<List<RuntimePack>> {
+        checkOpen()?.let { return ResultFactory.failure(it) }
+        cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
+        val manifests = packSource.manifests(cancellation)
+        if (manifests.isFailure) return ResultFactory.failure(manifests.errorOrNull!!)
+        val packs = mutableListOf<RuntimePack>()
+        for (manifest in manifests.getOrThrow()) {
+            val playbook = packSource.playbook(manifest.id, cancellation)
+            if (playbook.isFailure) return ResultFactory.failure(playbook.errorOrNull!!)
+            packs += RuntimePack(manifest, playbook.getOrThrow())
+        }
+        return ResultFactory.success(packs)
+    }
+
+    private fun analyzeInputs(
+        inputs: List<SourceInput>,
+        request: AnalysisRequest,
+        cancellation: CancellationToken,
+    ): ContractResult<AnalysisResult> {
+        if (inputs.isEmpty()) {
+            return ResultFactory.failure(
+                ContractError.InvalidInput("analysis request has no sources", "source"),
+            )
+        }
         if (request.forceFullAnalysis) {
-            val invalidated = index.invalidate(paths, cancellation)
+            val invalidated = index.invalidate(inputs.map(::inputPath).distinct(), cancellation)
             if (invalidated.isFailure) return ResultFactory.failure(invalidated.errorOrNull!!)
         }
         val snapshot = knowledgeStore.snapshot(cancellation)
         if (snapshot.isFailure) return ResultFactory.failure(snapshot.errorOrNull!!)
 
         val analyses = mutableListOf<LabelledAnalysisResult>()
-        for (path in paths) {
+        for (input in inputs) {
             cancellationError(cancellation)?.let { return ResultFactory.failure(it) }
-            val input = SourceInput.FilePath(path, request.language)
+            val label = inputPath(input)
             val options = languageOptions(request)
             if (options.isFailure) return ResultFactory.failure(options.errorOrNull!!)
             val support = resolveSupport(input, options.getOrThrow(), cancellation)
             if (support.isFailure) return ResultFactory.failure(support.errorOrNull!!)
             val indexed = index.ensure(input, support.getOrThrow(), cancellation)
             if (indexed.isFailure) return ResultFactory.failure(indexed.errorOrNull!!)
-            indexedPaths += path
+            indexedPaths += label
             val analysis =
                 pipeline.analyze(request, indexed.getOrThrow(), snapshot.getOrThrow(), cancellation)
             if (analysis.isFailure) return ResultFactory.failure(analysis.errorOrNull!!)
-            analyses += LabelledAnalysisResult(path, analysis.getOrThrow())
+            analyses += LabelledAnalysisResult(label, analysis.getOrThrow())
         }
 
         val merged = AnalysisResultMerger.merge(analyses)
@@ -466,6 +505,11 @@ private fun normalizeRoot(
 private fun cancellationError(cancellation: CancellationToken): ContractError? =
     cancellation.throwIfCancelled().errorOrNull
 
+private fun inputPath(input: SourceInput): String =
+    when (input) {
+        is SourceInput.FilePath -> input.path
+        is SourceInput.InMemory -> input.path ?: input.documentId ?: "${input.language}:memory"
+    }
 
 private val SKIPPED_DIRECTORIES =
     setOf(".git", ".gradle", ".idea", "build", "node_modules", "out", "target", ".cint")

@@ -51,7 +51,7 @@
       "id": "candidate.shape",
       "status": "decided",
       "v1": "source + reason + aiEligible",
-      "v2": "origin + category + fingerprints + operations",
+      "v2": "origin (including promptVersion) + category + fingerprints + operations",
       "ticket": "079-v2-ipc-protocol"
     },
     {
@@ -97,11 +97,32 @@
       "ticket": "081-v2-server"
     },
     {
+      "id": "server.unsupported-operations",
+      "status": "decided",
+      "v1": "config, suggest, restrictions, and candidate decisions are handled by the live server",
+      "v2": "server wires analyze, documents, status, and metrics to runtime; config, suggest, restrictions, and candidates/decide return structured unsupported-operation errors until runtime exposes those surfaces",
+      "ticket": "081-v2-server"
+    },
+    {
       "id": "error.handling",
       "status": "decided",
       "v1": "{code, message}",
       "v2": "standard JSON-RPC codes + structured data.kind/data.details",
       "ticket": "079-v2-ipc-protocol"
+    },
+    {
+      "id": "annotation.source-vocabulary",
+      "status": "decided",
+      "v1": "annotation/comment/treesitter/cfg/ai source labels",
+      "v2": "treesitter/heuristic/annotation/cfg/ai; runtime knowledge/rule/candidate/composition labels are mapped per protocol",
+      "ticket": "081-v2-server"
+    },
+    {
+      "id": "initialize.pack-fields",
+      "status": "decided",
+      "v1": "initialize config packs include config field descriptors",
+      "v2": "initialize packs expose manifest id/name/version/rules/languages with an empty fields array until the runtime exposes a config schema",
+      "ticket": "081-v2-server"
     },
     {
       "id": "fingerprint.schema",

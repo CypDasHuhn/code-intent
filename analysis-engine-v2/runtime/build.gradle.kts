@@ -1,9 +1,10 @@
 plugins {
     kotlin("jvm")
+    `java-library`
 }
 
 dependencies {
-    implementation(project(":contracts"))
+    api(project(":contracts"))
     implementation(project(":packs"))
     implementation(project(":index"))
     implementation(project(":knowledge"))
@@ -15,4 +16,5 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(kotlin("test-junit"))
     testImplementation(project(":test-fixtures"))
+    testImplementation(project(":index"))
 }

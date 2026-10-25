@@ -161,6 +161,7 @@ data class CandidateOrigin(
     val ruleId: String? = null,
     val provider: String? = null,
     val model: String? = null,
+    val promptVersion: String? = null,
 ) {
     init {
         require(type in setOf("rule", "ai", "heuristic")) { "candidate origin type must be rule, ai, or heuristic" }

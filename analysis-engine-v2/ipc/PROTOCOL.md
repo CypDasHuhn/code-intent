@@ -84,6 +84,21 @@ versioning/compatibility matrix.
   Each field records its type, enum/kind, optionality, nullability, and actual
   canonical default value, so default changes rotate `CURRENT`.
 
+## Server wiring
+
+The V2 server binds `analyze`, `textDocument/didOpen`, `textDocument/didChange`,
+`textDocument/didClose`, `cint/status`, and `cint/metrics` to `runtime`.
+Initialize reads the runtime pack catalog through `Runtime.packs`. Open-document
+analysis uses `Runtime.analyzeSource` with an in-memory source, per-document
+generations, serialized runtime access, bounded cancellation, and monotonic
+publish revisions. Explicit analyze re-runs and republishes before its response;
+legacy protocol 4 receives V1 publish and analyze shapes. Runtime annotation
+sources are mapped to `treesitter`, `heuristic`, `annotation`, `cfg`, or `ai`.
+Config, suggest, restrictions, and `cint/candidates/decide` return a structured
+`unsupported-operation` error with the requested method in `data.details` until
+runtime exposes those surfaces. Unsupported operations, source vocabulary, and
+legacy pack field descriptors are recorded in `known-differences-v2.json`.
+
 ## V2-owned difference registry
 
 `ipc/known-differences-v2.json` is the machine-readable V2-owned registry for

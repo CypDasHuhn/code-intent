@@ -40,7 +40,9 @@ import dev.cint.contracts.util.ContractResult
 import dev.cint.contracts.util.ResultFactory
 import dev.cint.knowledge.InMemoryKnowledgeStore
 import dev.cint.knowledge.persistence.KnowledgeStoreFiles
+import dev.cint.packs.BundledRulePackSource
 import dev.cint.pipeline.RuleEvaluatorCatalog
+import dev.cint.v2.index.InMemoryIndex
 import dev.cint.v2.languages.LanguageCatalog
 import dev.cint.v2.languages.LanguageOptions
 import dev.cint.v2.languages.LanguageProviderDefaults
@@ -114,6 +116,155 @@ class DefaultRuntimeTest {
         runtime.publish(result).getOrThrow()
         assertEquals(listOf(result), published)
         runtime.shutdown().getOrThrow()
+    }
+
+    @Test
+    fun inMemorySourcesAnalyzeThroughRuntime() {
+        val recorder = FakeRecorder()
+        val runtime =
+            RuntimeFactory.create(
+                RuntimeConfig(),
+                RuntimeComponents(
+                    languageComposition = fakeComposition(recorder),
+                    index = FakeIndex(recorder = recorder),
+                    packSourceFactory = { FakeRulePackSource(recorder = recorder) },
+                    knowledgeStore = FakeKnowledgeStore(recorder = recorder),
+                    pipeline = FakeIntentPipeline(recorder),
+                ),
+            ).getOrThrow()
+
+        val result =
+            runtime
+                .analyzeSource(
+                    SourceInput.InMemory(
+                        text = "fun findUser() {}",
+                        language = "fake",
+                        version = 7,
+                        path = "Sample.fake",
+                        documentId = "file:///Sample.fake",
+                    ),
+                    AnalysisRequest(language = "fake"),
+                ).getOrThrow()
+
+        assertTrue(result.sourceEpoch > 0)
+        assertEquals("memory:fake:7:Sample.fake", recorder.details("index.ensure").single())
+        assertEquals(1, runtime.status().getOrThrow().indexedFiles)
+    }
+
+    @Test
+    fun realInMemoryIndexAnalyzesInMemorySourcesThroughRuntime() {
+        val recorder = FakeRecorder()
+        val runtime =
+            RuntimeFactory.create(
+                RuntimeConfig(),
+                RuntimeComponents(
+                    languageComposition = fakeComposition(recorder),
+                    index = InMemoryIndex(RuntimeConfig.defaultIndexPlan(), semanticTimeoutMs = 1_000),
+                    packSourceFactory = { FakeRulePackSource(recorder = recorder) },
+                    knowledgeStore = FakeKnowledgeStore(recorder = recorder),
+                    pipeline = FakeIntentPipeline(recorder),
+                ),
+            ).getOrThrow()
+
+        val result =
+            runtime
+                .analyzeSource(
+                    SourceInput.InMemory(
+                        text = "fun findUser() {}",
+                        language = "fake",
+                        version = 3,
+                        path = "Sample.fake",
+                        documentId = "file:///Sample.fake",
+                    ),
+                    AnalysisRequest(language = "fake"),
+                ).getOrThrow()
+
+        assertTrue(result.sourceEpoch > 0)
+        assertEquals(1, runtime.status().getOrThrow().indexedFiles)
+        runtime.shutdown().getOrThrow()
+    }
+
+    @Test
+    fun sharedBundledEvaluatorsAnalyzeThroughTheDefaultPipeline() {
+        val recorder = FakeRecorder()
+        val runtime =
+            RuntimeFactory.create(
+                RuntimeConfig(),
+                RuntimeComponents(
+                    languageComposition = fakeComposition(recorder),
+                    index = InMemoryIndex(RuntimeConfig.defaultIndexPlan(), semanticTimeoutMs = 1_000),
+                    packSourceFactory = { BundledRulePackSource() },
+                    knowledgeStore = FakeKnowledgeStore(recorder = recorder),
+                ),
+            ).getOrThrow()
+
+        val result =
+            runtime
+                .analyzeSource(
+                    SourceInput.InMemory(
+                        text = "fun work() { call println }",
+                        language = "kotlin",
+                        version = 1,
+                        path = "Sample.kt",
+                        documentId = "file:///Sample.kt",
+                    ),
+                    AnalysisRequest(language = "kotlin"),
+                ).getOrThrow()
+
+        assertTrue(result.annotations.any { Intents.LOGGING in it.intents })
+        assertTrue(result.annotations.all { it.provenance.all { contribution -> contribution.rule == "logging:logging" } })
+        runtime.shutdown().getOrThrow()
+    }
+
+    @Test
+    fun defaultComponentsCreateWithoutAnInjectedRuleRegistry() {
+        val root = temporaryRoot()
+        val runtime =
+            RuntimeFactory.create(
+                RuntimeConfig(rootPath = root.toString(), detectLanguages = false),
+            ).getOrThrow()
+
+        val status = runtime.status().getOrThrow()
+        assertTrue(status.isInitialized)
+        runtime.shutdown().getOrThrow()
+    }
+
+    @Test
+    fun packsExposeManifestsAndPlaybooks() {
+        val runtime =
+            RuntimeFactory.create(
+                RuntimeConfig(),
+                RuntimeComponents(
+                    packSourceFactory = {
+                        FakeRulePackSource(
+                            packManifests =
+                                listOf(
+                                    PackManifest(
+                                        id = "logging",
+                                        name = "Logging",
+                                        version = "1",
+                                        languages = listOf("fake"),
+                                    ),
+                                ),
+                            playbooks =
+                                mapOf(
+                                    "logging" to
+                                        dev.cint.contracts.ports.Playbook(
+                                            packId = "logging",
+                                            rules = listOf(dev.cint.contracts.ports.RuleSpec("logging:logging", Intents.LOGGING)),
+                                        ),
+                                ),
+                        )
+                    },
+                    knowledgeStore = FakeKnowledgeStore(),
+                    pipeline = FakeIntentPipeline(),
+                ),
+            ).getOrThrow()
+
+        val packs = runtime.packs().getOrThrow()
+
+        assertEquals("logging", packs.single().manifest.id)
+        assertEquals("logging:logging", packs.single().playbook.rules.single().id)
     }
 
     @Test
@@ -223,6 +374,7 @@ class DefaultRuntimeTest {
             )
 
         assertTrue(result.isSuccess)
+        result.getOrThrow().shutdown().getOrThrow()
     }
 
     @Test
