@@ -1,6 +1,6 @@
 ---
 name: V2 runtime and knowledge lifecycle
-status: todo
+status: done
 depends-on: [068, 071, 074, 075, 076, 077]
 reviewers: [correctness, architecture]
 ---

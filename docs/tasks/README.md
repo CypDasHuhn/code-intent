@@ -100,7 +100,7 @@ concurrently once their dependencies are done.
 | 075 | 3 | [V2 intent pipeline](075-v2-intent-pipeline.md) | done | 065, 067, 069, 070 | Pack selection, plan, core invocation, result shaping. |
 | 076 | 4 | [V2 function contracts and call-site propagation](076-v2-function-propagation.md) | done | 068, 070, 075 | Resolve function annotations, overrides, and chain propagation. |
 | 077 | 4 | [V2 fallback AI](077-v2-fallback-ai.md) | done | 067, 068, 075 | Dirty/uninitialized fallback using the knowledge mutation API. |
-| 078 | 5 | [V2 runtime and knowledge lifecycle](078-v2-runtime.md) | todo | 068, 071, 074, 075, 076, 077 | Runtime orchestration, init/materialization, analyze/publish. |
+| 078 | 5 | [V2 runtime and knowledge lifecycle](078-v2-runtime.md) | done | 068, 071, 074, 075, 076, 077 | Runtime orchestration, init/materialization, analyze/publish. |
 | 079 | 2 | [V2 renderer IPC protocol](079-v2-ipc-protocol.md) | done | 065, 066 | NDJSON protocol, handshake, transcript compatibility. |
 | 080 | 6 | [V2 CLI app](080-v2-cli.md) | todo | 078 | Batch CLI over runtime. |
 | 081 | 6 | [V2 live server app](081-v2-server.md) | todo | 078, 079 | Editor daemon and live document state. |
