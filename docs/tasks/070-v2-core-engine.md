@@ -1,6 +1,6 @@
 ---
 name: V2 deterministic core engine
-status: todo
+status: done
 depends-on: [065]
 reviewers: [correctness, architecture]
 ---

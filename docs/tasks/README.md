@@ -89,13 +89,13 @@ concurrently once their dependencies are done.
 | 064 | 1 | [Kotlin/Native platform spike](064-native-platform-spike.md) | done | 063 | Tree-sitter cinterop, JSON, Unix socket, child process, HTTP/TLS evidence. |
 | 065 | 1 | [V2 contracts foundation](065-v2-contracts-foundation.md) | done | 063 | Data model, ports, knowledge DTOs, deadlines, pure identity/hashing. |
 | 066 | 0 | [Freeze V1 corpus and protocol behavior](066-v1-corpus-and-protocol-freeze.md) | done | — | Capture V1 outputs, IPC transcripts, and known differences. |
-| 067 | 2 | [Shared V2 fakes and test harness](067-v2-shared-fakes.md) | todo | 065 | Deterministic fakes for every port and fixture loaders. |
-| 068 | 2 | [V2 knowledge store and materialization](068-v2-knowledge-store.md) | todo | 065 | Function annotations, overrides, defaults, provenance, mutation. |
-| 069 | 2 | [V2 packs, manifests, and seed defaults](069-v2-packs-and-defaults.md) | todo | 065 | Manifest packs and defaults; no user-facing pack config shape. |
-| 070 | 2 | [V2 deterministic core engine](070-v2-core-engine.md) | todo | 065 | Scheduler, strata, fixpoint, composition, candidates. |
-| 071 | 2 | [V2 index and source facts](071-v2-index.md) | todo | 065 | Hashes, cache, incremental invalidation, IndexedSource. |
-| 072 | 2 | [V2 tree-sitter syntax adapter](072-v2-syntax-treesitter.md) | todo | 064, 065 | SyntaxEngine implementation and fixture parity. |
-| 073 | 2 | [V2 LSP semantic provider](073-v2-lsp-provider.md) | todo | 064, 065 | Managed, attached, and editor-proxy provider. |
+| 067 | 2 | [Shared V2 fakes and test harness](067-v2-shared-fakes.md) | done | 065 | Deterministic fakes for every port and fixture loaders. |
+| 068 | 2 | [V2 knowledge store and materialization](068-v2-knowledge-store.md) | done | 065 | Function annotations, overrides, defaults, provenance, mutation. |
+| 069 | 2 | [V2 packs, manifests, and seed defaults](069-v2-packs-and-defaults.md) | done | 065 | Manifest packs and defaults; no user-facing pack config shape. |
+| 070 | 2 | [V2 deterministic core engine](070-v2-core-engine.md) | done | 065 | Scheduler, strata, fixpoint, composition, candidates. |
+| 071 | 2 | [V2 index and source facts](071-v2-index.md) | done | 065 | Hashes, cache, incremental invalidation, IndexedSource. |
+| 072 | 2 | [V2 tree-sitter syntax adapter](072-v2-syntax-treesitter.md) | done | 064, 065 | SyntaxEngine implementation and fixture parity. |
+| 073 | 2 | [V2 LSP semantic provider](073-v2-lsp-provider.md) | done | 064, 065 | Managed, attached, and editor-proxy provider. |
 | 074 | 3 | [V2 languages facade](074-v2-languages-facade.md) | todo | 065, 072, 073 | Bind descriptors to syntax/provider and return LanguageSupport. |
 | 075 | 3 | [V2 intent pipeline](075-v2-intent-pipeline.md) | todo | 065, 067, 069, 070 | Pack selection, plan, core invocation, result shaping. |
 | 076 | 4 | [V2 function contracts and call-site propagation](076-v2-function-propagation.md) | todo | 068, 070, 075 | Resolve function annotations, overrides, and chain propagation. |

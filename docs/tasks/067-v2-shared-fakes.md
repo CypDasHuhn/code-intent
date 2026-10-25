@@ -1,6 +1,6 @@
 ---
 name: Shared V2 fakes and test harness
-status: todo
+status: done
 depends-on: [065]
 reviewers: [correctness]
 ---

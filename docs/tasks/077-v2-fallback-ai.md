@@ -29,3 +29,4 @@ Provide the secondary in-house AI path for uninitialized repositories and dirty 
 ## Notes
 
 - Reuse V1 discovery machinery only where it fits; do not preserve it for its own sake.
+- Add the fallback-AI port and its 067 fake; no such contract port exists yet.

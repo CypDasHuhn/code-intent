@@ -1,6 +1,6 @@
 ---
 name: V2 index and source facts
-status: todo
+status: done
 depends-on: [065]
 reviewers: [correctness, architecture]
 ---

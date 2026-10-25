@@ -1,6 +1,6 @@
 ---
 name: V2 LSP semantic provider
-status: todo
+status: done
 depends-on: [064, 065]
 reviewers: [correctness, architecture]
 ---

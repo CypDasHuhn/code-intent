@@ -1,6 +1,6 @@
 ---
 name: V2 packs, manifests, and seed defaults
-status: todo
+status: done
 depends-on: [065]
 reviewers: [correctness, architecture]
 ---
