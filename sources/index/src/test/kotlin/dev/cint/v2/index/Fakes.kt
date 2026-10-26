@@ -225,6 +225,11 @@ class FakeSemanticProvider : SemanticProvider {
         private set
     val requests: MutableList<SemanticRequest> = mutableListOf()
 
+    var documentSyncSupported: Boolean = false
+    var openDocumentCalls: Int = 0
+        private set
+    val openedDocuments: MutableList<Triple<String, String, Long>> = mutableListOf()
+
     var executor: (SemanticRequest) -> ContractResult<SemanticResult> =
         { success(SemanticResult.DiagnosticsFor(emptyList())) }
     var throwOnRequest: Throwable? = null
@@ -234,6 +239,17 @@ class FakeSemanticProvider : SemanticProvider {
         requests += request
         throwOnRequest?.let { throw it }
         return executor(request)
+    }
+
+    override fun openDocument(
+        uri: String,
+        text: String,
+        version: Long,
+    ): ContractResult<Unit> {
+        if (!documentSyncSupported) return super.openDocument(uri, text, version)
+        openDocumentCalls += 1
+        openedDocuments += Triple(uri, text, version)
+        return success(Unit)
     }
 
     override fun shutdown(): ContractResult<Unit> = success(Unit)

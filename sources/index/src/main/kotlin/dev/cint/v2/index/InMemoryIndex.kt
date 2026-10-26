@@ -219,7 +219,7 @@ class InMemoryIndex(
             )
         }
         if (cached.stale || cached.input.version != input.version) {
-            return refreshSemantic(key, input, metadata, cached, semantic, cancellation)
+            return refreshSemantic(key, input, bytes, metadata, cached, semantic, cancellation)
         }
         val entry = cached.copy(input = input, metadata = metadata ?: cached.metadata)
         entries[key] = entry
@@ -229,13 +229,14 @@ class InMemoryIndex(
     private fun refreshSemantic(
         key: String,
         input: SourceInput,
+        bytes: ByteArray,
         metadata: FileMetadata?,
         cached: Entry,
         semantic: SemanticProvider,
         cancellation: CancellationToken,
     ): ContractResult<IndexedSource> {
         val semanticFacts =
-            when (val result = requestSemantic(input, semantic, cancellation)) {
+            when (val result = requestSemantic(input, bytes, semantic, cancellation)) {
                 is Success -> result.contents
                 is Failure -> return failure(result.error)
             }
@@ -306,7 +307,7 @@ class InMemoryIndex(
         val normalizedFacts = if (factTree == null) facts.copy(syntaxTree = tree) else facts
         cancelled(cancellation, "Index.ensure")?.let { return failure(it) }
         val semanticFacts =
-            when (val result = requestSemantic(input, semantic, cancellation)) {
+            when (val result = requestSemantic(input, bytes, semantic, cancellation)) {
                 is Success -> result.contents
                 is Failure -> return failure(result.error)
             }
@@ -506,9 +507,11 @@ class InMemoryIndex(
 
     private fun requestSemantic(
         input: SourceInput,
+        bytes: ByteArray,
         provider: SemanticProvider,
         cancellation: CancellationToken,
     ): ContractResult<List<SemanticFact>> {
+        syncDocument(input, bytes, provider, cancellation)?.let { return failure(it) }
         val providerEpoch = providerEpoch(provider)
         val facts = ArrayList<SemanticFact>(plan.semanticRequests.size)
         for (spec in plan.semanticRequests) {
@@ -557,6 +560,33 @@ class InMemoryIndex(
         }
         cancelled(cancellation, "Index.semantic")?.let { return failure(it) }
         return success(facts)
+    }
+
+    private fun syncDocument(
+        input: SourceInput,
+        bytes: ByteArray,
+        provider: SemanticProvider,
+        cancellation: CancellationToken,
+    ): ContractError? {
+        cancelled(cancellation, "Index.documentSync")?.let { return it }
+        val response =
+            try {
+                provider.openDocument(uriFor(input), bytes.toString(Charsets.UTF_8), input.version)
+            } catch (error: Throwable) {
+                return ContractError.InternalError(
+                    "Semantic provider document sync failed",
+                    error.message,
+                )
+            }
+        return when (response) {
+            is Success -> null
+            is Failure ->
+                if (response.error is ContractError.PreconditionFailed) {
+                    null
+                } else {
+                    response.error
+                }
+        }
     }
 
     private fun resolveSyntax(support: LanguageSupport): ContractResult<SyntaxEngine> =

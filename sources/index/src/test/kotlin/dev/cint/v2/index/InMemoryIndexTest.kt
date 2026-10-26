@@ -57,6 +57,27 @@ class InMemoryIndexTest {
     }
 
     @Test
+    fun semanticRequestOpensDocumentWithVersionedText() {
+        withTempDir { directory ->
+            val file = directory.resolve("A.kt")
+            Files.writeString(file, "fun main() {}")
+            val provider = FakeSemanticProvider().apply { documentSyncSupported = true }
+            val support = FakeLanguageSupport(FakeSyntaxEngine(), provider)
+            val index = InMemoryIndex(testPlan())
+            val input = SourceInput.FilePath(file.toString(), "test", version = 7)
+
+            index.ensure(input, support).requireSuccess()
+            index.ensure(input, support).requireSuccess()
+
+            assertEquals(1, provider.openDocumentCalls)
+            val opened = provider.openedDocuments.single()
+            assertTrue(opened.first.endsWith("/A.kt"))
+            assertEquals("fun main() {}", opened.second)
+            assertEquals(7, opened.third)
+        }
+    }
+
+    @Test
     fun fileMetadataPrefilterConfirmsWithContentHash() {
         withTempDir { directory ->
             val file = directory.resolve("A.kt")
