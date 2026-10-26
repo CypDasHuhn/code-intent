@@ -67,10 +67,18 @@ internal fun parseArguments(argv: Array<String>): ServerOptions? {
 }
 
 internal fun createRuntime(root: Path): Runtime? {
+    val providerConfigs =
+        try {
+            loadProviderConfigs(root)
+        } catch (error: Exception) {
+            System.err.println("unable to load provider config: ${error.message ?: error::class.simpleName}")
+            return null
+        }
     val created =
         RuntimeFactory.create(
             RuntimeConfig(
                 rootPath = root.toString(),
+                providerConfigs = providerConfigs,
                 materializeDefaultsOnOpen = false,
                 applyUnmaterializedDefaults = false,
             ),
