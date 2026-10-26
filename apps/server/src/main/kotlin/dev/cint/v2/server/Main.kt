@@ -78,6 +78,7 @@ internal fun createRuntime(root: Path): Runtime? {
         RuntimeFactory.create(
             RuntimeConfig(
                 rootPath = root.toString(),
+                semanticTimeoutMs = providerConfigs.values.maxOfOrNull { it.timeoutMs } ?: 5_000,
                 providerConfigs = providerConfigs,
                 materializeDefaultsOnOpen = false,
                 applyUnmaterializedDefaults = false,
